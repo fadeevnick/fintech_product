@@ -6,7 +6,7 @@ Last updated: 2026-05-15.
 
 ## Focus
 
-Phase 02 Slice 02 planning: merchant identity foundation draft.
+Phase 02 Slice 02 planning: merchant identity foundation draft, waiting for standalone UI prototype.
 
 ## Status
 
@@ -35,7 +35,7 @@ Completed workstream — Phase 01 Slice 01:
 
 ## Next
 
-**Owner review of `planning/implementation-slices/phase_02_slice_02_merchant_identity_planning.md` before writing more identity/RBAC code.**
+**Owner sends `prototypes/ui-redesign/prompts/01_merchant_auth_prompt.md` to the UI/UX prototype agent and provides `prototypes/ui-redesign/01_merchant_auth.html` before writing more identity/RBAC code.**
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
@@ -211,8 +211,10 @@ docker compose -f deploy/docker-compose.yml down
 
 Current Phase 02 Slice 02 draft:
 - `planning/implementation-slices/phase_02_slice_02_merchant_identity_planning.md` — DRAFT v0.1.
-- Proposed scope: merchant registration/login, first merchant employee as `merchant_admin`, merchant-scoped session, cross-pool email uniqueness, merchant auth audit writes, minimal `MDB-UI-01` prototype checkpoint.
+- Proposed scope: merchant registration/login, first merchant employee as `merchant_admin`, merchant-scoped session, cross-pool email uniqueness, merchant auth audit writes, minimal `MDB-UI-01` product implementation checkpoint based on accepted standalone HTML prototype.
 - Open questions: merchant entity depth, first employee role, merchant email verification gate, `AUTH-05` result tag.
+- UI/UX prompt prepared: `prototypes/ui-redesign/prompts/01_merchant_auth_prompt.md`.
+- Expected standalone prototype artifact before product UI code: `prototypes/ui-redesign/01_merchant_auth.html`.
 - Do not write product code for this slice until owner approval.
 
-Next planned step: owner reviews Phase 02 Slice 02 draft and approves or changes the open questions.
+Next planned step: owner sends the merchant auth prompt to the UI/UX prototype agent and provides the returned `01_merchant_auth.html` artifact.

@@ -129,14 +129,15 @@ Proposed scope:
 - merchant-scoped opaque session;
 - cross-pool email uniqueness proof across end-user and merchant pools;
 - merchant auth audit writes;
-- minimal `MDB-UI-01` prototype checkpoint.
+- minimal `MDB-UI-01` product implementation checkpoint based on an accepted standalone HTML prototype.
 
 Explicitly not started:
 - product code for this slice;
+- standalone `MDB-UI-01` HTML prototype artifact;
 - Stripe Connect onboarding;
 - merchant API keys;
 - public Payments API;
 - backoffice OIDC/RBAC implementation.
 
 Next planned step:
-- Owner reviews the Phase 02 Slice 02 draft and approves or changes the open questions.
+- Owner sends `prototypes/ui-redesign/prompts/01_merchant_auth_prompt.md` to the UI/UX prototype agent and provides the returned `prototypes/ui-redesign/01_merchant_auth.html` artifact before product code starts.
