@@ -140,4 +140,4 @@ Explicitly not started:
 - backoffice OIDC/RBAC implementation.
 
 Next planned step:
-- Owner sends `prototypes/ui/prompts/01_merchant_auth_prompt.md` to the UI/UX prototype agent and provides the returned `prototypes/ui/01_merchant_auth.html` artifact before product code starts.
+- AI outputs the merchant auth prompt in chat; owner sends it to the UI/UX prototype agent and provides the returned `prototypes/ui/01_merchant_auth.html` artifact before product code starts.

@@ -35,7 +35,7 @@ Completed workstream — Phase 01 Slice 01:
 
 ## Next
 
-**Owner sends `prototypes/ui/prompts/01_merchant_auth_prompt.md` to the UI/UX prototype agent and provides `prototypes/ui/01_merchant_auth.html` before writing more identity/RBAC code.**
+**AI outputs the temporary UI/UX agent prompt in chat; owner sends it to the UI/UX prototype agent and provides `prototypes/ui/01_merchant_auth.html` before writing more identity/RBAC code.**
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
@@ -213,8 +213,8 @@ Current Phase 02 Slice 02 draft:
 - `planning/implementation-slices/phase_02_slice_02_merchant_identity_planning.md` — DRAFT v0.1.
 - Proposed scope: merchant registration/login, first merchant employee as `merchant_admin`, merchant-scoped session, cross-pool email uniqueness, merchant auth audit writes, minimal `MDB-UI-01` product implementation checkpoint based on accepted standalone HTML prototype.
 - Open questions: merchant entity depth, first employee role, merchant email verification gate, `AUTH-05` result tag.
-- UI/UX prompt prepared: `prototypes/ui/prompts/01_merchant_auth_prompt.md`.
+- UI/UX prompt is temporary chat handoff and must not be committed.
 - Expected standalone prototype artifact before product UI code: `prototypes/ui/01_merchant_auth.html`.
 - Do not write product code for this slice until owner approval.
 
-Next planned step: owner sends the merchant auth prompt to the UI/UX prototype agent and provides the returned `01_merchant_auth.html` artifact.
+Next planned step: AI outputs the merchant auth prompt in chat; owner sends it to the UI/UX prototype agent and provides the returned `01_merchant_auth.html` artifact.
