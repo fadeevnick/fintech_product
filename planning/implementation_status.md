@@ -132,7 +132,8 @@ Proposed scope:
 - minimal `MDB-UI-01` product implementation checkpoint based on an accepted standalone HTML prototype.
 
 Created:
-- `prototypes/ui/01_merchant_auth.html` — standalone `MDB-UI-01` merchant auth HTML prototype from UI/UX prototype workflow.
+- `prototypes/ui/01_app_shell_cross_surface.html` — standalone cross-surface app shell HTML prototype from UI/UX prototype workflow.
+- `prototypes/ui/02_merchant_auth.html` — standalone `MDB-UI-01` merchant auth HTML prototype from UI/UX prototype workflow.
 
 Explicitly not started:
 - product code for this slice;
@@ -142,4 +143,4 @@ Explicitly not started:
 - backoffice OIDC/RBAC implementation.
 
 Next planned step:
-- Review/accept `prototypes/ui/01_merchant_auth.html`, then approve or revise the Phase 02 Slice 02 planning draft before product code starts.
+- Continue the UI prototype baseline before product code starts, likely with end-user auth or backoffice OIDC landing.

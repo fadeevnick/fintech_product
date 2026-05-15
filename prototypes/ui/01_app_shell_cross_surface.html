@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — App Shell</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --inp:     #faf9f7;
+      --hover:   #f0efe9;
+      --sb:        #111114;
+      --sb-bdr:    #1e1e22;
+      --sb-t:      #c8c8d4;
+      --sb-muted:  #545460;
+      --sb-hover:  #191920;
+      --sb-active: #1e1e28;
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+      --t1: #1c1c1f;  --t2: #575763;  --t3: #9898a6;  --t4: #d0d0da;
+      --cta:     #1c1c1f;  --cta-hov: #2e2e35;  --cta-t: #ffffff;
+      --g:    #166534;  --g-bg: #f0fdf4;  --g-bd: #bbf7d0;
+      --am:   #854d0e;  --am-bg:#fffbeb;  --am-bd:#fde68a;
+      --rd:   #9b1c1c;  --rd-bg:#fef2f2;  --rd-bd:#fecaca;
+      --or:   #b45309;  --or-bg:#fff7ed;  --or-bd:#fed7aa;
+      --pu:   #5b21b6;  --pu-bg:#f5f3ff;  --pu-bd:#ddd6fe;
+      --bl:   #1e40af;  --bl-bg:#eff6ff;  --bl-bd:#bfdbfe;
+      --sb-env-bg:  #1a1030;
+      --sb-env-t:   #b39cf0;
+      --sb-env-bd:  #362566;
+      --f-ui:   'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+      --r:    3px;  --r-lg: 5px;
+      --w-sb: 216px;  --w-au: 260px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+
+    #root { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* ── SURFACE BAR ── */
+    .surf-bar { display: flex; align-items: center; gap: 16px; padding: 0 16px;
+      height: 38px; flex-shrink: 0; background: var(--surf2);
+      border-bottom: 1px solid var(--bdr); }
+    .surf-bar-title { font-size: 11px; font-weight: 600; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.08em; white-space: nowrap; }
+    .surf-bar-divider { width: 1px; height: 18px; background: var(--bdr); flex-shrink: 0; }
+    .surf-btns { display: flex; gap: 2px; }
+    .surf-btn { padding: 4px 11px; border-radius: var(--r); font-size: 11.5px;
+      font-weight: 500; color: var(--t3); cursor: pointer; border: 1px solid transparent;
+      user-select: none; transition: all 0.1s; font-family: var(--f-ui);
+      display: flex; align-items: center; gap: 6px; }
+    .surf-btn:hover { color: var(--t2); background: var(--hover); }
+    .surf-btn.active { color: var(--t1); background: var(--surface);
+      border-color: var(--bdr-mid); }
+    .surf-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+    .surf-btn.active .surf-dot { opacity: 1; }
+    .surf-bar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+    /* ── SHELL AREA ── */
+    .shell { flex: 1; display: flex; overflow: hidden; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 13px 14px 11px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-name  { font-size: 14px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9px; color: var(--sb-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; margin-top: 4px; }
+    .sb-nav  { flex: 1; padding: 8px 6px; overflow-y: auto; }
+    .nav-sec { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 8px 5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 7px; padding: 5.5px 8px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 11.5px;
+      cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.33; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; opacity: 1; }
+    .nav-item.warn-item { color: #c4963a; opacity: 1; }
+    .nav-lock { margin-left: auto; display: flex; align-items: center; opacity: 0.6; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono);
+      color: var(--sb-muted); opacity: 0.7; }
+    .nav-badge-sm { margin-left: auto; font-size: 8.5px; font-family: var(--f-mono);
+      font-weight: 600; padding: 1px 4px; border-radius: 2px; }
+    .nav-badge-warn { background: #3a2800; color: #c4963a; }
+    .nav-badge-err  { background: #2a0a0a; color: #d87272; }
+    .sb-div  { height: 1px; background: var(--sb-bdr); margin: 5px 0; }
+    .sb-footer { padding: 9px 13px; border-top: 1px solid var(--sb-bdr); }
+    .sb-user-name  { font-size: 11.5px; font-weight: 500; color: #c8c8d4; margin-bottom: 1px; }
+    .sb-user-role  { font-size: 9.5px; font-family: var(--f-mono); color: var(--sb-muted); margin-bottom: 7px; }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 9.5px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 3px; }
+    .env-dot   { width: 4px; height: 4px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.8; }
+    .env-host  { font-size: 9.5px; color: var(--sb-muted); font-family: var(--f-mono); }
+
+    /* ── MAIN ── */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .page-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 20px; border-bottom: 1px solid var(--bdr);
+      background: var(--surface); flex-shrink: 0; }
+    .page-bc  { font-size: 12px; color: var(--t2); display: flex; align-items: center; gap: 5px; }
+    .page-bc strong { color: var(--t1); font-weight: 500; }
+    .page-bc .sep   { color: var(--t3); }
+    .page-bc .mode  { font-family: var(--f-mono); font-size: 11px; color: var(--t2); }
+    .page-meta { display: flex; align-items: center; gap: 8px; }
+    .screen-id { font-size: 9.5px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge { font-size: 9.5px; font-family: var(--f-mono); color: var(--am);
+      background: var(--am-bg); border: 1px solid var(--am-bd);
+      padding: 2px 7px; border-radius: var(--r); display: flex; align-items: center; gap: 4px; }
+    .env-badge-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--am); }
+    .user-chip { display: flex; align-items: center; gap: 6px; padding: 3px 9px;
+      border: 1px solid var(--bdr); border-radius: var(--r); background: var(--surf2);
+      font-size: 11px; color: var(--t2); }
+    .user-chip-role { font-family: var(--f-mono); font-size: 10px; color: var(--t3); }
+    .main-body { flex: 1; overflow-y: auto; padding: 16px 20px; background: var(--bg); }
+
+    /* ── MODE TABS ── */
+    .mode-tabs { display: flex; border-bottom: 1px solid var(--bdr); margin-bottom: 16px; }
+    .mode-tab  { padding: 6px 14px; font-size: 12px; font-weight: 500; color: var(--t3);
+      cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+      white-space: nowrap; user-select: none; transition: color 0.12s, border-color 0.12s; }
+    .mode-tab:hover  { color: var(--t2); }
+    .mode-tab.active { color: var(--t1); border-bottom-color: var(--t1); }
+
+    /* ── PANELS ── */
+    .panel      { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; }
+    .panel-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 13px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .panel-title { font-size: 11px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 13px 15px; }
+
+    /* ── BUTTONS ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 13px; border-radius: var(--r); font-size: 12px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover { background: var(--cta-hov); }
+    .btn-ghost   { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover { background: var(--hover); color: var(--t1); }
+    .btn-sm      { padding: 4px 10px; font-size: 11px; }
+    .btn-xs      { padding: 3px 8px; font-size: 10.5px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+    .btn-warn    { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+    .btn-err     { background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+
+    /* ── ALERTS ── */
+    .alert { display: flex; gap: 9px; padding: 9px 11px 9px 12px; font-size: 11.5px;
+      line-height: 1.55; border-radius: 0 var(--r) var(--r) 0; border-left-width: 3px;
+      border-left-style: solid; }
+    .alert-icon { flex-shrink: 0; font-style: normal; font-size: 11px;
+      margin-top: 1px; font-weight: 600; }
+    .alert-err  { background: var(--rd-bg); border-left-color: var(--rd);  color: #7f1d1d; }
+    .alert-ok   { background: var(--g-bg);  border-left-color: var(--g);   color: #14532d; }
+    .alert-warn { background: var(--am-bg); border-left-color: var(--am);  color: #78350f; }
+    .alert-info { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-dev  { background: var(--pu-bg); border-left-color: var(--pu);  color: #4c1d95; }
+
+    /* ── BADGES ── */
+    .badge { display: inline-flex; align-items: center; padding: 2px 5px; border-radius: 2px;
+      font-size: 9px; font-weight: 600; letter-spacing: 0.07em;
+      font-family: var(--f-mono); border: 1px solid transparent; }
+    .b-active     { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-notstarted { background: var(--hover); color: var(--t2);  border-color: var(--bdr); }
+    .b-locked     { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-pending    { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-inreview   { background: var(--bl-bg); color: var(--bl);  border-color: var(--bl-bd); }
+    .b-401        { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-403        { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-dev        { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-low        { background: var(--bl-bg); color: var(--bl);  border-color: var(--bl-bd); }
+    .b-medium     { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-high       { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-critical   { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-readaudit  { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-operator   { background: var(--bl-bg); color: var(--bl);  border-color: var(--bl-bd); }
+    .b-compliance { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+
+    /* ── KV TABLE ── */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 4.5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 10.5px; color: var(--t3); min-width: 140px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center;
+      gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11px; }
+
+    /* ── STAT CARDS ── */
+    .stat-row { display: grid; gap: 10px; margin-bottom: 16px; }
+    .stat-row-3 { grid-template-columns: repeat(3, 1fr); }
+    .stat-row-6 { grid-template-columns: repeat(6, 1fr); }
+    .stat-card { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); padding: 11px 13px; }
+    .stat-card.locked-card { opacity: 0.42; background: var(--surf2); }
+    .stat-num  { font-size: 22px; font-weight: 600; font-family: var(--f-mono);
+      color: var(--t1); line-height: 1.1; letter-spacing: -0.02em; }
+    .stat-num.lock-num { font-size: 14px; color: var(--t4); }
+    .stat-lbl  { font-size: 10px; color: var(--t3); margin-top: 4px;
+      text-transform: uppercase; letter-spacing: 0.07em; }
+    .stat-sub  { font-size: 10px; color: var(--t4); margin-top: 2px;
+      font-family: var(--f-mono); }
+
+    /* ── QUEUE TABLE ── */
+    .q-wrap { overflow-x: auto; border: 1px solid var(--bdr); border-radius: var(--r-lg);
+      background: var(--surface); }
+    .q-table { width: 100%; border-collapse: collapse; }
+    .q-thead { background: var(--surf2); }
+    .q-th { padding: 7px 12px; font-size: 9.5px; font-weight: 600; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.07em; text-align: left;
+      border-bottom: 1px solid var(--bdr); white-space: nowrap; }
+    .q-td { padding: 8px 12px; font-size: 12px; color: var(--t1);
+      border-bottom: 1px solid var(--hover); vertical-align: middle; }
+    .q-td.mono { font-family: var(--f-mono); font-size: 11px; color: var(--t2); }
+    .q-row:last-child .q-td { border-bottom: none; }
+    .q-row:hover .q-td { background: var(--hover); }
+    .q-row-locked .q-td { opacity: 0.38; cursor: not-allowed; }
+    .q-row-locked:hover .q-td { background: transparent; }
+    .q-actions { display: flex; gap: 5px; align-items: center; }
+
+    /* ── ROLE SWITCHER ── */
+    .role-sw { display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+      background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r-lg);
+      margin-bottom: 14px; }
+    .role-sw-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--t3); font-weight: 600; white-space: nowrap; }
+    .role-sw-btns { display: flex; gap: 4px; }
+    .role-sw-btn { padding: 4px 11px; border-radius: var(--r); font-size: 11.5px;
+      font-weight: 500; cursor: pointer; border: 1px solid var(--bdr-mid);
+      background: var(--surface); color: var(--t3); font-family: var(--f-ui);
+      display: flex; align-items: center; gap: 6px; transition: all 0.1s; }
+    .role-sw-btn.active-op { background: var(--bl-bg); color: var(--bl);
+      border-color: var(--bl-bd); }
+    .role-sw-btn.active-co { background: var(--pu-bg); color: var(--pu);
+      border-color: var(--pu-bd); }
+    .role-note { font-size: 10.5px; color: var(--t3); margin-left: auto; }
+
+    /* ── FEATURE GATE ── */
+    .feat-gate { display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 32px 20px; text-align: center; gap: 10px;
+      background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg); }
+    .feat-gate-code { font-size: 28px; font-weight: 600; font-family: var(--f-mono);
+      color: var(--t4); line-height: 1; }
+    .feat-gate-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .feat-gate-desc { font-size: 12px; color: var(--t2); max-width: 340px; line-height: 1.55; }
+
+    /* ── BALANCE ── */
+    .balance-block { padding: 18px 20px; display: flex; align-items: flex-end; gap: 8px; }
+    .balance-num { font-size: 32px; font-weight: 600; font-family: var(--f-mono);
+      color: var(--t1); letter-spacing: -0.03em; line-height: 1; }
+    .balance-cur { font-size: 14px; font-weight: 500; color: var(--t3);
+      margin-bottom: 4px; font-family: var(--f-mono); }
+
+    /* ── ACTION ROW ── */
+    .action-row { display: flex; gap: 8px; padding: 12px 15px;
+      border-top: 1px solid var(--bdr); flex-wrap: wrap; }
+    .action-btn { display: flex; flex-direction: column; align-items: center;
+      gap: 4px; padding: 8px 14px; border-radius: var(--r); cursor: pointer;
+      border: 1px solid var(--bdr-mid); background: var(--surface);
+      font-family: var(--f-ui); transition: background 0.1s; }
+    .action-btn:hover { background: var(--hover); }
+    .action-btn.locked-btn { opacity: 0.35; cursor: not-allowed; }
+    .action-btn-label { font-size: 11px; font-weight: 500; color: var(--t1); }
+    .action-btn-sub   { font-size: 9.5px; color: var(--t3); }
+
+    /* ── CHECKLIST ── */
+    .checklist   { display: flex; flex-direction: column; }
+    .check-item  { display: flex; align-items: flex-start; gap: 10px;
+      padding: 6px 0; border-bottom: 1px solid var(--bdr); }
+    .check-item:last-child { border-bottom: none; }
+    .check-dot   { width: 15px; height: 15px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-size: 8px;
+      flex-shrink: 0; margin-top: 2px; }
+    .check-dot.done   { background: var(--g-bg); color: var(--g); border: 1px solid var(--g-bd); }
+    .check-dot.later  { background: var(--hover); color: var(--t3); border: 1px solid var(--bdr); }
+    .check-dot.locked { background: var(--hover); color: var(--t4); border: 1px solid var(--bdr); }
+    .check-lbl   { font-size: 12px; font-weight: 500; color: var(--t1); }
+    .check-lbl.dim { color: var(--t3); font-weight: 400; }
+    .check-desc  { font-size: 10.5px; color: var(--t3); margin-top: 1px; }
+
+    /* ── DENIED ── */
+    .denied-code { font-size: 32px; font-weight: 600; font-family: var(--f-mono); line-height: 1; }
+    .code-401 { color: var(--rd); }
+    .code-403 { color: var(--or); }
+
+    /* ── SUBSTATE SWITCHER ── */
+    .sub-sw  { display: flex; gap: 5px; margin-bottom: 13px; flex-wrap: wrap; }
+    .sub-btn { padding: 4px 9px; border-radius: var(--r); font-size: 11px; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--bdr-mid); background: var(--surface);
+      color: var(--t3); transition: all 0.1s; font-family: var(--f-ui); }
+    .sub-btn:hover { color: var(--t2); background: var(--hover); }
+    .sub-btn.active { background: var(--cta); color: #fff; border-color: var(--cta); }
+    .sub-btn.err-s  { color: var(--rd); border-color: var(--rd-bd); background: var(--rd-bg); }
+    .sub-btn.err-s.active { background: var(--rd); color: #fff; border-color: var(--rd); }
+
+    /* ── AUDIT RAIL ── */
+    .audit-rail { width: var(--w-au); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .audit-hdr  { padding: 9px 13px; border-bottom: 1px solid var(--bdr);
+      font-size: 9px; font-weight: 600; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.1em; }
+    .audit-body { flex: 1; overflow-y: auto; padding: 11px 13px; }
+    .audit-sec  { font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--t3); margin-bottom: 6px; margin-top: 2px; }
+    .audit-evt  { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .audit-evt:last-child { border-bottom: none; }
+    .audit-dot  { width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+    .audit-dot.ok   { background: var(--g); }
+    .audit-dot.pend { background: var(--am); }
+    .audit-dot.bad  { background: var(--rd); }
+    .audit-dot.dim  { background: var(--t4); }
+    .audit-dot.pu   { background: var(--pu); }
+    .audit-name { font-size: 10.5px; font-family: var(--f-mono); color: var(--t1); }
+    .audit-meta { font-size: 9.5px; color: var(--t3); margin-top: 1px; }
+    .sec-fact { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--hover); }
+    .sec-fact:last-child { border-bottom: none; }
+    .sec-mark { font-size: 9.5px; color: var(--t3); flex-shrink: 0; margin-top: 2px;
+      font-family: var(--f-mono); }
+    .sec-text { font-size: 10.5px; color: var(--t2); line-height: 1.45; }
+
+    /* ── UTILITY ── */
+    .col   { display: flex; flex-direction: column; gap: 12px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .hr    { height: 1px; background: var(--bdr); margin: 10px 0; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1200px) { :root { --w-au: 220px; } }
+    @media (max-width: 960px)  { .audit-rail { display: none; } }
+    @media (max-width: 680px)  { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ── SAMPLE DATA ── */
+const USERS = {
+  endUser: {
+    userId:      'usr_Hk3mLp9qNrT5vWxY',
+    name:        'Elena Fischer',
+    email:       'elena.fischer@example.test',
+    role:        'end_user',
+    kycStatus:   'NOT_STARTED',
+    walletId:    'wal_2PrNvK8sQtXbYzMc',
+    balance:     '0.00',
+    currency:    'EUR',
+    createdAt:   '2026-05-16T08:30:00Z',
+  },
+  merchant: {
+    merchantId:     'mch_Dk4xP2Nb8qLmHrYv',
+    employeeId:     'emp_9Qw7Rv3kJnB5xCsT',
+    name:           'Marta Weiss',
+    company:        'Northstar Bikes GmbH',
+    email:          'marta@northstar-bikes.example',
+    role:           'merchant_admin',
+    employeeStatus: 'ACTIVE',
+    merchantStatus: 'NOT_STARTED',
+    country:        'DE',
+    loginAt:        '2026-05-16T09:22:11Z',
+  },
+  operator: {
+    userId:     'bof_7Lk2Nm9pQrStUvWx',
+    name:       'Ivan Petrov',
+    email:      'i.petrov@miniefin.internal',
+    role:       'backoffice_operator',
+    authMethod: 'Keycloak OIDC',
+    sessionId:  'kc_sess_3Tv8Wm4nPqRsUxYz',
+  },
+  compliance: {
+    userId:     'bof_3Rq8Sk5tUvWxYzAb',
+    name:       'Sofia Laurent',
+    email:      's.laurent@miniefin.internal',
+    role:       'compliance_officer',
+    authMethod: 'Keycloak OIDC',
+    sessionId:  'kc_sess_7Yb2Ck9dMrNpQtVw',
+  },
+};
+
+/* ── QUEUE DATA ── */
+const KYC_QUEUE = [
+  { id: 'kyc_7Km2L', user: 'Elena Fischer',  email: 'elena.fischer@example.test', status: 'PENDING_REVIEW',    submitted: '09:05Z', docs: 'ID + selfie' },
+  { id: 'kyc_3Np8Q', user: 'Thomas Berg',    email: 't.berg@example.test',        status: 'PENDING_REVIEW',    submitted: '08:55Z', docs: 'ID + selfie' },
+  { id: 'kyc_9Rw4T', user: 'Amara Diallo',   email: 'a.diallo@example.test',      status: 'IN_SECOND_REVIEW',  submitted: '08:20Z', docs: 'ID + selfie + address' },
+  { id: 'kyc_1Sv6M', user: 'Johan Larsen',   email: 'j.larsen@example.test',      status: 'PENDING_REVIEW',    submitted: '08:10Z', docs: 'ID + selfie' },
+  { id: 'kyc_5Xb2N', user: 'Min Chen',       email: 'm.chen@example.test',        status: 'PENDING_REVIEW',    submitted: '07:45Z', docs: 'ID + selfie' },
+];
+
+const AML_ALERTS = [
+  { id: 'aml_2Kp7N', severity: 'LOW',      user: 'Thomas Berg',    rule: 'Velocity threshold',   status: 'OPEN',       restricted: false },
+  { id: 'aml_8Qr3L', severity: 'MEDIUM',   user: 'Marco Ricci',    rule: 'Structuring pattern',  status: 'IN_REVIEW',  restricted: false },
+  { id: 'aml_5Tm1X', severity: 'HIGH',     user: 'Blocked Corp Ltd', rule: 'Layering — EU',       status: 'OPEN',       restricted: true  },
+  { id: 'aml_9Wk4P', severity: 'CRITICAL', user: 'Shell Ltd GbR',   rule: 'Sanctions adjacency',  status: 'OPEN',       restricted: true  },
+];
+
+const AUDIT_EVENTS = [
+  { ts: '09:38Z', actor: 'Sofia Laurent', event: 'aml_alert.read',        subject: 'aml_5Tm1X', type: 'READ-AUDIT', role: 'compliance' },
+  { ts: '09:35Z', actor: 'Ivan Petrov',   event: 'kyc.approved',          subject: 'kyc_3Np8Q', type: 'STANDARD',   role: 'operator' },
+  { ts: '09:28Z', actor: 'Ivan Petrov',   event: 'deposit.approved',      subject: 'dep_7Km4P', type: 'STANDARD',   role: 'operator' },
+  { ts: '09:22Z', actor: 'Sofia Laurent', event: 'sanctions_hit.read',    subject: 'san_001',   type: 'READ-AUDIT', role: 'compliance' },
+  { ts: '09:15Z', actor: 'Ivan Petrov',   event: 'kyc.resubmit_requested', subject: 'kyc_9Rw4T', type: 'STANDARD',  role: 'operator' },
+  { ts: '09:08Z', actor: 'Sofia Laurent', event: 'account_freeze.applied', subject: 'usr_Bq7T', type: 'STANDARD',   role: 'compliance' },
+  { ts: '09:02Z', actor: 'Ivan Petrov',   event: 'withdrawal.approved',   subject: 'wdr_3Nm8K', type: 'STANDARD',   role: 'operator' },
+];
+
+/* ── SVG ICONS ── */
+const LogoMark = () => (
+  <svg width="24" height="24" viewBox="0 0 26 26" fill="none">
+    <rect width="26" height="26" rx="4" fill="#1e1e28"/>
+    <rect x="6" y="9" width="14" height="2" rx="1" fill="#ddddf0"/>
+    <rect x="6" y="13.5" width="9" height="2" rx="1" fill="#7070e0"/>
+    <rect x="6" y="18" width="5" height="2" rx="1" fill="#4040a0" opacity="0.8"/>
+  </svg>
+);
+const IcoLockSm = () => (
+  <svg width="10" height="11" viewBox="0 0 11 12" fill="none">
+    <rect x="1.5" y="5" width="8" height="6.5" rx="0.75" stroke="currentColor" strokeWidth="1.1"/>
+    <path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+  </svg>
+);
+const IcoWallet = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1" y="3" width="12" height="9" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+    <path d="M1 6h12" stroke="currentColor" strokeWidth="1.2"/>
+    <circle cx="10" cy="9" r="1" fill="currentColor"/>
+  </svg>
+);
+const IcoShield = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M7 1.5L2 3.5v4c0 3 2.5 4.5 5 5.5 2.5-1 5-2.5 5-5.5v-4L7 1.5z"
+      stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+    <polyline points="4.5,7.5 6.5,9.5 10,5" stroke="currentColor" strokeWidth="1.2"
+      strokeLinecap="round" strokeLinejoin="round" opacity="0.7"/>
+  </svg>
+);
+const IcoCard = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1" y="3.5" width="12" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+    <line x1="1" y1="6.5" x2="13" y2="6.5" stroke="currentColor" strokeWidth="1.2"/>
+    <rect x="3" y="8.5" width="3" height="1.5" rx="0.5" fill="currentColor"/>
+  </svg>
+);
+const IcoArrow = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M2 7h10M8 3.5l4 3.5-4 3.5" stroke="currentColor" strokeWidth="1.2"
+      strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const IcoList = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <line x1="4" y1="4" x2="12" y2="4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <line x1="4" y1="7" x2="12" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <line x1="4" y1="10" x2="9" y2="10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <circle cx="2" cy="4" r="0.7" fill="currentColor"/>
+    <circle cx="2" cy="7" r="0.7" fill="currentColor"/>
+    <circle cx="2" cy="10" r="0.7" fill="currentColor"/>
+  </svg>
+);
+const IcoFlag = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M3 1.5v11M3 1.5h7.5L9 5l1.5 3.5H3" stroke="currentColor" strokeWidth="1.2"
+      strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const IcoGrid = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1" y="1" width="5" height="5" rx="0.75" stroke="currentColor" strokeWidth="1.2"/>
+    <rect x="8" y="1" width="5" height="5" rx="0.75" stroke="currentColor" strokeWidth="1.2"/>
+    <rect x="1" y="8" width="5" height="5" rx="0.75" stroke="currentColor" strokeWidth="1.2"/>
+    <rect x="8" y="8" width="5" height="5" rx="0.75" stroke="currentColor" strokeWidth="1.2"/>
+  </svg>
+);
+const IcoOnboard = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2"/>
+    <polyline points="4.5,7.5 6.5,9.5 10,4.5" stroke="currentColor" strokeWidth="1.2"
+      strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const IcoKey = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="5" cy="7" r="3" stroke="currentColor" strokeWidth="1.2"/>
+    <path d="M8 7h5M11 5.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoWebhook = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M2.5 10a6.5 6.5 0 0 1 0-6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <path d="M5 9a3.5 3.5 0 0 1 0-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <circle cx="7.5" cy="7" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
+    <path d="M9 7h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoChart = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1.5" y="7.5" width="2.5" height="4.5" rx="0.5" fill="currentColor" opacity="0.5"/>
+    <rect x="5.75" y="4.5" width="2.5" height="7.5" rx="0.5" fill="currentColor" opacity="0.75"/>
+    <rect x="10" y="2" width="2.5" height="10" rx="0.5" fill="currentColor"/>
+  </svg>
+);
+const IcoQueue = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1" y="1.5" width="12" height="3" rx="0.75" stroke="currentColor" strokeWidth="1.2"/>
+    <rect x="1" y="5.5" width="12" height="3" rx="0.75" stroke="currentColor" strokeWidth="1.2"/>
+    <rect x="1" y="9.5" width="7" height="3" rx="0.75" stroke="currentColor" strokeWidth="1.2"/>
+  </svg>
+);
+const IcoUser = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2"/>
+    <path d="M2 12c0-2.5 2.2-4 5-4s5 1.5 5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoAlert = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+    <line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <circle cx="7" cy="10.2" r="0.7" fill="currentColor"/>
+  </svg>
+);
+const IcoCross = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2"/>
+    <line x1="4.5" y1="4.5" x2="9.5" y2="9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <line x1="9.5" y1="4.5" x2="4.5" y2="9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoSearch = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1.2"/>
+    <line x1="9.2" y1="9.2" x2="12.5" y2="12.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoDown = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M7 2v10M3 9l4 4 4-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const IcoUp = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M7 12V2M3 5l4-4 4 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const IcoChargeback = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M10.5 4.5a5.5 5.5 0 1 0 0 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <path d="M12.5 2v3.5H9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+/* ── MICRO COMPONENTS ── */
+const Badge = ({ type }) => {
+  const map = {
+    ACTIVE:          ['b-active',     'ACTIVE'],
+    NOT_STARTED:     ['b-notstarted', 'NOT_STARTED'],
+    LOCKED:          ['b-locked',     'LOCKED'],
+    PENDING:         ['b-pending',    'PENDING'],
+    IN_REVIEW:       ['b-inreview',   'IN_REVIEW'],
+    IN_SECOND_REVIEW:['b-inreview',   '2ND_REVIEW'],
+    PENDING_REVIEW:  ['b-pending',    'PENDING'],
+    '401':           ['b-401',        '401'],
+    '403':           ['b-403',        '403'],
+    DEV:             ['b-dev',        'DEV'],
+    LOW:             ['b-low',        'LOW'],
+    MEDIUM:          ['b-medium',     'MEDIUM'],
+    HIGH:            ['b-high',       'HIGH'],
+    CRITICAL:        ['b-critical',   'CRITICAL'],
+    READ_AUDIT:      ['b-readaudit',  'READ-AUDIT'],
+    OPERATOR:        ['b-operator',   'OPERATOR'],
+    COMPLIANCE:      ['b-compliance', 'COMPLIANCE'],
+  };
+  const [cls, label] = map[type] || ['b-notstarted', type];
+  return <span className={`badge ${cls}`}>{label}</span>;
+};
+
+const KV = ({ k, v, mono, badge }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className={`kv-v${mono ? ' mono' : ''}`}>
+      {v}{badge && <Badge type={badge} />}
+    </div>
+  </div>
+);
+
+const Alrt = ({ type, icon, children }) => (
+  <div className={`alert alert-${type}`}>
+    <em className="alert-icon">{icon}</em>
+    <div>{children}</div>
+  </div>
+);
+
+const SubSw = ({ opts, active, onSelect }) => (
+  <div className="sub-sw">
+    {opts.map(o => (
+      <button key={o.id}
+        className={`sub-btn${o.v === 'err' ? ' err-s' : ''}${active === o.id ? ' active' : ''}`}
+        onClick={() => onSelect(o.id)}>
+        {o.label}
+      </button>
+    ))}
+  </div>
+);
+
+const NavIcon = ({ ico }) => (
+  <span style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{ico}</span>
+);
+
+/* ── SURFACE BAR ── */
+const SURFACES = [
+  { id: 'enduser',    label: 'End-User Web',        host: 'app.miniefin.local',         color: '#166534' },
+  { id: 'merchant',   label: 'Merchant Dashboard',  host: 'merchants.miniefin.local',   color: '#1c1c1f' },
+  { id: 'backoffice', label: 'Backoffice Workflow',  host: 'back.miniefin.local',        color: '#5b21b6' },
+];
+
+const SurfaceBar = ({ surface, setSurface }) => (
+  <div className="surf-bar">
+    <div className="surf-bar-title">App Shell</div>
+    <div className="surf-bar-divider" />
+    <div className="surf-btns">
+      {SURFACES.map(s => (
+        <button key={s.id} className={`surf-btn${surface === s.id ? ' active' : ''}`}
+          onClick={() => setSurface(s.id)}>
+          <span className="surf-dot" style={{ background: surface === s.id ? s.color : undefined }} />
+          {s.label}
+        </button>
+      ))}
+    </div>
+    <div className="surf-bar-right">
+      <span className="badge b-dev">PROTO v0.2</span>
+      <span style={{ fontSize: '10px', color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>
+        {SURFACES.find(s => s.id === surface)?.host}
+      </span>
+    </div>
+  </div>
+);
+
+/* ══════════════════════════════════════════
+   END-USER SURFACE
+══════════════════════════════════════════ */
+
+const EndUserSidebar = ({ activeTab }) => {
+  const u = USERS.endUser;
+  const nav = [
+    { id: 'wallet',       ico: <IcoWallet />,  label: 'Wallet',       locked: false, screenId: 'UEW-UI-03' },
+    { id: 'kyc',          ico: <IcoShield />,  label: 'KYC Status',   locked: false, screenId: 'UEW-UI-02', warnBadge: 'NOT_STARTED' },
+    { id: 'cards',        ico: <IcoCard />,    label: 'Cards',        locked: true,  screenId: 'UEW-UI-06', lockReason: 'KYC required' },
+    { id: 'transfers',    ico: <IcoArrow />,   label: 'Transfers',    locked: true,  screenId: 'UEW-UI-05', lockReason: 'KYC required' },
+    { id: 'transactions', ico: <IcoList />,    label: 'Transactions', locked: false, screenId: 'UEW-UI-07' },
+    null,
+    { id: 'disputes',     ico: <IcoFlag />,    label: 'Disputes',     locked: true,  screenId: 'UEW-UI-07', lockReason: 'Future slice' },
+  ];
+  return (
+    <aside className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-mark"><LogoMark /><div className="sb-name">MiniFin</div></div>
+        <div className="sb-sub">End-User Web</div>
+      </div>
+      <nav className="sb-nav">
+        <div className="nav-sec">Navigation</div>
+        {nav.map((item, i) => {
+          if (!item) return <div key={i} className="sb-div" />;
+          const cur = activeTab === item.id;
+          return (
+            <div key={i} className={`nav-item${item.locked ? ' locked' : ''}${cur ? ' current' : ''}${item.warnBadge && !cur ? ' warn-item' : ''}`}
+              title={item.lockReason || item.label}>
+              <NavIcon ico={item.ico} />
+              <span>{item.label}</span>
+              {item.locked && <span className="nav-lock"><IcoLockSm /></span>}
+              {!item.locked && !cur && item.warnBadge &&
+                <span className="nav-badge-sm nav-badge-warn">NOT_STARTED</span>}
+              {cur && item.screenId && <span className="nav-id">{item.screenId}</span>}
+            </div>
+          );
+        })}
+      </nav>
+      <div className="sb-footer">
+        <div className="sb-user-name">{u.name}</div>
+        <div className="sb-user-role">{u.role}</div>
+        <div className="env-chip"><div className="env-dot" /><span>Local Sandbox</span></div>
+        <div className="env-host">app.miniefin.local</div>
+      </div>
+    </aside>
+  );
+};
+
+const WalletContent = () => {
+  const u = USERS.endUser;
+  return (
+    <div className="col">
+      <Alrt type="warn" icon="!">
+        <strong>Identity verification required.</strong> Complete KYC to unlock transfers, card issuance, and higher deposit limits.
+        Switch to the <strong>KYC Status</strong> tab to begin.
+      </Alrt>
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Wallet Balance</span>
+          <Badge type="ACTIVE" />
+        </div>
+        <div className="balance-block">
+          <div className="balance-num">{u.balance}</div>
+          <div className="balance-cur">{u.currency}</div>
+        </div>
+        <div className="action-row">
+          {[
+            { label: 'Request Deposit', sub: 'Manual · operator review', locked: false },
+            { label: 'Withdraw',        sub: 'KYC required',              locked: true  },
+            { label: 'Transfer',        sub: 'KYC required',              locked: true  },
+            { label: 'Issue Card',      sub: 'KYC required',              locked: true  },
+          ].map((a, i) => (
+            <div key={i} className={`action-btn${a.locked ? ' locked-btn' : ''}`}>
+              <div className="action-btn-label">{a.label}</div>
+              <div className="action-btn-sub">{a.sub}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Wallet Details</span>
+          <span style={{ fontSize: '10px', fontFamily: 'var(--f-mono)', color: 'var(--t3)' }}>{u.walletId}</span>
+        </div>
+        <div className="panel-body">
+          <div className="kv-table">
+            <KV k="userId"       v={u.userId} mono />
+            <KV k="walletId"     v={u.walletId} mono />
+            <KV k="balance"      v={`${u.balance} ${u.currency}`} />
+            <KV k="kycStatus"    badge="NOT_STARTED" />
+            <KV k="createdAt"    v={u.createdAt} mono />
+          </div>
+        </div>
+      </div>
+      <div className="panel">
+        <div className="panel-hdr"><span className="panel-title">Recent Transactions</span></div>
+        <div className="panel-body">
+          <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--t3)', fontSize: '12px' }}>
+            No transactions yet.
+            <div style={{ fontSize: '11px', marginTop: '4px', color: 'var(--t4)' }}>
+              Request a deposit to see activity here.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const KYCContent = () => {
+  const u = USERS.endUser;
+  return (
+    <div className="col">
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">KYC Status</span>
+          <Badge type="NOT_STARTED" />
+        </div>
+        <div className="panel-body">
+          <div className="kv-table">
+            <KV k="userId"       v={u.userId} mono />
+            <KV k="kycStatus"    badge="NOT_STARTED" />
+            <KV k="provider"     v="Sumsub" />
+            <KV k="submittedAt"  v="—" />
+            <KV k="decidedAt"    v="—" />
+          </div>
+        </div>
+      </div>
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Verification Steps</span>
+          <span style={{ fontSize: '10px', fontFamily: 'var(--f-mono)', color: 'var(--t3)' }}>0 / 3</span>
+        </div>
+        <div className="panel-body">
+          <div className="checklist">
+            {[
+              { dot: 'later', icon: '○', lbl: 'Government-issued ID', desc: 'Passport, national ID, or driving licence' },
+              { dot: 'later', icon: '○', lbl: 'Selfie verification', desc: 'Live selfie matched against ID document' },
+              { dot: 'later', icon: '○', lbl: 'Proof of address', desc: 'Required for elevated tier or high-value deposits' },
+            ].map((item, i) => (
+              <div key={i} className="check-item" style={{ opacity: 0.65 }}>
+                <div className={`check-dot ${item.dot}`}>{item.icon}</div>
+                <div>
+                  <div className="check-lbl dim">{item.lbl}</div>
+                  <div className="check-desc">{item.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="panel">
+        <div className="panel-hdr"><span className="panel-title">Unlocked After KYC Approval</span></div>
+        <div className="panel-body">
+          <div className="checklist">
+            {[
+              { lbl: 'Internal transfers', desc: 'Send funds to other MiniFin users' },
+              { lbl: 'Card issuance',      desc: 'Issue virtual and physical debit cards' },
+              { lbl: 'Withdrawal',         desc: 'Withdraw funds to external bank account' },
+              { lbl: 'Elevated deposit limit', desc: 'Deposit above base threshold without SoF check' },
+            ].map((item, i) => (
+              <div key={i} className="check-item" style={{ opacity: 0.5 }}>
+                <div className="check-dot locked">—</div>
+                <div>
+                  <div className="check-lbl dim">{item.lbl}</div>
+                  <div className="check-desc">{item.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div>
+        <button className="btn btn-primary">Start Identity Verification</button>
+        <span style={{ marginLeft: 10, fontSize: '11px', color: 'var(--t3)' }}>Powered by Sumsub · Hosted flow</span>
+      </div>
+    </div>
+  );
+};
+
+const CardsContent = () => (
+  <div className="col">
+    <div className="feat-gate">
+      <div className="feat-gate-code">KYC_REQUIRED</div>
+      <div className="feat-gate-title">Card issuance locked</div>
+      <div className="feat-gate-desc">
+        Debit card issuance requires completed identity verification.
+        Your current KYC status is <strong>NOT_STARTED</strong>.
+        Complete KYC to unlock this feature.
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+        <button className="btn btn-primary btn-sm">Go to KYC Status</button>
+        <button className="btn btn-ghost btn-sm" disabled>Issue Card — locked</button>
+      </div>
+    </div>
+    <Alrt type="info" icon="i">
+      Card issuance (UEW-UI-06) is a later slice. This screen shows the locked gate state only.
+    </Alrt>
+  </div>
+);
+
+const EndUserDeniedContent = () => {
+  const [sub, setSub] = useState('401');
+  const opts = [
+    { id: '401',      label: '401 No session',        v: 'err' },
+    { id: '403_pool', label: '403 Merchant on EU',     v: 'err' },
+  ];
+  const scenarios = {
+    '401': {
+      code: '401', cls: 'code-401', headline: 'Unauthenticated', badge: '401',
+      sub: 'No valid session found. Login required.',
+      rows: [
+        ['error.code',     'auth.no_session'],
+        ['attempted',      'GET /wallet/balance'],
+        ['session cookie', 'absent'],
+        ['redirect',       '→ /login'],
+        ['auditEvent',     'user.access_denied (no_session)'],
+      ],
+      note: 'Session cookie (HttpOnly · Secure · SameSite=Strict) is absent or expired. All wallet endpoints require authentication.',
+    },
+    '403_pool': {
+      code: '403', cls: 'code-403', headline: 'Forbidden — Wrong pool', badge: '403',
+      sub: 'Session belongs to merchant pool. This surface requires end_user role.',
+      rows: [
+        ['error.code',        'auth.wrong_role'],
+        ['session.actorType', 'merchant_admin'],
+        ['required role',     'end_user'],
+        ['attempted',         'GET /wallet/balance'],
+        ['auditEvent',        'user.access_denied (wrong_pool)'],
+      ],
+      note: 'End-user and merchant sessions use separate authentication pools. A valid merchant session cannot access end-user wallet surfaces.',
+    },
+  };
+  const sc = scenarios[sub];
+  return (
+    <div className="col">
+      <SubSw opts={opts} active={sub} onSelect={setSub} />
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Access Diagnostic</span>
+          <Badge type={sc.badge} />
+        </div>
+        <div className="panel-body">
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18, marginBottom: 13, paddingBottom: 13, borderBottom: '1px solid var(--bdr)' }}>
+            <div className={`denied-code ${sc.cls}`}>{sc.code}</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)', marginBottom: 3 }}>{sc.headline}</div>
+              <div style={{ fontSize: 12, color: 'var(--t2)' }}>{sc.sub}</div>
+            </div>
+          </div>
+          <div className="kv-table">
+            {sc.rows.map(([k, v], i) => <KV key={i} k={k} v={v} mono />)}
+          </div>
+        </div>
+      </div>
+      <Alrt type={sub === '401' ? 'err' : 'warn'} icon="i">{sc.note}</Alrt>
+    </div>
+  );
+};
+
+const EndUserShell = () => {
+  const [tab, setTab] = useState('wallet');
+  const u = USERS.endUser;
+  const TABS = [
+    { id: 'wallet',  label: 'Wallet',       screenId: 'UEW-UI-03' },
+    { id: 'kyc',     label: 'KYC Status',   screenId: 'UEW-UI-02' },
+    { id: 'cards',   label: 'Cards',        screenId: 'UEW-UI-06' },
+    { id: 'denied',  label: 'Access Denied', screenId: null },
+  ];
+  const cur = TABS.find(t => t.id === tab);
+  return (
+    <>
+      <EndUserSidebar activeTab={tab} />
+      <div className="main-wrap">
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>End-User Web</span>
+            <span className="sep">/</span>
+            <strong>{cur?.label}</strong>
+          </div>
+          <div className="page-meta">
+            {cur?.screenId && <span className="screen-id">{cur.screenId}</span>}
+            <div className="user-chip">
+              <span>{u.name}</span>
+              <span className="user-chip-role">{u.role}</span>
+            </div>
+            <span className="env-badge"><span className="env-badge-dot" />Local Sandbox</span>
+          </div>
+        </div>
+        <div className="main-body">
+          <div className="mode-tabs">
+            {TABS.map(t => (
+              <div key={t.id} className={`mode-tab${tab === t.id ? ' active' : ''}`}
+                onClick={() => setTab(t.id)}>{t.label}</div>
+            ))}
+          </div>
+          {tab === 'wallet'  && <WalletContent />}
+          {tab === 'kyc'     && <KYCContent />}
+          {tab === 'cards'   && <CardsContent />}
+          {tab === 'denied'  && <EndUserDeniedContent />}
+        </div>
+      </div>
+      <AuditRail surface="enduser" tab={tab} />
+    </>
+  );
+};
+
+/* ══════════════════════════════════════════
+   MERCHANT SURFACE
+══════════════════════════════════════════ */
+
+const MerchantSidebar = ({ activeTab }) => {
+  const m = USERS.merchant;
+  const nav = [
+    { id: 'overview',    ico: <IcoGrid />,    label: 'Overview',     locked: false, screenId: null     },
+    { id: 'onboarding',  ico: <IcoOnboard />, label: 'Onboarding',   locked: false, screenId: 'MDB-UI-02' },
+    { id: 'apikeys',     ico: <IcoKey />,     label: 'API Keys',     locked: true,  screenId: 'MDB-UI-03', lockReason: 'KYB required' },
+    { id: 'webhooks',    ico: <IcoWebhook />, label: 'Webhooks',     locked: true,  screenId: 'MDB-UI-04', lockReason: 'API key required' },
+    { id: 'payments',    ico: <IcoList />,    label: 'Payments',     locked: true,  screenId: 'MDB-UI-05', lockReason: 'KYB required' },
+    { id: 'settlements', ico: <IcoChart />,   label: 'Settlements',  locked: true,  screenId: 'MDB-UI-06', lockReason: 'KYB required' },
+    { id: 'disputes',    ico: <IcoFlag />,    label: 'Disputes',     locked: true,  screenId: 'MDB-UI-07', lockReason: 'KYB required' },
+    null,
+    { id: 'auth',        ico: <IcoShield />,  label: 'Auth',         locked: false, screenId: 'MDB-UI-01' },
+  ];
+  return (
+    <aside className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-mark"><LogoMark /><div className="sb-name">MiniFin</div></div>
+        <div className="sb-sub">Merchant Dashboard</div>
+      </div>
+      <nav className="sb-nav">
+        <div style={{ padding: '8px 8px 6px', borderBottom: '1px solid var(--sb-bdr)', marginBottom: 6 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 500, color: '#c8c8d4' }}>{m.company}</div>
+          <div style={{ fontSize: 9.5, fontFamily: 'var(--f-mono)', color: 'var(--sb-muted)', marginTop: 2 }}>{m.merchantId}</div>
+        </div>
+        <div className="nav-sec">Navigation</div>
+        {nav.map((item, i) => {
+          if (!item) return <div key={i} className="sb-div" />;
+          const cur = activeTab === item.id;
+          return (
+            <div key={i} className={`nav-item${item.locked ? ' locked' : ''}${cur ? ' current' : ''}`}
+              title={item.lockReason || item.label}>
+              <NavIcon ico={item.ico} />
+              <span>{item.label}</span>
+              {item.locked && <span className="nav-lock"><IcoLockSm /></span>}
+              {cur && item.screenId && <span className="nav-id">{item.screenId}</span>}
+            </div>
+          );
+        })}
+      </nav>
+      <div className="sb-footer">
+        <div className="sb-user-name">{m.name}</div>
+        <div className="sb-user-role">{m.role}</div>
+        <div className="env-chip"><div className="env-dot" /><span>Local Sandbox</span></div>
+        <div className="env-host">merchants.miniefin.local</div>
+      </div>
+    </aside>
+  );
+};
+
+const MerchantOverviewContent = () => {
+  const m = USERS.merchant;
+  return (
+    <div className="col">
+      <div className="stat-row stat-row-3">
+        {[
+          { num: '0',     lbl: 'Payments',  sub: 'no API integration yet' },
+          { num: '€0.00', lbl: 'Volume',    sub: 'MTD' },
+          { num: '0',     lbl: 'Webhooks',  sub: 'no endpoints configured' },
+        ].map((s, i) => (
+          <div key={i} className="stat-card">
+            <div className="stat-num">{s.num}</div>
+            <div className="stat-lbl">{s.lbl}</div>
+            <div className="stat-sub">{s.sub}</div>
+          </div>
+        ))}
+      </div>
+      <div className="grid2">
+        <div className="panel">
+          <div className="panel-hdr">
+            <span className="panel-title">Merchant Status</span>
+            <Badge type="NOT_STARTED" />
+          </div>
+          <div className="panel-body">
+            <div className="kv-table">
+              <KV k="merchantId"     v={m.merchantId} mono />
+              <KV k="company"        v={m.company} />
+              <KV k="country"        v={m.country} />
+              <KV k="merchantStatus" badge="NOT_STARTED" />
+              <KV k="kybProvider"    v="Stripe Connect" />
+              <KV k="stripeAcctId"   v="— (not yet created)" />
+            </div>
+          </div>
+        </div>
+        <div className="panel">
+          <div className="panel-hdr">
+            <span className="panel-title">Onboarding Progress</span>
+            <span style={{ fontSize: 10, fontFamily: 'var(--f-mono)', color: 'var(--t3)' }}>1 / 5</span>
+          </div>
+          <div className="panel-body">
+            <div className="checklist">
+              {[
+                { dot: 'done',   icon: '✓', lbl: 'Email verified',               dim: false, desc: m.email },
+                { dot: 'later',  icon: '→', lbl: 'KYB / Stripe Connect',         dim: true,  desc: 'Switch to Onboarding tab' },
+                { dot: 'locked', icon: '—', lbl: 'Generate API key',             dim: true,  desc: 'Requires merchantStatus = KYB_APPROVED' },
+                { dot: 'locked', icon: '—', lbl: 'Configure webhook endpoint',   dim: true,  desc: 'Requires API key' },
+                { dot: 'locked', icon: '—', lbl: 'Accept first payment',         dim: true,  desc: 'Requires webhook + API key' },
+              ].map((item, i) => (
+                <div key={i} className="check-item" style={{ opacity: item.dot === 'done' ? 1 : item.dot === 'later' ? 0.72 : 0.4 }}>
+                  <div className={`check-dot ${item.dot}`}>{item.icon}</div>
+                  <div>
+                    <div className={`check-lbl${item.dim ? ' dim' : ''}`}>{item.lbl}</div>
+                    <div className="check-desc">{item.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MerchantOnboardingContent = () => (
+  <div className="col">
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">KYB / Stripe Connect</span>
+        <Badge type="NOT_STARTED" />
+      </div>
+      <div className="panel-body">
+        <div className="kv-table">
+          <KV k="onboardingStatus"  badge="NOT_STARTED" />
+          <KV k="stripeAccountId"   v="— not yet created" />
+          <KV k="businessType"      v="company (DE)" />
+          <KV k="payoutsEnabled"    v="false" />
+          <KV k="chargesEnabled"    v="false" />
+        </div>
+      </div>
+    </div>
+    <Alrt type="info" icon="→">
+      Stripe Connect onboarding collects business details, beneficial ownership, and links a bank account.
+      MiniFin compliance performs a second-pass AML and sanctions screen after Stripe's verification.
+    </Alrt>
+    <div className="panel">
+      <div className="panel-hdr"><span className="panel-title">Onboarding Steps</span></div>
+      <div className="panel-body">
+        <div className="checklist">
+          {[
+            { dot: 'later', icon: '○', lbl: 'Business details',         desc: 'Company name, registered address, tax ID' },
+            { dot: 'later', icon: '○', lbl: 'Beneficial ownership',     desc: 'All owners with ≥ 25% stake' },
+            { dot: 'later', icon: '○', lbl: 'Bank account linkage',     desc: 'Settlement IBAN for payouts' },
+            { dot: 'later', icon: '○', lbl: 'Compliance review',        desc: 'MiniFin AML + sanctions screen (async)' },
+          ].map((item, i) => (
+            <div key={i} className="check-item" style={{ opacity: 0.6 }}>
+              <div className={`check-dot ${item.dot}`}>{item.icon}</div>
+              <div>
+                <div className="check-lbl dim">{item.lbl}</div>
+                <div className="check-desc">{item.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+    <div>
+      <button className="btn btn-primary">Start Stripe Connect Onboarding</button>
+      <span style={{ marginLeft: 10, fontSize: 11, color: 'var(--t3)' }}>Redirects to Stripe hosted flow · returns to MDB-UI-02</span>
+    </div>
+  </div>
+);
+
+const MerchantAPIKeysContent = () => (
+  <div className="col">
+    <div className="feat-gate">
+      <div className="feat-gate-code">KYB_REQUIRED</div>
+      <div className="feat-gate-title">API key generation locked</div>
+      <div className="feat-gate-desc">
+        API key generation requires <strong>merchantStatus = KYB_APPROVED</strong>.
+        Current status: <strong>NOT_STARTED</strong>.
+        Complete KYB onboarding via Stripe Connect to unlock this feature.
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+        <button className="btn btn-primary btn-sm">Go to Onboarding</button>
+        <button className="btn btn-ghost btn-sm" disabled>Generate API Key — locked</button>
+      </div>
+    </div>
+    <div className="panel" style={{ opacity: 0.38 }}>
+      <div className="panel-hdr">
+        <span className="panel-title">API Keys</span>
+        <span className="nav-lock"><IcoLockSm /></span>
+      </div>
+      <div className="panel-body">
+        <div className="q-wrap">
+          <table className="q-table">
+            <thead className="q-thead">
+              <tr>
+                <th className="q-th">Key ID</th>
+                <th className="q-th">Type</th>
+                <th className="q-th">Created</th>
+                <th className="q-th">Status</th>
+                <th className="q-th">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="q-row">
+                <td className="q-td mono">sk_live_•••••••••••••••••••••</td>
+                <td className="q-td"><Badge type="ACTIVE" /></td>
+                <td className="q-td mono">—</td>
+                <td className="q-td">—</td>
+                <td className="q-td">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const MerchantDeniedContent = () => {
+  const [sub, setSub] = useState('403_pool');
+  const opts = [
+    { id: '403_pool',     label: '403 End-user on merchant', v: 'err' },
+    { id: '403_merchant', label: '403 Cross-merchant scope', v: 'err' },
+    { id: '401',          label: '401 No session',           v: 'err' },
+  ];
+  const scenarios = {
+    '401': {
+      code: '401', cls: 'code-401', headline: 'Unauthenticated', badge: '401',
+      sub: 'No valid session. Login required to access the merchant dashboard.',
+      rows: [
+        ['error.code',     'auth.no_session'],
+        ['attempted',      'GET /merchant/dashboard'],
+        ['session cookie', 'absent'],
+        ['redirect',       '→ /merchant/login'],
+        ['auditEvent',     'merchant.access_denied (no_session)'],
+      ],
+      note: 'HttpOnly session cookie absent or expired. All merchant endpoints require an active merchant session.',
+    },
+    '403_pool': {
+      code: '403', cls: 'code-403', headline: 'Forbidden — Wrong user pool', badge: '403',
+      sub: 'Session is valid but belongs to the end-user pool. merchant_admin or merchant_member required.',
+      rows: [
+        ['error.code',        'auth.wrong_role'],
+        ['session.actorType', 'end_user'],
+        ['required role',     'merchant_admin | merchant_member'],
+        ['attempted',         'GET /merchant/dashboard'],
+        ['auditEvent',        'merchant.access_denied (wrong_pool)'],
+      ],
+      note: 'End-user and merchant sessions are separate authentication pools. A valid end-user session cannot access merchant surfaces.',
+    },
+    '403_merchant': {
+      code: '403', cls: 'code-403', headline: 'Forbidden — Cross-merchant scope', badge: '403',
+      sub: 'Authenticated employee attempted to access a resource belonging to a different merchant account.',
+      rows: [
+        ['error.code',          'auth.merchant_scope_violation'],
+        ['session.merchantId',  'mch_Dk4xP2Nb8qLmHrYv'],
+        ['requested merchantId','mch_XzQ9vT3nK7mRsPwY'],
+        ['scope match',         'false'],
+        ['attempted',           'GET /merchant/mch_XzQ9.../payments'],
+        ['auditEvent',          'merchant.access_denied (scope_violation)'],
+      ],
+      note: "Every merchant-scoped endpoint validates session.merchantId === resource merchantId. An employee can only access their own merchant's data.",
+    },
+  };
+  const sc = scenarios[sub];
+  return (
+    <div className="col">
+      <SubSw opts={opts} active={sub} onSelect={setSub} />
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Access Diagnostic</span>
+          <Badge type={sc.badge} />
+        </div>
+        <div className="panel-body">
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 18, marginBottom: 13, paddingBottom: 13, borderBottom: '1px solid var(--bdr)' }}>
+            <div className={`denied-code ${sc.cls}`}>{sc.code}</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)', marginBottom: 3 }}>{sc.headline}</div>
+              <div style={{ fontSize: 12, color: 'var(--t2)' }}>{sc.sub}</div>
+            </div>
+          </div>
+          <div className="kv-table">
+            {sc.rows.map(([k, v], i) => <KV key={i} k={k} v={v} mono />)}
+          </div>
+        </div>
+      </div>
+      <Alrt type={sub === '401' ? 'err' : 'warn'} icon="i">{sc.note}</Alrt>
+    </div>
+  );
+};
+
+const MerchantShell = () => {
+  const [tab, setTab] = useState('overview');
+  const m = USERS.merchant;
+  const TABS = [
+    { id: 'overview',   label: 'Overview',      screenId: null         },
+    { id: 'onboarding', label: 'Onboarding',    screenId: 'MDB-UI-02'  },
+    { id: 'apikeys',    label: 'API Keys',      screenId: 'MDB-UI-03'  },
+    { id: 'denied',     label: 'Access Denied', screenId: null         },
+  ];
+  const cur = TABS.find(t => t.id === tab);
+  return (
+    <>
+      <MerchantSidebar activeTab={tab} />
+      <div className="main-wrap">
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>Merchant Dashboard</span>
+            <span className="sep">/</span>
+            <strong>{cur?.label}</strong>
+          </div>
+          <div className="page-meta">
+            {cur?.screenId && <span className="screen-id">{cur.screenId}</span>}
+            <div className="user-chip">
+              <span>{m.name}</span>
+              <span style={{ color: 'var(--t4)', fontSize: 10 }}>·</span>
+              <span style={{ fontSize: 11 }}>{m.company}</span>
+              <span className="user-chip-role">{m.role}</span>
+            </div>
+            <span className="env-badge"><span className="env-badge-dot" />Local Sandbox</span>
+          </div>
+        </div>
+        <div className="main-body">
+          <div className="mode-tabs">
+            {TABS.map(t => (
+              <div key={t.id} className={`mode-tab${tab === t.id ? ' active' : ''}`}
+                onClick={() => setTab(t.id)}>{t.label}</div>
+            ))}
+          </div>
+          {tab === 'overview'   && <MerchantOverviewContent />}
+          {tab === 'onboarding' && <MerchantOnboardingContent />}
+          {tab === 'apikeys'    && <MerchantAPIKeysContent />}
+          {tab === 'denied'     && <MerchantDeniedContent />}
+        </div>
+      </div>
+      <AuditRail surface="merchant" tab={tab} />
+    </>
+  );
+};
+
+/* ══════════════════════════════════════════
+   BACKOFFICE SURFACE
+══════════════════════════════════════════ */
+
+const BackofficeSidebar = ({ activeTab, role }) => {
+  const u = role === 'operator' ? USERS.operator : USERS.compliance;
+  const isOp = role === 'operator';
+  const nav = [
+    { id: 'queues',   ico: <IcoQueue />,      label: 'Queue Home',        locked: false,  screenId: 'BOF-UI-02' },
+    null,
+    { id: 'deposits', ico: <IcoDown />,        label: 'Manual Deposits',   locked: false,  screenId: 'BOF-UI-03' },
+    { id: 'withdrawals', ico: <IcoUp />,       label: 'Withdrawals',       locked: false,  screenId: 'BOF-UI-04' },
+    { id: 'kycqueue', ico: <IcoUser />,        label: 'KYC Queue',         locked: false,  screenId: 'BOF-UI-05' },
+    { id: 'aml',      ico: <IcoAlert />,       label: 'AML Alerts',        locked: false,  screenId: 'BOF-UI-06' },
+    { id: 'sanctions',ico: <IcoCross />,       label: 'Sanctions Hits',    locked: isOp,   screenId: 'BOF-UI-07', lockReason: 'compliance_officer required' },
+    { id: 'chargebacks', ico: <IcoChargeback />, label: 'Chargebacks',     locked: false,  screenId: 'BOF-UI-08' },
+    null,
+    { id: 'auditlog', ico: <IcoSearch />,      label: 'Audit Log',         locked: false,  screenId: 'BOF-UI-09' },
+  ];
+  return (
+    <aside className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-mark"><LogoMark /><div className="sb-name">MiniFin</div></div>
+        <div className="sb-sub">Backoffice Workflow</div>
+      </div>
+      <nav className="sb-nav">
+        <div className="nav-sec">Workflow Queues</div>
+        {nav.map((item, i) => {
+          if (!item) return <div key={i} className="sb-div" />;
+          const cur = activeTab === item.id;
+          return (
+            <div key={i} className={`nav-item${item.locked ? ' locked' : ''}${cur ? ' current' : ''}`}
+              title={item.lockReason || item.label}>
+              <NavIcon ico={item.ico} />
+              <span>{item.label}</span>
+              {item.locked && <span className="nav-lock"><IcoLockSm /></span>}
+              {cur && item.screenId && <span className="nav-id">{item.screenId}</span>}
+            </div>
+          );
+        })}
+      </nav>
+      <div className="sb-footer">
+        <div className="sb-user-name">{u.name}</div>
+        <div className="sb-user-role">{u.role}</div>
+        <div style={{ marginBottom: 5 }}>
+          <span className={`badge ${isOp ? 'b-operator' : 'b-compliance'}`}>{isOp ? 'OPERATOR' : 'COMPLIANCE'}</span>
+          <span style={{ marginLeft: 5, fontSize: 9, fontFamily: 'var(--f-mono)', color: 'var(--sb-muted)' }}>OIDC</span>
+        </div>
+        <div className="env-chip"><div className="env-dot" /><span>Local Sandbox</span></div>
+        <div className="env-host">back.miniefin.local</div>
+      </div>
+    </aside>
+  );
+};
+
+const RoleSwitcher = ({ role, setRole }) => {
+  const op = USERS.operator;
+  const co = USERS.compliance;
+  return (
+    <div className="role-sw">
+      <div className="role-sw-lbl">RBAC Demo</div>
+      <div className="role-sw-btns">
+        <button className={`role-sw-btn${role === 'operator' ? ' active-op' : ''}`}
+          onClick={() => setRole('operator')}>
+          <span>{op.name}</span>
+          <span style={{ fontSize: 10, fontFamily: 'var(--f-mono)', opacity: 0.75 }}>backoffice_operator</span>
+        </button>
+        <button className={`role-sw-btn${role === 'compliance' ? ' active-co' : ''}`}
+          onClick={() => setRole('compliance')}>
+          <span>{co.name}</span>
+          <span style={{ fontSize: 10, fontFamily: 'var(--f-mono)', opacity: 0.75 }}>compliance_officer</span>
+        </button>
+      </div>
+      <div className="role-note">
+        {role === 'operator'
+          ? 'HIGH/CRITICAL AML and Sanctions hidden — insufficient clearance'
+          : 'Full compliance scope — all queues and sensitive data visible'}
+      </div>
+    </div>
+  );
+};
+
+const QueueContent = ({ role }) => {
+  const isOp = role === 'operator';
+  const stats = [
+    { num: '3',  lbl: 'Deposits',   sub: 'PENDING_REVIEW',    locked: false },
+    { num: '1',  lbl: 'Withdrawals',sub: 'PENDING_REVIEW',    locked: false },
+    { num: '5',  lbl: 'KYC Reviews',sub: 'PENDING',           locked: false },
+    { num: '2',  lbl: 'AML L/MED',  sub: '1 in review',       locked: false },
+    { num: isOp ? '—' : '1',  lbl: 'AML HIGH',  sub: isOp ? 'Restricted' : 'OPEN', locked: isOp },
+    { num: isOp ? '—' : '0',  lbl: 'Sanctions', sub: isOp ? 'Restricted' : 'clear', locked: isOp },
+  ];
+  return (
+    <div className="col">
+      <div className="stat-row stat-row-6">
+        {stats.map((s, i) => (
+          <div key={i} className={`stat-card${s.locked ? ' locked-card' : ''}`}>
+            <div className={`stat-num${s.locked ? ' lock-num' : ''}`}>
+              {s.locked ? <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><IcoLockSm />—</span> : s.num}
+            </div>
+            <div className="stat-lbl">{s.lbl}</div>
+            <div className="stat-sub">{s.sub}</div>
+          </div>
+        ))}
+      </div>
+      {isOp && (
+        <Alrt type="warn" icon="!">
+          <strong>AML HIGH/CRITICAL and Sanctions queues</strong> require <strong>compliance_officer</strong> or <strong>senior_compliance</strong> role.
+          Switch to Sofia Laurent above to view restricted queues.
+        </Alrt>
+      )}
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Active Work Items</span>
+          <Badge type={isOp ? 'OPERATOR' : 'COMPLIANCE'} />
+        </div>
+        <div className="panel-body">
+          <div className="kv-table">
+            {[
+              ['Pending deposit review',     '3 items — next: dep_7Km4P · €4,200.00'],
+              ['Pending withdrawal review',  '1 item  — next: wdr_3Nm8K · €850.00'],
+              ['KYC pending review',         '5 items — 4 standard, 1 in 2nd review'],
+              ['AML LOW alerts',             '1 open · Thomas Berg'],
+              ['AML MEDIUM alerts',          '1 in-review · Marco Ricci'],
+              isOp ? null : ['AML HIGH alerts', '1 open · Blocked Corp Ltd'],
+              isOp ? null : ['CRITICAL alerts',  '1 open · Shell Ltd GbR — immediate attention'],
+              isOp ? null : ['Sanctions hits',   '0 open'],
+            ].filter(Boolean).map(([k, v], i) => (
+              <KV key={i} k={k} v={v} />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const KYCQueueContent = () => (
+  <div className="col">
+    <div className="q-wrap">
+      <table className="q-table">
+        <thead className="q-thead">
+          <tr>
+            <th className="q-th">KYC ID</th>
+            <th className="q-th">User</th>
+            <th className="q-th">Status</th>
+            <th className="q-th">Submitted</th>
+            <th className="q-th">Documents</th>
+            <th className="q-th">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {KYC_QUEUE.map((row, i) => (
+            <tr key={i} className="q-row">
+              <td className="q-td mono" style={{ color: 'var(--t3)', fontSize: 10.5 }}>{row.id}</td>
+              <td className="q-td">
+                <div style={{ fontWeight: 500 }}>{row.user}</div>
+                <div style={{ fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>{row.email}</div>
+              </td>
+              <td className="q-td"><Badge type={row.status} /></td>
+              <td className="q-td mono" style={{ color: 'var(--t3)', fontSize: 11 }}>{row.submitted}</td>
+              <td className="q-td" style={{ fontSize: 11.5, color: 'var(--t2)' }}>{row.docs}</td>
+              <td className="q-td">
+                <div className="q-actions">
+                  {row.status === 'IN_SECOND_REVIEW'
+                    ? <>
+                        <button className="btn btn-ghost btn-xs">Approve</button>
+                        <button className="btn btn-err btn-xs">Reject</button>
+                      </>
+                    : <>
+                        <button className="btn btn-ghost btn-xs">Review</button>
+                        <button className="btn btn-err btn-xs">Reject</button>
+                        <button className="btn btn-warn btn-xs">Resubmit</button>
+                      </>
+                  }
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <Alrt type="info" icon="i">
+      <strong>kyc_9Rw4T (Amara Diallo)</strong> is IN_SECOND_REVIEW. Final approval requires a different operator
+      than the one who performed the initial review. Two-eyes enforcement is applied.
+    </Alrt>
+  </div>
+);
+
+const AMLContent = ({ role }) => {
+  const isOp = role === 'operator';
+  return (
+    <div className="col">
+      {isOp && (
+        <Alrt type="warn" icon="!">
+          Rows with severity HIGH and CRITICAL are not accessible to <strong>backoffice_operator</strong>.
+          Switch to compliance_officer role above to view restricted alerts.
+        </Alrt>
+      )}
+      <div className="q-wrap">
+        <table className="q-table">
+          <thead className="q-thead">
+            <tr>
+              <th className="q-th">Alert ID</th>
+              <th className="q-th">Severity</th>
+              <th className="q-th">Subject</th>
+              <th className="q-th">Rule</th>
+              <th className="q-th">Status</th>
+              <th className="q-th">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {AML_ALERTS.map((row, i) => {
+              const isLocked = isOp && row.restricted;
+              return (
+                <tr key={i} className={`q-row${isLocked ? ' q-row-locked' : ''}`}>
+                  <td className="q-td mono" style={{ color: 'var(--t3)', fontSize: 10.5 }}>
+                    {isLocked ? '••••••••••' : row.id}
+                  </td>
+                  <td className="q-td">
+                    {isLocked
+                      ? <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--t4)' }}><IcoLockSm />Restricted</span>
+                      : <Badge type={row.severity} />
+                    }
+                  </td>
+                  <td className="q-td" style={{ fontWeight: isLocked ? 400 : 500 }}>
+                    {isLocked ? '— restricted —' : row.user}
+                  </td>
+                  <td className="q-td" style={{ fontSize: 11.5, color: isLocked ? 'var(--t4)' : 'var(--t2)' }}>
+                    {isLocked ? '—' : row.rule}
+                  </td>
+                  <td className="q-td">
+                    {isLocked ? <span style={{ color: 'var(--t4)' }}>—</span> : <Badge type={row.status} />}
+                  </td>
+                  <td className="q-td">
+                    {isLocked
+                      ? <span style={{ fontSize: 11, color: 'var(--t4)', display: 'flex', alignItems: 'center', gap: 4 }}><IcoLockSm />Restricted</span>
+                      : <div className="q-actions">
+                          <button className="btn btn-ghost btn-xs">Review</button>
+                          <button className="btn btn-warn btn-xs">Escalate</button>
+                        </div>
+                    }
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {!isOp && (
+        <Alrt type="dev" icon="!">
+          <strong>Read-audit:</strong> Viewing AML HIGH/CRITICAL alert details generates a synchronous read-audit
+          event before data is returned. Access to this view by Sofia Laurent will be logged as
+          <span style={{ fontFamily: 'var(--f-mono)', fontSize: 10.5, marginLeft: 4 }}>aml_alert.read · READ-AUDIT</span>.
+        </Alrt>
+      )}
+    </div>
+  );
+};
+
+const AuditLogContent = ({ role }) => {
+  const isOp = role === 'operator';
+  const events = isOp
+    ? AUDIT_EVENTS.filter(e => e.role === 'operator')
+    : AUDIT_EVENTS;
+  return (
+    <div className="col">
+      {isOp
+        ? <Alrt type="info" icon="i">
+            <strong>Limited view — backoffice_operator.</strong> Showing only actions performed by Ivan Petrov.
+            Full compliance audit log requires <strong>compliance_officer</strong> or <strong>senior_compliance</strong> role.
+          </Alrt>
+        : <Alrt type="dev" icon="!">
+            <strong>Read-audit:</strong> Accessing the audit log viewer generates a synchronous
+            <span style={{ fontFamily: 'var(--f-mono)', fontSize: 10.5, margin: '0 4px' }}>audit_log.viewed</span>
+            read-audit event. Full compliance scope is now active for Sofia Laurent.
+          </Alrt>
+      }
+      <div className="q-wrap">
+        <table className="q-table">
+          <thead className="q-thead">
+            <tr>
+              <th className="q-th">Time</th>
+              <th className="q-th">Actor</th>
+              <th className="q-th">Event</th>
+              <th className="q-th">Subject</th>
+              <th className="q-th">Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            {events.map((ev, i) => (
+              <tr key={i} className="q-row">
+                <td className="q-td mono" style={{ color: 'var(--t3)', fontSize: 11, whiteSpace: 'nowrap' }}>{ev.ts}</td>
+                <td className="q-td" style={{ whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 12 }}>{ev.actor}</span>
+                  <span className="badge" style={{ marginLeft: 5 }}>
+                    {ev.role === 'operator'
+                      ? <span className="badge b-operator">OP</span>
+                      : <span className="badge b-compliance">CO</span>
+                    }
+                  </span>
+                </td>
+                <td className="q-td mono" style={{ fontSize: 11 }}>{ev.event}</td>
+                <td className="q-td mono" style={{ fontSize: 11, color: 'var(--t3)' }}>{ev.subject}</td>
+                <td className="q-td">
+                  {ev.type === 'READ-AUDIT'
+                    ? <Badge type="READ_AUDIT" />
+                    : <span style={{ fontSize: 10, color: 'var(--t3)' }}>standard</span>
+                  }
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const BackofficeShell = () => {
+  const [tab, setTab] = useState('queues');
+  const [role, setRole] = useState('operator');
+  const u = role === 'operator' ? USERS.operator : USERS.compliance;
+  const TABS = [
+    { id: 'queues',   label: 'Queue Home',  screenId: 'BOF-UI-02' },
+    { id: 'kycqueue', label: 'KYC Queue',   screenId: 'BOF-UI-05' },
+    { id: 'aml',      label: 'AML Alerts',  screenId: 'BOF-UI-06' },
+    { id: 'auditlog', label: 'Audit Log',   screenId: 'BOF-UI-09' },
+  ];
+  const cur = TABS.find(t => t.id === tab);
+  return (
+    <>
+      <BackofficeSidebar activeTab={tab} role={role} />
+      <div className="main-wrap">
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>Backoffice Workflow</span>
+            <span className="sep">/</span>
+            <strong>{cur?.label}</strong>
+          </div>
+          <div className="page-meta">
+            {cur?.screenId && <span className="screen-id">{cur.screenId}</span>}
+            <div className="user-chip">
+              <span>{u.name}</span>
+              <span className={`badge ${role === 'operator' ? 'b-operator' : 'b-compliance'}`} style={{ marginLeft: 4 }}>
+                {role === 'operator' ? 'OPERATOR' : 'COMPLIANCE'}
+              </span>
+              <span style={{ fontSize: 10, color: 'var(--t3)' }}>OIDC</span>
+            </div>
+            <span className="env-badge"><span className="env-badge-dot" />Local Sandbox</span>
+          </div>
+        </div>
+        <div className="main-body">
+          <RoleSwitcher role={role} setRole={setRole} />
+          <div className="mode-tabs">
+            {TABS.map(t => (
+              <div key={t.id} className={`mode-tab${tab === t.id ? ' active' : ''}`}
+                onClick={() => setTab(t.id)}>{t.label}</div>
+            ))}
+          </div>
+          {tab === 'queues'   && <QueueContent role={role} />}
+          {tab === 'kycqueue' && <KYCQueueContent />}
+          {tab === 'aml'      && <AMLContent role={role} />}
+          {tab === 'auditlog' && <AuditLogContent role={role} />}
+        </div>
+      </div>
+      <AuditRail surface="backoffice" tab={tab} role={role} />
+    </>
+  );
+};
+
+/* ── AUDIT RAIL ── */
+const AUDIT_DATA = {
+  enduser: {
+    wallet: [
+      { name: 'user.session_started',   meta: '08:30:01Z · usr_Hk3m…',  dot: 'ok' },
+      { name: 'wallet.balance_viewed',  meta: '08:30:02Z · wal_2PrN…',  dot: 'ok' },
+      { name: 'kyc.status_checked',     meta: '08:30:02Z · NOT_STARTED', dot: 'pend' },
+    ],
+    kyc: [
+      { name: 'user.session_started',   meta: '08:30:01Z',               dot: 'ok' },
+      { name: 'kyc.status_viewed',      meta: '08:30:10Z · NOT_STARTED', dot: 'pend' },
+      { name: 'kyc.flow_initiated',     meta: 'pending user action',     dot: 'dim' },
+    ],
+    cards: [
+      { name: 'user.session_started',   meta: '08:30:01Z',               dot: 'ok' },
+      { name: 'card.list_attempted',    meta: '08:30:14Z · KYC_REQUIRED',dot: 'bad' },
+    ],
+    denied: [
+      { name: 'user.access_denied',     meta: '08:29:55Z · no_session',  dot: 'bad' },
+      { name: 'user.access_denied',     meta: '08:30:01Z · wrong_pool',  dot: 'bad' },
+    ],
+  },
+  merchant: {
+    overview: [
+      { name: 'merchant.login_succeeded',meta: '09:22:11Z · sess_F7h2…', dot: 'ok' },
+      { name: 'merchant.dashboard_viewed',meta: '09:22:12Z',              dot: 'ok' },
+      { name: 'merchant.status_checked', meta: 'NOT_STARTED',             dot: 'pend' },
+    ],
+    onboarding: [
+      { name: 'merchant.login_succeeded',meta: '09:22:11Z',               dot: 'ok' },
+      { name: 'onboarding.status_viewed',meta: '09:22:18Z · NOT_STARTED', dot: 'pend' },
+      { name: 'onboarding.flow_started', meta: 'pending action',           dot: 'dim' },
+    ],
+    apikeys: [
+      { name: 'merchant.login_succeeded',meta: '09:22:11Z',               dot: 'ok' },
+      { name: 'apikey.list_attempted',   meta: '09:22:25Z · KYB_REQUIRED',dot: 'bad' },
+    ],
+    denied: [
+      { name: 'merchant.access_denied', meta: '09:20:33Z · no_session',   dot: 'bad' },
+      { name: 'merchant.access_denied', meta: '09:20:51Z · wrong_pool',   dot: 'bad' },
+      { name: 'merchant.access_denied', meta: '09:21:09Z · scope_violation',dot: 'bad' },
+    ],
+  },
+  backoffice: {
+    queues: [
+      { name: 'bof.session_started',    meta: '09:00:01Z · Keycloak OIDC',dot: 'ok' },
+      { name: 'queue_home.viewed',      meta: '09:00:02Z',                 dot: 'ok' },
+      { name: 'queue.deposit_claimed',  meta: 'pending',                   dot: 'dim' },
+    ],
+    kycqueue: [
+      { name: 'bof.session_started',    meta: '09:00:01Z',                 dot: 'ok' },
+      { name: 'kyc_queue.viewed',       meta: '09:00:05Z · 5 items',       dot: 'ok' },
+      { name: 'kyc.approved',           meta: '09:35Z · kyc_3Np8Q',        dot: 'ok' },
+      { name: 'kyc.resubmit_requested', meta: '09:15Z · kyc_9Rw4T',        dot: 'pend' },
+    ],
+    aml: [
+      { name: 'bof.session_started',    meta: '09:00:01Z',                 dot: 'ok' },
+      { name: 'aml_queue.viewed',       meta: '09:00:08Z',                 dot: 'ok' },
+      { name: 'aml_alert.read',         meta: '09:38Z · aml_5Tm1X · READ-AUDIT', dot: 'pu' },
+    ],
+    auditlog: [
+      { name: 'bof.session_started',    meta: '09:00:01Z',                 dot: 'ok' },
+      { name: 'audit_log.viewed',       meta: '09:40Z · READ-AUDIT',       dot: 'pu' },
+    ],
+  },
+};
+
+const SECURITY_NOTES = {
+  enduser: [
+    { mark: '—', text: 'Session: opaque server-side cookie · HttpOnly · Secure · SameSite=Strict.' },
+    { mark: '—', text: 'KYC gates transfer, card issuance, and withdrawal at server level — not just UI.' },
+    { mark: '—', text: 'PAN reveal requires synchronous read-audit before response is returned.' },
+    { mark: '—', text: 'Ownership enforced server-side: user can only access own wallet and cards.' },
+  ],
+  merchant: [
+    { mark: '—', text: 'Separate merchant user pool — no cross-pool session reuse.' },
+    { mark: '—', text: 'merchantId scope validated on every resource endpoint server-side.' },
+    { mark: '—', text: 'API key generation requires merchantStatus = KYB_APPROVED.' },
+    { mark: '—', text: 'API call fingerprint events logged asynchronously for all public API calls.' },
+  ],
+  backoffice: [
+    { mark: '—', text: 'Keycloak OIDC only — no password login for backoffice actors.' },
+    { mark: '—', text: 'AML HIGH/CRITICAL and Sanctions require compliance_officer or senior_compliance.' },
+    { mark: '—', text: 'Read-audit: synchronous log required before returning sensitive alert or account data.' },
+    { mark: '—', text: 'High-value deposit/withdrawal approvals require a different operator (two-eyes).' },
+    { mark: '—', text: 'Audit log viewer access itself generates a READ-AUDIT event.' },
+  ],
+};
+
+const AuditRail = ({ surface, tab, role }) => {
+  const events = AUDIT_DATA[surface]?.[tab] || [];
+  const notes  = SECURITY_NOTES[surface] || [];
+  return (
+    <aside className="audit-rail">
+      <div className="audit-hdr">Audit &amp; Security</div>
+      <div className="audit-body">
+        <div className="audit-sec">Event log</div>
+        {events.map((ev, i) => (
+          <div key={i} className="audit-evt">
+            <div className={`audit-dot ${ev.dot}`} />
+            <div>
+              <div className="audit-name">{ev.name}</div>
+              <div className="audit-meta">{ev.meta}</div>
+            </div>
+          </div>
+        ))}
+        <div className="hr" />
+        <div className="audit-sec">Security invariants</div>
+        {notes.map((f, i) => (
+          <div key={i} className="sec-fact">
+            <span className="sec-mark">{f.mark}</span>
+            <span className="sec-text">{f.text}</span>
+          </div>
+        ))}
+        {surface === 'backoffice' && (
+          <>
+            <div className="hr" />
+            <div className="audit-sec">Role context</div>
+            <div className="sec-fact">
+              <span className="sec-mark">·</span>
+              <span className="sec-text">
+                <strong style={{ color: 'var(--t1)' }}>{role === 'operator' ? USERS.operator.name : USERS.compliance.name}</strong>
+                {' · '}{role === 'operator' ? 'backoffice_operator' : 'compliance_officer'}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+    </aside>
+  );
+};
+
+/* ── APP ── */
+function App() {
+  const [surface, setSurface] = useState('merchant');
+  return (
+    <>
+      <SurfaceBar surface={surface} setSurface={setSurface} />
+      <div className="shell">
+        {surface === 'enduser'    && <EndUserShell />}
+        {surface === 'merchant'   && <MerchantShell />}
+        {surface === 'backoffice' && <BackofficeShell />}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
