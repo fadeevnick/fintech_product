@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Merchant Auth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-root:    #0b1018;
+      --bg-sidebar: #0f1622;
+      --bg-main:    #111926;
+      --bg-panel:   #16202e;
+      --bg-card:    #1c2a3c;
+      --bg-input:   #0f1926;
+      --bg-hover:   #1d2c3e;
+      --bg-dev:     #150d2a;
+
+      --border:        #1e2e42;
+      --border-mid:    #253347;
+      --border-focus:  #2dd4bf;
+
+      --text-primary:   #dde8f8;
+      --text-secondary: #7090b8;
+      --text-muted:     #3d5270;
+      --text-disabled:  #253348;
+
+      --accent:       #2dd4bf;
+      --accent-hover: #5eead4;
+      --accent-dim:   #0b2e2c;
+
+      --success:     #34d399;
+      --success-dim: #042e1e;
+      --warning:     #fbbf24;
+      --warning-dim: #2e1f02;
+      --error:       #f87171;
+      --error-dim:   #2e0a0a;
+      --orange:      #fb923c;
+      --orange-dim:  #2e1200;
+      --purple:      #a78bfa;
+      --purple-dim:  #1a0f35;
+
+      --font-ui:   'Outfit', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --r-sm: 3px;
+      --r:    4px;
+      --r-lg: 6px;
+
+      --sidebar-w: 220px;
+      --audit-w:   300px;
+    }
+
+    html, body { height: 100%; background: var(--bg-root); color: var(--text-primary);
+      font-family: var(--font-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+
+    #root { height: 100vh; display: flex; overflow: hidden; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 2px; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { width: var(--sidebar-w); flex-shrink: 0; background: var(--bg-sidebar);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+
+    .sb-brand { padding: 16px 16px 12px; border-bottom: 1px solid var(--border); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-logo  { width: 26px; height: 26px; background: var(--accent); border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 12px; color: #0a1018; flex-shrink: 0; letter-spacing: -0.02em; }
+    .sb-name  { font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.09em; margin-top: 3px; }
+
+    .sb-nav   { flex: 1; padding: 10px 8px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted); padding: 4px 8px 5px; margin-top: 2px; }
+
+    .nav-item { display: flex; align-items: center; gap: 9px; padding: 6px 8px;
+      border-radius: var(--r); color: var(--text-muted); font-size: 12px;
+      cursor: default; user-select: none; }
+    .nav-item.locked { opacity: 0.45; }
+    .nav-item.current { background: var(--accent-dim); color: var(--accent); opacity: 1; }
+    .nav-item .lock  { margin-left: auto; font-size: 9px; opacity: 0.6; }
+    .nav-item .nav-id { margin-left: auto; font-size: 9px; font-family: var(--font-mono);
+      color: var(--accent); opacity: 0.5; }
+    .nav-icon { width: 14px; text-align: center; flex-shrink: 0; font-size: 11px; }
+
+    .sb-divider { height: 1px; background: var(--border); margin: 8px 0; }
+
+    .sb-footer { padding: 10px 14px; border-top: 1px solid var(--border); }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+      border-radius: var(--r-sm); background: var(--purple-dim); border: 1px solid #2a1a50;
+      font-size: 10px; color: var(--purple); font-family: var(--font-mono); margin-bottom: 5px; }
+    .env-host  { font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); }
+
+    /* ── MAIN ── */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg-main); }
+
+    .page-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 22px; border-bottom: 1px solid var(--border);
+      background: var(--bg-sidebar); flex-shrink: 0; }
+    .page-title { font-size: 12.5px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+    .page-title strong { color: var(--text-primary); font-weight: 600; }
+    .page-title .sep { color: var(--text-muted); }
+    .page-meta { display: flex; align-items: center; gap: 8px; }
+    .screen-id { font-size: 10px; font-family: var(--font-mono); color: var(--text-muted);
+      padding: 2px 6px; border: 1px solid var(--border-mid); border-radius: var(--r-sm); }
+    .env-badge { font-size: 10px; font-family: var(--font-mono); color: var(--purple);
+      background: var(--purple-dim); border: 1px solid #2a1a50; padding: 2px 7px; border-radius: var(--r-sm); }
+
+    .main-body { flex: 1; overflow-y: auto; padding: 18px 22px; }
+
+    /* ── MODE TABS ── */
+    .mode-tabs { display: flex; border: 1px solid var(--border-mid); border-radius: var(--r);
+      overflow: hidden; margin-bottom: 18px; background: var(--bg-sidebar); flex-shrink: 0; }
+    .mode-tab  { flex: 1; padding: 7px 10px; text-align: center; font-size: 11.5px; font-weight: 500;
+      color: var(--text-muted); cursor: pointer; border-right: 1px solid var(--border-mid);
+      transition: color 0.12s, background 0.12s; white-space: nowrap; user-select: none; }
+    .mode-tab:last-child { border-right: none; }
+    .mode-tab:hover { color: var(--text-secondary); background: var(--bg-hover); }
+    .mode-tab.active { background: var(--accent-dim); color: var(--accent); }
+
+    /* ── PANELS ── */
+    .panel { background: var(--bg-panel); border: 1px solid var(--border);
+      border-radius: var(--r-lg); overflow: hidden; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--border); background: var(--bg-sidebar); }
+    .panel-title { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+    .panel-body  { padding: 14px 16px; }
+
+    /* ── FORM ── */
+    .form-grid { display: flex; flex-direction: column; gap: 11px; }
+    .form-row  { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
+    .field     { display: flex; flex-direction: column; gap: 4px; }
+    .field-lbl { font-size: 10.5px; font-weight: 500; color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.06em; }
+    .field-lbl.req::after { content: ' *'; color: var(--error); }
+
+    .field-input, .field-select {
+      background: var(--bg-input); border: 1px solid var(--border-mid);
+      border-radius: var(--r); padding: 7px 10px; font-size: 13px;
+      color: var(--text-primary); font-family: var(--font-ui); width: 100%;
+      outline: none; transition: border-color 0.12s; }
+    .field-input:focus, .field-select:focus { border-color: var(--border-focus); }
+    .field-input.err, .field-select.err { border-color: var(--error); background: #1a0c0c; }
+    .field-input.ok  { border-color: var(--success); }
+
+    .field-select {
+      appearance: none; cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%233d5270'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+
+    .field-hint { font-size: 10.5px; color: var(--text-muted); }
+    .field-err  { font-size: 10.5px; color: var(--error); }
+
+    /* ── PASSWORD STRENGTH ── */
+    .pwd-bars { display: flex; gap: 3px; margin-top: 4px; }
+    .pwd-bar  { height: 3px; flex: 1; border-radius: 2px; background: var(--border-mid); transition: background 0.2s; }
+    .pwd-bar.w { background: var(--error); }
+    .pwd-bar.m { background: var(--warning); }
+    .pwd-bar.s { background: var(--success); }
+    .pwd-lbl   { font-size: 10px; margin-top: 3px; }
+    .pwd-lbl.w { color: var(--error); }
+    .pwd-lbl.m { color: var(--warning); }
+    .pwd-lbl.s { color: var(--success); }
+
+    /* ── BUTTONS ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 15px; border-radius: var(--r); font-size: 12.5px; font-weight: 500;
+      font-family: var(--font-ui); cursor: pointer; border: none; transition: background 0.12s; }
+    .btn-primary { background: var(--accent); color: #0a1018; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-ghost  { background: var(--bg-hover); color: var(--text-secondary);
+      border: 1px solid var(--border-mid); }
+    .btn-ghost:hover { color: var(--text-primary); }
+    .btn-dev    { background: var(--purple-dim); color: var(--purple); border: 1px solid #2a1a50; }
+    .btn-sm     { padding: 4px 10px; font-size: 11px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    /* ── ALERTS ── */
+    .alert { display: flex; gap: 9px; padding: 9px 11px; border-radius: var(--r); font-size: 12px; line-height: 1.5; }
+    .alert-icon { flex-shrink: 0; margin-top: 1px; font-style: normal; }
+    .alert-err  { background: var(--error-dim); border: 1px solid #4a1010; color: var(--error); }
+    .alert-ok   { background: var(--success-dim); border: 1px solid #0a4030; color: var(--success); }
+    .alert-warn { background: var(--warning-dim); border: 1px solid #3d2800; color: var(--warning); }
+    .alert-info { background: var(--accent-dim); border: 1px solid #0c3836; color: var(--accent); }
+    .alert-dev  { background: var(--purple-dim); border: 1px solid #2a1a50; color: var(--purple); }
+
+    /* ── BADGES ── */
+    .badge { display: inline-flex; align-items: center; padding: 2px 5px; border-radius: 3px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.06em; font-family: var(--font-mono); }
+    .b-unverified { background: #3d2900; color: var(--warning); }
+    .b-active     { background: var(--success-dim); color: var(--success); }
+    .b-notstarted { background: #192538; color: var(--text-secondary); }
+    .b-locked     { background: #151e2b; color: var(--text-muted); }
+    .b-401        { background: var(--error-dim); color: var(--error); }
+    .b-403        { background: var(--orange-dim); color: var(--orange); }
+    .b-dev        { background: var(--purple-dim); color: var(--purple); }
+    .b-pending    { background: #3d2900; color: var(--warning); }
+    .b-expired    { background: var(--error-dim); color: var(--error); }
+    .b-done       { background: var(--success-dim); color: var(--success); }
+
+    /* ── KV TABLE ── */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--text-muted); min-width: 150px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--text-primary); flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+
+    /* ── SUBSTATE SWITCHER ── */
+    .sub-switcher { display: flex; gap: 5px; margin-bottom: 14px; flex-wrap: wrap; }
+    .sub-btn { padding: 4px 10px; border-radius: var(--r-sm); font-size: 11px; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--border-mid); background: var(--bg-hover);
+      color: var(--text-muted); transition: all 0.12s; font-family: var(--font-ui); }
+    .sub-btn:hover { color: var(--text-secondary); }
+    .sub-btn.active { background: var(--accent-dim); border-color: var(--border-focus); color: var(--accent); }
+    .sub-btn.err-s  { border-color: #4a1010; color: #e05555; background: var(--error-dim); }
+    .sub-btn.dev-s  { border-color: #2a1a50; color: var(--purple); background: var(--purple-dim); }
+    .sub-btn.err-s.active { border-color: var(--error); }
+    .sub-btn.dev-s.active { border-color: var(--purple); }
+
+    /* ── SUCCESS BLOCK ── */
+    .success-hdr { display: flex; align-items: center; gap: 12px; padding: 11px 14px;
+      background: var(--success-dim); border: 1px solid #0a4030; border-radius: var(--r); }
+    .success-circle { width: 28px; height: 28px; border-radius: 50%; background: var(--success);
+      color: #042e1e; display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0; font-weight: 700; }
+    .success-title { font-size: 13px; font-weight: 600; color: var(--success); }
+    .success-sub   { font-size: 11px; color: #3a7a62; margin-top: 2px; }
+
+    /* ── DEV PANEL ── */
+    .dev-panel { background: var(--purple-dim); border: 1px solid #2a1a50; border-radius: var(--r); overflow: hidden; }
+    .dev-panel-hdr { display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      border-bottom: 1px solid #2a1a50; }
+    .dev-panel-title { font-size: 11.5px; font-weight: 600; color: var(--purple); font-family: var(--font-mono); }
+    .dev-badge { font-size: 9px; padding: 2px 5px; border-radius: 2px;
+      background: #2a1a50; color: var(--purple); font-family: var(--font-mono);
+      font-weight: 700; letter-spacing: 0.08em; }
+    .dev-warn-text { font-size: 10px; color: #6a5088; margin-left: auto; }
+    .dev-panel-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .token-box { background: #0a0618; border: 1px solid #2a1a50; border-radius: var(--r-sm);
+      padding: 10px 12px; font-family: var(--font-mono); font-size: 11px; color: var(--purple);
+      word-break: break-all; line-height: 1.7; }
+
+    /* ── CHECKLIST ── */
+    .checklist { display: flex; flex-direction: column; gap: 7px; }
+    .check-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px;
+      border-radius: var(--r); background: var(--bg-card); border: 1px solid var(--border); }
+    .check-dot  { width: 16px; height: 16px; border-radius: 50%; display: flex;
+      align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; margin-top: 1px; }
+    .check-dot.done   { background: var(--success-dim); color: var(--success); border: 1px solid #0a4030; }
+    .check-dot.later  { background: var(--bg-hover); color: var(--text-muted); border: 1px solid var(--border-mid); }
+    .check-dot.locked { background: var(--bg-hover); color: var(--text-disabled); border: 1px solid var(--border); }
+    .check-lbl  { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+    .check-lbl.dim { color: var(--text-muted); }
+    .check-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── DENIED ── */
+    .denied-code { font-size: 38px; font-weight: 700; font-family: var(--font-mono); line-height: 1; }
+    .code-401 { color: var(--error); }
+    .code-403 { color: var(--orange); }
+
+    /* ── AUDIT RAIL ── */
+    .audit-rail { width: var(--audit-w); flex-shrink: 0; background: var(--bg-sidebar);
+      border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    .audit-hdr  { padding: 11px 14px; border-bottom: 1px solid var(--border);
+      font-size: 10px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.1em; }
+    .audit-body { flex: 1; overflow-y: auto; padding: 12px 14px; }
+    .audit-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted); margin-bottom: 7px; margin-top: 2px; }
+
+    .audit-evt  { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .audit-evt:last-child { border-bottom: none; }
+    .audit-dot  { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+    .audit-dot.ok   { background: var(--success); }
+    .audit-dot.pend { background: var(--warning); }
+    .audit-dot.bad  { background: var(--error); }
+    .audit-dot.dim  { background: var(--text-disabled); }
+    .audit-name { font-size: 11px; font-family: var(--font-mono); color: var(--text-secondary); }
+    .audit-meta { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+
+    .sec-fact  { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0;
+      border-bottom: 1px solid var(--border); }
+    .sec-fact:last-child { border-bottom: none; }
+    .sec-icon  { font-size: 11px; flex-shrink: 0; margin-top: 1px; }
+    .sec-text  { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+
+    /* ── UTILITY ── */
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .col   { display: flex; flex-direction: column; gap: 12px; }
+    .hr    { height: 1px; background: var(--border); margin: 12px 0; }
+    .mono  { font-family: var(--font-mono); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) { :root { --audit-w: 250px; } }
+    @media (max-width: 900px)  { .audit-rail { display: none; } }
+    @media (max-width: 680px)  { .sidebar { display: none; } .form-row, .grid2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ─────────────── SAMPLE DATA ─────────────── */
+const S = {
+  merchantId:  'mch_Dk4xP2Nb8qLmHrYv',
+  employeeId:  'emp_9Qw7Rv3kJnB5xCsT',
+  company:     'Northstar Bikes GmbH',
+  country:     'DE',
+  bizType:     'company',
+  email:       'marta@northstar-bikes.example',
+  role:        'merchant_admin',
+  sessionId:   'sess_F7h2Lk9mNpQrStUvWx',
+  evToken:     'evtoken_3Qk8Lm9nPr2sTvWx4yZb7A',
+  regAt:       '2026-05-15T09:14:22Z',
+  verAt:       '2026-05-15T09:19:47Z',
+  loginAt:     '2026-05-15T09:22:11Z',
+};
+
+/* ─────────────── MICRO COMPONENTS ─────────────── */
+
+const Badge = ({ type }) => {
+  const map = {
+    EMAIL_UNVERIFIED: ['b-unverified', 'EMAIL_UNVERIFIED'],
+    ACTIVE:           ['b-active',     'ACTIVE'],
+    NOT_STARTED:      ['b-notstarted', 'NOT_STARTED'],
+    LOCKED:           ['b-locked',     'LOCKED'],
+    '401':            ['b-401',        '401'],
+    '403':            ['b-403',        '403'],
+    DEV:              ['b-dev',        'DEV ONLY'],
+    PENDING:          ['b-pending',    'PENDING'],
+    EXPIRED:          ['b-expired',    'EXPIRED'],
+    DONE:             ['b-done',       'DONE'],
+  };
+  const [cls, label] = map[type] || ['b-notstarted', type];
+  return <span className={`badge ${cls}`}>{label}</span>;
+};
+
+const KV = ({ k, v, mono, badge }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className={`kv-v${mono ? ' mono' : ''}`}>
+      {v}{badge && <Badge type={badge} />}
+    </div>
+  </div>
+);
+
+const Alrt = ({ type, icon, children }) => (
+  <div className={`alert alert-${type}`}>
+    <em className="alert-icon">{icon}</em>
+    <div>{children}</div>
+  </div>
+);
+
+const SubSw = ({ opts, active, onSelect }) => (
+  <div className="sub-switcher">
+    {opts.map(o => (
+      <button key={o.id}
+        className={`sub-btn${o.v === 'err' ? ' err-s' : o.v === 'dev' ? ' dev-s' : ''}${active === o.id ? ' active' : ''}`}
+        onClick={() => onSelect(o.id)}>
+        {o.label}
+      </button>
+    ))}
+  </div>
+);
+
+const PwdStrength = ({ pwd }) => {
+  let score = 0;
+  if (pwd.length >= 8)  score++;
+  if (pwd.length >= 12) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^A-Za-z0-9]/.test(pwd)) score++;
+  const level = score <= 1 ? 1 : score <= 3 ? 2 : 3;
+  const cls = ['', 'w', 'm', 's'][level];
+  const lbl = ['', 'Weak — add uppercase, numbers, symbols', 'Moderate — add symbols or more length', 'Strong'][level];
+  return (
+    <div>
+      <div className="pwd-bars">
+        {[1,2,3].map(i => <div key={i} className={`pwd-bar${i <= level ? ' ' + cls : ''}`} />)}
+      </div>
+      {pwd && <div className={`pwd-lbl ${cls}`}>{lbl}</div>}
+    </div>
+  );
+};
+
+/* ─────────────── REGISTER ─────────────── */
+
+const RegisterPanel = () => {
+  const [sub, setSub] = useState('form');
+  const [form, setForm] = useState({
+    company: '', country: '', bizType: '', email: '', pwd: '', pwd2: '', ack: false,
+  });
+  const [errs, setErrs] = useState({});
+
+  const opts = [
+    { id: 'form',     label: 'Form' },
+    { id: 'weak',     label: 'Weak password',     v: 'err' },
+    { id: 'dup',      label: 'Duplicate email',    v: 'err' },
+    { id: 'missing',  label: 'Missing fields',     v: 'err' },
+    { id: 'success',  label: 'Registered ✓' },
+  ];
+
+  const set = (k, v) => {
+    setForm(f => ({ ...f, [k]: v }));
+    setErrs(e => { const c = { ...e }; delete c[k]; return c; });
+  };
+
+  const simulate = (id) => {
+    setSub(id);
+    if (id === 'form') {
+      setForm({ company: '', country: '', bizType: '', email: '', pwd: '', pwd2: '', ack: false });
+      setErrs({});
+    } else if (id === 'weak') {
+      setForm({ company: S.company, country: 'DE', bizType: 'company', email: S.email, pwd: 'abc123', pwd2: 'abc123', ack: true });
+      setErrs({ pwd: 'Password too weak — requires uppercase, symbol, min 12 characters.' });
+    } else if (id === 'dup') {
+      setForm({ company: S.company, country: 'DE', bizType: 'company', email: 'admin@example.com', pwd: 'Northstar!2026', pwd2: 'Northstar!2026', ack: true });
+      setErrs({ _global: 'Email already registered in another user pool (end-user pool). Global email uniqueness is enforced across all pools.' });
+    } else if (id === 'missing') {
+      setForm({ company: '', country: '', bizType: 'invalid_type', email: S.email, pwd: '', pwd2: '', ack: false });
+      setErrs({
+        company:  'Company name is required.',
+        country:  'Select a valid country from the list.',
+        bizType:  'Invalid business type — select a supported type.',
+        pwd:      'Password is required.',
+        ack:      'You must acknowledge compliance requirements.',
+      });
+    }
+  };
+
+  const handleRegister = () => {
+    const e = {};
+    if (!form.company)  e.company = 'Company name is required.';
+    if (!form.country)  e.country = 'Select a country.';
+    if (!form.bizType)  e.bizType = 'Select business type.';
+    if (!form.email)    e.email = 'Email is required.';
+    let pwdScore = 0;
+    if (form.pwd.length >= 8) pwdScore++;
+    if (form.pwd.length >= 12) pwdScore++;
+    if (/[A-Z]/.test(form.pwd)) pwdScore++;
+    if (/[0-9]/.test(form.pwd)) pwdScore++;
+    if (/[^A-Za-z0-9]/.test(form.pwd)) pwdScore++;
+    if (!form.pwd) e.pwd = 'Password is required.';
+    else if (pwdScore < 4) e.pwd = 'Password too weak.';
+    if (form.pwd !== form.pwd2) e.pwd2 = 'Passwords do not match.';
+    if (!form.ack) e.ack = 'Acknowledgement required.';
+    if (Object.keys(e).length) { setErrs(e); return; }
+    setErrs({});
+    setSub('success');
+  };
+
+  if (sub === 'success') return (
+    <div className="col">
+      <SubSw opts={opts} active={sub} onSelect={simulate} />
+      <div className="success-hdr">
+        <div className="success-circle">✓</div>
+        <div>
+          <div className="success-title">Merchant registered successfully</div>
+          <div className="success-sub">Email verification required before first login</div>
+        </div>
+      </div>
+      <div className="panel">
+        <div className="panel-hdr"><span className="panel-title">Registration Result</span><Badge type="EMAIL_UNVERIFIED" /></div>
+        <div className="panel-body">
+          <div className="kv-table">
+            <KV k="merchantId"     v={S.merchantId}  mono />
+            <KV k="employeeId"     v={S.employeeId}  mono />
+            <KV k="company"        v={S.company} />
+            <KV k="country"        v="DE" />
+            <KV k="businessType"   v="company" />
+            <KV k="email"          v={S.email} />
+            <KV k="role"           v="merchant_admin" mono />
+            <KV k="employeeStatus" badge="EMAIL_UNVERIFIED" />
+            <KV k="merchantStatus" badge="NOT_STARTED" />
+            <KV k="registeredAt"   v={S.regAt} mono />
+          </div>
+        </div>
+      </div>
+      <Alrt type="warn" icon="⚠">
+        <strong>Next required action:</strong> Verify email address. Switch to the <strong>Verify Email</strong> tab. Login is blocked until verification completes.
+      </Alrt>
+      <Alrt type="info" icon="ℹ">
+        Stripe Connect onboarding, API key generation, and payment processing are not available at registration. These unlock after KYB approval in a later slice (MDB-UI-02).
+      </Alrt>
+    </div>
+  );
+
+  return (
+    <div className="col">
+      <SubSw opts={opts} active={sub} onSelect={simulate} />
+
+      {errs._global && (
+        <Alrt type="err" icon="✕">{errs._global}</Alrt>
+      )}
+
+      <div className="form-grid">
+        <div className="field">
+          <label className="field-lbl req">Company Name</label>
+          <input className={`field-input${errs.company ? ' err' : ''}`}
+            value={form.company} onChange={e => set('company', e.target.value)}
+            placeholder="Northstar Bikes GmbH" />
+          {errs.company && <span className="field-err">↑ {errs.company}</span>}
+        </div>
+
+        <div className="form-row">
+          <div className="field">
+            <label className="field-lbl req">Country</label>
+            <select className={`field-select${errs.country ? ' err' : ''}`}
+              value={form.country} onChange={e => set('country', e.target.value)}>
+              <option value="">Select country</option>
+              <option value="DE">Germany (DE)</option>
+              <option value="AT">Austria (AT)</option>
+              <option value="CH">Switzerland (CH)</option>
+              <option value="FR">France (FR)</option>
+              <option value="NL">Netherlands (NL)</option>
+              <option value="GB">United Kingdom (GB)</option>
+            </select>
+            {errs.country && <span className="field-err">↑ {errs.country}</span>}
+          </div>
+          <div className="field">
+            <label className="field-lbl req">Business Type</label>
+            <select className={`field-select${errs.bizType ? ' err' : ''}`}
+              value={form.bizType} onChange={e => set('bizType', e.target.value)}>
+              <option value="">Select type</option>
+              <option value="company">Company</option>
+              <option value="individual">Individual / Sole Trader</option>
+              <option value="non_profit">Non-profit</option>
+              <option value="government">Government entity</option>
+            </select>
+            {errs.bizType && <span className="field-err">↑ {errs.bizType}</span>}
+          </div>
+        </div>
+
+        <div className="field">
+          <label className="field-lbl req">Admin Email</label>
+          <input className={`field-input${errs.email ? ' err' : ''}`}
+            type="email" value={form.email} onChange={e => set('email', e.target.value)}
+            placeholder="marta@northstar-bikes.example" />
+          {errs.email && <span className="field-err">↑ {errs.email}</span>}
+          <span className="field-hint">Must be globally unique across all user pools.</span>
+        </div>
+
+        <div className="form-row">
+          <div className="field">
+            <label className="field-lbl req">Password</label>
+            <input className={`field-input${errs.pwd ? ' err' : ''}`}
+              type="password" value={form.pwd} onChange={e => set('pwd', e.target.value)}
+              placeholder="Min 12 chars, mixed case + symbol" />
+            {form.pwd && <PwdStrength pwd={form.pwd} />}
+            {errs.pwd && <span className="field-err">↑ {errs.pwd}</span>}
+          </div>
+          <div className="field">
+            <label className="field-lbl req">Confirm Password</label>
+            <input className={`field-input${errs.pwd2 ? ' err' : ''}`}
+              type="password" value={form.pwd2} onChange={e => set('pwd2', e.target.value)}
+              placeholder="Repeat password" />
+            {errs.pwd2 && <span className="field-err">↑ {errs.pwd2}</span>}
+          </div>
+        </div>
+
+        <div className="field">
+          <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer' }}>
+            <input type="checkbox" checked={form.ack} onChange={e => set('ack', e.target.checked)}
+              style={{ marginTop: '3px', flexShrink: 0, accentColor: 'var(--accent)' }} />
+            <span style={{ fontSize: '12px', color: errs.ack ? 'var(--error)' : 'var(--text-secondary)', lineHeight: '1.5' }}>
+              I am authorised to register this business entity. All information is accurate.
+              I acknowledge KYB verification, AML/sanctions screening, and data retention obligations under applicable regulations.
+            </span>
+          </label>
+          {errs.ack && <span className="field-err">↑ {errs.ack}</span>}
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="btn btn-primary" onClick={handleRegister}>Register Merchant</button>
+          <button className="btn btn-ghost btn-sm"
+            onClick={() => { setForm({ company: S.company, country: 'DE', bizType: 'company', email: S.email, pwd: 'Northstar!2026', pwd2: 'Northstar!2026', ack: true }); setErrs({}); setSub('form'); }}>
+            Autofill sample
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ─────────────── VERIFY EMAIL ─────────────── */
+
+const VerifyPanel = () => {
+  const [sub, setSub] = useState('pending');
+  const opts = [
+    { id: 'pending', label: 'Pending' },
+    { id: 'success', label: 'Verified ✓' },
+    { id: 'expired', label: 'Expired / invalid', v: 'err' },
+    { id: 'dev',     label: '[DEV] Token panel', v: 'dev' },
+  ];
+
+  return (
+    <div className="col">
+      <SubSw opts={opts} active={sub} onSelect={setSub} />
+
+      {sub === 'pending' && <>
+        <Alrt type="warn" icon="⏳">
+          Verification email sent to <strong>{S.email}</strong>. Click the link in the email to continue.
+          Token expires in 60 minutes.
+        </Alrt>
+        <div className="panel">
+          <div className="panel-hdr"><span className="panel-title">Verification Status</span><Badge type="PENDING" /></div>
+          <div className="panel-body kv-table">
+            <KV k="employeeId"      v={S.employeeId} mono />
+            <KV k="email"           v={S.email} />
+            <KV k="employeeStatus"  badge="EMAIL_UNVERIFIED" />
+            <KV k="token sent at"   v="2026-05-15T09:14:23Z" mono />
+            <KV k="token expires at" v="2026-05-15T10:14:23Z" mono />
+            <KV k="token TTL"       v="60 minutes, single-use" />
+          </div>
+        </div>
+        <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+          Email not received? Check spam, or use the [DEV] Token panel (Local Sandbox only) to verify without email delivery.
+        </div>
+      </>}
+
+      {sub === 'success' && <>
+        <div className="success-hdr">
+          <div className="success-circle">✓</div>
+          <div>
+            <div className="success-title">Email verified</div>
+            <div className="success-sub">employeeStatus → ACTIVE · login now permitted</div>
+          </div>
+        </div>
+        <div className="panel">
+          <div className="panel-hdr"><span className="panel-title">Post-Verification State</span><Badge type="ACTIVE" /></div>
+          <div className="panel-body kv-table">
+            <KV k="employeeId"     v={S.employeeId} mono />
+            <KV k="email"          v={S.email} />
+            <KV k="employeeStatus" badge="ACTIVE" />
+            <KV k="merchantStatus" badge="NOT_STARTED" />
+            <KV k="verifiedAt"     v={S.verAt} mono />
+            <KV k="auditEvent"     v="merchant.email_verified" mono />
+          </div>
+        </div>
+        <Alrt type="info" icon="→">Switch to the <strong>Login</strong> tab to create your first session.</Alrt>
+      </>}
+
+      {sub === 'expired' && <>
+        <Alrt type="err" icon="✕">
+          Verification link expired or already used. Tokens are single-use and valid for 60 minutes. Request a new link below.
+        </Alrt>
+        <div className="panel">
+          <div className="panel-hdr"><span className="panel-title">Token Validation Result</span><Badge type="EXPIRED" /></div>
+          <div className="panel-body kv-table">
+            <KV k="token"          v="evtoken_…4yZb" mono />
+            <KV k="status"         v="EXPIRED" mono />
+            <KV k="reason"         v="TTL exceeded (60 min) or token already consumed" />
+            <KV k="employeeStatus" badge="EMAIL_UNVERIFIED" />
+            <KV k="error.code"     v="auth.token_expired" mono />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-primary btn-sm">Resend verification email</button>
+          <button className="btn btn-ghost btn-sm">Return to login</button>
+        </div>
+      </>}
+
+      {sub === 'dev' && (
+        <div className="dev-panel">
+          <div className="dev-panel-hdr">
+            <span style={{ color: 'var(--purple)', fontSize: '13px' }}>⚙</span>
+            <span className="dev-panel-title">Development Token Panel</span>
+            <span className="dev-badge">DEV ONLY</span>
+            <span className="dev-warn-text">Not present in staging or production</span>
+          </div>
+          <div className="dev-panel-body">
+            <Alrt type="dev" icon="⚠">
+              Exposed only in <strong>Local Sandbox</strong> and <strong>Test</strong> environments. Bypasses email delivery for development convenience.
+              This panel must not appear in any production or staging build.
+            </Alrt>
+            <div className="field">
+              <label className="field-lbl" style={{ color: 'var(--purple)' }}>Verification Token</label>
+              <div className="token-box">{S.evToken}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '10px', color: '#5a4080', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Token metadata</div>
+              <div className="kv-table" style={{ borderTop: '1px solid #2a1a50' }}>
+                {[
+                  ['employeeId', S.employeeId],
+                  ['merchantId', S.merchantId],
+                  ['purpose',    'email_verification'],
+                  ['expires',    '2026-05-15T10:14:23Z'],
+                  ['issued at',  '2026-05-15T09:14:23Z'],
+                ].map(([k, v]) => (
+                  <div key={k} className="kv-row" style={{ borderBottomColor: '#2a1a50' }}>
+                    <div className="kv-k" style={{ color: '#5a4080' }}>{k}</div>
+                    <div className="kv-v mono" style={{ color: '#8b70c0', fontSize: '11px' }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="btn btn-dev btn-sm">Apply token → Verify</button>
+              <button className="btn btn-ghost btn-sm">Copy verification URL</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ─────────────── LOGIN ─────────────── */
+
+const LoginPanel = () => {
+  const [sub, setSub] = useState('form');
+  const [form, setForm] = useState({ email: '', pwd: '' });
+
+  const opts = [
+    { id: 'form',       label: 'Login form' },
+    { id: 'success',    label: 'Login succeeded ✓' },
+    { id: 'invalid',    label: 'Invalid credentials', v: 'err' },
+    { id: 'unverified', label: 'Email unverified',    v: 'err' },
+    { id: 'blocked',    label: 'Account blocked',     v: 'err' },
+  ];
+
+  const sim = (id) => {
+    setSub(id);
+    const presets = {
+      form:       { email: '',       pwd: '' },
+      success:    { email: S.email,  pwd: 'Northstar!2026' },
+      invalid:    { email: S.email,  pwd: 'wrongpassword' },
+      unverified: { email: 'newuser@example.com', pwd: 'SomePass!123' },
+      blocked:    { email: 'frozen-merchant@example.com', pwd: '••••••••' },
+    };
+    if (presets[id]) setForm(presets[id]);
+  };
+
+  const handleLogin = () => {
+    if (form.email === S.email && form.pwd === 'Northstar!2026') { setSub('success'); return; }
+    setSub('invalid');
+  };
+
+  return (
+    <div className="col">
+      <SubSw opts={opts} active={sub} onSelect={sim} />
+
+      {sub === 'invalid' && <Alrt type="err" icon="✕">
+        Invalid email or password. Check your credentials and try again.
+        <span style={{ display: 'block', fontSize: '10.5px', color: '#8a3030', marginTop: '3px' }}>
+          Login attempts are rate-limited. Repeated failures may trigger a temporary lockout.
+        </span>
+      </Alrt>}
+
+      {sub === 'unverified' && <Alrt type="warn" icon="⚠">
+        Email address not verified. <strong>employeeStatus = EMAIL_UNVERIFIED</strong> — login is blocked until verification completes.
+        <span style={{ display: 'block', fontSize: '10.5px', marginTop: '3px' }}>
+          Switch to Verify Email tab, or use the [DEV] token panel in Local Sandbox.
+        </span>
+      </Alrt>}
+
+      {sub === 'blocked' && <Alrt type="err" icon="⛔">
+        <strong>Merchant account frozen.</strong> Access has been restricted by platform compliance.
+        Contact platform support to resolve.
+        <span style={{ display: 'block', fontSize: '10.5px', color: '#8a3030', marginTop: '3px' }}>
+          error.code: auth.merchant_account_frozen · This is a future enforcement hook — triggered by KYB rejection or AML escalation.
+        </span>
+      </Alrt>}
+
+      {sub !== 'success' && (
+        <div className="form-grid">
+          <div className="field">
+            <label className="field-lbl req">Email</label>
+            <input className={`field-input${sub === 'invalid' ? ' err' : ''}`}
+              type="email" value={form.email}
+              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              placeholder={S.email} />
+          </div>
+          <div className="field">
+            <label className="field-lbl req">Password</label>
+            <input className={`field-input${sub === 'invalid' ? ' err' : ''}`}
+              type="password" value={form.pwd}
+              onChange={e => setForm(f => ({ ...f, pwd: e.target.value }))}
+              placeholder="Password" />
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" onClick={handleLogin}>Sign In</button>
+            <button className="btn btn-ghost btn-sm"
+              onClick={() => { setForm({ email: S.email, pwd: 'Northstar!2026' }); setSub('form'); }}>
+              Autofill sample
+            </button>
+            <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--text-muted)' }}>
+              Merchant user pool — separate from end-user
+            </span>
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: '10px' }}>
+            Session issued as opaque server-side cookie (HttpOnly · Secure · SameSite=Strict). No JWT returned to client.
+          </div>
+        </div>
+      )}
+
+      {sub === 'success' && <>
+        <div className="success-hdr">
+          <div className="success-circle">✓</div>
+          <div>
+            <div className="success-title">Authenticated successfully</div>
+            <div className="success-sub">Server-side session created — switch to Session tab for full context</div>
+          </div>
+        </div>
+        <div className="panel">
+          <div className="panel-hdr"><span className="panel-title">Login Result</span><Badge type="ACTIVE" /></div>
+          <div className="panel-body kv-table">
+            <KV k="employeeId"     v={S.employeeId} mono />
+            <KV k="email"          v={S.email} />
+            <KV k="role"           v="merchant_admin" mono />
+            <KV k="employeeStatus" badge="ACTIVE" />
+            <KV k="merchantStatus" badge="NOT_STARTED" />
+            <KV k="sessionType"    v="opaque server-side cookie" />
+            <KV k="loginAt"        v={S.loginAt} mono />
+            <KV k="auditEvent"     v="merchant.login_succeeded" mono />
+          </div>
+        </div>
+      </>}
+    </div>
+  );
+};
+
+/* ─────────────── SESSION ─────────────── */
+
+const SessionPanel = () => (
+  <div className="col">
+    <div className="grid2">
+      <div className="panel">
+        <div className="panel-hdr"><span className="panel-title">Active Session</span><Badge type="ACTIVE" /></div>
+        <div className="panel-body kv-table">
+          <KV k="merchantId"     v={S.merchantId} mono />
+          <KV k="employeeId"     v={S.employeeId} mono />
+          <KV k="company"        v={S.company} />
+          <KV k="email"          v={S.email} />
+          <KV k="role"           v="merchant_admin" mono />
+          <KV k="employeeStatus" badge="ACTIVE" />
+          <KV k="merchantStatus" badge="NOT_STARTED" />
+          <KV k="sessionId"      v={S.sessionId} mono />
+          <KV k="sessionType"    v="opaque server-side cookie" />
+          <KV k="loginAt"        v={S.loginAt} mono />
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Onboarding Checklist</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>1 / 5</span>
+        </div>
+        <div className="panel-body">
+          <div className="checklist">
+            {[
+              { dot: 'done',   icon: '✓', lbl: 'Verify email',                  dim: false, desc: 'Done · ' + S.email },
+              { dot: 'later',  icon: '→', lbl: 'Start KYB / Stripe Connect',    dim: true,  desc: 'Later slice (MDB-UI-02). Unlocks API keys.' },
+              { dot: 'locked', icon: '·', lbl: 'Generate API key',              dim: true,  desc: 'Locked — requires merchantStatus = KYB_APPROVED' },
+              { dot: 'locked', icon: '·', lbl: 'Configure webhook endpoint',    dim: true,  desc: 'Locked — requires API key' },
+              { dot: 'locked', icon: '·', lbl: 'View payments',                dim: true,  desc: 'Empty — no API integration until KYB approved' },
+            ].map((item, i) => (
+              <div key={i} className="check-item" style={{ opacity: item.dot === 'done' ? 1 : item.dot === 'later' ? 0.75 : 0.5 }}>
+                <div className={`check-dot ${item.dot}`}>{item.icon}</div>
+                <div>
+                  <div className={`check-lbl${item.dim ? ' dim' : ''}`}>{item.lbl}</div>
+                  <div className="check-desc">{item.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div className="panel">
+      <div className="panel-hdr"><span className="panel-title">Session Scope &amp; Permissions</span></div>
+      <div className="panel-body">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '8px' }}>Currently permitted</div>
+            {['View merchant overview', 'View onboarding status', 'Initiate KYB (next slice, MDB-UI-02)'].map((t, i) => (
+              <div key={i} style={{ fontSize: '12px', color: 'var(--success)', padding: '3px 0', display: 'flex', gap: '8px' }}>
+                <span>✓</span><span>{t}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: '8px' }}>Not yet available</div>
+            {[
+              'Generate / view API keys',
+              'Configure webhook endpoints',
+              'Process or view payments',
+              'Access settlement balances',
+              'Submit chargeback evidence',
+            ].map((t, i) => (
+              <div key={i} style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '3px 0', display: 'flex', gap: '8px' }}>
+                <span style={{ color: 'var(--text-disabled)' }}>—</span><span>{t}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ─────────────── ACCESS DENIED ─────────────── */
+
+const DeniedPanel = () => {
+  const [sub, setSub] = useState('401');
+  const opts = [
+    { id: '401',           label: '401 Unauthenticated',      v: 'err' },
+    { id: '403_pool',      label: '403 End-user on merchant', v: 'err' },
+    { id: '403_merchant',  label: '403 Wrong merchant scope', v: 'err' },
+  ];
+
+  const scenarios = {
+    '401': {
+      code: '401', cls: 'code-401', headline: 'Unauthenticated',
+      sub: 'No valid session. Login required to access the merchant dashboard.',
+      badge: '401',
+      rows: [
+        ['error.code',          'auth.no_session'],
+        ['error.message',       'Authentication required'],
+        ['attempted endpoint',  'GET /merchant/dashboard'],
+        ['session cookie',      'absent'],
+        ['redirect',            '→ /merchant/login'],
+        ['auditEvent',          'merchant.access_denied (no_session)'],
+      ],
+      note: 'Session cookies are HttpOnly, Secure, SameSite=Strict. The 401 fires when no valid cookie is present or the session has expired server-side.',
+      noteType: 'err',
+    },
+    '403_pool': {
+      code: '403', cls: 'code-403', headline: 'Forbidden — Wrong user pool',
+      sub: 'Session is valid but belongs to the end-user pool. This surface requires merchant_admin or merchant_member.',
+      badge: '403',
+      rows: [
+        ['error.code',         'auth.wrong_role'],
+        ['session.actorType',  'end_user'],
+        ['required role',      'merchant_admin | merchant_member'],
+        ['attempted endpoint', 'GET /merchant/dashboard'],
+        ['auditEvent',         'merchant.access_denied (wrong_pool)'],
+      ],
+      note: 'End-user sessions and merchant sessions use separate authentication pools and session namespaces. A valid end-user session cannot access merchant surfaces.',
+      noteType: 'warn',
+    },
+    '403_merchant': {
+      code: '403', cls: 'code-403', headline: 'Forbidden — Cross-merchant scope',
+      sub: 'Authenticated merchant employee attempted to access a resource scoped to a different merchant account.',
+      badge: '403',
+      rows: [
+        ['error.code',          'auth.merchant_scope_violation'],
+        ['session.merchantId',  'mch_Dk4xP2Nb8qLmHrYv'],
+        ['requested merchantId','mch_XzQ9vT3nK7mRsPwY'],
+        ['scope match',         'false — different merchant'],
+        ['attempted endpoint',  'GET /merchant/mch_XzQ9.../payments'],
+        ['auditEvent',          'merchant.access_denied (scope_violation)'],
+      ],
+      note: 'Every merchant-scoped endpoint validates session.merchantId === resource merchantId. An employee can only access their own merchant\'s resources.',
+      noteType: 'warn',
+    },
+  };
+
+  const sc = scenarios[sub];
+
+  return (
+    <div className="col">
+      <SubSw opts={opts} active={sub} onSelect={setSub} />
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Access Diagnostic</span>
+          <Badge type={sc.badge} />
+        </div>
+        <div className="panel-body">
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '18px', marginBottom: '14px' }}>
+            <div className={`denied-code ${sc.cls}`}>{sc.code}</div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>{sc.headline}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{sc.sub}</div>
+            </div>
+          </div>
+          <div className="kv-table">
+            {sc.rows.map(([k, v], i) => <KV key={i} k={k} v={v} mono />)}
+          </div>
+        </div>
+      </div>
+      <Alrt type={sc.noteType === 'err' ? 'err' : 'warn'} icon="ℹ">{sc.note}</Alrt>
+    </div>
+  );
+};
+
+/* ─────────────── AUDIT RAIL ─────────────── */
+
+const AUDIT_BY_MODE = {
+  register: [
+    { name: 'merchant.registered',      meta: '09:14:22Z · mch_Dk4x…',   dot: 'ok' },
+    { name: 'merchant.employee_created', meta: '09:14:22Z · emp_9Qw7…',   dot: 'ok' },
+    { name: 'merchant.email_sent',       meta: '09:14:23Z · marta@…',     dot: 'ok' },
+    { name: 'merchant.email_verified',   meta: 'pending',                  dot: 'pend' },
+    { name: 'merchant.login_succeeded',  meta: 'pending',                  dot: 'dim' },
+  ],
+  verify: [
+    { name: 'merchant.registered',      meta: '09:14:22Z',                 dot: 'ok' },
+    { name: 'merchant.email_sent',       meta: '09:14:23Z',                dot: 'ok' },
+    { name: 'merchant.email_verified',   meta: '09:19:47Z · token used',   dot: 'ok' },
+    { name: 'merchant.login_succeeded',  meta: 'pending',                  dot: 'dim' },
+  ],
+  login: [
+    { name: 'merchant.registered',      meta: '09:14:22Z',                 dot: 'ok' },
+    { name: 'merchant.email_verified',   meta: '09:19:47Z',               dot: 'ok' },
+    { name: 'merchant.login_failed',     meta: '09:21:04Z · invalid creds', dot: 'bad' },
+    { name: 'merchant.login_succeeded',  meta: '09:22:11Z · sess_F7h2…',  dot: 'ok' },
+  ],
+  session: [
+    { name: 'merchant.registered',      meta: '09:14:22Z',                 dot: 'ok' },
+    { name: 'merchant.email_verified',   meta: '09:19:47Z',               dot: 'ok' },
+    { name: 'merchant.login_succeeded',  meta: '09:22:11Z',               dot: 'ok' },
+    { name: 'merchant.session_active',   meta: 'ongoing · 18m',           dot: 'ok' },
+  ],
+  denied: [
+    { name: 'merchant.access_denied',   meta: '09:20:33Z · no_session',    dot: 'bad' },
+    { name: 'merchant.access_denied',   meta: '09:20:51Z · wrong_pool',    dot: 'bad' },
+    { name: 'merchant.access_denied',   meta: '09:21:09Z · scope_violation', dot: 'bad' },
+    { name: 'merchant.logout',          meta: '09:21:55Z',                 dot: 'dim' },
+  ],
+};
+
+const SECURITY_FACTS = [
+  { icon: '🔑', text: 'Global email uniqueness enforced across all user pools (end-user, merchant, backoffice).' },
+  { icon: '🔒', text: 'Passwords stored as bcrypt hash. Plaintext never persisted or logged anywhere.' },
+  { icon: '🍪', text: 'Session: opaque server-side cookie · HttpOnly · Secure · SameSite=Strict. No JWT issued to client.' },
+  { icon: '📋', text: 'Every auth event appended to immutable audit log with actor + timestamp.' },
+  { icon: '⏱', text: 'Email verification tokens: single-use, 60-min TTL, cryptographically random.' },
+  { icon: '🚫', text: 'Login rate-limited per IP + email. Repeated failures trigger account lockout (future enforcement hook).' },
+];
+
+const AuditRail = ({ mode }) => {
+  const events = AUDIT_BY_MODE[mode] || [];
+  return (
+    <aside className="audit-rail">
+      <div className="audit-hdr">Audit &amp; Security</div>
+      <div className="audit-body">
+        <div className="audit-sec">Event log</div>
+        {events.map((ev, i) => (
+          <div key={i} className="audit-evt">
+            <div className={`audit-dot ${ev.dot}`} />
+            <div>
+              <div className="audit-name">{ev.name}</div>
+              <div className="audit-meta">{ev.meta}</div>
+            </div>
+          </div>
+        ))}
+        <div className="hr" />
+        <div className="audit-sec">Security invariants</div>
+        {SECURITY_FACTS.map((f, i) => (
+          <div key={i} className="sec-fact">
+            <span className="sec-icon">{f.icon}</span>
+            <span className="sec-text">{f.text}</span>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+};
+
+/* ─────────────── SIDEBAR ─────────────── */
+
+const NAV = [
+  { icon: '▦', label: 'Overview' },
+  { icon: '◈', label: 'Onboarding' },
+  { icon: '⌗', label: 'API Keys' },
+  { icon: '⇆', label: 'Webhooks' },
+  { icon: '◎', label: 'Payments' },
+  { icon: '⇌', label: 'Settlements' },
+  { icon: '⚑', label: 'Disputes' },
+];
+
+const Sidebar = () => (
+  <aside className="sidebar">
+    <div className="sb-brand">
+      <div className="sb-mark">
+        <div className="sb-logo">MF</div>
+        <div className="sb-name">MiniFin</div>
+      </div>
+      <div className="sb-sub">Merchant Dashboard</div>
+    </div>
+    <nav className="sb-nav">
+      <div className="nav-sec">Navigation</div>
+      {NAV.map((item, i) => (
+        <div key={i} className="nav-item locked" title="Locked — available after onboarding">
+          <span className="nav-icon">{item.icon}</span>
+          <span>{item.label}</span>
+          <span className="lock">🔒</span>
+        </div>
+      ))}
+      <div className="sb-divider" />
+      <div className="nav-item current">
+        <span className="nav-icon">◧</span>
+        <span>Authentication</span>
+        <span className="nav-id">MDB-UI-01</span>
+      </div>
+    </nav>
+    <div className="sb-footer">
+      <div className="env-chip">⬡ Local Sandbox</div>
+      <div className="env-host">merchants.miniefin.local</div>
+    </div>
+  </aside>
+);
+
+/* ─────────────── APP ─────────────── */
+
+const MODES = [
+  { id: 'register', label: 'Register' },
+  { id: 'verify',   label: 'Verify Email' },
+  { id: 'login',    label: 'Login' },
+  { id: 'session',  label: 'Session' },
+  { id: 'denied',   label: 'Access Denied' },
+];
+
+const MODE_LABELS = {
+  register: 'Register Merchant',
+  verify:   'Verify Email',
+  login:    'Login',
+  session:  'Current Session',
+  denied:   'Access Denied',
+};
+
+function App() {
+  const [mode, setMode] = useState('register');
+
+  const Panel = {
+    register: RegisterPanel,
+    verify:   VerifyPanel,
+    login:    LoginPanel,
+    session:  SessionPanel,
+    denied:   DeniedPanel,
+  }[mode];
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+        <div className="page-hdr">
+          <div className="page-title">
+            <span>Merchant Dashboard</span>
+            <span className="sep">/</span>
+            <strong>Authentication</strong>
+            <span className="sep">·</span>
+            <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{MODE_LABELS[mode]}</span>
+          </div>
+          <div className="page-meta">
+            <span className="screen-id">MDB-UI-01</span>
+            <span className="env-badge">Local Sandbox</span>
+          </div>
+        </div>
+        <div className="main-body">
+          <div className="mode-tabs">
+            {MODES.map(m => (
+              <div key={m.id} className={`mode-tab${mode === m.id ? ' active' : ''}`} onClick={() => setMode(m.id)}>
+                {m.label}
+              </div>
+            ))}
+          </div>
+          <Panel />
+        </div>
+      </div>
+      <AuditRail mode={mode} />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

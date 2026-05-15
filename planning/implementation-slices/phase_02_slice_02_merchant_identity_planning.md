@@ -32,7 +32,7 @@ This slice is next because:
 - `planning/design-details/access_matrix.md` says `merchant_admin` and `merchant_member` authenticate with Platform session cookie and may access only own merchant resources.
 - `planning/design-details/schema_drafts.md` assigns `identity.merchant_employees` and `identity.sessions` to the Platform database.
 - `planning/design-details/ui_prototypes.md` defines `MDB-UI-01` as the merchant login/register entry point.
-- The main AI agent outputs a temporary handoff prompt in chat for the separate UI/UX prototype agent. That prompt must not be committed. Product UI implementation should wait for the returned `prototypes/ui/01_merchant_auth.html` artifact.
+- The main AI agent outputs a temporary handoff prompt in chat for the separate UI/UX prototype agent. That prompt must not be committed. The returned `prototypes/ui/01_merchant_auth.html` artifact is available and should be accepted before product UI implementation starts.
 - Slice 01 already created `identity.email_reservations`, `identity.sessions` and `audit.audit_log`, so this slice can extend the same primitives instead of introducing a second auth stack.
 
 ## 3. Exact Scope
@@ -345,4 +345,4 @@ planning/runtime_evidence_log.md
 
 ## 13. Next Planned Step
 
-AI outputs the temporary merchant auth prompt in chat. Owner sends that prompt to the UI/UX prototype agent and provides the returned `01_merchant_auth.html` file. After that, owner reviews this draft and approves or changes the open questions. Only after prototype acceptance and slice approval should product code for Phase 02 Slice 02 start.
+Owner reviews/accepts `prototypes/ui/01_merchant_auth.html`, then reviews this draft and approves or changes the open questions. Only after prototype acceptance and slice approval should product code for Phase 02 Slice 02 start.

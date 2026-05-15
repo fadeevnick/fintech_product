@@ -131,13 +131,15 @@ Proposed scope:
 - merchant auth audit writes;
 - minimal `MDB-UI-01` product implementation checkpoint based on an accepted standalone HTML prototype.
 
+Created:
+- `prototypes/ui/01_merchant_auth.html` — standalone `MDB-UI-01` merchant auth HTML prototype from UI/UX prototype workflow.
+
 Explicitly not started:
 - product code for this slice;
-- standalone `MDB-UI-01` HTML prototype artifact;
 - Stripe Connect onboarding;
 - merchant API keys;
 - public Payments API;
 - backoffice OIDC/RBAC implementation.
 
 Next planned step:
-- AI outputs the merchant auth prompt in chat; owner sends it to the UI/UX prototype agent and provides the returned `prototypes/ui/01_merchant_auth.html` artifact before product code starts.
+- Review/accept `prototypes/ui/01_merchant_auth.html`, then approve or revise the Phase 02 Slice 02 planning draft before product code starts.
