@@ -1,0 +1,16 @@
+{
+  "name": "mini-fintech-platform",
+  "private": true,
+  "packageManager": "pnpm@10.18.0",
+  "scripts": {
+    "build": "pnpm --recursive --filter './frontend/packages/**' --filter './apps/spa-*' build",
+    "dev:enduser": "pnpm --filter @minifin/spa-enduser dev",
+    "dev:merchant": "pnpm --filter @minifin/spa-merchant dev",
+    "dev:backoffice": "pnpm --filter @minifin/spa-backoffice dev"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^5.9.0",
+    "vite": "^8.0.0"
+  }
+}

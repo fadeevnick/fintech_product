@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: issuer
+  datasource:
+    url: ${ISSUER_DB_URL:jdbc:postgresql://localhost:5436/issuer}
+    username: ${ISSUER_DB_USER:issuer}
+    password: ${ISSUER_DB_PASSWORD:issuer}
+  flyway:
+    enabled: true
+server:
+  port: ${ISSUER_HTTP_PORT:8084}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

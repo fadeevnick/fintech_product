@@ -1,0 +1,331 @@
+name: mini-fintech-platform
+
+services:
+  platform-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: platform
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: platform
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U platform -d platform"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  acquirer-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: acquirer
+      POSTGRES_USER: acquirer
+      POSTGRES_PASSWORD: acquirer
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U acquirer -d acquirer"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  network-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: network
+      POSTGRES_USER: network
+      POSTGRES_PASSWORD: network
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U network -d network"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  issuer-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: issuer
+      POSTGRES_USER: issuer
+      POSTGRES_PASSWORD: issuer
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U issuer -d issuer"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  vault-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: vault
+      POSTGRES_USER: vault
+      POSTGRES_PASSWORD: vault
+    ports:
+      - "5437:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vault -d vault"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  keycloak-db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  platform:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+      args:
+        APP_MODULE: platform
+    environment:
+      PLATFORM_HTTP_PORT: 8080
+      PLATFORM_DB_URL: jdbc:postgresql://platform-db:5432/platform
+      PLATFORM_DB_USER: platform
+      PLATFORM_DB_PASSWORD: platform
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      platform-db:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    ports:
+      - "8081:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.platform.rule=Host(`platform.miniefin.local`)"
+      - "traefik.http.services.platform.loadbalancer.server.port=8080"
+
+  acquirer:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+      args:
+        APP_MODULE: acquirer
+    environment:
+      ACQUIRER_HTTP_PORT: 8080
+      ACQUIRER_DB_URL: jdbc:postgresql://acquirer-db:5432/acquirer
+      ACQUIRER_DB_USER: acquirer
+      ACQUIRER_DB_PASSWORD: acquirer
+    depends_on:
+      acquirer-db:
+        condition: service_healthy
+    ports:
+      - "8082:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.acquirer.rule=Host(`api.miniefin.local`)"
+      - "traefik.http.services.acquirer.loadbalancer.server.port=8080"
+
+  network:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+      args:
+        APP_MODULE: network
+    environment:
+      NETWORK_HTTP_PORT: 8080
+      NETWORK_DB_URL: jdbc:postgresql://network-db:5432/network
+      NETWORK_DB_USER: network
+      NETWORK_DB_PASSWORD: network
+    depends_on:
+      network-db:
+        condition: service_healthy
+    ports:
+      - "8083:8080"
+
+  issuer:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+      args:
+        APP_MODULE: issuer
+    environment:
+      ISSUER_HTTP_PORT: 8080
+      ISSUER_DB_URL: jdbc:postgresql://issuer-db:5432/issuer
+      ISSUER_DB_USER: issuer
+      ISSUER_DB_PASSWORD: issuer
+    depends_on:
+      issuer-db:
+        condition: service_healthy
+    ports:
+      - "8084:8080"
+
+  vault:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+      args:
+        APP_MODULE: vault
+    environment:
+      VAULT_HTTP_PORT: 8080
+      VAULT_DB_URL: jdbc:postgresql://vault-db:5432/vault
+      VAULT_DB_USER: vault
+      VAULT_DB_PASSWORD: vault
+    depends_on:
+      vault-db:
+        condition: service_healthy
+    ports:
+      - "8085:8080"
+
+  kafka:
+    image: apache/kafka:3.9.1
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    ports:
+      - "9092:9092"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: ["start-dev"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: keycloak-db
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    ports:
+      - "18080:8080"
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:3.85
+    command: "server -s3 -dir=/data"
+    ports:
+      - "8333:8333"
+      - "9333:9333"
+
+  spa-enduser:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+      args:
+        APP_NAME: spa-enduser
+    ports:
+      - "3000:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.spa-enduser.rule=Host(`wallet.miniefin.local`)"
+      - "traefik.http.services.spa-enduser.loadbalancer.server.port=80"
+
+  spa-merchant:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+      args:
+        APP_NAME: spa-merchant
+    ports:
+      - "3001:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.spa-merchant.rule=Host(`merchant.miniefin.local`)"
+      - "traefik.http.services.spa-merchant.loadbalancer.server.port=80"
+
+  spa-backoffice:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+      args:
+        APP_NAME: spa-backoffice
+    ports:
+      - "3002:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.spa-backoffice.rule=Host(`backoffice.miniefin.local`)"
+      - "traefik.http.services.spa-backoffice.loadbalancer.server.port=80"
+
+  traefik:
+    image: traefik:v3.2
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "18081:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - "./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - "./grafana/provisioning:/etc/grafana/provisioning:ro"
+    ports:
+      - "3003:3000"
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: ["-config.file=/etc/tempo.yml"]
+    volumes:
+      - "./tempo.yml:/etc/tempo.yml:ro"
+    ports:
+      - "3200:3200"
+      - "4317:4317"
+
+  loki:
+    image: grafana/loki:3.3.2
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.116.1
+    command: ["--config=/etc/otelcol-contrib/config.yml"]
+    volumes:
+      - "./otel/collector.yml:/etc/otelcol-contrib/config.yml:ro"
+    ports:
+      - "4318:4318"
+      - "13133:13133"
+    depends_on:
+      - tempo
+
+  vector:
+    image: timberio/vector:0.43.1-debian
+    command: ["--config", "/etc/vector/vector.yml"]
+    volumes:
+      - "./vector/vector.yml:/etc/vector/vector.yml:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    ports:
+      - "8686:8686"
+    depends_on:
+      - loki

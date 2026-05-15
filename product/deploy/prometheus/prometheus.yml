@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+  - job_name: backend-services
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - platform:8080
+          - acquirer:8080
+          - network:8080
+          - issuer:8080
+          - vault:8080

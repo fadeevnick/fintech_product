@@ -1,0 +1,25 @@
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  docker_logs:
+    type: docker_logs
+
+transforms:
+  add_runtime_label:
+    type: remap
+    inputs: [docker_logs]
+    source: |
+      .runtime = "mini-fintech-platform"
+
+sinks:
+  loki:
+    type: loki
+    inputs: [add_runtime_label]
+    endpoint: http://loki:3100
+    encoding:
+      codec: json
+    labels:
+      runtime: mini-fintech-platform
+      container: "{{ container_name }}"
