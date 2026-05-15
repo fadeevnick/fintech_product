@@ -5,7 +5,7 @@ Use this prompt with a separate UI/UX-specialized agent.
 Expected returned artifact:
 
 ```text
-prototypes/ui-redesign/01_merchant_auth.html
+prototypes/ui/01_merchant_auth.html
 ```
 
 ---

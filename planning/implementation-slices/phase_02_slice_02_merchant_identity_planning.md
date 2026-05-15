@@ -32,7 +32,7 @@ This slice is next because:
 - `planning/design-details/access_matrix.md` says `merchant_admin` and `merchant_member` authenticate with Platform session cookie and may access only own merchant resources.
 - `planning/design-details/schema_drafts.md` assigns `identity.merchant_employees` and `identity.sessions` to the Platform database.
 - `planning/design-details/ui_prototypes.md` defines `MDB-UI-01` as the merchant login/register entry point.
-- `prototypes/ui-redesign/prompts/01_merchant_auth_prompt.md` defines the handoff prompt for the separate UI/UX prototype agent. Product UI implementation should wait for the returned `prototypes/ui-redesign/01_merchant_auth.html` artifact.
+- `prototypes/ui/prompts/01_merchant_auth_prompt.md` defines the handoff prompt for the separate UI/UX prototype agent. Product UI implementation should wait for the returned `prototypes/ui/01_merchant_auth.html` artifact.
 - Slice 01 already created `identity.email_reservations`, `identity.sessions` and `audit.audit_log`, so this slice can extend the same primitives instead of introducing a second auth stack.
 
 ## 3. Exact Scope
@@ -245,7 +245,7 @@ Response:
 5. Add cross-role denial checks for end-user vs merchant endpoints.
 6. Add merchant auth audit writes.
 7. Add retained runtime scripts.
-8. Confirm `prototypes/ui-redesign/01_merchant_auth.html` exists and is accepted as the visual prototype input.
+8. Confirm `prototypes/ui/01_merchant_auth.html` exists and is accepted as the visual prototype input.
 9. Add minimal `MDB-UI-01` implementation checkpoint in `spa-merchant`.
 10. Rebuild Platform and merchant SPA images.
 11. Run Phase 01 regression subset plus Phase 02 identity scripts.
@@ -287,7 +287,7 @@ Do not build final merchant dashboard navigation in this slice.
 
 Terminology note:
 
-- `prototypes/ui-redesign/01_merchant_auth.html` is the standalone visual prototype artifact.
+- `prototypes/ui/01_merchant_auth.html` is the standalone visual prototype artifact.
 - `product/apps/spa-merchant/**` is product implementation code, not the prototype itself.
 - The SPA checkpoint should implement only the slice-relevant states from the accepted prototype.
 
@@ -345,4 +345,4 @@ planning/runtime_evidence_log.md
 
 ## 13. Next Planned Step
 
-Owner sends `prototypes/ui-redesign/prompts/01_merchant_auth_prompt.md` to the UI/UX prototype agent and provides the returned `01_merchant_auth.html` file. After that, owner reviews this draft and approves or changes the open questions. Only after prototype acceptance and slice approval should product code for Phase 02 Slice 02 start.
+Owner sends `prototypes/ui/prompts/01_merchant_auth_prompt.md` to the UI/UX prototype agent and provides the returned `01_merchant_auth.html` file. After that, owner reviews this draft and approves or changes the open questions. Only after prototype acceptance and slice approval should product code for Phase 02 Slice 02 start.
