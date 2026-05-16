@@ -557,10 +557,10 @@ Next planned step:
 
 ## Phase 04 Slice 03 — Merchant Dashboard Payments Read Shell and Webhook Configuration
 
-Status: **DRAFT PLANNING NOTE CREATED — not implemented**.
+Status: **PLANNING APPROVED — not implemented**.
 
 Planning contract:
-- `planning/implementation-slices/phase_04_slice_03_merchant_dashboard_payments_planning.md` — DRAFT v0.1.
+- `planning/implementation-slices/phase_04_slice_03_merchant_dashboard_payments_planning.md` — APPROVED v0.1.
 
 Planned backend/runtime scope:
 - Merchant-authenticated dashboard read APIs for existing `merchant.payment_intents` shell rows.
@@ -577,4 +577,32 @@ Explicitly not implemented:
 - No `WBH-01..WBH-03` claims.
 
 Next planned step:
-- Orchestrator/owner review of the Slice 03 planning note before any implementation pass.
+- Implement the approved Slice 03 backend/runtime sub-scope when selected.
+
+---
+
+## Phase 05 Slice 01 — Vault Tokenization and Card Issuance Foundation
+
+Status: **PLANNING APPROVED — not implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_05_slice_01_vault_card_issuance_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Vault tokenization foundation where full PAN is persisted only in `vault`.
+- Minimal issuer card record path storing token/last4/expiration/BIN metadata only.
+- End-user `POST /api/v1/cards` entrypoint through Platform, delegated to Issuer and Vault through narrow service-authenticated paths.
+- Restricted Vault detokenize path for `service:issuer` only, with audit logging.
+- PAN masking verification in service logs.
+- Target checks:
+  - `VLT-01` — PAN stored only in Vault.
+  - `VLT-02` — detokenize restriction.
+  - `VLT-03` — PAN log masking.
+
+Explicitly not implemented:
+- No Kotlin, SQL, runtime scripts or frontend code in this planning-only task.
+- No authorization, capture, settlement, refunds, chargebacks or outbound webhook delivery.
+- No `PAY-04` / `PAY-05` claims; they remain for the later authorization slice.
+
+Next planned step:
+- Implement the approved Slice 01 backend/runtime sub-scope when selected.

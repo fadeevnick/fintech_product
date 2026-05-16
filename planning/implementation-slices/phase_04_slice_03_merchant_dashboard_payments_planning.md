@@ -1,6 +1,6 @@
 # Phase 04 Slice 03 — Merchant Dashboard Payments Read Shell and Webhook Configuration — Planning Note
 
-Status: **DRAFT v0.1; planning-only artifact**.
+Status: **APPROVED v0.1; planning-only artifact**.
 
 This document fixes the third implementation slice inside `Phase 04 — Merchant Onboarding and Public API Foundation`.
 
