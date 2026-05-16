@@ -284,7 +284,7 @@ Runtime evidence:
 - `RUN-01`, `AUTH-03`, `AUD-01`, `AUD-02`, `AUD-03`, `AUD-99` and actor-control regressions passed.
 
 Next planned step:
-- Draft the next Phase 03 wallet/manual-operation slice before writing more product code.
+- Completed by later Phase 03 slices; current next step is tracked in the latest section below.
 
 ---
 
@@ -340,4 +340,33 @@ Result tag notes:
 - `LDG-03`, `WLT-01`, `WLT-03`, `WLT-04` are not claimed; withdraw, transfer, SoF and two-eyes workflows do not exist yet.
 
 Next planned step:
-- Draft the next Phase 03 wallet/manual-operation slice (likely manual withdraw with hold/final-debit flow, targeting `LDG-03`) before writing more product code.
+- Implement the drafted Phase 03 Slice 03 manual withdraw hold/final-debit backend/runtime sub-scope.
+
+---
+
+## Phase 03 Slice 03 — Wallet Manual Withdraw Hold and Final Debit
+
+Status: **DRAFTED — implementation not started**.
+
+Planning contract:
+- `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — DRAFT v0.1.
+
+Planned backend/runtime scope:
+- manual withdraw request under EUR 10k;
+- ledger hold posting from `WALLET_USER:<userId>` to `WALLET_WITHDRAW_HOLD:<userId>`;
+- backoffice manual-ops withdrawal queue and `COMPLETE` / `REJECT` decision endpoint;
+- final debit posting from hold account to `EXTERNAL_WITHDRAWAL_CLEARING`;
+- rejection release posting from hold account back to wallet account;
+- actor-control write block for withdrawal create and completion;
+- retained runtime scripts for hold+complete, reject release, insufficient funds, actor-control block and double-decision.
+
+Explicitly not started:
+- product code for withdrawals;
+- runtime verification for `LDG-03`;
+- Source of Funds (`WLT-03`);
+- two-eyes (`WLT-04`);
+- real payout rails;
+- frontend implementation.
+
+Next planned step:
+- Implement the Phase 03 Slice 03 backend/runtime sub-scope, then run and record the linked runtime checks.

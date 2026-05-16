@@ -1,6 +1,6 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-16 (Phase 03 Slice 02 backend/runtime sub-scope executed).
+Last updated: 2026-05-16 (Phase 03 Slice 03 planning drafted).
 
 ---
 
@@ -36,12 +36,17 @@ Completed workstream — latest:
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
 
+Planning workstream — latest:
+- `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — DRAFT v0.1.
+- Scope: manual withdrawal under EUR 10k with ledger hold, backoffice completion/final debit, rejection release, actor-control write block and retained runtime scripts.
+- Target checks: `LDG-03`, `WLT-02`, `AUD-01`, `AUD-03`, `LDG-05`, `LDG-99`.
+
 ## Next
 
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`.**
 
 Next planned product step:
-- Draft the next Phase 03 wallet/manual-operation slice (likely manual withdraw with hold/final-debit flow, targeting `LDG-03`) before writing more product code.
+- Implement the Phase 03 Slice 03 backend/runtime sub-scope from `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md`, then run and record the linked runtime checks.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
@@ -100,10 +105,14 @@ First slice planning note approved:
 - Scope: create `product/` skeleton, five Spring Boot service shells, three Vite SPA shells, Docker Compose core infra, baseline migrations, health endpoints, retained Phase 01 runtime scripts.
 - Linked checks: `RUN-01`..`RUN-08`, `UI-01`.
 
-Latest slice planning note executed:
+Latest executed slice planning note:
 - `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md` — backend/runtime sub-scope executed v0.2.
 - Scope: end-user wallet account + manual deposit < EUR 10k via balanced ledger postings; backoffice operator approve/reject with read-audit; actor-control write block (`FROZEN` ∪ `BLOCKED`) on both create and approve.
 - Linked checks: `LDG-02`, `WLT-02`, `AUD-01`, `AUD-03`.
+
+Latest drafted slice planning note:
+- `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — DRAFT v0.1.
+- Scope: manual withdrawal < EUR 10k with hold/final debit, rejection release, actor-control write block and runtime checks for `LDG-03`.
 
 ## Read-first order (новая AI-сессия)
 
@@ -118,10 +127,12 @@ Latest slice planning note executed:
 9. `planning/design-details/` — approved implementation-near planning pack.
 10. `planning/runtime_checklists.md` — approved runtime check registry.
 11. `planning/implementation_status.md` and `planning/runtime_evidence_log.md` — factual implementation/evidence state.
-12. Latest slice note:
+12. Latest executed slice note:
     `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md`.
+13. Latest drafted slice note:
+    `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md`.
 
-После прочтения — draft the next Phase 03 slice (likely manual withdraw with hold/final-debit, targeting `LDG-03`) before writing more product code.
+После прочтения — implement the Phase 03 Slice 03 backend/runtime sub-scope, then update runtime evidence and status files.
 
 ## Do-not-do-yet rules
 
@@ -191,4 +202,4 @@ Current Phase 03 Slice 02:
 - `LDG-03`, `WLT-01`, `WLT-03`, `WLT-04` are not claimed because withdraw, transfer, SoF and two-eyes workflows do not exist yet.
 - No frontend work in this slice.
 
-Next planned step: draft the next Phase 03 wallet/manual-operation slice (likely manual withdraw with hold/final-debit flow, targeting `LDG-03`) before writing more product code. Frontend implementation for backoffice manual deposits and end-user wallet remains gated by their respective accepted standalone HTML prototypes.
+Next planned step: implement the Phase 03 Slice 03 backend/runtime sub-scope from `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md`. Frontend implementation for backoffice manual deposits, manual withdrawals and end-user wallet remains gated by their respective accepted standalone HTML prototypes.
