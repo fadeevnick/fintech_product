@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniFin — Audit Log — BOF-UI-09</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #eceae5; --surface: #ffffff; --surf2: #f7f6f3; --hover: #f0efe9;
+      --sb: #0e0e12; --sb-bdr: #1e1e22; --sb-muted: #545460; --sb-active: #1e1e28;
+      --bdr: #dddad2; --bdr-mid: #c5c2ba; --bdr-focus: #1c1c1f;
+      --t1: #1c1c1f; --t2: #575763; --t3: #9898a6; --t4: #d0d0da;
+      --g: #166534; --g-bg: #f0fdf4; --g-bd: #bbf7d0;
+      --am: #854d0e; --am-bg: #fffbeb; --am-bd: #fde68a;
+      --rd: #9b1c1c; --rd-bg: #fef2f2; --rd-bd: #fecaca;
+      --pu: #5b21b6; --pu-bg: #f5f3ff; --pu-bd: #ddd6fe;
+      --bl: #1e40af; --bl-bg: #eff6ff; --bl-bd: #bfdbfe;
+      --or: #9a3412; --or-bg: #fff7ed; --or-bd: #fed7aa;
+      --frz: #86198f; --frz-bg: #fdf2f8; --frz-bd: #f0abfc;
+      --f-ui: 'IBM Plex Sans', sans-serif; --f-mono: 'IBM Plex Mono', monospace;
+      --w-sb: 210px; --w-au: 252px; --r: 4px;
+    }
+    html, body, #root { height: 100%; font-family: var(--f-ui); font-size: 13px; background: var(--bg); color: var(--t1); }
+    .app-shell { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb); border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 14px 16px 10px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-product { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+    .sb-surface { font-size: 10px; font-weight: 500; color: var(--sb-muted); text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+    .sb-env { margin: 8px 14px; padding: 3px 8px; background: #1e3a5f; border: 1px solid #2d4f7a; border-radius: var(--r); font-size: 9px; font-weight: 600; color: #7cb9f4; text-transform: uppercase; letter-spacing: .6px; text-align: center; }
+    .sb-sec { font-size: 9px; font-weight: 600; color: var(--sb-muted); text-transform: uppercase; letter-spacing: .6px; padding: 10px 16px 4px; }
+    .sb-nav { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .sb-item { display: flex; align-items: center; gap: 8px; padding: 7px 16px; color: #9898a6; font-size: 12.5px; cursor: pointer; transition: background .12s, color .12s; position: relative; }
+    .sb-item:hover { background: rgba(255,255,255,.04); color: #ccc; }
+    .sb-item.active { background: var(--sb-active); color: #fff; }
+    .sb-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #7cb9f4; }
+    .sb-icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+    .sb-bdg { margin-left: auto; font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 10px; }
+    .sb-bdg.alrt { background: #4a1a1a; color: #f87171; }
+    .sb-bdg.cnt  { background: #1a2e1a; color: #86efac; }
+    .sb-bdg.ro   { background: #2d3748; color: #90cdf4; }
+    .sb-user { padding: 10px 16px; border-top: 1px solid var(--sb-bdr); }
+    .sb-user-name { font-size: 12px; font-weight: 500; color: #e2e8f0; }
+    .sb-user-role { font-size: 10px; color: var(--sb-muted); margin-top: 1px; }
+    .sb-user-session { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+    .sess-dot { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+    .sess-txt { font-size: 9px; color: #3d6b3d; font-family: var(--f-mono); }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 0 20px; height: 44px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .topbar-screen { font-size: 10px; font-weight: 600; color: var(--t3); font-family: var(--f-mono); }
+    .topbar-host { font-size: 11px; color: var(--t2); font-family: var(--f-mono); }
+    .topbar-sep { color: var(--t4); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+    /* ── Badges ── */
+    .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; border: 1px solid; white-space: nowrap; }
+    .badge.green   { color: var(--g);   background: var(--g-bg);   border-color: var(--g-bd); }
+    .badge.amber   { color: var(--am);  background: var(--am-bg);  border-color: var(--am-bd); }
+    .badge.red     { color: var(--rd);  background: var(--rd-bg);  border-color: var(--rd-bd); }
+    .badge.purple  { color: var(--pu);  background: var(--pu-bg);  border-color: var(--pu-bd); }
+    .badge.blue    { color: var(--bl);  background: var(--bl-bg);  border-color: var(--bl-bd); }
+    .badge.orange  { color: var(--or);  background: var(--or-bg);  border-color: var(--or-bd); }
+    .badge.freeze  { color: var(--frz); background: var(--frz-bg); border-color: var(--frz-bd); }
+    .badge.neutral { color: var(--t2);  background: var(--surf2);  border-color: var(--bdr); }
+
+    /* ── Page header ── */
+    .page-hdr { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 14px 20px 0; flex-shrink: 0; }
+    .page-title-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+    .page-title { font-size: 17px; font-weight: 700; color: var(--t1); letter-spacing: -.3px; }
+    .page-sub { font-size: 12px; color: var(--t3); }
+    .stats-strip { display: flex; border-top: 1px solid var(--bdr); margin: 0 -20px; overflow-x: auto; }
+    .stat-cell { padding: 8px 14px; border-right: 1px solid var(--bdr); display: flex; flex-direction: column; gap: 2px; cursor: pointer; flex-shrink: 0; }
+    .stat-cell:last-child { border-right: none; }
+    .stat-val { font-size: 18px; font-weight: 700; font-family: var(--f-mono); }
+    .stat-val.rd { color: var(--rd); }
+    .stat-val.am { color: var(--am); }
+    .stat-val.bl { color: var(--bl); }
+    .stat-val.pu { color: var(--frz); }
+    .stat-val.or { color: var(--or); }
+    .stat-lbl { font-size: 10px; color: var(--t3); font-weight: 500; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+
+    /* ── Action bar ── */
+    .action-bar { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 8px 20px; display: flex; align-items: center; gap: 5px; flex-shrink: 0; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: var(--r); font-size: 12px; font-weight: 500; font-family: var(--f-ui); border: 1px solid; cursor: pointer; transition: all .12s; white-space: nowrap; }
+    .btn-primary { background: var(--t1); color: #fff; border-color: var(--t1); }
+    .btn-primary:hover { background: #2d2d31; }
+    .btn-default { background: var(--surface); color: var(--t1); border-color: var(--bdr-mid); }
+    .btn-default:hover { background: var(--hover); }
+    .btn-warn    { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .btn-green   { background: var(--g-bg);  color: var(--g);  border-color: var(--g-bd); }
+    .btn-green:hover { background: #dcfce7; }
+    .btn-purple  { background: var(--pu-bg); color: var(--pu); border-color: var(--pu-bd); }
+    .btn-disabled { background: var(--surf2) !important; color: var(--t4) !important; border-color: var(--bdr) !important; cursor: not-allowed !important; }
+    .btn-sep { width: 1px; height: 20px; background: var(--bdr); margin: 0 2px; flex-shrink: 0; }
+    .btn-copied { background: var(--g-bg) !important; color: var(--g) !important; border-color: var(--g-bd) !important; }
+
+    /* ── Filter bar ── */
+    .filter-bar { background: var(--surf2); border-bottom: 1px solid var(--bdr); padding: 7px 20px; display: flex; align-items: center; gap: 7px; flex-shrink: 0; flex-wrap: wrap; }
+    .filter-lbl { font-size: 11px; color: var(--t3); font-weight: 500; flex-shrink: 0; }
+    .filter-select { font-size: 11.5px; font-family: var(--f-ui); padding: 3px 7px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); cursor: pointer; }
+    .filter-search { max-width: 200px; font-size: 11.5px; font-family: var(--f-ui); padding: 3px 8px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); }
+    .filter-chip { display: inline-flex; align-items: center; padding: 3px 9px; border: 1px solid var(--bdr-mid); border-radius: 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--t2); cursor: pointer; transition: all .12s; white-space: nowrap; }
+    .filter-chip.active { background: var(--t1); color: #fff; border-color: var(--t1); }
+    .filter-chip.warn-active { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .filter-count { margin-left: auto; font-size: 10px; color: var(--t3); font-family: var(--f-mono); flex-shrink: 0; }
+
+    /* ── Content area ── */
+    .content-area { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+    .table-area { flex: 0 0 54%; overflow-y: auto; border-right: 1px solid var(--bdr); overflow-x: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    thead th { background: var(--surf2); padding: 5px 7px; text-align: left; font-size: 9.5px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--bdr); white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+    thead th:first-child { padding-left: 10px; }
+    tbody tr { border-bottom: 1px solid var(--bdr); cursor: pointer; transition: background .1s; }
+    tbody tr:hover { background: var(--hover); }
+    tbody tr.sel { background: #eef3ff; }
+    tbody tr.corr-hi { background: #f5f3ff; }
+    tbody td { padding: 5px 7px; vertical-align: middle; }
+    tbody td:first-child { padding-left: 10px; }
+    .mono { font-family: var(--f-mono); }
+
+    /* State chips */
+    .rchip { display: inline-flex; font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px; white-space: nowrap; font-family: var(--f-mono); border: 1px solid; }
+    .rchip.blue   { background: var(--bl-bg);  color: var(--bl);  border-color: var(--bl-bd); }
+    .rchip.amber  { background: var(--am-bg);  color: var(--am);  border-color: var(--am-bd); }
+    .rchip.orange { background: var(--or-bg);  color: var(--or);  border-color: var(--or-bd); }
+    .rchip.red    { background: var(--rd-bg);  color: var(--rd);  border-color: var(--rd-bd); }
+    .rchip.green  { background: var(--g-bg);   color: var(--g);   border-color: var(--g-bd); }
+    .rchip.purple { background: var(--pu-bg);  color: var(--pu);  border-color: var(--pu-bd); }
+    .rchip.neutral{ background: var(--surf2);  color: var(--t2);  border-color: var(--bdr); }
+
+    /* Severity dots */
+    .sev-dot { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; font-family: var(--f-mono); }
+    .sev-dot::before { content: ''; width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .sev-dot.INFO::before     { background: var(--t4); }
+    .sev-dot.WARN::before     { background: var(--am); }
+    .sev-dot.HIGH::before     { background: var(--or); }
+    .sev-dot.CRITICAL::before { background: var(--rd); }
+    .sev-dot.INFO     { color: var(--t3); }
+    .sev-dot.WARN     { color: var(--am); }
+    .sev-dot.HIGH     { color: var(--or); }
+    .sev-dot.CRITICAL { color: var(--rd); }
+
+    /* ── Detail panel ── */
+    .detail-panel { flex: 1; overflow: hidden; background: var(--surface); display: flex; flex-direction: column; }
+    .detail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--t3); gap: 8px; }
+
+    .detail-hdr { padding: 10px 14px; border-bottom: 1px solid var(--bdr); display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; background: var(--surf2); flex-shrink: 0; }
+    .detail-id   { font-family: var(--f-mono); font-weight: 600; font-size: 10px; color: var(--t3); margin-bottom: 2px; }
+    .detail-evtype { font-size: 13px; font-weight: 700; color: var(--t1); letter-spacing: -.2px; font-family: var(--f-mono); }
+    .detail-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+
+    .tab-nav { display: flex; border-bottom: 1px solid var(--bdr); background: var(--surface); flex-shrink: 0; }
+    .tab-item { padding: 8px 13px; font-size: 11.5px; font-weight: 500; color: var(--t3); cursor: pointer; border-bottom: 2px solid transparent; transition: all .12s; white-space: nowrap; }
+    .tab-item:hover { color: var(--t1); }
+    .tab-item.active { color: var(--t1); border-bottom-color: var(--t1); font-weight: 600; }
+
+    .tab-content { flex: 1; overflow-y: auto; }
+    .detail-sec { padding: 10px 14px; border-bottom: 1px solid var(--bdr); }
+    .detail-sec:last-child { border-bottom: none; }
+    .detail-sec-title { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+
+    .kv { width: 100%; border-collapse: collapse; }
+    .kv tr { border-bottom: 1px solid var(--bdr); }
+    .kv tr:last-child { border-bottom: none; }
+    .kv td { padding: 4px 0; vertical-align: top; }
+    .kv td:first-child { font-size: 11px; color: var(--t3); font-weight: 500; width: 44%; padding-right: 8px; }
+    .kv td:last-child  { font-size: 11.5px; color: var(--t1); font-weight: 500; }
+
+    /* Metadata viewer */
+    .meta-box { background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); overflow: hidden; font-family: var(--f-mono); }
+    .meta-row { display: flex; align-items: flex-start; gap: 0; padding: 4px 10px; border-bottom: 1px solid var(--bdr); font-size: 11px; }
+    .meta-row:last-child { border-bottom: none; }
+    .meta-key { color: var(--bl); font-weight: 600; min-width: 44%; flex-shrink: 0; }
+    .meta-val { color: var(--t1); word-break: break-all; }
+    .meta-val.masked { color: var(--rd); font-style: italic; }
+    .meta-val.sensitive-val { color: var(--or); }
+    .meta-section-hdr { display: flex; align-items: center; justify-content: space-between; padding: 5px 10px; background: var(--hover); border-bottom: 1px solid var(--bdr); cursor: pointer; font-size: 10px; font-weight: 700; color: var(--t2); text-transform: uppercase; letter-spacing: .5px; }
+    .meta-section-hdr:hover { background: var(--bdr); }
+    .senior-blocked-meta { display: flex; align-items: center; gap: 6px; padding: 8px 10px; background: var(--pu-bg); border: 1px solid var(--pu-bd); border-radius: var(--r); margin-top: 8px; font-size: 11px; color: var(--pu); }
+
+    /* Correlation chain */
+    .corr-chain { display: flex; flex-direction: column; }
+    .corr-item { display: flex; gap: 10px; padding: 7px 14px; border-bottom: 1px solid var(--bdr); align-items: flex-start; position: relative; }
+    .corr-item:last-child { border-bottom: none; }
+    .corr-item.current { background: #eef3ff; border-left: 3px solid var(--bl); }
+    .corr-connector { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; margin-top: 2px; }
+    .corr-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .corr-dot.success  { background: var(--g); }
+    .corr-dot.warn     { background: var(--am); }
+    .corr-dot.denied   { background: var(--rd); }
+    .corr-dot.current  { background: var(--bl); box-shadow: 0 0 0 2px var(--bl-bd); }
+    .corr-line { width: 1px; flex: 1; background: var(--bdr); min-height: 16px; margin: 2px 0; }
+    .corr-info { flex: 1; }
+    .corr-ev { font-size: 11px; font-weight: 600; font-family: var(--f-mono); color: var(--t1); }
+    .corr-meta { font-size: 10px; color: var(--t3); margin-top: 2px; }
+    .corr-svc { font-size: 9px; font-family: var(--f-mono); color: var(--t3); }
+    .corr-desc { font-size: 10.5px; color: var(--t2); margin-top: 2px; }
+
+    /* Append-only panel */
+    .immutable-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 10px; font-size: 10px; font-weight: 700; font-family: var(--f-mono); background: var(--g-bg); color: var(--g); border: 1px solid var(--g-bd); }
+    .denied-badge    { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 10px; font-size: 10px; font-weight: 700; font-family: var(--f-mono); background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+    .append-box { background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); overflow: hidden; }
+    .append-row { display: flex; align-items: flex-start; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--bdr); font-size: 11px; }
+    .append-row:last-child { border-bottom: none; }
+    .append-ico { flex-shrink: 0; font-size: 12px; margin-top: 1px; }
+    .append-label { font-weight: 600; color: var(--t1); }
+    .append-desc { color: var(--t3); font-size: 10.5px; margin-top: 1px; }
+    .blocked-event-box { background: var(--rd-bg); border: 1px solid var(--rd-bd); border-radius: var(--r); padding: 10px 12px; }
+    .blocked-event-title { font-size: 11px; font-weight: 700; color: var(--rd); margin-bottom: 6px; font-family: var(--f-mono); }
+
+    /* Read-audit section */
+    .read-audit-explain { background: var(--am-bg); border: 1px solid var(--am-bd); border-radius: var(--r); padding: 10px 12px; }
+    .ra-title { font-size: 11px; font-weight: 700; color: var(--am); margin-bottom: 6px; }
+    .ra-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--am); padding: 2px 0; }
+    .ra-row::before { content: '→'; color: var(--am); font-size: 10px; flex-shrink: 0; }
+
+    /* RBAC blocked */
+    .senior-blk-box { background: var(--pu-bg); border: 1px solid var(--pu-bd); border-radius: var(--r); padding: 9px 11px; }
+    .senior-blk-title { font-size: 11px; font-weight: 700; color: var(--pu); margin-bottom: 6px; }
+    .senior-blk-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--pu); padding: 3px 0; border-bottom: 1px solid var(--pu-bd); }
+    .senior-blk-row:last-child { border-bottom: none; }
+    .senior-blk-row::before { content: '🔒'; font-size: 10px; }
+
+    .alert-box { padding: 7px 10px; border-radius: var(--r); font-size: 11px; line-height: 1.5; border: 1px solid; margin-bottom: 6px; }
+    .alert-box.amber  { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .alert-box.red    { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    .alert-box.green  { background: var(--g-bg);  color: var(--g);  border-color: var(--g-bd); }
+    .alert-box.purple { background: var(--pu-bg); color: var(--pu); border-color: var(--pu-bd); }
+
+    /* ── Audit rail ── */
+    .audit-rail { width: var(--w-au); flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .au-hdr { padding: 10px 14px 8px; border-bottom: 1px solid var(--bdr); background: var(--surf2); flex-shrink: 0; }
+    .au-title { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; }
+    .au-sub { font-size: 10px; color: var(--t3); margin-top: 2px; }
+    .au-body { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 12px; }
+    .au-sec-title { font-size: 9px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px; }
+    .au-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; margin-bottom: 3px; }
+    .au-k { font-size: 10px; color: var(--t3); }
+    .au-v { font-size: 10px; font-weight: 500; color: var(--t1); text-align: right; font-family: var(--f-mono); }
+    .au-v.ok { color: var(--g); }
+    .au-v.warn { color: var(--am); }
+    .au-v.danger { color: var(--rd); }
+    .au-ev-log { background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); overflow: hidden; }
+    .au-ev { padding: 5px 8px; border-bottom: 1px solid var(--bdr); }
+    .au-ev:last-child { border-bottom: none; }
+    .au-ev-code { font-size: 10px; font-weight: 600; font-family: var(--f-mono); color: var(--bl); }
+    .au-ev-code.new { color: var(--rd); animation: flash .45s ease; }
+    .au-ev-meta { font-size: 9px; color: var(--t3); margin-top: 1px; }
+    @keyframes flash { from { opacity: 0; } to { opacity: 1; } }
+    .au-rbac-row { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--bdr); font-size: 10px; line-height: 1.4; }
+    .au-rbac-row:last-child { border-bottom: none; }
+    .au-rbac-ico.ok { color: var(--g); }
+    .au-rbac-ico.no { color: var(--rd); }
+    .au-rbac-txt { color: var(--t2); }
+    .au-rbac-txt.blocked { color: var(--rd); }
+    .au-rbac-txt strong { color: var(--t1); font-weight: 600; }
+    .au-inv { font-size: 10px; color: var(--t2); padding: 3px 0; border-bottom: 1px solid var(--bdr); display: flex; gap: 5px; line-height: 1.4; }
+    .au-inv::before { content: '—'; color: var(--t4); flex-shrink: 0; }
+    .au-inv:last-child { border-bottom: none; }
+
+    /* Perm popover */
+    .perm-popover { position: fixed; z-index: 999; background: var(--t1); color: #fff; font-size: 11px; padding: 6px 10px; border-radius: var(--r); max-width: 260px; line-height: 1.5; pointer-events: none; bottom: 24px; right: 24px; }
+
+    /* Corr-chain filter banner */
+    .corr-filter-banner { background: var(--pu-bg); border-bottom: 1px solid var(--pu-bd); padding: 5px 20px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--pu); flex-shrink: 0; }
+    .corr-filter-clear { font-size: 11px; padding: 2px 8px; border-radius: var(--r); border: 1px solid var(--pu-bd); background: var(--surface); color: var(--pu); cursor: pointer; margin-left: auto; }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--t4); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ════════════ DATA ════════════ */
+
+const USER = {
+  name: 'Maya Ivanova', role: 'compliance_officer',
+  roleLabel: 'Compliance Officer', authSource: 'Keycloak OIDC',
+};
+
+const EVENTS = [
+  {
+    id: 'AUD-90021',
+    ts: '2026-05-16 07:44:02',
+    eventType: 'identity.merchant_login_succeeded',
+    domain: 'identity',
+    actorType: 'merchant_admin',
+    actorId: 'mrch_OrbitMarket_admin',
+    actorName: 'Orbit Market Admin',
+    subjectType: 'merchant',
+    subjectId: 'mrch_OrbitMarket',
+    resourceType: 'merchant_session',
+    resourceId: 'sess_7821a',
+    outcome: 'SUCCESS',
+    severity: 'INFO',
+    requestId: 'req_f8a21d3c',
+    correlationId: 'corr_20260516_merchant_auth',
+    sourceService: 'identity-service',
+    sensitive: false,
+    immutable: true,
+    retentionYears: 7,
+    metadata: { ip: '203.0.113.44', mfa_used: 'false', session_created: '2026-05-16T07:44:02Z', user_agent: '[MASKED]' },
+    description: 'Merchant admin successfully authenticated via portal',
+  },
+  {
+    id: 'AUD-90034',
+    ts: '2026-05-16 08:12:44',
+    eventType: 'read_audit.aml_alert_detail_viewed',
+    domain: 'read_audit',
+    actorType: 'compliance_officer',
+    actorId: 'usr_MayaIvanova',
+    actorName: 'Maya Ivanova',
+    subjectType: 'aml_alert',
+    subjectId: 'AML-8831',
+    resourceType: 'aml_case',
+    resourceId: 'AML-8831',
+    outcome: 'SUCCESS',
+    severity: 'WARN',
+    requestId: 'req_c7b93e4a',
+    correlationId: 'corr_20260516_aml_8831',
+    sourceService: 'compliance-service',
+    sensitive: true,
+    immutable: true,
+    retentionYears: 7,
+    metadata: {
+      screen: 'BOF-UI-06',
+      reason: 'AML critical alert detail viewed',
+      case_id: 'AML-8831',
+      subject_user_id: 'usr_3821',
+      read_audit_policy: 'synchronous_before_return',
+      data_classification: 'compliance_sensitive',
+      decision_context: 'active_case_review',
+      viewer_role: 'compliance_officer',
+      source_ip: '127.0.0.1',
+      user_agent: '[MASKED — senior_compliance only]',
+      correlation_id: 'corr_20260516_aml_8831',
+      session_id: '[MASKED]',
+    },
+    description: 'Read-audit: compliance officer accessed AML HIGH alert detail before data was returned',
+  },
+  {
+    id: 'AUD-90041',
+    ts: '2026-05-16 08:22:11',
+    eventType: 'ledger.journal_posted',
+    domain: 'ledger',
+    actorType: 'platform_service',
+    actorId: 'svc_ledger',
+    actorName: 'Ledger Service',
+    subjectType: 'account',
+    subjectId: 'acc_usr_3821',
+    resourceType: 'journal_entry',
+    resourceId: 'JNL-40021',
+    outcome: 'SUCCESS',
+    severity: 'INFO',
+    requestId: 'req_e2d44a1b',
+    correlationId: 'corr_20260516_aml_8831',
+    sourceService: 'ledger-service',
+    sensitive: false,
+    immutable: true,
+    retentionYears: 7,
+    metadata: { journal_id: 'JNL-40021', account_id: 'acc_usr_3821', amount: '0.00', action: 'account_blocked', triggered_by: 'aml.account_frozen' },
+    description: 'Journal posted: account blocked following AML freeze decision',
+  },
+  {
+    id: 'AUD-90055',
+    ts: '2026-05-16 09:05:30',
+    eventType: 'wallet.deposit.approved',
+    domain: 'wallet',
+    actorType: 'backoffice_operator',
+    actorId: 'usr_BjornPetersen',
+    actorName: 'Björn Petersen',
+    subjectType: 'wallet',
+    subjectId: 'wal_ElenaFischer',
+    resourceType: 'deposit',
+    resourceId: 'DEP-8822',
+    outcome: 'SUCCESS',
+    severity: 'INFO',
+    requestId: 'req_a1c88f2d',
+    correlationId: 'corr_20260516_wallet_7',
+    sourceService: 'payment-service',
+    sensitive: false,
+    immutable: true,
+    retentionYears: 7,
+    metadata: { deposit_id: 'DEP-8822', amount: '€980.00', currency: 'EUR', approved_by: 'usr_BjornPetersen' },
+    description: 'Deposit approved by backoffice operator for Elena Fischer',
+  },
+  {
+    id: 'AUD-90067',
+    ts: '2026-05-16 09:44:18',
+    eventType: 'sanctions.temporary_block_applied',
+    domain: 'sanctions',
+    actorType: 'compliance_officer',
+    actorId: 'usr_MayaIvanova',
+    actorName: 'Maya Ivanova',
+    subjectType: 'user',
+    subjectId: 'usr_MarkWeber',
+    resourceType: 'sanctions_hit',
+    resourceId: 'SNX-2110',
+    outcome: 'SUCCESS',
+    severity: 'HIGH',
+    requestId: 'req_b3d91c5e',
+    correlationId: 'corr_20260516_sanctions_2110',
+    sourceService: 'compliance-service',
+    sensitive: true,
+    immutable: true,
+    retentionYears: 7,
+    metadata: { hit_id: 'SNX-2110', subject: 'usr_MarkWeber', list: 'OFAC SDN', match_score: '91', block_type: 'temporary', duration: 'pending_review', user_agent: '[MASKED]' },
+    description: 'Temporary block applied to Mark Weber following OFAC SDN match score 91',
+  },
+  {
+    id: 'AUD-90072',
+    ts: '2026-05-16 10:15:09',
+    eventType: 'chargeback.decision_lost',
+    domain: 'chargeback',
+    actorType: 'compliance_officer',
+    actorId: 'usr_MayaIvanova',
+    actorName: 'Maya Ivanova',
+    subjectType: 'chargeback_case',
+    subjectId: 'CHB-9068',
+    resourceType: 'chargeback',
+    resourceId: 'CHB-9068',
+    outcome: 'SUCCESS',
+    severity: 'HIGH',
+    requestId: 'req_d4e02b6f',
+    correlationId: 'corr_20260516_chb_9068',
+    sourceService: 'chargeback-service',
+    sensitive: true,
+    immutable: true,
+    retentionYears: 7,
+    metadata: { case_id: 'CHB-9068', payment_id: 'PAY-8088', outcome: 'LOST', reason: 'MERCHANT_EVIDENCE_INSUFFICIENT', amount: '€520.00', ledger_pending: 'true', user_agent: '[MASKED]' },
+    description: 'Chargeback LOST decision rendered for Anton Meyer / CHB-9068',
+  },
+  {
+    id: 'AUD-90088',
+    ts: '2026-05-16 11:02:34',
+    eventType: 'public_api.idempotency_replayed',
+    domain: 'public_api',
+    actorType: 'merchant_api_key',
+    actorId: 'key_OrbitMarket_prod',
+    actorName: 'Orbit Market API',
+    subjectType: 'api_request',
+    subjectId: 'idem_key_8821',
+    resourceType: 'payment',
+    resourceId: 'PAY-9910',
+    outcome: 'SUCCESS',
+    severity: 'INFO',
+    requestId: 'req_f5a33d7g',
+    correlationId: 'corr_20260516_api_88',
+    sourceService: 'api-gateway',
+    sensitive: false,
+    immutable: true,
+    retentionYears: 7,
+    metadata: { idempotency_key: 'idem_key_8821', original_request_id: 'req_orig_8800', replayed: 'true', payment_id: 'PAY-9910' },
+    description: 'Idempotent API replay: duplicate payment request returned cached response',
+  },
+  {
+    id: 'AUD-90093',
+    ts: '2026-05-16 11:44:02',
+    eventType: 'audit_log.update_denied',
+    domain: 'audit_log',
+    actorType: 'platform_db_trigger',
+    actorId: 'db_trigger_audit_immutable',
+    actorName: 'DB Trigger (audit.audit_log)',
+    subjectType: 'audit_table',
+    subjectId: 'audit.audit_log',
+    resourceType: 'database_table',
+    resourceId: 'audit.audit_log',
+    outcome: 'DENIED',
+    severity: 'CRITICAL',
+    requestId: 'req_sys_trg_093',
+    correlationId: 'corr_sys_immutable',
+    sourceService: 'db-trigger',
+    sensitive: false,
+    immutable: true,
+    retentionYears: 7,
+    metadata: { attempted_op: 'UPDATE', table: 'audit.audit_log', blocked_by: 'immutability_trigger', reason: 'audit.audit_log is append-only', attempted_row: 'AUD-90034' },
+    description: 'Append-only protection: UPDATE attempt on audit_log was blocked by DB trigger',
+  },
+  {
+    id: 'AUD-90102',
+    ts: '2026-05-16 12:30:55',
+    eventType: 'backoffice.access_denied',
+    domain: 'backoffice',
+    actorType: 'backoffice_operator',
+    actorId: 'usr_TonyaKlein',
+    actorName: 'Tonya Klein',
+    subjectType: 'screen',
+    subjectId: 'BOF-UI-09',
+    resourceType: 'audit_log_viewer',
+    resourceId: 'BOF-UI-09',
+    outcome: 'DENIED',
+    severity: 'WARN',
+    requestId: 'req_g6b44e8h',
+    correlationId: 'corr_20260516_access_5',
+    sourceService: 'auth-service',
+    sensitive: false,
+    immutable: true,
+    retentionYears: 7,
+    metadata: { required_role: 'compliance_officer OR senior_compliance', actual_role: 'backoffice_operator', screen: 'BOF-UI-09', reason: 'Insufficient role for audit log viewer' },
+    description: 'Access denied: backoffice_operator attempted to open audit log viewer screen',
+  },
+  {
+    id: 'AUD-90118',
+    ts: '2026-05-16 13:18:22',
+    eventType: 'webhook.stripe_signature_failed',
+    domain: 'webhook',
+    actorType: 'platform_service',
+    actorId: 'svc_webhook',
+    actorName: 'Webhook Service',
+    subjectType: 'webhook_event',
+    subjectId: 'evt_stripe_9021',
+    resourceType: 'webhook',
+    resourceId: 'whk_stripe_config_1',
+    outcome: 'FAILURE',
+    severity: 'WARN',
+    requestId: 'req_h7c55f9i',
+    correlationId: 'corr_20260516_webhook_3',
+    sourceService: 'webhook-service',
+    sensitive: false,
+    immutable: true,
+    retentionYears: 7,
+    metadata: { webhook_id: 'whk_stripe_config_1', event_id: 'evt_stripe_9021', failure_reason: 'Stripe-Signature header invalid', retry_count: '3', next_retry: 'abandoned' },
+    description: 'Stripe webhook signature validation failed after 3 retries — event abandoned',
+  },
+];
+
+const CORR_CHAIN_AML = [
+  { ts: '2026-05-16 08:10:11', ev: 'backoffice.queue_opened',             svc: 'compliance-service', outcome: 'SUCCESS', cls: 'success', desc: 'AML queue opened by Maya Ivanova', evId: null },
+  { ts: '2026-05-16 08:11:03', ev: 'aml.alert_opened',                   svc: 'aml-service',         outcome: 'SUCCESS', cls: 'success', desc: 'AML-8831 alert details loaded', evId: null },
+  { ts: '2026-05-16 08:12:44', ev: 'read_audit.aml_alert_detail_viewed', svc: 'compliance-service', outcome: 'SUCCESS', cls: 'current', desc: 'Read-audit recorded before AML detail returned', evId: 'AUD-90034' },
+  { ts: '2026-05-16 08:14:22', ev: 'aml.review_started',                 svc: 'aml-service',         outcome: 'SUCCESS', cls: 'success', desc: 'Maya Ivanova started formal case review', evId: null },
+  { ts: '2026-05-16 08:22:01', ev: 'aml.account_frozen',                 svc: 'aml-service',         outcome: 'SUCCESS', cls: 'warn',    desc: 'Account freeze applied to usr_3821', evId: null },
+  { ts: '2026-05-16 08:22:11', ev: 'ledger.account_blocked',             svc: 'ledger-service',      outcome: 'SUCCESS', cls: 'warn',    desc: 'Ledger block posted (JNL-40021)', evId: 'AUD-90041' },
+  { ts: '2026-05-16 08:23:04', ev: 'notification.sent',                  svc: 'notification-service',outcome: 'SUCCESS', cls: 'success', desc: 'Freeze notification sent to cardholder', evId: null },
+];
+
+function outcomeChip(o) {
+  if (o === 'SUCCESS') return <span className="rchip green">SUCCESS</span>;
+  if (o === 'DENIED')  return <span className="rchip red">DENIED</span>;
+  if (o === 'FAILURE') return <span className="rchip amber">FAILURE</span>;
+  return <span className="rchip neutral">{o}</span>;
+}
+function severityDot(s) {
+  return <span className={`sev-dot ${s}`}>{s}</span>;
+}
+function actorChip(t) {
+  const map = {
+    compliance_officer: 'blue', senior_compliance: 'purple',
+    backoffice_operator: 'neutral', merchant_admin: 'orange',
+    merchant_api_key: 'neutral', platform_service: 'purple',
+    platform_db_trigger: 'red',
+  };
+  return <span className={`rchip ${map[t]||'neutral'}`}>{t}</span>;
+}
+function domainColor(d) {
+  const map = { read_audit:'amber', audit_log:'red', sanctions:'orange', chargeback:'purple', webhook:'neutral', identity:'blue', ledger:'blue', wallet:'blue', backoffice:'neutral', public_api:'neutral' };
+  return map[d]||'neutral';
+}
+
+/* ════════════ APP ════════════ */
+
+function App() {
+  const [selectedId, setSelectedId] = useState('AUD-90034');
+  const [detailTab, setDetailTab] = useState('info');
+  const [filterDomain, setFilterDomain] = useState('all');
+  const [filterActorType, setFilterActorType] = useState('all');
+  const [filterOutcome, setFilterOutcome] = useState('all');
+  const [filterSeverity, setFilterSeverity] = useState('all');
+  const [filterSensitive, setFilterSensitive] = useState(false);
+  const [filterDeniedFailed, setFilterDeniedFailed] = useState(false);
+  const [search, setSearch] = useState('');
+  const [corrFilter, setCorrFilter] = useState(null);
+  const [metaSectionOpen, setMetaSectionOpen] = useState({ core: true, context: true, access: false });
+  const [copied, setCopied] = useState(false);
+  const [permMsg, setPermMsg] = useState(null);
+  const [sessionLog, setSessionLog] = useState([
+    { cls: '', ev: 'audit_log.viewer_opened',              meta: 'Maya Ivanova · 2026-05-17 14:30' },
+    { cls: '', ev: 'read_audit.audit_log_search_performed', meta: 'Maya Ivanova · 2026-05-17 14:31' },
+    { cls: '', ev: 'audit_log.event_opened',               meta: 'Maya Ivanova · AUD-90034 · 14:31' },
+  ]);
+
+  const sel = EVENTS.find(e => e.id === selectedId);
+
+  function pushSession(ev, meta) {
+    setSessionLog(prev => [{ ev, meta, isNew: true }, ...prev.map(e => ({...e, isNew: false}))]);
+  }
+  function showPerm(msg) {
+    setPermMsg(msg);
+    setTimeout(() => setPermMsg(null), 3500);
+  }
+
+  const filtered = EVENTS.filter(ev => {
+    if (corrFilter && ev.correlationId !== corrFilter) return false;
+    if (filterDomain !== 'all' && ev.domain !== filterDomain) return false;
+    if (filterActorType !== 'all' && ev.actorType !== filterActorType) return false;
+    if (filterOutcome !== 'all' && ev.outcome !== filterOutcome) return false;
+    if (filterSeverity !== 'all' && ev.severity !== filterSeverity) return false;
+    if (filterSensitive && !ev.sensitive) return false;
+    if (filterDeniedFailed && !['DENIED','FAILURE'].includes(ev.outcome)) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      if (!ev.id.toLowerCase().includes(q) &&
+          !ev.eventType.toLowerCase().includes(q) &&
+          !ev.actorName.toLowerCase().includes(q) &&
+          !ev.actorId.toLowerCase().includes(q) &&
+          !ev.subjectId.toLowerCase().includes(q) &&
+          !ev.requestId.toLowerCase().includes(q) &&
+          !ev.correlationId.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  function handleSelectEvent(id) {
+    setSelectedId(id);
+    const ev = EVENTS.find(e => e.id === id);
+    if (ev) pushSession('audit_log.event_opened', `Maya Ivanova · ${id} · ${ev.eventType}`);
+  }
+
+  function handleViewCorr() {
+    if (!sel) return;
+    setCorrFilter(sel.correlationId);
+    setDetailTab('corr');
+    pushSession('audit_log.correlation_chain_viewed', `Maya Ivanova · ${sel.correlationId}`);
+  }
+
+  function handleCopyRequestId() {
+    if (!sel) return;
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    pushSession('audit_log.request_id_copied', `Maya Ivanova · ${sel.requestId}`);
+  }
+
+  function handleExport() {
+    if (sel && sel.sensitive) {
+      showPerm('Export of sensitive events requires senior_compliance. Result will be masked or filtered.');
+      pushSession('audit_log.export_denied', `Maya Ivanova · sensitive export blocked`);
+    } else {
+      showPerm('Export queued (prototype only — no file generated).');
+    }
+  }
+
+  function handleRawMeta() {
+    showPerm('View Raw Metadata requires senior_compliance. Maya Ivanova (compliance_officer) can view masked metadata only.');
+    pushSession('audit_log.raw_metadata_denied', `Maya Ivanova · ${sel ? sel.id : ''} · insufficient role`);
+  }
+
+  const metaEntries = sel ? Object.entries(sel.metadata) : [];
+  const coreKeys    = ['screen','reason','case_id','subject_user_id','journal_id','amount','deposit_id','hit_id','case_id','payment_id','outcome','webhook_id','event_id','attempted_op','table','required_role','actual_role'];
+  const contextKeys = ['read_audit_policy','data_classification','decision_context','viewer_role','block_type','duration','idempotency_key','original_request_id','replayed','retry_count','next_retry','attempted_row','triggered_by','action','mfa_used','session_created'];
+  const accessKeys  = ['source_ip','ip','user_agent','session_id','correlation_id'];
+
+  function metaSection(title, keys, sectionKey) {
+    const rows = metaEntries.filter(([k]) => keys.includes(k));
+    if (rows.length === 0) return null;
+    return (
+      <div>
+        <div className="meta-section-hdr" onClick={() => setMetaSectionOpen(s => ({...s, [sectionKey]: !s[sectionKey]}))}>
+          <span>{title}</span>
+          <span>{metaSectionOpen[sectionKey] ? '▲' : '▼'}</span>
+        </div>
+        {metaSectionOpen[sectionKey] && (
+          <div>
+            {rows.map(([k, v]) => {
+              const isMasked = typeof v === 'string' && v.startsWith('[MASKED');
+              return (
+                <div key={k} className="meta-row">
+                  <span className="meta-key">{k}</span>
+                  <span className={`meta-val${isMasked ? ' masked' : ''}`}>{v}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-shell">
+
+      {/* ─── Sidebar ─── */}
+      <div className="sidebar">
+        <div className="sb-brand">
+          <div className="sb-product">MiniFin</div>
+          <div className="sb-surface">Backoffice</div>
+        </div>
+        <div className="sb-env">● Local Sandbox</div>
+        <div className="sb-nav">
+          <div className="sb-sec">Operations</div>
+          {[
+            ['📥','KYC Queue','8','alrt'],
+            ['⚠️','AML Alerts','3','alrt'],
+            ['🛡️','Sanctions Hits','2','alrt'],
+            ['💳','Chargebacks','9','alrt'],
+            ['📋','Case Manager','',''],
+          ].map(([ico,lbl,cnt,cls]) => (
+            <div key={lbl} className="sb-item">
+              <span className="sb-icon">{ico}</span>
+              <span>{lbl}</span>
+              {cnt && <span className={`sb-bdg ${cls}`}>{cnt}</span>}
+            </div>
+          ))}
+          <div className="sb-sec">Finance</div>
+          {[['💰','Ledger'],['📤','Payouts'],['🔄','Reconciliation']].map(([ico,lbl]) => (
+            <div key={lbl} className="sb-item"><span className="sb-icon">{ico}</span><span>{lbl}</span></div>
+          ))}
+          <div className="sb-sec">Admin</div>
+          {[['👥','Users'],['🔑','Roles & Permissions'],['📊','Audit Log']].map(([ico,lbl]) => (
+            <div key={lbl} className={`sb-item${lbl==='Audit Log'?' active':''}`}>
+              <span className="sb-icon">{ico}</span><span>{lbl}</span>
+            </div>
+          ))}
+        </div>
+        <div className="sb-user">
+          <div className="sb-user-name">{USER.name}</div>
+          <div className="sb-user-role">{USER.roleLabel}</div>
+          <div className="sb-user-session">
+            <div className="sess-dot" />
+            <div className="sess-txt">Keycloak OIDC · active</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Main ─── */}
+      <div className="main">
+
+        {/* Topbar */}
+        <div className="topbar">
+          <span className="topbar-screen">BOF-UI-09</span>
+          <span className="topbar-sep">·</span>
+          <span className="topbar-host">localhost:3000</span>
+          <span className="topbar-sep">/</span>
+          <span className="topbar-host">backoffice / audit-log</span>
+          <div className="topbar-right">
+            <span className="badge neutral" style={{fontFamily:'var(--f-mono)',fontSize:9}}>audit.viewer</span>
+            <span className="badge amber">Local Sandbox</span>
+            <span className="badge blue">{USER.role}</span>
+            <span className="badge green" style={{fontSize:9}}>🔒 read-audited</span>
+          </div>
+        </div>
+
+        {/* Page header */}
+        <div className="page-hdr">
+          <div className="page-title-row">
+            <span className="page-title">Audit Log</span>
+            <span className="page-sub">Search immutable audit events and read-audit records</span>
+          </div>
+          <div className="stats-strip">
+            <div className="stat-cell"><span className="stat-val bl">42</span><span className="stat-lbl">Recent events</span></div>
+            <div className="stat-cell"><span className="stat-val am">9</span><span className="stat-lbl">Sensitive reads today</span></div>
+            <div className="stat-cell"><span className="stat-val">6</span><span className="stat-lbl">Auth events</span></div>
+            <div className="stat-cell"><span className="stat-val bl">12</span><span className="stat-lbl">Ledger / payment</span></div>
+            <div className="stat-cell"><span className="stat-val pu">8</span><span className="stat-lbl">Compliance events</span></div>
+            <div className="stat-cell"><span className="stat-val rd">4</span><span className="stat-lbl">Denied access</span></div>
+            <div className="stat-cell"><span className="stat-val rd">2</span><span className="stat-lbl">Append-only blocked</span></div>
+          </div>
+        </div>
+
+        {/* Action bar */}
+        <div className="action-bar">
+          <button className="btn btn-primary">🔍 Search</button>
+          <button className="btn btn-default" onClick={handleExport}>⬇ Export CSV</button>
+          <button className="btn btn-default">💾 Save Filter</button>
+          <div className="btn-sep" />
+          <button
+            className={`btn ${sel ? 'btn-default' : 'btn-disabled'}`}
+            onClick={() => sel && setDetailTab('info')}
+          >Open Event</button>
+          <button
+            className={`btn ${sel ? 'btn-purple' : 'btn-disabled'}`}
+            onClick={sel ? handleViewCorr : undefined}
+          >⛓ View Correlation Chain</button>
+          <button
+            className={`btn ${copied ? 'btn-copied' : sel ? 'btn-default' : 'btn-disabled'}`}
+            onClick={sel ? handleCopyRequestId : undefined}
+          >{copied ? '✓ Copied!' : '⎘ Copy Request ID'}</button>
+          {sel && sel.sensitive && <span className="badge amber" style={{marginLeft:4}}>Sensitive event</span>}
+        </div>
+
+        {/* Filter bar */}
+        <div className="filter-bar">
+          <span className="filter-lbl">Domain</span>
+          <select className="filter-select" value={filterDomain} onChange={e => setFilterDomain(e.target.value)}>
+            <option value="all">All domains</option>
+            <option value="identity">identity</option>
+            <option value="read_audit">read_audit</option>
+            <option value="ledger">ledger</option>
+            <option value="wallet">wallet</option>
+            <option value="sanctions">sanctions</option>
+            <option value="chargeback">chargeback</option>
+            <option value="public_api">public_api</option>
+            <option value="audit_log">audit_log</option>
+            <option value="backoffice">backoffice</option>
+            <option value="webhook">webhook</option>
+          </select>
+          <span className="filter-lbl">Actor</span>
+          <select className="filter-select" value={filterActorType} onChange={e => setFilterActorType(e.target.value)}>
+            <option value="all">All actors</option>
+            <option value="compliance_officer">compliance_officer</option>
+            <option value="senior_compliance">senior_compliance</option>
+            <option value="backoffice_operator">backoffice_operator</option>
+            <option value="merchant_admin">merchant_admin</option>
+            <option value="merchant_api_key">merchant_api_key</option>
+            <option value="platform_service">platform_service</option>
+            <option value="platform_db_trigger">platform_db_trigger</option>
+          </select>
+          <span className="filter-lbl">Outcome</span>
+          <select className="filter-select" value={filterOutcome} onChange={e => setFilterOutcome(e.target.value)}>
+            <option value="all">All outcomes</option>
+            <option value="SUCCESS">SUCCESS</option>
+            <option value="DENIED">DENIED</option>
+            <option value="FAILURE">FAILURE</option>
+          </select>
+          <span className="filter-lbl">Severity</span>
+          <select className="filter-select" value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)}>
+            <option value="all">All</option>
+            <option value="INFO">INFO</option>
+            <option value="WARN">WARN</option>
+            <option value="HIGH">HIGH</option>
+            <option value="CRITICAL">CRITICAL</option>
+          </select>
+          <span
+            className={`filter-chip${filterSensitive ? ' warn-active' : ''}`}
+            onClick={() => setFilterSensitive(v => !v)}
+          >Sensitive reads</span>
+          <span
+            className={`filter-chip${filterDeniedFailed ? ' active' : ''}`}
+            onClick={() => setFilterDeniedFailed(v => !v)}
+          >Denied / Failed</span>
+          <input
+            className="filter-search"
+            placeholder="Event ID, actor, resource, request ID…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <span className="filter-count">{filtered.length} event{filtered.length !== 1 ? 's' : ''}</span>
+        </div>
+
+        {/* Correlation chain banner */}
+        {corrFilter && (
+          <div className="corr-filter-banner">
+            <span>🔗</span>
+            <span>Showing events for correlation ID: <strong style={{fontFamily:'var(--f-mono)'}}>{corrFilter}</strong></span>
+            <button className="corr-filter-clear" onClick={() => setCorrFilter(null)}>✕ Clear filter</button>
+          </div>
+        )}
+
+        {/* Content area */}
+        <div className="content-area">
+
+          {/* ── Table ── */}
+          <div className="table-area">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Event ID</th>
+                  <th>Event Type</th>
+                  <th>Actor</th>
+                  <th>Subject</th>
+                  <th>Outcome</th>
+                  <th>Sev.</th>
+                  <th>Request ID</th>
+                  <th>Service</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(ev => {
+                  const isSel = ev.id === selectedId;
+                  const isCorr = corrFilter && ev.correlationId === corrFilter && !isSel;
+                  return (
+                    <tr
+                      key={ev.id}
+                      className={isSel ? 'sel' : isCorr ? 'corr-hi' : ''}
+                      onClick={() => handleSelectEvent(ev.id)}
+                    >
+                      <td className="mono" style={{fontSize:10,color:'var(--t3)',whiteSpace:'nowrap'}}>{ev.ts}</td>
+                      <td className="mono" style={{fontSize:10.5,fontWeight:600,whiteSpace:'nowrap'}}>{ev.id}</td>
+                      <td>
+                        <div style={{display:'flex',alignItems:'center',gap:4}}>
+                          {ev.sensitive && <span title="Sensitive read" style={{fontSize:10,color:'var(--am)'}}>⚠</span>}
+                          <span className={`rchip ${domainColor(ev.domain)}`} style={{fontSize:8,marginRight:2}}>{ev.domain}</span>
+                          <span className="mono" style={{fontSize:10,color:'var(--t1)',fontWeight:500}}>
+                            {ev.eventType.replace(ev.domain+'.','').substring(0,28)}{ev.eventType.length > 36 ? '…' : ''}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{fontSize:11,fontWeight:500,color:'var(--t1)'}}>{ev.actorName}</div>
+                        <div style={{fontSize:9,fontFamily:'var(--f-mono)',color:'var(--t3)',marginTop:1}}>{ev.actorType}</div>
+                      </td>
+                      <td>
+                        <div className="mono" style={{fontSize:10,color:'var(--t1)'}}>{ev.subjectId}</div>
+                        <div style={{fontSize:9,color:'var(--t3)'}}>{ev.subjectType}</div>
+                      </td>
+                      <td>{outcomeChip(ev.outcome)}</td>
+                      <td>{severityDot(ev.severity)}</td>
+                      <td className="mono" style={{fontSize:9,color:'var(--t3)'}}>{ev.requestId.substring(0,14)}</td>
+                      <td style={{fontSize:9.5,color:'var(--t2)',fontFamily:'var(--f-mono)'}}>{ev.sourceService}</td>
+                      <td>
+                        <button
+                          className="btn btn-default"
+                          style={{padding:'2px 7px',fontSize:10}}
+                          onClick={e => { e.stopPropagation(); handleSelectEvent(ev.id); setDetailTab('info'); }}
+                        >Open</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={10} style={{textAlign:'center',color:'var(--t3)',padding:'20px 8px',fontSize:11}}>No events match the current filters</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* ── Detail panel ── */}
+          <div className="detail-panel">
+            {!sel
+              ? <div className="detail-empty"><div style={{fontSize:28,opacity:.3}}>📊</div><div>Select an audit event</div></div>
+              : <>
+                  <div className="detail-hdr">
+                    <div style={{flex:1,minWidth:0}}>
+                      <div className="detail-id">{sel.id} · {sel.ts}</div>
+                      <div className="detail-evtype">{sel.eventType}</div>
+                      <div className="detail-badges">
+                        {outcomeChip(sel.outcome)}
+                        {severityDot(sel.severity)}
+                        {actorChip(sel.actorType)}
+                        {sel.sensitive && <span className="badge amber">sensitive</span>}
+                        <span className="immutable-badge">🔒 immutable</span>
+                        {sel.outcome === 'DENIED' && <span className="denied-badge">⛔ DENIED</span>}
+                      </div>
+                    </div>
+                    <div style={{flexShrink:0,textAlign:'right'}}>
+                      <div style={{fontSize:10,color:'var(--t3)',fontFamily:'var(--f-mono)'}}>{sel.sourceService}</div>
+                      <div style={{fontSize:9,color:'var(--t3)',marginTop:2,fontFamily:'var(--f-mono)'}}>{sel.retentionYears}y retention</div>
+                    </div>
+                  </div>
+
+                  <div className="tab-nav">
+                    {[['info','Event Info'],['meta','Metadata'],['corr','Correlation'],['appendonly','Immutability']].map(([id,lbl]) => (
+                      <div key={id} className={`tab-item${detailTab===id?' active':''}`} onClick={() => setDetailTab(id)}>{lbl}</div>
+                    ))}
+                  </div>
+
+                  <div className="tab-content">
+
+                    {/* ── Event Info ── */}
+                    {detailTab === 'info' && <>
+                      <div className="detail-sec">
+                        <div className="detail-sec-title">Event identity</div>
+                        <table className="kv">
+                          <tbody>
+                            <tr><td>Event ID</td><td className="mono">{sel.id}</td></tr>
+                            <tr><td>Event type</td><td className="mono">{sel.eventType}</td></tr>
+                            <tr><td>Domain</td><td><span className={`rchip ${domainColor(sel.domain)}`}>{sel.domain}</span></td></tr>
+                            <tr><td>Outcome</td><td>{outcomeChip(sel.outcome)}</td></tr>
+                            <tr><td>Severity</td><td>{severityDot(sel.severity)}</td></tr>
+                            <tr><td>Timestamp</td><td className="mono">{sel.ts}</td></tr>
+                            <tr><td>Source service</td><td className="mono">{sel.sourceService}</td></tr>
+                            <tr><td>Immutable</td><td><span className="immutable-badge">🔒 append-only</span></td></tr>
+                            <tr><td>Retention</td><td className="mono">{sel.retentionYears} years</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="detail-sec">
+                        <div className="detail-sec-title">Actor</div>
+                        <table className="kv">
+                          <tbody>
+                            <tr><td>Actor type</td><td>{actorChip(sel.actorType)}</td></tr>
+                            <tr><td>Actor ID</td><td className="mono" style={{fontSize:11}}>{sel.actorId}</td></tr>
+                            <tr><td>Actor name</td><td>{sel.actorName}</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="detail-sec">
+                        <div className="detail-sec-title">Subject / Resource</div>
+                        <table className="kv">
+                          <tbody>
+                            <tr><td>Subject type</td><td className="mono">{sel.subjectType}</td></tr>
+                            <tr><td>Subject ID</td><td className="mono">{sel.subjectId}</td></tr>
+                            <tr><td>Resource type</td><td className="mono">{sel.resourceType}</td></tr>
+                            <tr><td>Resource ID</td><td className="mono">{sel.resourceId}</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div className="detail-sec">
+                        <div className="detail-sec-title">Request / Correlation</div>
+                        <table className="kv">
+                          <tbody>
+                            <tr>
+                              <td>Request ID</td>
+                              <td>
+                                <span className="mono" style={{fontSize:11}}>{sel.requestId}</span>
+                                <span style={{fontSize:9,color:'var(--t3)',marginLeft:6}}>one HTTP request</span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Correlation ID</td>
+                              <td>
+                                <span className="mono" style={{fontSize:11}}>{sel.correlationId}</span>
+                                <span style={{fontSize:9,color:'var(--t3)',marginLeft:6}}>workflow thread</span>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <div style={{marginTop:8,padding:'6px 8px',background:'var(--surf2)',borderRadius:'var(--r)',fontSize:10.5,color:'var(--t3)',lineHeight:1.5}}>
+                          <strong style={{color:'var(--t2)'}}>Request ID</strong> identifies a single HTTP/API request.
+                          {' '}<strong style={{color:'var(--t2)'}}>Correlation ID</strong> traces a workflow across multiple requests and services.
+                          Use <em>View Correlation Chain</em> to see all events sharing this correlation ID.
+                        </div>
+                      </div>
+                      <div className="detail-sec">
+                        <div className="detail-sec-title">Description</div>
+                        <div style={{fontSize:11.5,color:'var(--t2)',lineHeight:1.6}}>{sel.description}</div>
+                      </div>
+                      {sel.eventType.startsWith('read_audit') && (
+                        <div className="detail-sec">
+                          <div className="detail-sec-title">Read-audit record</div>
+                          <div className="read-audit-explain">
+                            <div className="ra-title">⚠️ Synchronous read-audit: audit record was written before data was returned</div>
+                            <div className="ra-row">Applies to: AML HIGH/CRITICAL case details</div>
+                            <div className="ra-row">Applies to: sanctions hit details</div>
+                            <div className="ra-row">Applies to: KYC document previews</div>
+                            <div className="ra-row">Applies to: frozen account review screens</div>
+                            <div className="ra-row">Applies to: audit log viewer access</div>
+                            <div style={{marginTop:6,fontSize:10.5,color:'var(--am)'}}>
+                              This event record is the read-audit proof. If data was returned, this record exists first. The audit cannot be disabled or removed.
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {sel.outcome === 'DENIED' && (
+                        <div className="detail-sec">
+                          <div className="detail-sec-title">Denied event detail</div>
+                          <div className="blocked-event-box">
+                            <div className="blocked-event-title">⛔ {sel.eventType}</div>
+                            <div style={{fontSize:11,color:'var(--rd)',lineHeight:1.5}}>{sel.description}</div>
+                            {sel.metadata.reason && <div style={{marginTop:6,fontSize:10,fontFamily:'var(--f-mono)',color:'var(--rd)'}}>reason: {sel.metadata.reason}</div>}
+                          </div>
+                        </div>
+                      )}
+                      <div className="detail-sec">
+                        <div className="detail-sec-title">Allowed actions (Maya)</div>
+                        {[
+                          ['View event details','✓','ok'],
+                          ['View masked metadata','✓','ok'],
+                          ['Search audit log','✓','ok'],
+                          ['Export non-sensitive filtered results','✓ (limited)','ok'],
+                          ['View correlation chain','✓','ok'],
+                          ['Copy request ID','✓','ok'],
+                          ['View raw / unmasked metadata','✗ senior_compliance only','blocked'],
+                          ['Export full audit stream','✗ senior_compliance only','blocked'],
+                          ['Unmask sensitive fields','✗ senior_compliance only','blocked'],
+                          ['Delete or edit events','✗ append-only — impossible','blocked'],
+                          ['Retention override','✗ senior_compliance only','blocked'],
+                        ].map(([lbl,val,cls]) => (
+                          <div key={lbl} style={{display:'flex',justifyContent:'space-between',padding:'3px 0',borderBottom:'1px solid var(--bdr)',alignItems:'center'}}>
+                            <span style={{fontSize:11,color:'var(--t2)'}}>{lbl}</span>
+                            <span style={{fontSize:10,fontWeight:700,fontFamily:'var(--f-mono)',color:cls==='ok'?'var(--g)':'var(--rd)'}}>{val}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </>}
+
+                    {/* ── Metadata ── */}
+                    {detailTab === 'meta' && <>
+                      <div style={{padding:'8px 14px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <div style={{fontSize:11,color:'var(--t3)'}}>
+                          Metadata for <strong className="mono" style={{color:'var(--t1)'}}>{sel.id}</strong>
+                          {sel.sensitive && <span className="badge amber" style={{marginLeft:6}}>sensitive</span>}
+                        </div>
+                        <button
+                          className="btn btn-disabled"
+                          style={{fontSize:11}}
+                          onClick={handleRawMeta}
+                        >🔒 View Raw</button>
+                      </div>
+                      {sel.sensitive && (
+                        <div style={{margin:'0 14px 8px'}}>
+                          <div className="alert-box amber">
+                            ⚠️ This event contains sensitive metadata. Some fields are masked for compliance_officer. Raw view and unmask require senior_compliance.
+                          </div>
+                        </div>
+                      )}
+                      <div style={{margin:'0 14px 12px'}}>
+                        <div className="meta-box">
+                          {metaSection('Core context', coreKeys, 'core')}
+                          {metaSection('Workflow context', contextKeys, 'context')}
+                          {metaSection('Access / identity', accessKeys, 'access')}
+                          {metaEntries.filter(([k]) => ![...coreKeys,...contextKeys,...accessKeys].includes(k)).length > 0 && (
+                            <div>
+                              {metaEntries.filter(([k]) => ![...coreKeys,...contextKeys,...accessKeys].includes(k)).map(([k,v]) => (
+                                <div key={k} className="meta-row">
+                                  <span className="meta-key">{k}</span>
+                                  <span className="meta-val">{v}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{margin:'0 14px 12px'}}>
+                        <div className="senior-blk-box">
+                          <div className="senior-blk-title">🔒 Senior-only metadata actions (blocked for Maya)</div>
+                          <div className="senior-blk-row">View Raw Metadata — unmasked JSON, requires senior_compliance</div>
+                          <div className="senior-blk-row">Unmask Sensitive Fields — user_agent, session_id, IP PII requires senior_compliance</div>
+                          <div className="senior-blk-row">Export Full Event — full JSON export with all fields requires senior_compliance</div>
+                        </div>
+                      </div>
+                    </>}
+
+                    {/* ── Correlation Chain ── */}
+                    {detailTab === 'corr' && <>
+                      <div style={{padding:'8px 14px 4px'}}>
+                        <div style={{fontSize:11,color:'var(--t3)',marginBottom:4}}>
+                          Correlation chain for <span className="mono" style={{color:'var(--t1)',fontWeight:600}}>{sel.correlationId}</span>
+                        </div>
+                        <div style={{fontSize:10.5,color:'var(--t2)',lineHeight:1.5,marginBottom:8}}>
+                          <strong>Correlation ID</strong> traces a workflow or business operation across multiple HTTP requests and services.
+                          Each event in the chain shares the same correlation ID. The <strong>request ID</strong> uniquely identifies a single request within the chain.
+                        </div>
+                      </div>
+                      {sel.correlationId === 'corr_20260516_aml_8831'
+                        ? (
+                          <div className="corr-chain">
+                            {CORR_CHAIN_AML.map((item, i) => (
+                              <div key={i} className={`corr-item${item.cls === 'current' ? ' current' : ''}`}>
+                                <div className="corr-connector">
+                                  <div className={`corr-dot ${item.cls}`} />
+                                  {i < CORR_CHAIN_AML.length - 1 && <div className="corr-line" />}
+                                </div>
+                                <div className="corr-info">
+                                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                                    <span className="corr-ev">{item.ev}</span>
+                                    {item.cls === 'current' && <span className="badge blue" style={{fontSize:9}}>selected</span>}
+                                    {item.evId && <span className="mono" style={{fontSize:9,color:'var(--t3)'}}>{item.evId}</span>}
+                                  </div>
+                                  <div className="corr-meta">{item.ts} · {item.svc} · {outcomeChip(item.outcome)}</div>
+                                  <div className="corr-desc">{item.desc}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )
+                        : (
+                          <div style={{padding:'12px 14px'}}>
+                            <div style={{background:'var(--surf2)',border:'1px solid var(--bdr)',borderRadius:'var(--r)',padding:'16px',textAlign:'center',color:'var(--t3)',fontSize:11}}>
+                              Full correlation chain available for <strong>corr_20260516_aml_8831</strong>.<br/>
+                              Chain for <strong className="mono">{sel.correlationId}</strong> contains {EVENTS.filter(e=>e.correlationId===sel.correlationId).length} event{EVENTS.filter(e=>e.correlationId===sel.correlationId).length!==1?'s':''} in this dataset.
+                              <div style={{marginTop:8}}>
+                                <button className="btn btn-default" style={{fontSize:11}} onClick={() => setCorrFilter(sel.correlationId)}>
+                                  Filter table to this chain
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      }
+                    </>}
+
+                    {/* ── Immutability ── */}
+                    {detailTab === 'appendonly' && <>
+                      <div className="detail-sec">
+                        <div className="detail-sec-title">Append-only protection</div>
+                        <div className="append-box">
+                          <div className="append-row">
+                            <div className="append-ico">🔒</div>
+                            <div>
+                              <div className="append-label">Audit table is append-only</div>
+                              <div className="append-desc">INSERT operations only. UPDATE and DELETE are blocked at the DB layer.</div>
+                            </div>
+                          </div>
+                          <div className="append-row">
+                            <div className="append-ico">⚡</div>
+                            <div>
+                              <div className="append-label">DB trigger enforces immutability</div>
+                              <div className="append-desc">Any UPDATE or DELETE on audit.audit_log raises an exception and writes a DENIED event.</div>
+                            </div>
+                          </div>
+                          <div className="append-row">
+                            <div className="append-ico">🚫</div>
+                            <div>
+                              <div className="append-label">App path cannot modify events</div>
+                              <div className="append-desc">No API endpoint, backoffice action, or service call can edit an existing event.</div>
+                            </div>
+                          </div>
+                          <div className="append-row">
+                            <div className="append-ico">📋</div>
+                            <div>
+                              <div className="append-label">Corrections are new events</div>
+                              <div className="append-desc">If an event was recorded incorrectly, a new correction event is appended. Original is never modified.</div>
+                            </div>
+                          </div>
+                          <div className="append-row">
+                            <div className="append-ico">📅</div>
+                            <div>
+                              <div className="append-label">Retention: 7 years (compliance events)</div>
+                              <div className="append-desc">Compliance-sensitive events are retained for 7 years per regulatory requirements. Retention override requires senior_compliance.</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="detail-sec">
+                        <div className="detail-sec-title">Sample blocked mutation event</div>
+                        {(() => {
+                          const denied = EVENTS.find(e => e.id === 'AUD-90093');
+                          return denied ? (
+                            <div className="blocked-event-box">
+                              <div className="blocked-event-title">{denied.eventType}</div>
+                              <table className="kv" style={{marginBottom:0}}>
+                                <tbody>
+                                  <tr><td>Event ID</td><td className="mono">{denied.id}</td></tr>
+                                  <tr><td>Actor</td><td className="mono">{denied.actorId}</td></tr>
+                                  <tr><td>Outcome</td><td>{outcomeChip(denied.outcome)}</td></tr>
+                                  <tr><td>Attempted op</td><td className="mono">{denied.metadata.attempted_op}</td></tr>
+                                  <tr><td>Table</td><td className="mono">{denied.metadata.table}</td></tr>
+                                  <tr><td>Blocked by</td><td className="mono">{denied.metadata.blocked_by}</td></tr>
+                                  <tr><td>Reason</td><td style={{fontSize:11,color:'var(--rd)'}}>{denied.metadata.reason}</td></tr>
+                                  <tr><td>Attempted on row</td><td className="mono">{denied.metadata.attempted_row}</td></tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                      <div className="detail-sec">
+                        <div className="detail-sec-title">Read-audit boundary</div>
+                        <div className="read-audit-explain">
+                          <div className="ra-title">Synchronous read-audit: audit record written before data returned</div>
+                          <div className="ra-row">AML HIGH / CRITICAL alert details → read_audit.aml_alert_detail_viewed</div>
+                          <div className="ra-row">Sanctions hit detail view → read_audit.sanctions_hit_detail_viewed</div>
+                          <div className="ra-row">KYC document preview → read_audit.kyc_document_previewed</div>
+                          <div className="ra-row">Frozen account review → read_audit.frozen_account_reviewed</div>
+                          <div className="ra-row">Audit log viewer opened → read_audit.audit_log_search_performed</div>
+                          <div style={{marginTop:6,fontSize:10.5,color:'var(--am)'}}>
+                            If the server crashes after writing the read-audit event but before returning data, the audit record still exists. Absence of a read-audit record means data was never returned.
+                          </div>
+                        </div>
+                      </div>
+                    </>}
+
+                  </div>{/* end tab-content */}
+                </>
+            }
+          </div>{/* end detail-panel */}
+
+          {/* ── Audit rail ── */}
+          <div className="audit-rail">
+            <div className="au-hdr">
+              <div className="au-title">Security &amp; Audit</div>
+              <div className="au-sub">BOF-UI-09 · compliance_officer</div>
+            </div>
+            <div className="au-body">
+
+              <div>
+                <div className="au-sec-title">Session identity</div>
+                <div className="au-row"><span className="au-k">User</span><span className="au-v">{USER.name}</span></div>
+                <div className="au-row"><span className="au-k">OIDC role</span><span className="au-v ok">compliance_officer</span></div>
+                <div className="au-row"><span className="au-k">Auth source</span><span className="au-v">Keycloak OIDC</span></div>
+                <div className="au-row"><span className="au-k">Token status</span><span className="au-v ok">active</span></div>
+                <div className="au-row"><span className="au-k">Platform role</span><span className="au-v ok">compliance_officer</span></div>
+              </div>
+
+              <div>
+                <div className="au-sec-title">Access invariants</div>
+                <div className="au-rbac-row">
+                  <span className="au-rbac-ico ok">✓</span>
+                  <span className="au-rbac-txt"><strong>Audit log viewer</strong> access is itself read-audited</span>
+                </div>
+                <div className="au-rbac-row">
+                  <span className="au-rbac-ico ok">✓</span>
+                  <span className="au-rbac-txt"><strong>Export actions</strong> are logged to audit trail</span>
+                </div>
+                <div className="au-rbac-row">
+                  <span className="au-rbac-ico ok">✓</span>
+                  <span className="au-rbac-txt"><strong>Audit table</strong> is append-only — no mutations possible</span>
+                </div>
+                <div className="au-rbac-row">
+                  <span className="au-rbac-ico no">✗</span>
+                  <span className="au-rbac-txt blocked"><strong>Raw metadata</strong> — senior_compliance only</span>
+                </div>
+                <div className="au-rbac-row">
+                  <span className="au-rbac-ico no">✗</span>
+                  <span className="au-rbac-txt blocked"><strong>Full stream export</strong> — senior_compliance only</span>
+                </div>
+                <div className="au-rbac-row">
+                  <span className="au-rbac-ico no">✗</span>
+                  <span className="au-rbac-txt blocked"><strong>Retention override</strong> — senior_compliance only</span>
+                </div>
+                <div className="au-rbac-row">
+                  <span className="au-rbac-ico no">✗</span>
+                  <span className="au-rbac-txt blocked"><strong>End-user / merchant</strong> cannot access this screen</span>
+                </div>
+              </div>
+
+              <div>
+                <div className="au-sec-title">Session event log</div>
+                <div className="au-ev-log">
+                  {sessionLog.slice(0,9).map((e, i) => (
+                    <div key={i} className="au-ev">
+                      <div className={`au-ev-code${e.isNew?' new':''}`}>{e.ev}</div>
+                      <div className="au-ev-meta">{e.meta}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="au-sec-title">Audit event types (this screen)</div>
+                <div style={{display:'flex',flexDirection:'column',gap:0}}>
+                  {[
+                    'audit_log.viewer_opened',
+                    'read_audit.audit_log_search_performed',
+                    'audit_log.event_opened',
+                    'audit_log.correlation_chain_viewed',
+                    'audit_log.export_denied',
+                    'audit_log.raw_metadata_denied',
+                    'audit_log.request_id_copied',
+                  ].map(ev => (
+                    <div key={ev} className="au-inv">{ev}</div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>{/* end content-area */}
+      </div>{/* end main */}
+
+      {permMsg && (
+        <div className="perm-popover">🔒 {permMsg}</div>
+      )}
+
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
