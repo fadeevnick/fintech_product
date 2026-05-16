@@ -1,10 +1,10 @@
 # Phase 03 Slice 03 — Wallet Manual Withdraw Hold and Final Debit — Planning Note
 
-Status: **DRAFT v0.1**.
+Status: **BACKEND/RUNTIME SUB-SCOPE EXECUTED v0.2; frontend not in scope**.
 
 This document fixes the third implementation slice inside `Phase 03 — Ledger and Wallet Manual Operations`.
 
-It is a pre-code scope contract. Runtime evidence must be recorded separately in `planning/runtime_evidence_log.md`.
+It started as a pre-code scope contract. Runtime evidence is recorded separately in `planning/runtime_evidence_log.md`.
 
 ---
 

@@ -347,27 +347,45 @@ Next planned step:
 
 ## Phase 03 Slice 03 — Wallet Manual Withdraw Hold and Final Debit
 
-Status: **DRAFTED — implementation not started**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — frontend not in scope**.
 
 Planning contract:
-- `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — DRAFT v0.1.
+- `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — backend/runtime sub-scope executed v0.2; frontend not in scope.
 
-Planned backend/runtime scope:
-- manual withdraw request under EUR 10k;
-- ledger hold posting from `WALLET_USER:<userId>` to `WALLET_WITHDRAW_HOLD:<userId>`;
-- backoffice manual-ops withdrawal queue and `COMPLETE` / `REJECT` decision endpoint;
-- final debit posting from hold account to `EXTERNAL_WITHDRAWAL_CLEARING`;
-- rejection release posting from hold account back to wallet account;
-- actor-control write block for withdrawal create and completion;
-- retained runtime scripts for hold+complete, reject release, insufficient funds, actor-control block and double-decision.
+Implemented backend/runtime scope:
+- Platform DB migration `V7__wallet_manual_withdraw.sql` for `wallet.withdraw_requests` and idempotent seed of `ledger.accounts(code='EXTERNAL_WITHDRAWAL_CLEARING', account_type='EXTERNAL_CLEARING', normal_side='CREDIT')`.
+- End-user `POST /api/v1/withdrawals` for manual withdrawals under EUR 10k. It validates EUR amount, checks actor-control, verifies sufficient derived wallet balance, creates a withdrawal request, posts a hold journal and returns state `HELD`.
+- `GET /api/v1/wallet` now includes own withdrawal history alongside balance and deposits.
+- Per-user hold ledger account `WALLET_WITHDRAW_HOLD:<userId>` is lazily provisioned as a credit-normal hold account.
+- Backoffice manual-ops surface:
+  - `GET /api/v1/backoffice/manual-ops/withdrawals` — held queue with synchronous read-audit per listed withdrawal;
+  - `POST /api/v1/backoffice/manual-ops/withdrawals/{id}/decision` — `COMPLETE` posts final debit from hold to `EXTERNAL_WITHDRAWAL_CLEARING`; `REJECT` releases hold back to wallet.
+- Actor-control hook blocks withdrawal create and completion for `FROZEN` / `BLOCKED`; rejection remains allowed to release held funds.
+- Retained runtime scripts:
+  - `product/scripts/runtime/reg_phase03_wallet_withdraw_hold_complete.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_withdraw_reject_releases_hold.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_withdraw_insufficient_funds.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_withdraw_actor_control_block.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_withdraw_double_decision.sh`
 
 Explicitly not started:
-- product code for withdrawals;
-- runtime verification for `LDG-03`;
 - Source of Funds (`WLT-03`);
 - two-eyes (`WLT-04`);
 - real payout rails;
 - frontend implementation.
 
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-16 — Phase 03 Slice 03 Wallet Manual Withdraw Runtime Verification`.
+- `LDG-03` — pass for hold/final-debit flow with balanced postings.
+- `WLT-02` — pass for withdrawal create + completion actor-control blocks across `FROZEN` and `BLOCKED`.
+- `AUD-01` — pass for withdrawal hold, complete, reject and actor-control denial audit rows.
+- `AUD-03` — pass for backoffice manual withdrawals queue read producing synchronous read-audit row.
+- `LDG-05` / `LDG-99` — pass via ledger reconciliation after withdrawal flows.
+- Regression subset passed: wallet deposit happy path, wallet deposit double-decision and ledger reconciliation.
+
+Result tag notes:
+- `LDG-03` is passed.
+- `WLT-01`, `WLT-03`, `WLT-04` are not claimed; transfer, SoF and two-eyes workflows do not exist yet.
+
 Next planned step:
-- Implement the Phase 03 Slice 03 backend/runtime sub-scope, then run and record the linked runtime checks.
+- Draft the next Phase 03 wallet/manual-operation slice, likely internal end-user transfer targeting `WLT-01`.

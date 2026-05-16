@@ -27,6 +27,22 @@ data class DepositRequestRecord(
     val decidedAt: OffsetDateTime?,
 )
 
+data class WithdrawalRequestRecord(
+    val id: UUID,
+    val userId: UUID,
+    val walletAccountId: UUID,
+    val amount: BigDecimal,
+    val currency: String,
+    val state: String,
+    val reason: String?,
+    val holdJournalEntryId: UUID?,
+    val completionJournalEntryId: UUID?,
+    val releaseJournalEntryId: UUID?,
+    val createdAt: OffsetDateTime,
+    val heldAt: OffsetDateTime?,
+    val decidedAt: OffsetDateTime?,
+)
+
 @Repository
 class WalletRepository(
     private val jdbcTemplate: JdbcTemplate,
@@ -190,6 +206,148 @@ class WalletRepository(
             id,
         )
 
+    fun insertWithdrawalRequest(
+        id: UUID,
+        userId: UUID,
+        walletAccountId: UUID,
+        amount: BigDecimal,
+        state: String,
+    ): WithdrawalRequestRecord {
+        jdbcTemplate.update(
+            """
+            insert into wallet.withdraw_requests (
+                id, user_id, wallet_account_id, amount, currency, state
+            )
+            values (?, ?, ?, ?, 'EUR', ?)
+            """.trimIndent(),
+            id,
+            userId,
+            walletAccountId,
+            amount,
+            state,
+        )
+        return findWithdrawalRequest(id) ?: error("Withdrawal request disappeared after insert")
+    }
+
+    fun findWithdrawalRequest(id: UUID): WithdrawalRequestRecord? =
+        jdbcTemplate.query(
+            """
+            select id, user_id, wallet_account_id, amount, currency, state, reason,
+                   hold_journal_entry_id, completion_journal_entry_id, release_journal_entry_id,
+                   created_at, held_at, decided_at
+            from wallet.withdraw_requests
+            where id = ?
+            """.trimIndent(),
+            { rs, _ -> rs.toWithdrawalRequestRecord() },
+            id,
+        ).firstOrNull()
+
+    fun listWithdrawalsForUser(userId: UUID, limit: Int): List<WithdrawalRequestRecord> =
+        jdbcTemplate.query(
+            """
+            select id, user_id, wallet_account_id, amount, currency, state, reason,
+                   hold_journal_entry_id, completion_journal_entry_id, release_journal_entry_id,
+                   created_at, held_at, decided_at
+            from wallet.withdraw_requests
+            where user_id = ?
+            order by created_at desc
+            limit ?
+            """.trimIndent(),
+            { rs, _ -> rs.toWithdrawalRequestRecord() },
+            userId,
+            limit,
+        )
+
+    fun listHeldWithdrawals(limit: Int): List<WithdrawalRequestRecord> =
+        jdbcTemplate.query(
+            """
+            select id, user_id, wallet_account_id, amount, currency, state, reason,
+                   hold_journal_entry_id, completion_journal_entry_id, release_journal_entry_id,
+                   created_at, held_at, decided_at
+            from wallet.withdraw_requests
+            where state = 'HELD'
+            order by created_at asc
+            limit ?
+            """.trimIndent(),
+            { rs, _ -> rs.toWithdrawalRequestRecord() },
+            limit,
+        )
+
+    fun markWithdrawalHeld(
+        id: UUID,
+        holdJournalEntryId: UUID,
+    ): Int =
+        jdbcTemplate.update(
+            """
+            update wallet.withdraw_requests
+               set state = 'HELD',
+                   hold_journal_entry_id = ?,
+                   held_at = now()
+             where id = ?
+               and state = 'PENDING'
+            """.trimIndent(),
+            holdJournalEntryId,
+            id,
+        )
+
+    fun markWithdrawalCompleted(
+        id: UUID,
+        completionJournalEntryId: UUID,
+        reason: String,
+        decidedByActorType: String,
+        decidedByActorId: UUID?,
+        decidedByReference: String?,
+    ): Int =
+        jdbcTemplate.update(
+            """
+            update wallet.withdraw_requests
+               set state = 'COMPLETED',
+                   completion_journal_entry_id = ?,
+                   reason = ?,
+                   decided_by_actor_type = ?,
+                   decided_by_actor_id = ?,
+                   decided_by_reference = ?,
+                   decided_at = now()
+             where id = ?
+               and state = 'HELD'
+            """.trimIndent(),
+            completionJournalEntryId,
+            reason,
+            decidedByActorType,
+            decidedByActorId,
+            decidedByReference,
+            id,
+        )
+
+    fun markWithdrawalRejected(
+        id: UUID,
+        releaseJournalEntryId: UUID,
+        reason: String,
+        decidedByActorType: String,
+        decidedByActorId: UUID?,
+        decidedByReference: String?,
+    ): Int =
+        jdbcTemplate.update(
+            """
+            update wallet.withdraw_requests
+               set state = 'REJECTED',
+                   release_journal_entry_id = ?,
+                   reason = ?,
+                   decided_by_actor_type = ?,
+                   decided_by_actor_id = ?,
+                   decided_by_reference = ?,
+                   decided_at = now()
+             where id = ?
+               and state = 'HELD'
+            """.trimIndent(),
+            releaseJournalEntryId,
+            reason,
+            decidedByActorType,
+            decidedByActorId,
+            decidedByReference,
+            id,
+        )
+
     private fun ResultSet.toWalletAccountRecord(): WalletAccountRecord =
         WalletAccountRecord(
             id = getObject("id", UUID::class.java),
@@ -209,6 +367,23 @@ class WalletRepository(
             reason = getString("reason"),
             journalEntryId = getObject("journal_entry_id", UUID::class.java),
             createdAt = getObject("created_at", OffsetDateTime::class.java),
+            decidedAt = getObject("decided_at", OffsetDateTime::class.java),
+        )
+
+    private fun ResultSet.toWithdrawalRequestRecord(): WithdrawalRequestRecord =
+        WithdrawalRequestRecord(
+            id = getObject("id", UUID::class.java),
+            userId = getObject("user_id", UUID::class.java),
+            walletAccountId = getObject("wallet_account_id", UUID::class.java),
+            amount = getBigDecimal("amount"),
+            currency = getString("currency"),
+            state = getString("state"),
+            reason = getString("reason"),
+            holdJournalEntryId = getObject("hold_journal_entry_id", UUID::class.java),
+            completionJournalEntryId = getObject("completion_journal_entry_id", UUID::class.java),
+            releaseJournalEntryId = getObject("release_journal_entry_id", UUID::class.java),
+            createdAt = getObject("created_at", OffsetDateTime::class.java),
+            heldAt = getObject("held_at", OffsetDateTime::class.java),
             decidedAt = getObject("decided_at", OffsetDateTime::class.java),
         )
 }

@@ -39,6 +39,16 @@ class WalletController(
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse(data = deposit))
     }
 
+    @PostMapping("/api/v1/withdrawals")
+    fun createWithdrawal(
+        @CookieValue(name = SESSION_COOKIE, required = false) sessionToken: String?,
+        @RequestBody request: WithdrawalRequestCreate,
+    ): ResponseEntity<ApiResponse<WithdrawalRequestResponse>> {
+        val user = identityService.currentUser(sessionToken)
+        val withdrawal = walletService.createWithdrawal(user, request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse(data = withdrawal))
+    }
+
     @GetMapping("/api/v1/wallet")
     fun walletSummary(
         @CookieValue(name = SESSION_COOKIE, required = false) sessionToken: String?,
@@ -55,6 +65,14 @@ class WalletController(
         return ApiResponse(data = manualOpsService.listPendingDeposits(principal, limit = 100))
     }
 
+    @GetMapping("/api/v1/backoffice/manual-ops/withdrawals")
+    fun listHeldWithdrawals(
+        authentication: JwtAuthenticationToken,
+    ): ApiResponse<List<WithdrawalRequestResponse>> {
+        val principal = roleMapper.requireBackofficePrincipal(authentication.token)
+        return ApiResponse(data = manualOpsService.listHeldWithdrawals(principal, limit = 100))
+    }
+
     @PostMapping("/api/v1/backoffice/manual-ops/deposits/{depositId}/decision")
     fun decide(
         authentication: JwtAuthenticationToken,
@@ -64,6 +82,17 @@ class WalletController(
         val principal = roleMapper.requireBackofficePrincipal(authentication.token)
         val depositUuid = requireUuid(depositId)
         return ApiResponse(data = manualOpsService.decide(depositUuid, request, principal))
+    }
+
+    @PostMapping("/api/v1/backoffice/manual-ops/withdrawals/{withdrawalId}/decision")
+    fun decideWithdrawal(
+        authentication: JwtAuthenticationToken,
+        @PathVariable withdrawalId: String,
+        @RequestBody request: ManualOpsWithdrawalDecision,
+    ): ApiResponse<WithdrawalRequestResponse> {
+        val principal = roleMapper.requireBackofficePrincipal(authentication.token)
+        val withdrawalUuid = requireUuid(withdrawalId)
+        return ApiResponse(data = manualOpsService.decideWithdrawal(withdrawalUuid, request, principal))
     }
 
     @ExceptionHandler(WalletException::class)

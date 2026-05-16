@@ -56,6 +56,44 @@ wd_create_deposit() {
     >"${out_body}"
 }
 
+wd_approve_deposit() {
+  local backoffice_token="$1"
+  local deposit_id="$2"
+  local reason="$3"
+  local out_body="$4"
+  curl -fsS -X POST "${base_url}/api/v1/backoffice/manual-ops/deposits/${deposit_id}/decision" \
+    -H "Authorization: Bearer ${backoffice_token}" \
+    -H "Content-Type: application/json" \
+    -d "{\"decision\":\"APPROVE\",\"reason\":\"${reason}\"}" \
+    >"${out_body}"
+}
+
+wd_fund_wallet() {
+  local cookie_jar="$1"
+  local amount="$2"
+  local backoffice_token="$3"
+  local tag="$4"
+  local deposit_body="/tmp/minifin-phase03-${tag}-fund-deposit.json"
+  local decision_body="/tmp/minifin-phase03-${tag}-fund-decision.json"
+
+  wd_create_deposit "${cookie_jar}" "${amount}" "${deposit_body}"
+  local deposit_id
+  deposit_id="$(node -e "const j=JSON.parse(require('fs').readFileSync('${deposit_body}','utf8')); if(!j.data?.depositId) process.exit(1); console.log(j.data.depositId);")"
+  wd_approve_deposit "${backoffice_token}" "${deposit_id}" "runtime funding" "${decision_body}"
+  node -e "const j=JSON.parse(require('fs').readFileSync('${decision_body}','utf8')); if(j.data?.state!=='COMPLETED'||!j.data?.journalEntryId) process.exit(1);"
+  echo "${deposit_id}"
+}
+
+wd_create_withdrawal() {
+  local cookie_jar="$1"
+  local amount="$2"
+  local out_body="$3"
+  curl -fsS -b "${cookie_jar}" -X POST "${base_url}/api/v1/withdrawals" \
+    -H "Content-Type: application/json" \
+    -d "{\"amount\":\"${amount}\",\"currency\":\"EUR\"}" \
+    >"${out_body}"
+}
+
 wd_psql() {
   docker compose -f "${compose_file}" exec -T platform-db psql -U platform -d platform -Atc "$1"
 }

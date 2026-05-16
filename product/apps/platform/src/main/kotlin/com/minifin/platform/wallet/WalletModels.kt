@@ -19,15 +19,41 @@ data class DepositRequestResponse(
     val decidedAt: String?,
 )
 
+data class WithdrawalRequestCreate(
+    val amount: String,
+    val currency: String = "EUR",
+)
+
+data class WithdrawalRequestResponse(
+    val withdrawalId: String,
+    val userId: String,
+    val amount: String,
+    val currency: String,
+    val state: String,
+    val reason: String?,
+    val holdJournalEntryId: String?,
+    val completionJournalEntryId: String?,
+    val releaseJournalEntryId: String?,
+    val createdAt: String,
+    val heldAt: String?,
+    val decidedAt: String?,
+)
+
 data class WalletSummaryResponse(
     val walletId: String,
     val ledgerAccountId: String,
     val currency: String,
     val balance: String,
     val deposits: List<DepositRequestResponse>,
+    val withdrawals: List<WithdrawalRequestResponse>,
 )
 
 data class ManualOpsDepositDecision(
+    val decision: String,
+    val reason: String,
+)
+
+data class ManualOpsWithdrawalDecision(
     val decision: String,
     val reason: String,
 )

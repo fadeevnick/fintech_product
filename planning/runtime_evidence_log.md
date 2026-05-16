@@ -714,3 +714,88 @@ Result tag notes:
 
 Next planned step:
 - Draft the next Phase 03 wallet/manual-operation slice, likely manual withdraw with hold/final-debit flow targeting `LDG-03`.
+
+---
+
+## 2026-05-16 — Phase 03 Slice 03 Wallet Manual Withdraw Runtime Verification
+
+Scope:
+- Phase 03 Slice 03 backend/runtime sub-scope.
+- Manual withdrawal under EUR 10k with ledger hold, final debit, rejection release, insufficient-funds guard and actor-control write block.
+- No real payout rails, Source of Funds, two-eyes or frontend implementation.
+
+Build/runtime evidence:
+- `docker compose -f deploy/docker-compose.yml build platform` passed.
+- `docker compose -f deploy/docker-compose.yml up -d platform` passed.
+- `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+
+New withdrawal script evidence:
+- `product/scripts/runtime/reg_phase03_wallet_withdraw_hold_complete.sh`:
+  - `LDG-03` — pass.
+  - `AUD-01` — pass for withdrawal hold and completion audit rows.
+  - `AUD-03` — pass for backoffice manual withdrawals queue read-audit.
+  - Concrete observations:
+    - End-user `POST /api/v1/withdrawals` returned state `HELD` and `holdJournalEntryId`.
+    - Hold journal had two balanced postings: DEBIT `WALLET_USER:<userId>`, CREDIT `WALLET_WITHDRAW_HOLD:<userId>`.
+    - Wallet balance moved from `50.0000` to `38.0000` after a `12.0000` hold.
+    - Backoffice queue contained the held withdrawal and wrote read-audit.
+    - `COMPLETE` returned state `COMPLETED` and `completionJournalEntryId`.
+    - Completion journal had two balanced postings: DEBIT `WALLET_WITHDRAW_HOLD:<userId>`, CREDIT `EXTERNAL_WITHDRAWAL_CLEARING`.
+    - Hold account balance returned to `0.0000`; wallet balance stayed `38.0000`.
+- `product/scripts/runtime/reg_phase03_wallet_withdraw_reject_releases_hold.sh`:
+  - Rejection release — pass.
+  - Concrete observations:
+    - Held withdrawal reduced wallet balance from `40.0000` to `25.0000`.
+    - `REJECT` returned state `REJECTED` and `releaseJournalEntryId`.
+    - Release journal had two balanced postings: DEBIT `WALLET_WITHDRAW_HOLD:<userId>`, CREDIT `WALLET_USER:<userId>`.
+    - Wallet balance returned to `40.0000`; hold account balance returned to `0.0000`.
+- `product/scripts/runtime/reg_phase03_wallet_withdraw_insufficient_funds.sh`:
+  - Insufficient-funds guard — pass.
+  - Concrete observations:
+    - User funded with `5.0000`.
+    - Withdrawal request for `8.0000` returned HTTP 409 with `insufficient_funds`.
+    - No `wallet.withdraw_requests` row was persisted for the probing user.
+    - Wallet balance remained `5.0000`.
+- `product/scripts/runtime/reg_phase03_wallet_withdraw_actor_control_block.sh`:
+  - `WLT-02` — pass for withdrawal create and completion.
+  - Sub-branches:
+    - create + `FROZEN`: `POST /api/v1/withdrawals` returned HTTP 403 `actor_control_blocked`; zero withdrawal rows persisted.
+    - create + `BLOCKED`: same observations as `FROZEN` create branch.
+    - complete + `FROZEN`: operator `COMPLETE` returned HTTP 403 `actor_control_blocked`; withdrawal remained `HELD`; zero completion journals; `REJECT` remained allowed and released held funds.
+    - complete + `BLOCKED`: same observations as `FROZEN` complete branch.
+- `product/scripts/runtime/reg_phase03_wallet_withdraw_double_decision.sh`:
+  - Double-decision idempotency — pass.
+  - Concrete observations:
+    - First `COMPLETE` returned state `COMPLETED`.
+    - Second `COMPLETE` returned HTTP 409 with `withdrawal_already_decided`.
+    - Late `REJECT` also returned HTTP 409.
+    - DB cross-check found exactly one `WALLET_WITHDRAW_COMPLETE` journal and zero `WALLET_WITHDRAW_RELEASE` journals for the withdrawal.
+
+Regression evidence:
+- `product/scripts/runtime/reg_phase03_wallet_deposit_happy_path.sh` — pass.
+- `product/scripts/runtime/reg_phase03_wallet_deposit_double_decision.sh` — pass.
+- `product/scripts/runtime/reg_phase03_ledger_reconciliation.sh` — `LDG-05` pass (`LDG-99` foundation regression).
+
+Final Phase 03 Slice 03 script output:
+
+```text
+WLT withdraw hold complete pass
+WLT withdraw reject releases hold pass
+WLT withdraw insufficient funds pass
+WLT-02 withdrawal actor-control block (FROZEN+BLOCKED, create+complete) pass
+WLT withdraw double decision pass
+WLT deposit happy path pass
+WLT deposit double decision pass
+LDG-05 ledger reconciliation pass
+```
+
+Result tag notes:
+- `LDG-03` is passed for manual withdrawal hold/final-debit.
+- `WLT-02` is extended to withdrawal create and completion.
+- `AUD-01` is passed for withdrawal hold / complete / reject and actor-control denial audit rows.
+- `AUD-03` is passed for backoffice manual withdrawals queue read producing synchronous read-audit row.
+- `LDG-05` / `LDG-99` remain passed after withdrawal flows.
+- `WLT-01`, `WLT-03`, `WLT-04` are not claimed; transfer, SoF and two-eyes workflows do not exist yet.
+
+Next planned step:
+- Draft the next Phase 03 wallet/manual-operation slice, likely internal end-user transfer targeting `WLT-01`.
