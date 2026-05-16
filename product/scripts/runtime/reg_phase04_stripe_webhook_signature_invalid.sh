@@ -26,8 +26,8 @@ kyb_status="$(stripe_psql "select kyb_status from merchant.merchants where id = 
 test "${kyb_status}" = "NOT_STARTED"
 processed_rows="$(stripe_psql "select count(*) from merchant.stripe_webhook_events where stripe_event_id = '${event_id}' and outcome = 'PROCESSED';")"
 test "${processed_rows}" = "0"
-rejected_rows="$(stripe_psql "select count(*) from merchant.stripe_webhook_events where stripe_event_id = '${event_id}' and outcome = 'REJECTED_SIGNATURE';")"
-test "${rejected_rows}" = "1"
+event_rows="$(stripe_psql "select count(*) from merchant.stripe_webhook_events where stripe_event_id = '${event_id}';")"
+test "${event_rows}" = "0"
 audit_rows="$(stripe_psql "select count(*) from audit.audit_log where event_type = 'stripe.webhook_signature_invalid' and outcome = 'FAILURE';")"
 test "${audit_rows}" -ge 1
 

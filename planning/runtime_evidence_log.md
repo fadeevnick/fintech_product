@@ -911,7 +911,7 @@ New webhook script evidence:
   - Concrete observations:
     - Payload signed with `whsec_wrong_secret` returned HTTP 400 with `stripe_webhook_signature_invalid`.
     - Merchant `kyb_status` remained `NOT_STARTED`.
-    - No `PROCESSED` row exists for that event id; one `REJECTED_SIGNATURE` row exists.
+    - No `merchant.stripe_webhook_events` row exists for that event id, so a later correctly signed retry is not poisoned.
     - `audit.audit_log` contains `stripe.webhook_signature_invalid` with outcome `FAILURE`.
 - `product/scripts/runtime/reg_phase04_stripe_webhook_timestamp_tolerance.sh`:
   - `MRC-02` — pass for Stripe timestamp tolerance rejection.
@@ -919,7 +919,7 @@ New webhook script evidence:
   - Concrete observations:
     - Payload signed correctly but with `t=` two hours in the past returned HTTP 400 with `stripe_webhook_timestamp_outside_tolerance`.
     - Merchant `kyb_status` remained `NOT_STARTED`.
-    - One `REJECTED_TIMESTAMP` event row and `stripe.webhook_timestamp_outside_tolerance` failure audit row exist.
+    - No `merchant.stripe_webhook_events` row exists for that event id; `stripe.webhook_timestamp_outside_tolerance` failure audit row exists.
 - `product/scripts/runtime/reg_phase04_stripe_webhook_idempotency.sh`:
   - `MRC-02` — pass for duplicate Stripe event id idempotency.
   - `AUD-01` — pass for first state-change audit and duplicate-delivery audit.
@@ -939,6 +939,7 @@ MRC-02 Stripe webhook valid signature pass
 MRC-02 Stripe webhook invalid signature rejection pass
 MRC-02 Stripe webhook timestamp tolerance rejection pass
 MRC-02 Stripe webhook event idempotency pass
+MRC-02 Stripe webhook bad-then-valid retry pass
 LDG-05 ledger reconciliation pass
 ```
 
@@ -950,3 +951,20 @@ Result tag notes:
 
 Next planned step:
 - Either provide real Stripe Connect sandbox credentials and implement `MRC-01`, or continue with the separate merchant API key / public API idempotency branch without changing this webhook proof.
+
+### 2026-05-16 Follow-up — Rejected Delivery Must Not Poison Stripe Event Idempotency
+
+Reviewer finding:
+- A rejected delivery with a parseable `event.id` could occupy `merchant.stripe_webhook_events.stripe_event_id`; a later valid retry of the same event id would then be treated as `DUPLICATE` and skip side effects.
+
+Fix:
+- Rejected signature/timestamp/payload deliveries now write audit rows only and do **not** insert into `merchant.stripe_webhook_events`.
+- `merchant.stripe_webhook_events` is reserved for verified events that have passed Stripe signature/timestamp checks and can safely participate in side-effect idempotency.
+- Added retained regression script `product/scripts/runtime/reg_phase04_stripe_webhook_bad_then_valid_retry.sh`.
+
+Verification result after fix:
+- Bad signature for an event id returns HTTP 400 `stripe_webhook_signature_invalid`.
+- No `merchant.stripe_webhook_events` row exists after the rejected delivery.
+- Retrying the same payload/event id with a valid signature returns outcome `PROCESSED`.
+- Merchant `kyb_status` transitions to `VERIFIED`.
+- Exactly one `PROCESSED` event row exists after the valid retry.

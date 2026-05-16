@@ -95,7 +95,7 @@ In this slice:
   - else current value preserved.
 - The same event id delivered twice is processed exactly once. Subsequent deliveries return HTTP 200, do not re-run state changes, and produce a `stripe.webhook_duplicate` audit row.
 - A payload signed with a different secret returns HTTP 400 with code `stripe_webhook_signature_invalid`, persists no `stripe_webhook_events` row, performs no state change and writes a `stripe.webhook_signature_invalid` audit row with outcome `FAILURE`.
-- A payload whose `t=` is outside the tolerance window is rejected with HTTP 400 code `stripe_webhook_timestamp_outside_tolerance` and similar audit, no state change.
+- A payload whose `t=` is outside the tolerance window is rejected with HTTP 400 code `stripe_webhook_timestamp_outside_tolerance`, persists no `stripe_webhook_events` row, performs no state change and writes a failure audit row.
 - An event for an unknown Stripe account id is persisted as `IGNORED_UNKNOWN_ACCOUNT` and does not move any merchant state.
 - An event whose type is not handled is persisted as `IGNORED_UNHANDLED_TYPE`.
 
@@ -199,7 +199,7 @@ create table merchant.stripe_webhook_events (
 );
 ```
 
-`merchant.stripe_webhook_events` is append-only by app convention (no UPDATE/DELETE inside service code) but does not require a DB-level append-only trigger because each row is a single immutable record of one delivery attempt and `processed_at`/`outcome` are set once during the same insert transaction. Re-deliveries do not modify earlier rows; the unique index on `stripe_event_id` blocks duplicates instead.
+`merchant.stripe_webhook_events` is append-only by app convention (no UPDATE/DELETE inside service code) but does not require a DB-level append-only trigger because each row is a single immutable record of one verified delivery and `processed_at`/`outcome` are set once during the same insert transaction. Re-deliveries do not modify earlier rows; the unique index on `stripe_event_id` blocks duplicates instead. Signature/timestamp/payload rejections are audit-only and do not insert into this table, so a rejected delivery cannot poison a later valid retry for the same Stripe event id.
 
 ## 8. Concrete Files To Touch
 
@@ -228,6 +228,7 @@ create table merchant.stripe_webhook_events (
 - `product/scripts/runtime/reg_phase04_stripe_webhook_signature_invalid.sh`
 - `product/scripts/runtime/reg_phase04_stripe_webhook_timestamp_tolerance.sh`
 - `product/scripts/runtime/reg_phase04_stripe_webhook_idempotency.sh`
+- `product/scripts/runtime/reg_phase04_stripe_webhook_bad_then_valid_retry.sh`
 
 ### 8.3 Do NOT Touch
 
@@ -277,6 +278,7 @@ After implementation:
 - `product/scripts/runtime/reg_phase04_stripe_webhook_signature_invalid.sh`
 - `product/scripts/runtime/reg_phase04_stripe_webhook_timestamp_tolerance.sh`
 - `product/scripts/runtime/reg_phase04_stripe_webhook_idempotency.sh`
+- `product/scripts/runtime/reg_phase04_stripe_webhook_bad_then_valid_retry.sh`
 - regression: `product/scripts/runtime/reg_phase03_ledger_reconciliation.sh` (foundation `LDG-99`).
 
 Evidence is appended to `planning/runtime_evidence_log.md`.

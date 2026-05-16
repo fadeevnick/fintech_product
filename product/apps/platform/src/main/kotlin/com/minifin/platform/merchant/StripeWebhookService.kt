@@ -27,7 +27,6 @@ private const val ACCOUNT_UPDATED = "account.updated"
 class StripeWebhookService(
     private val signatureVerifier: StripeWebhookSignatureVerifier,
     private val processor: StripeWebhookProcessor,
-    private val repository: MerchantStripeRepository,
     private val auditRepository: AuditRepository,
     private val objectMapper: ObjectMapper,
 ) {
@@ -94,17 +93,6 @@ class StripeWebhookService(
         message: String,
     ): Nothing {
         val (eventId, eventType) = bestEffortIdentifiers(rawBody)
-        val payloadJson = String(rawBody, Charsets.UTF_8)
-        val safePayloadJson = if (looksLikeJson(payloadJson)) payloadJson
-            else """{"raw":${objectMapper.writeValueAsString(payloadJson)}}"""
-        repository.insertRejectionRow(
-            id = UUID.randomUUID(),
-            stripeEventId = eventId ?: "rejected:${UUID.randomUUID()}",
-            eventType = eventType ?: "unknown",
-            outcome = outcome,
-            payloadJson = safePayloadJson,
-            signatureHeader = signatureHeader,
-        )
         auditRepository.write(
             eventType = auditEvent,
             actorType = "VENDOR_STRIPE",
@@ -128,11 +116,6 @@ class StripeWebhookService(
         id to type
     } catch (_: Exception) {
         null to null
-    }
-
-    private fun looksLikeJson(s: String): Boolean {
-        val t = s.trim()
-        return t.startsWith("{") || t.startsWith("[")
     }
 
     private fun stableJson(vararg pairs: Pair<String, String>): String =

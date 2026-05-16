@@ -25,8 +25,8 @@ node -e "const j=JSON.parse(require('fs').readFileSync('${response_file}','utf8'
 
 kyb_status="$(stripe_psql "select kyb_status from merchant.merchants where id = '${merchant_id}'::uuid;")"
 test "${kyb_status}" = "NOT_STARTED"
-rejected_rows="$(stripe_psql "select count(*) from merchant.stripe_webhook_events where stripe_event_id = '${event_id}' and outcome = 'REJECTED_TIMESTAMP';")"
-test "${rejected_rows}" = "1"
+event_rows="$(stripe_psql "select count(*) from merchant.stripe_webhook_events where stripe_event_id = '${event_id}';")"
+test "${event_rows}" = "0"
 audit_rows="$(stripe_psql "select count(*) from audit.audit_log where event_type = 'stripe.webhook_timestamp_outside_tolerance' and outcome = 'FAILURE';")"
 test "${audit_rows}" -ge 1
 

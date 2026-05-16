@@ -54,44 +54,6 @@ class MerchantStripeRepository(
         return inserted == 1
     }
 
-    fun insertRejectionRow(
-        id: UUID,
-        stripeEventId: String,
-        eventType: String,
-        outcome: String,
-        payloadJson: String,
-        signatureHeader: String?,
-    ) {
-        jdbcTemplate.update(
-            """
-            insert into merchant.stripe_webhook_events (
-                id,
-                stripe_event_id,
-                event_type,
-                outcome,
-                payload_jsonb,
-                signature_header,
-                processed_at
-            )
-            values (?, ?, ?, ?, ?::jsonb, ?, now())
-            on conflict (stripe_event_id) do nothing
-            """.trimIndent(),
-            id,
-            stripeEventId,
-            eventType,
-            outcome,
-            payloadJson,
-            signatureHeader,
-        )
-    }
-
-    fun findExistingEventOutcome(stripeEventId: String): String? =
-        jdbcTemplate.query(
-            "select outcome from merchant.stripe_webhook_events where stripe_event_id = ?",
-            { rs, _ -> rs.getString("outcome") },
-            stripeEventId,
-        ).firstOrNull()
-
     fun findAccountLinkByStripeAccountId(stripeAccountId: String): StripeAccountLinkRecord? =
         jdbcTemplate.query(
             """
