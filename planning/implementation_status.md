@@ -146,6 +146,7 @@ Created:
 - `prototypes/ui/08_backoffice_kyc_queue.html` — standalone `BOF-UI-05` backoffice KYC queue HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 - `prototypes/ui/09_backoffice_aml_alerts.html` — standalone `BOF-UI-06` backoffice AML alerts HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 - `prototypes/ui/10_backoffice_sanctions_hits.html` — standalone `BOF-UI-07` backoffice sanctions hits HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
+- `prototypes/ui/11_backoffice_chargeback_arbitration.html` — standalone `BOF-UI-08` backoffice chargeback arbitration HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-17.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;
