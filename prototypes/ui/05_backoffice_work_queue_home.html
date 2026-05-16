@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Backoffice Work Queue</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --hover:   #f0efe9;
+      --sb:        #0e0e12;
+      --sb-bdr:    #1a1a20;
+      --sb-muted:  #4e4e5c;
+      --sb-active: #1c1c2a;
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+      --t1: #1c1c1f;
+      --t2: #575763;
+      --t3: #9898a6;
+      --t4: #d0d0da;
+      --cta:     #1c1c1f;
+      --cta-hov: #2e2e35;
+      --cta-t:   #ffffff;
+      --g:    #166534;  --g-bg: #f0fdf4;  --g-bd: #bbf7d0;
+      --am:   #854d0e;  --am-bg:#fffbeb;  --am-bd:#fde68a;
+      --rd:   #9b1c1c;  --rd-bg:#fef2f2;  --rd-bd:#fecaca;
+      --or:   #b45309;  --or-bg:#fff7ed;  --or-bd:#fed7aa;
+      --pu:   #5b21b6;  --pu-bg:#f5f3ff;  --pu-bd:#ddd6fe;
+      --bl:   #1e40af;  --bl-bg:#eff6ff;  --bl-bd:#bfdbfe;
+      --sb-env-bg:  #0e1a30;
+      --sb-env-t:   #93c5fd;
+      --sb-env-bd:  #1e3a6a;
+      --f-ui:   'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+      --r: 3px; --r-lg: 5px;
+      --w-sb: 210px; --w-au: 256px;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+    #root { height: 100vh; display: flex; overflow: hidden; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 13px 13px 11px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 8px; }
+    .sb-name  { font-size: 14px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px; }
+    .sb-nav   { flex: 1; padding: 8px 6px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 8px 4px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 7px; padding: 5px 8px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 11.5px;
+      cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.28; }
+    .nav-item.limited { opacity: 0.7; }
+    .nav-item.nav-on  { color: #a5b4fc; opacity: 0.9; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; opacity: 1; }
+    .nav-badge-ro { margin-left: auto; font-size: 8px; font-family: var(--f-mono);
+      color: var(--or); background: var(--or-bg); border: 1px solid var(--or-bd);
+      padding: 1px 4px; border-radius: 2px; }
+    .nav-lock { margin-left: auto; display: flex; align-items: center; opacity: 0.5; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono); color: var(--sb-muted); opacity: 0.7; }
+    .sb-div   { height: 1px; background: var(--sb-bdr); margin: 4px 0; }
+    .sb-footer { padding: 9px 12px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 9.5px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 3px; }
+    .env-dot  { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host { font-size: 9.5px; color: var(--sb-muted); font-family: var(--f-mono); }
+
+    /* MAIN */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .page-hdr  { display: flex; align-items: center; gap: 0; padding: 0;
+      border-bottom: 1px solid var(--bdr); background: var(--surface); flex-shrink: 0; }
+    .hdr-left  { display: flex; align-items: center; gap: 5px; padding: 9px 18px;
+      font-size: 12px; color: var(--t2); flex: 1; min-width: 0; }
+    .hdr-left strong { color: var(--t1); font-weight: 500; }
+    .hdr-left .sep   { color: var(--t4); }
+    .hdr-session { display: flex; align-items: center; gap: 8px; padding: 7px 14px;
+      border-left: 1px solid var(--bdr); flex-shrink: 0; }
+    .session-user { font-size: 11.5px; font-weight: 500; color: var(--t1); }
+    .session-meta { font-size: 10px; color: var(--t3); font-family: var(--f-mono); }
+    .hdr-right { display: flex; align-items: center; gap: 7px; padding: 9px 16px;
+      border-left: 1px solid var(--bdr); flex-shrink: 0; }
+    .screen-id { font-size: 10px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge-hdr { font-size: 10px; font-family: var(--f-mono); color: var(--bl);
+      background: var(--bl-bg); border: 1px solid var(--bl-bd);
+      padding: 2px 7px; border-radius: var(--r); display: flex; align-items: center; gap: 4px; }
+    .env-bdot  { width: 5px; height: 5px; border-radius: 50%; background: var(--bl); }
+
+    .main-body { flex: 1; overflow-y: auto; padding: 14px 18px; background: var(--bg);
+      display: flex; flex-direction: column; gap: 14px; }
+
+    /* METRICS STRIP */
+    .metrics-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+    .metric-card { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); padding: 9px 12px; }
+    .metric-val  { font-size: 22px; font-weight: 600; color: var(--t1); line-height: 1.1;
+      font-family: var(--f-mono); letter-spacing: -0.02em; }
+    .metric-val.rd  { color: var(--rd); }
+    .metric-val.am  { color: var(--am); }
+    .metric-val.bl  { color: var(--bl); }
+    .metric-lbl  { font-size: 10px; color: var(--t3); margin-top: 3px; text-transform: uppercase;
+      letter-spacing: 0.06em; }
+    .metric-sub  { font-size: 10px; color: var(--t3); margin-top: 1px; }
+
+    /* PRIORITY LANE */
+    .section-hdr { display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px; }
+    .section-title { font-size: 11px; font-weight: 600; color: var(--t2);
+      text-transform: uppercase; letter-spacing: 0.07em; }
+    .priority-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+    .priority-scroll::-webkit-scrollbar { height: 3px; }
+    .priority-card { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); padding: 10px 12px; min-width: 210px; flex-shrink: 0;
+      cursor: pointer; transition: border-color 0.12s; position: relative; }
+    .priority-card:hover { border-color: var(--bdr-focus); }
+    .priority-card.critical { border-left: 3px solid var(--rd); }
+    .priority-card.high     { border-left: 3px solid var(--or); }
+    .priority-card.medium   { border-left: 3px solid var(--am); }
+    .pc-type  { font-size: 9.5px; color: var(--t3); text-transform: uppercase;
+      letter-spacing: 0.08em; font-family: var(--f-mono); margin-bottom: 4px; }
+    .pc-title { font-size: 12px; font-weight: 500; color: var(--t1); margin-bottom: 3px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pc-sub   { font-size: 10.5px; color: var(--t2); margin-bottom: 6px; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis; }
+    .pc-footer { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .pc-age   { font-size: 10px; color: var(--t3); font-family: var(--f-mono); }
+
+    /* QUEUE GRID */
+    .queue-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .queue-card { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); padding: 11px 13px; cursor: pointer;
+      transition: border-color 0.12s, box-shadow 0.12s; }
+    .queue-card:hover  { border-color: var(--bdr-focus); }
+    .queue-card.sel    { border-color: var(--cta); box-shadow: 0 0 0 1px var(--cta); }
+    .queue-card.ro     { background: #fffdf5; }
+    .queue-card.senior { opacity: 0.65; }
+    .qc-name   { font-size: 11.5px; font-weight: 600; color: var(--t1); margin-bottom: 7px;
+      display: flex; align-items: center; justify-content: space-between; }
+    .qc-counts { display: flex; gap: 12px; margin-bottom: 7px; }
+    .qc-count  { display: flex; flex-direction: column; }
+    .qc-num    { font-size: 17px; font-weight: 600; font-family: var(--f-mono); color: var(--t1);
+      line-height: 1.1; letter-spacing: -0.02em; }
+    .qc-num.rd { color: var(--rd); }
+    .qc-lbl    { font-size: 9.5px; color: var(--t3); }
+    .qc-meta   { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .qc-age    { font-size: 10px; color: var(--t3); font-family: var(--f-mono); }
+    .qc-sla    { font-size: 9px; padding: 1.5px 5px; border-radius: 2px; font-family: var(--f-mono);
+      font-weight: 600; letter-spacing: 0.05em; }
+    .sla-ok     { background: var(--g-bg);  color: var(--g);   border: 1px solid var(--g-bd); }
+    .sla-warn   { background: var(--am-bg); color: var(--am);  border: 1px solid var(--am-bd); }
+    .sla-breach { background: var(--rd-bg); color: var(--rd);  border: 1px solid var(--rd-bd); }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.06em;
+      font-family: var(--f-mono); border: 1px solid transparent; white-space: nowrap; }
+    .b-critical  { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-high      { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-medium    { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-low       { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-allowed   { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-ro        { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-senior    { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-oidc      { background: var(--bl-bg); color: var(--bl);  border-color: var(--bl-bd); }
+    .b-open      { background: var(--bl-bg); color: var(--bl);  border-color: var(--bl-bd); }
+    .b-review    { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-evidence  { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-done      { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-co        { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-op        { background: #f0f9ff;     color: #0369a1;    border-color: #bae6fd; }
+    .b-sc        { background: #fff1f2;     color: #be123c;    border-color: #fecdd3; }
+
+    /* FILTER BAR */
+    .filter-bar  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .filter-grp  { display: flex; align-items: center; gap: 4px; }
+    .filter-lbl  { font-size: 10px; color: var(--t3); text-transform: uppercase;
+      letter-spacing: 0.07em; white-space: nowrap; }
+    .filter-chip { padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--bdr-mid); background: var(--surface);
+      color: var(--t3); transition: all 0.1s; font-family: var(--f-ui); white-space: nowrap; }
+    .filter-chip:hover  { color: var(--t2); background: var(--hover); }
+    .filter-chip.active { background: var(--cta); color: #fff; border-color: var(--cta); }
+    .filter-chip.rd.active { background: var(--rd); border-color: var(--rd); }
+    .filter-chip.am.active { background: var(--am); border-color: var(--am); }
+    .filter-toggle { padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--bdr-mid); background: var(--surface);
+      color: var(--t3); transition: all 0.1s; font-family: var(--f-ui); }
+    .filter-toggle.on { background: var(--bl-bg); color: var(--bl); border-color: var(--bl-bd); }
+    .search-wrap { display: flex; align-items: center; gap: 0; flex: 1; max-width: 240px; margin-left: auto; }
+    .search-input { background: var(--surface); border: 1px solid var(--bdr-mid);
+      border-radius: var(--r); padding: 4px 10px; font-size: 12px; color: var(--t1);
+      font-family: var(--f-ui); width: 100%; outline: none; }
+    .search-input::placeholder { color: var(--t4); }
+    .search-input:focus { border-color: var(--bdr-focus); }
+
+    /* WORK TABLE */
+    .table-wrap { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; }
+    .table-hdr-row { display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .table-hdr-title { font-size: 11px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .wt { width: 100%; border-collapse: collapse; }
+    .wt th { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase;
+      letter-spacing: 0.07em; padding: 6px 10px; border-bottom: 1px solid var(--bdr);
+      text-align: left; white-space: nowrap; background: var(--surf2); }
+    .wt td { padding: 7px 10px; border-bottom: 1px solid var(--hover); font-size: 12px;
+      color: var(--t1); vertical-align: middle; }
+    .wt tr:last-child td { border-bottom: none; }
+    .wt tr.sel-row td { background: #f5f4ff; }
+    .wt tr:hover td  { background: var(--hover); }
+    .wt tr.sel-row:hover td { background: #f0eeff; }
+    .wt tr { cursor: pointer; }
+    .td-mono  { font-family: var(--f-mono); font-size: 11px; color: var(--t2); }
+    .td-muted { color: var(--t3); }
+    .td-sub   { font-size: 10.5px; color: var(--t3); margin-top: 1px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+      padding: 5px 11px; border-radius: var(--r); font-size: 11.5px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover { background: var(--cta-hov); }
+    .btn-ghost  { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover { background: var(--hover); color: var(--t1); }
+    .btn-danger { background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+    .btn-danger:hover { background: var(--rd-bd); }
+    .btn-disabled { background: var(--surface); color: var(--t4); border: 1px solid var(--bdr);
+      cursor: not-allowed; }
+    .btn-sm { padding: 3px 8px; font-size: 10.5px; }
+    .btn-xs { padding: 2px 7px; font-size: 10px; }
+
+    /* ALERTS */
+    .alert { display: flex; gap: 10px; padding: 8px 11px 8px 12px; font-size: 11.5px;
+      line-height: 1.55; border-radius: 0 var(--r) var(--r) 0;
+      border-left-width: 3px; border-left-style: solid; }
+    .alert-icon { flex-shrink: 0; font-style: normal; font-size: 11px; margin-top: 1px; font-weight: 600; }
+    .alert-err  { background: var(--rd-bg); border-left-color: var(--rd); color: #7f1d1d; }
+    .alert-warn { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-info { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-blue { background: var(--bl-bg); border-left-color: var(--bl); color: #1e3a8a; }
+    .alert-pu   { background: var(--pu-bg); border-left-color: var(--pu); color: #4c1d95; }
+
+    /* KV TABLE */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 4.5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--t3); min-width: 140px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11px; }
+
+    /* DETAIL PANEL */
+    .detail-pane { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; }
+    .detail-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .detail-title { font-size: 12px; font-weight: 600; color: var(--t1); display: flex; align-items: center; gap: 8px; }
+    .detail-body  { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .detail-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .action-grid  { display: flex; flex-direction: column; gap: 6px; }
+    .action-row   { display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 9px; border-radius: var(--r); border: 1px solid var(--bdr); }
+    .action-row.allowed { border-color: var(--g-bd); background: var(--g-bg); }
+    .action-row.blocked { border-color: var(--bdr); background: var(--hover); opacity: 0.6; }
+    .action-name  { font-size: 12px; color: var(--t1); }
+    .action-name.dim { color: var(--t3); }
+    .action-reason { font-size: 10.5px; color: var(--t3); }
+    .timeline-row  { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--hover); align-items: flex-start; }
+    .timeline-row:last-child { border-bottom: none; }
+    .tl-dot  { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .tl-dot.ok  { background: var(--g); }
+    .tl-dot.bad { background: var(--rd); }
+    .tl-dot.am  { background: var(--am); }
+    .tl-dot.bl  { background: var(--bl); }
+    .tl-ts   { font-size: 10px; color: var(--t3); font-family: var(--f-mono); min-width: 60px; flex-shrink: 0; }
+    .tl-txt  { font-size: 11.5px; color: var(--t2); }
+
+    /* AUDIT RAIL */
+    .audit-rail { width: var(--w-au); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .audit-hdr  { padding: 9px 13px; border-bottom: 1px solid var(--bdr);
+      font-size: 9.5px; font-weight: 600; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.1em; }
+    .audit-body { flex: 1; overflow-y: auto; padding: 11px 13px; display: flex; flex-direction: column; gap: 0; }
+    .audit-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--t3); margin-bottom: 6px; margin-top: 2px; }
+    .audit-evt  { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .audit-evt:last-child { border-bottom: none; }
+    .audit-dot  { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .audit-dot.ok  { background: var(--g); }
+    .audit-dot.bad { background: var(--rd); }
+    .audit-dot.am  { background: var(--am); }
+    .audit-dot.bl  { background: var(--bl); }
+    .audit-dot.dim { background: var(--t4); }
+    .audit-name { font-size: 10.5px; font-family: var(--f-mono); color: var(--t1); }
+    .audit-meta { font-size: 9.5px; color: var(--t3); margin-top: 1px; }
+    .sec-fact { display: flex; gap: 8px; padding: 4.5px 0; border-bottom: 1px solid var(--hover); }
+    .sec-fact:last-child { border-bottom: none; }
+    .sec-mark { font-size: 10px; color: var(--t3); flex-shrink: 0; margin-top: 2px; font-family: var(--f-mono); }
+    .sec-text { font-size: 10.5px; color: var(--t2); line-height: 1.45; }
+    .hr { height: 1px; background: var(--bdr); margin: 8px 0; }
+
+    /* PANEL */
+    .panel     { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg); overflow: hidden; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 13px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .panel-title { font-size: 11px; font-weight: 600; color: var(--t1); text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 12px 14px; }
+
+    @media (max-width: 1200px) { .queue-grid { grid-template-columns: repeat(4,1fr); } :root { --w-au: 220px; } }
+    @media (max-width: 1000px) { .audit-rail { display: none; } .metrics-strip { grid-template-columns: repeat(3,1fr); } }
+    @media (max-width: 800px)  { .sidebar { display: none; } .queue-grid { grid-template-columns: repeat(2,1fr); } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+/* ── DATA ── */
+const USER = {
+  name: 'Maya Ivanova', email: 'maya.ivanova@minifin.local',
+  role: 'compliance_officer', dept: 'Compliance Operations',
+  org: 'MiniFin Internal', tokenExp: '18:30',
+};
+
+const QUEUES = [
+  { id: 'deposits',    label: 'Manual Deposits',    open: 18, hi: 3,  age: '3h 20m', sla: 'ok',     access: 'ro',      icon: '↓' },
+  { id: 'withdrawals', label: 'Manual Withdrawals', open: 11, hi: 2,  age: '6h 41m', sla: 'warn',   access: 'ro',      icon: '↑' },
+  { id: 'kyc',         label: 'KYC Cases',          open: 26, hi: 7,  age: '3d 8h',  sla: 'ok',     access: 'allowed', icon: '⊙' },
+  { id: 'aml',         label: 'AML Alerts',         open: 14, hi: 5,  age: '2h 14m', sla: 'breach', access: 'allowed', icon: '!' },
+  { id: 'sanctions',   label: 'Sanctions Hits',     open: 4,  hi: 4,  age: '1d 6h',  sla: 'warn',   access: 'allowed', icon: '×' },
+  { id: 'chargebacks', label: 'Chargebacks',        open: 9,  hi: 2,  age: '14d',    sla: 'breach', access: 'senior',  icon: '↩' },
+  { id: 'frozen',      label: 'Frozen Accounts',    open: 6,  hi: 3,  age: '2d 4h',  sla: 'ok',     access: 'allowed', icon: '⬡' },
+  { id: 'audit',       label: 'Audit Review',       open: 42, hi: 0,  age: '—',      sla: 'ok',     access: 'allowed', icon: '≡', isAudit: true },
+];
+
+const PRIORITY_ITEMS = [
+  { id: 'AML-8831', queue: 'AML',       severity: 'critical', subject: 'Elena Fischer',      detail: 'Critical velocity pattern — 8 txn / 12 min', deadline: '2h 14m ago', role: 'CO', action: 'Open case' },
+  { id: 'SNX-2110', queue: 'Sanctions', severity: 'critical', subject: 'Mark Weber',         detail: 'Possible true match — OFAC SDN list',          deadline: '4h 02m ago', role: 'CO', action: 'Review match' },
+  { id: 'KYC-1042', queue: 'KYC',       severity: 'high',     subject: 'Sofia Laurent',      detail: 'Document mismatch — passport vs address proof', deadline: '1d 3h',      role: 'CO', action: 'Continue review' },
+  { id: 'WDR-3044', queue: 'Withdrawal',severity: 'high',     subject: 'Jonas Keller',       detail: '€12,400 withdrawal — 2nd review required',     deadline: '6h 41m ago', role: 'OP', action: 'View (read-only)' },
+  { id: 'CHB-9027', queue: 'Chargeback',severity: 'medium',   subject: 'Orbit Market',       detail: 'Evidence deadline in 9 hours',                  deadline: '9h left',    role: 'SC', action: 'Locked — senior only' },
+];
+
+const WORK_ITEMS = [
+  { id: 'AML-8831', queue: 'AML Alerts',          qid: 'aml',         priority: 'critical', subject: 'Elena Fischer',       detail: 'Critical velocity pattern', amount: '€9,840',  status: 'OPEN',             assigned: null,      age: '2h 14m', sla: 'breach', roleReq: 'CO' },
+  { id: 'SNX-2110', queue: 'Sanctions Hits',       qid: 'sanctions',   priority: 'critical', subject: 'Mark Weber',          detail: 'Possible OFAC SDN match',   amount: null,       status: 'OPEN',             assigned: 'Maya I.', age: '4h 02m', sla: 'warn',   roleReq: 'CO' },
+  { id: 'KYC-1042', queue: 'KYC Cases',            qid: 'kyc',         priority: 'high',     subject: 'Sofia Laurent',       detail: 'Document mismatch',         amount: null,       status: 'IN_REVIEW',        assigned: 'Maya I.', age: '1d 3h',  sla: 'ok',     roleReq: 'CO' },
+  { id: 'DEP-5192', queue: 'Manual Deposits',      qid: 'deposits',    priority: 'high',     subject: 'Acme Manufacturing',  detail: 'Source verification needed',amount: '€18,500',  status: 'SECOND_REVIEW',    assigned: null,      age: '3h 20m', sla: 'warn',   roleReq: 'OP' },
+  { id: 'WDR-3044', queue: 'Manual Withdrawals',   qid: 'withdrawals', priority: 'high',     subject: 'Jonas Keller',        detail: '2nd review required',       amount: '€12,400',  status: 'PENDING',          assigned: null,      age: '6h 41m', sla: 'warn',   roleReq: 'OP' },
+  { id: 'CHB-9027', queue: 'Chargebacks',          qid: 'chargebacks', priority: 'medium',   subject: 'Orbit Market',        detail: 'Evidence deadline — 9h',    amount: '€340',     status: 'AWAITING_EVIDENCE',assigned: null,      age: '14d',    sla: 'breach', roleReq: 'SC' },
+  { id: 'AUD-7741', queue: 'Audit Review',         qid: 'audit',       priority: 'low',      subject: 'Audit log search',    detail: 'Sensitive read — audit req',amount: null,       status: 'PENDING_READ',     assigned: null,      age: '0m',     sla: 'ok',     roleReq: 'CO' },
+];
+
+/* ── ICONS ── */
+const IcoQueue    = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2" width="11" height="2" rx="0.5" fill="currentColor" opacity="0.8"/><rect x="1.5" y="6" width="11" height="2" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="1.5" y="10" width="7" height="2" rx="0.5" fill="currentColor" opacity="0.4"/></svg>;
+const IcoDeposit  = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoWithdraw = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 9V2M4 5l3-3 3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoKyc      = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoAml      = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="10.2" r="0.7" fill="currentColor"/></svg>;
+const IcoSanctions= () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2"/><line x1="3.1" y1="3.1" x2="10.9" y2="10.9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoChargeback=() => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 5h10M9 2.5L12 5l-3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 9H2M5 6.5L2 9l3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoAudit    = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" strokeWidth="1.2"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="4.5" y1="10" x2="7" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const IcoFrozen   = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const IcoAuth     = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="7" r="3" stroke="currentColor" strokeWidth="1.2"/><path d="M8 7h5M11 5.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoLockSm   = () => <svg width="10" height="11" viewBox="0 0 11 12" fill="none"><rect x="1.5" y="5" width="8" height="6.5" rx="0.75" stroke="currentColor" strokeWidth="1.1"/><path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const LogoMark    = () => <svg width="24" height="24" viewBox="0 0 26 26" fill="none"><rect width="26" height="26" rx="4" fill="#1e1e28"/><rect x="6" y="9" width="14" height="2" rx="1" fill="#ddddf0"/><rect x="6" y="13.5" width="9" height="2" rx="1" fill="#7070e0"/><rect x="6" y="18" width="5" height="2" rx="1" fill="#4040a0" opacity="0.8"/></svg>;
+
+/* ── MICRO COMPONENTS ── */
+const Bdg = ({ type, label }) => {
+  const map = {
+    critical: 'b-critical', high: 'b-high', medium: 'b-medium', low: 'b-low',
+    allowed: 'b-allowed', ro: 'b-ro', senior: 'b-senior', oidc: 'b-oidc',
+    OPEN: 'b-open', IN_REVIEW: 'b-review', SECOND_REVIEW: 'b-review',
+    PENDING: 'b-review', AWAITING_EVIDENCE: 'b-evidence', PENDING_READ: 'b-review',
+    CO: 'b-co', OP: 'b-op', SC: 'b-sc',
+  };
+  return <span className={`badge ${map[type] || 'badge'}`}>{label || type}</span>;
+};
+
+const KV = ({ k, v, mono, children }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className={`kv-v${mono ? ' mono' : ''}`}>{v}{children}</div>
+  </div>
+);
+
+const Alrt = ({ type, icon, children }) => (
+  <div className={`alert alert-${type}`}>
+    <em className="alert-icon">{icon}</em>
+    <div>{children}</div>
+  </div>
+);
+
+/* ── SIDEBAR ── */
+const NAV = [
+  { ico: <IcoQueue />,     label: 'Work Queue',         state: 'current', id: 'BOF-UI-02' },
+  { ico: <IcoDeposit />,   label: 'Manual Deposits',    state: 'limited', tag: 'ro' },
+  { ico: <IcoWithdraw />,  label: 'Manual Withdrawals', state: 'limited', tag: 'ro' },
+  { ico: <IcoKyc />,       label: 'KYC Cases',          state: 'nav-on' },
+  { ico: <IcoAml />,       label: 'AML Alerts',         state: 'nav-on' },
+  { ico: <IcoSanctions />, label: 'Sanctions Hits',     state: 'nav-on' },
+  { ico: <IcoChargeback />,label: 'Chargebacks',        state: 'locked', tag: 'lock' },
+  { ico: <IcoAudit />,     label: 'Audit Log',          state: 'nav-on' },
+  null,
+  { ico: <IcoAuth />,      label: 'Authentication',     state: 'nav-on', id: 'BOF-UI-01' },
+];
+
+const Sidebar = () => (
+  <aside className="sidebar">
+    <div className="sb-brand">
+      <div className="sb-mark"><LogoMark /><div className="sb-name">MiniFin</div></div>
+      <div className="sb-sub">Backoffice</div>
+    </div>
+    <nav className="sb-nav">
+      <div className="nav-sec">Workflow</div>
+      {NAV.map((item, i) => {
+        if (!item) return <div key={i} className="sb-div" />;
+        return (
+          <div key={i} className={`nav-item ${item.state}`}
+            title={item.state === 'locked' ? 'senior_compliance required' : item.tag === 'ro' ? 'Read-only for compliance_officer' : ''}>
+            <span style={{ width: 13, height: 13, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{item.ico}</span>
+            <span>{item.label}</span>
+            {item.tag === 'ro'   && <span className="nav-badge-ro">RO</span>}
+            {item.tag === 'lock' && <span className="nav-lock"><IcoLockSm /></span>}
+            {item.id             && <span className="nav-id">{item.id}</span>}
+          </div>
+        );
+      })}
+    </nav>
+    <div className="sb-footer">
+      <div className="env-chip"><div className="env-dot" /><span>Local Sandbox</span></div>
+      <div className="env-host">backoffice.miniefin.local</div>
+    </div>
+  </aside>
+);
+
+/* ── METRICS STRIP ── */
+const METRICS = [
+  { val: 130, lbl: 'Open items',         sub: 'across all queues', cls: '' },
+  { val: 3,   lbl: 'SLA breaches',       sub: 'AML / Chargebacks', cls: 'rd' },
+  { val: 9,   lbl: 'Critical risk',      sub: '5 unassigned',      cls: 'rd' },
+  { val: 12,  lbl: 'Assigned to me',     sub: 'KYC · AML · SNX',   cls: '' },
+  { val: 8,   lbl: '2nd review pending', sub: 'Deposits / Withdr.', cls: 'am' },
+  { val: 24,  lbl: 'Sensitive reads',    sub: 'today, this session',cls: 'bl' },
+];
+
+const MetricsStrip = () => (
+  <div className="metrics-strip">
+    {METRICS.map((m, i) => (
+      <div key={i} className="metric-card">
+        <div className={`metric-val${m.cls ? ' ' + m.cls : ''}`}>{m.val}</div>
+        <div className="metric-lbl">{m.lbl}</div>
+        <div className="metric-sub">{m.sub}</div>
+      </div>
+    ))}
+  </div>
+);
+
+/* ── PRIORITY LANE ── */
+const PriorityLane = ({ onSelect }) => (
+  <div>
+    <div className="section-hdr">
+      <span className="section-title">Priority Work</span>
+      <span style={{ fontSize: '10.5px', color: 'var(--t3)' }}>{PRIORITY_ITEMS.length} urgent items</span>
+    </div>
+    <div className="priority-scroll">
+      {PRIORITY_ITEMS.map(p => {
+        const isBlocked = p.role === 'SC';
+        const isRo = p.role === 'OP';
+        return (
+          <div key={p.id} className={`priority-card ${p.severity}`}
+            onClick={() => !isBlocked && onSelect(p.id)}>
+            <div className="pc-type">{p.queue} · {p.id}</div>
+            <div className="pc-title">{p.subject}</div>
+            <div className="pc-sub">{p.detail}</div>
+            <div className="pc-footer">
+              <Bdg type={p.severity} />
+              <Bdg type={p.role} />
+              <span className="pc-age">{p.deadline}</span>
+              {isBlocked && <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--pu)' }}>Senior only</span>}
+              {isRo && <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--or)' }}>Read-only</span>}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
+/* ── QUEUE GRID ── */
+const accessBadge = { allowed: 'ALLOWED', ro: 'RO', senior: 'SENIOR', };
+const accessBdgType = { allowed: 'allowed', ro: 'ro', senior: 'senior' };
+
+const QueueGrid = ({ selectedQueue, onSelect }) => (
+  <div>
+    <div className="section-hdr">
+      <span className="section-title">Queue Overview</span>
+      <button className="btn btn-ghost btn-sm" style={{ fontSize: '10.5px' }}
+        onClick={() => onSelect(null)}>Clear filter</button>
+    </div>
+    <div className="queue-grid">
+      {QUEUES.map(q => (
+        <div key={q.id}
+          className={`queue-card${q.access === 'ro' ? ' ro' : ''}${q.access === 'senior' ? ' senior' : ''}${selectedQueue === q.id ? ' sel' : ''}`}
+          onClick={() => onSelect(selectedQueue === q.id ? null : q.id)}>
+          <div className="qc-name">
+            <span>{q.label}</span>
+            {accessBadge[q.access] && <Bdg type={accessBdgType[q.access]} label={accessBadge[q.access]} />}
+          </div>
+          <div className="qc-counts">
+            <div className="qc-count">
+              <span className="qc-num">{q.open}</span>
+              <span className="qc-lbl">{q.isAudit ? 'recent events' : 'open'}</span>
+            </div>
+            {!q.isAudit && (
+              <div className="qc-count">
+                <span className={`qc-num${q.hi > 0 ? ' rd' : ''}`}>{q.hi}</span>
+                <span className="qc-lbl">high pri</span>
+              </div>
+            )}
+          </div>
+          <div className="qc-meta">
+            {!q.isAudit && <span className="qc-age">oldest: {q.age}</span>}
+            <span className={`qc-sla sla-${q.sla}`}>{q.sla === 'breach' ? 'SLA BREACH' : q.sla === 'warn' ? 'SLA WARN' : 'SLA OK'}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+/* ── FILTER BAR ── */
+const PRIORITY_FILTERS = ['all', 'critical', 'high', 'medium', 'low'];
+const SLA_FILTERS = [
+  { id: 'all', label: 'All SLA' },
+  { id: 'breach', label: 'Breached' },
+  { id: 'warn',   label: 'At risk' },
+];
+
+const FilterBar = ({ filterP, setFilterP, filterSla, setFilterSla, assignedMe, setAssignedMe, search, setSearch }) => (
+  <div className="filter-bar">
+    <div className="filter-grp">
+      <span className="filter-lbl">Priority</span>
+      {PRIORITY_FILTERS.map(p => (
+        <button key={p} className={`filter-chip${p === 'critical' || p === 'high' ? ' rd' : p === 'medium' ? ' am' : ''}${filterP === p ? ' active' : ''}`}
+          onClick={() => setFilterP(p)}>
+          {p === 'all' ? 'All' : p.charAt(0).toUpperCase() + p.slice(1)}
+        </button>
+      ))}
+    </div>
+    <div className="filter-grp" style={{ marginLeft: 8 }}>
+      {SLA_FILTERS.map(f => (
+        <button key={f.id} className={`filter-chip${filterSla === f.id ? ' active' : ''}`}
+          onClick={() => setFilterSla(f.id)}>{f.label}</button>
+      ))}
+    </div>
+    <button className={`filter-toggle${assignedMe ? ' on' : ''}`} onClick={() => setAssignedMe(p => !p)}>
+      Assigned to me
+    </button>
+    <div className="search-wrap">
+      <input className="search-input" placeholder="Search case ID or subject…"
+        value={search} onChange={e => setSearch(e.target.value)} />
+    </div>
+  </div>
+);
+
+/* ── WORK TABLE ── */
+const statusLabel = { OPEN: 'Open', IN_REVIEW: 'In Review', SECOND_REVIEW: '2nd Review', PENDING: 'Pending', AWAITING_EVIDENCE: 'Awaiting Evidence', PENDING_READ: 'Pending Read' };
+
+const WorkTable = ({ items, selectedId, onSelect }) => (
+  <div className="table-wrap">
+    <div className="table-hdr-row">
+      <span className="table-hdr-title">Work Items — {items.length} shown</span>
+      <span style={{ fontSize: '10.5px', color: 'var(--t3)' }}>Click row to open detail</span>
+    </div>
+    <div style={{ overflowX: 'auto' }}>
+      <table className="wt">
+        <thead>
+          <tr>
+            <th style={{ width: 70 }}>Priority</th>
+            <th style={{ width: 130 }}>Queue</th>
+            <th style={{ width: 80 }}>Case ID</th>
+            <th style={{ width: 150 }}>Subject</th>
+            <th style={{ width: 80 }}>Amount</th>
+            <th style={{ width: 120 }}>Status</th>
+            <th style={{ width: 80 }}>Assigned</th>
+            <th style={{ width: 90 }}>Age / SLA</th>
+            <th style={{ width: 55 }}>Role</th>
+            <th style={{ width: 90 }}>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map(item => {
+            const isBlocked = item.roleReq === 'SC';
+            const isRo      = item.roleReq === 'OP';
+            const isSel     = item.id === selectedId;
+            return (
+              <tr key={item.id} className={isSel ? 'sel-row' : ''} onClick={() => onSelect(isSel ? null : item.id)}>
+                <td><Bdg type={item.priority} /></td>
+                <td style={{ fontSize: '11.5px', color: 'var(--t2)' }}>{item.queue}</td>
+                <td className="td-mono">{item.id}</td>
+                <td>
+                  <div style={{ fontWeight: 500 }}>{item.subject}</div>
+                  <div className="td-sub">{item.detail}</div>
+                </td>
+                <td className="td-mono">{item.amount || <span className="td-muted">—</span>}</td>
+                <td><Bdg type={item.status} label={statusLabel[item.status]} /></td>
+                <td style={{ fontSize: '11px', color: item.assigned ? 'var(--t1)' : 'var(--t4)' }}>
+                  {item.assigned || 'Unassigned'}
+                </td>
+                <td>
+                  <div style={{ fontSize: '11px', color: 'var(--t2)', fontFamily: 'var(--f-mono)' }}>{item.age}</div>
+                  <span className={`qc-sla sla-${item.sla}`} style={{ marginTop: 2, display: 'inline-block' }}>
+                    {item.sla === 'breach' ? 'BREACH' : item.sla === 'warn' ? 'WARN' : 'OK'}
+                  </span>
+                </td>
+                <td><Bdg type={item.roleReq} /></td>
+                <td>
+                  {isBlocked
+                    ? <button className="btn btn-disabled btn-xs" title="senior_compliance required">Locked</button>
+                    : isRo
+                    ? <button className="btn btn-ghost btn-xs">View</button>
+                    : <button className="btn btn-primary btn-xs" onClick={e => { e.stopPropagation(); onSelect(item.id); }}>Open</button>
+                  }
+                </td>
+              </tr>
+            );
+          })}
+          {items.length === 0 && (
+            <tr><td colSpan="10" style={{ textAlign: 'center', color: 'var(--t3)', padding: '20px', fontSize: '12px' }}>
+              No items match current filters.
+            </td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+/* ── DETAIL PANEL (AML-8831 focused, adapts to others) ── */
+const DETAIL_DATA = {
+  'AML-8831': {
+    queue: 'AML Alerts', priority: 'critical', subject: 'Elena Fischer',
+    userId: 'usr_Ef3nX8kPq2mTvLrJy', status: 'OPEN', amount: '€9,840',
+    detail: 'Critical velocity pattern — 8 transactions in 12 minutes, single destination wallet',
+    risk: 'CRITICAL', roleReq: 'CO',
+    trigger: '8 txn / 12 min · total €9,840 · pattern: micro-split → consolidate',
+    priorAlerts: 0, riskScore: 97,
+    timeline: [
+      { ts: '14:02:18', txt: 'Velocity threshold exceeded — alert triggered', dot: 'bad' },
+      { ts: '14:08:44', txt: 'Risk model scored: CRITICAL (97/100)', dot: 'am' },
+      { ts: '14:12:08', txt: 'Routed to AML Alerts queue — unassigned', dot: 'bl' },
+    ],
+    allowed: ['Open full case details (audit note recorded)', 'Assign to self', 'Escalate to senior_compliance', 'Freeze account (temporary)'],
+    blocked: [{ action: 'Senior compliance override', reason: 'requires senior_compliance role' }, { action: 'Permanent account closure', reason: 'requires senior_compliance role' }],
+    auditNote: 'Opening AML-8831 will record backoffice.sensitive_read (AML_CRITICAL) · actor: maya.ivanova@minifin.local · case: AML-8831',
+  },
+  'SNX-2110': {
+    queue: 'Sanctions Hits', priority: 'critical', subject: 'Mark Weber',
+    userId: 'usr_Mw9kQr3nJx7pBvZy', status: 'OPEN', amount: null,
+    detail: 'Possible true match — OFAC SDN list · name + DOB overlap 94%',
+    risk: 'CRITICAL', roleReq: 'CO',
+    trigger: 'OFAC SDN name match 94% · DOB match exact · country: RU',
+    priorAlerts: 1, riskScore: 94,
+    timeline: [
+      { ts: '10:04:11', txt: 'Sanctions screen triggered on registration', dot: 'bad' },
+      { ts: '10:04:12', txt: 'OFAC SDN list hit — 94% name confidence', dot: 'bad' },
+      { ts: '10:07:30', txt: 'Routed to Sanctions Hits queue', dot: 'bl' },
+    ],
+    allowed: ['Open full case details (audit note recorded)', 'Assign to self', 'Mark as false positive', 'Escalate to senior_compliance'],
+    blocked: [{ action: 'Confirm true match + freeze', reason: 'requires senior_compliance role' }],
+    auditNote: 'Opening SNX-2110 will record backoffice.sensitive_read (SANCTIONS_HIT) · actor: maya.ivanova@minifin.local · case: SNX-2110',
+  },
+  'KYC-1042': {
+    queue: 'KYC Cases', priority: 'high', subject: 'Sofia Laurent',
+    userId: 'usr_Sl7mPx4qNr2vKwBz', status: 'IN_REVIEW', amount: null,
+    detail: 'Document mismatch — passport name vs utility bill address proof',
+    risk: 'HIGH', roleReq: 'CO',
+    trigger: 'Passport: Sofia Laurent · Utility bill: S. Laurent-Morel · DOB mismatch ±0',
+    priorAlerts: 0, riskScore: 62,
+    timeline: [
+      { ts: '11:20:44', txt: 'KYC submission received — documents uploaded', dot: 'bl' },
+      { ts: '11:25:01', txt: 'Automated check: name mismatch detected', dot: 'am' },
+      { ts: '11:25:01', txt: 'Routed to KYC Cases — assigned Maya I.', dot: 'ok' },
+    ],
+    allowed: ['Continue review', 'Request additional documents', 'Approve KYC', 'Escalate', 'Assign to self'],
+    blocked: [{ action: 'Reject + block (permanent)', reason: 'requires senior_compliance role' }],
+    auditNote: 'Opening KYC-1042 will record backoffice.case_read (KYC) · actor: maya.ivanova@minifin.local',
+  },
+};
+
+const DetailPanel = ({ itemId, onClose }) => {
+  const item = WORK_ITEMS.find(i => i.id === itemId);
+  const detail = DETAIL_DATA[itemId];
+  const [openingCase, setOpeningCase] = useState(false);
+
+  if (!item) return null;
+
+  return (
+    <div className="detail-pane">
+      <div className="detail-hdr">
+        <div className="detail-title">
+          <span style={{ fontFamily: 'var(--f-mono)', fontSize: '11.5px' }}>{item.id}</span>
+          <Bdg type={item.priority} />
+          {detail && <Bdg type={detail.risk} label={`Risk: ${detail.risk}`} />}
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <Bdg type={item.status} label={statusLabel[item.status]} />
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+        </div>
+      </div>
+      <div className="detail-body">
+        {detail ? (
+          <>
+            {detail.auditNote && (
+              <Alrt type="pu" icon="!">
+                <strong>Sensitive read:</strong> {detail.auditNote}
+              </Alrt>
+            )}
+            <div className="detail-grid">
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Case summary</div>
+                <div className="kv-table">
+                  <KV k="Subject"   v={detail.subject} />
+                  <KV k="User ID"   v={detail.userId} mono />
+                  <KV k="Queue"     v={detail.queue} />
+                  <KV k="Trigger"   v={detail.trigger} />
+                  {detail.amount && <KV k="Exposure" v={detail.amount} mono />}
+                  <KV k="Risk score" v={`${detail.riskScore}/100`} mono />
+                  <KV k="Prior alerts" v={String(detail.priorAlerts)} mono />
+                  <KV k="Required role"><Bdg type={detail.roleReq} /></KV>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Timeline</div>
+                <div>
+                  {detail.timeline.map((t, i) => (
+                    <div key={i} className="timeline-row">
+                      <div className={`tl-dot ${t.dot}`} />
+                      <span className="tl-ts">{t.ts}</span>
+                      <span className="tl-txt">{t.txt}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="detail-grid">
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Allowed actions (Maya · CO)</div>
+                <div className="action-grid">
+                  {detail.allowed.map((a, i) => (
+                    <div key={i} className="action-row allowed">
+                      <span className="action-name">✓ {a}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '10px', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Blocked actions</div>
+                <div className="action-grid">
+                  {detail.blocked.map((b, i) => (
+                    <div key={i} className="action-row blocked">
+                      <span className="action-name dim">— {b.action}</span>
+                      <span className="action-reason">{b.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', borderTop: '1px solid var(--bdr)', paddingTop: 10 }}>
+              <button className="btn btn-primary" onClick={() => setOpeningCase(true)}>
+                Open case details
+              </button>
+              <button className="btn btn-ghost btn-sm">Assign to self</button>
+              <button className="btn btn-ghost btn-sm">Escalate</button>
+              {itemId === 'AML-8831' && <button className="btn btn-danger btn-sm">Freeze account</button>}
+              <button className="btn btn-disabled btn-sm" title="senior_compliance required">Senior override</button>
+              {openingCase && (
+                <span style={{ alignSelf: 'center', fontSize: '11px', color: 'var(--g)', fontFamily: 'var(--f-mono)' }}>
+                  ✓ Audit note recorded · backoffice.sensitive_read
+                </span>
+              )}
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="kv-table">
+              <KV k="Case ID"  v={item.id} mono />
+              <KV k="Queue"    v={item.queue} />
+              <KV k="Subject"  v={item.subject} />
+              <KV k="Detail"   v={item.detail} />
+              {item.amount && <KV k="Amount" v={item.amount} mono />}
+              <KV k="Status"><Bdg type={item.status} label={statusLabel[item.status]} /></KV>
+              <KV k="Assigned" v={item.assigned || 'Unassigned'} />
+              <KV k="Age"      v={item.age} mono />
+            </div>
+            {item.roleReq === 'OP' && (
+              <Alrt type="warn" icon="i">
+                This queue is <strong>read-only</strong> for compliance_officer.
+                Write access requires backoffice_operator or senior_compliance role.
+              </Alrt>
+            )}
+            {item.roleReq === 'SC' && (
+              <Alrt type="err" icon="×">
+                This case requires <strong>senior_compliance</strong> role. Contact your senior compliance admin.
+              </Alrt>
+            )}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {item.roleReq !== 'SC' && <button className="btn btn-primary btn-sm">
+                {item.roleReq === 'OP' ? 'View (read-only)' : 'Open case'}
+              </button>}
+              <button className="btn btn-ghost btn-sm">Assign to self</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── AUDIT RAIL ── */
+const AuditRail = ({ selectedItem }) => {
+  const events = [
+    { name: 'oidc.login_succeeded',      meta: '14:12:08 · maya.ivanova@…', dot: 'ok' },
+    { name: 'backoffice.role_mapped',    meta: '14:12:08 · compliance_officer', dot: 'ok' },
+    { name: 'backoffice.queue_opened',   meta: '14:13:01 · Work Queue',     dot: 'bl' },
+    { name: 'backoffice.case_read',      meta: '14:14:22 · KYC-1042',       dot: 'bl' },
+    { name: 'backoffice.sensitive_read', meta: '14:15:08 · SNX-2110',       dot: 'am' },
+    { name: 'backoffice.case_assigned',  meta: '14:15:40 · KYC-1042 → maya', dot: 'ok' },
+    selectedItem ? { name: 'backoffice.sensitive_read', meta: `14:16:xx · ${selectedItem}`, dot: 'am' } : null,
+  ].filter(Boolean);
+
+  return (
+    <aside className="audit-rail">
+      <div className="audit-hdr">Audit &amp; Security</div>
+      <div className="audit-body">
+        <div className="audit-sec">Session identity</div>
+        <div className="kv-table" style={{ marginBottom: 8 }}>
+          <KV k="User"   v={USER.name} />
+          <KV k="Role">  <Bdg type="CO" /></KV>
+          <KV k="OIDC"   v="compliance_officer" mono />
+          <KV k="KC group" v="/minifin/compliance" mono />
+          <KV k="Token exp" v={`Today ${USER.tokenExp}`} mono />
+          <KV k="Auth"   v="Bearer token — not cookie" />
+        </div>
+        <div className="hr" />
+        <div className="audit-sec">Read-audit required</div>
+        {[
+          'AML HIGH / CRITICAL alert details',
+          'Sanctions hit details',
+          'Frozen account review',
+          'Audit log viewer access',
+        ].map((f, i) => (
+          <div key={i} className="sec-fact">
+            <span className="sec-mark">!</span>
+            <span className="sec-text">{f}</span>
+          </div>
+        ))}
+        <div className="hr" />
+        <div className="audit-sec">Event log (this session)</div>
+        {events.map((ev, i) => (
+          <div key={i} className="audit-evt">
+            <div className={`audit-dot ${ev.dot}`} />
+            <div>
+              <div className="audit-name">{ev.name}</div>
+              <div className="audit-meta">{ev.meta}</div>
+            </div>
+          </div>
+        ))}
+        <div className="hr" />
+        <div className="audit-sec">Security invariants</div>
+        {[
+          'End-user and merchant cookie sessions cannot access backoffice APIs.',
+          'All queue opens and sensitive reads are audited with actor + timestamp.',
+          'Role mapping enforced server-side on every request.',
+          'Bearer token validated on every backoffice API call.',
+        ].map((f, i) => (
+          <div key={i} className="sec-fact">
+            <span className="sec-mark">—</span>
+            <span className="sec-text">{f}</span>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+};
+
+/* ── APP ── */
+function App() {
+  const [selectedQueue, setSelectedQueue] = useState(null);
+  const [selectedItem, setSelectedItem]   = useState(null);
+  const [filterP,      setFilterP]        = useState('all');
+  const [filterSla,    setFilterSla]      = useState('all');
+  const [assignedMe,   setAssignedMe]     = useState(false);
+  const [search,       setSearch]         = useState('');
+
+  const handleQueueSelect = (qid) => {
+    setSelectedQueue(qid);
+    setSelectedItem(null);
+  };
+
+  const handleItemSelect = (id) => {
+    setSelectedItem(id);
+  };
+
+  const handlePrioritySelect = (caseId) => {
+    setSelectedItem(caseId);
+    const item = WORK_ITEMS.find(i => i.id === caseId);
+    if (item) setSelectedQueue(item.qid);
+  };
+
+  const filteredItems = useMemo(() => {
+    return WORK_ITEMS.filter(item => {
+      if (selectedQueue && item.qid !== selectedQueue) return false;
+      if (filterP !== 'all' && item.priority !== filterP) return false;
+      if (filterSla !== 'all' && item.sla !== filterSla) return false;
+      if (assignedMe && item.assigned !== 'Maya I.') return false;
+      if (search) {
+        const q = search.toLowerCase();
+        if (!item.id.toLowerCase().includes(q) && !item.subject.toLowerCase().includes(q) && !item.detail.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [selectedQueue, filterP, filterSla, assignedMe, search]);
+
+  const selectedQueueLabel = QUEUES.find(q => q.id === selectedQueue)?.label;
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+        {/* PAGE HEADER */}
+        <div className="page-hdr">
+          <div className="hdr-left">
+            <span>Backoffice</span>
+            <span className="sep" style={{ color: 'var(--t4)' }}>/</span>
+            <strong>Work Queue</strong>
+            {selectedQueueLabel && <>
+              <span className="sep" style={{ color: 'var(--t4)' }}>·</span>
+              <span style={{ fontFamily: 'var(--f-mono)', fontSize: '11.5px', color: 'var(--t2)' }}>{selectedQueueLabel}</span>
+            </>}
+          </div>
+          <div className="hdr-session">
+            <div>
+              <div className="session-user">{USER.name}</div>
+              <div className="session-meta">{USER.email}</div>
+            </div>
+            <Bdg type="CO" />
+            <span className="badge b-oidc">OIDC</span>
+            <span style={{ fontSize: '10px', color: 'var(--t3)', fontFamily: 'var(--f-mono)', whiteSpace: 'nowrap' }}>exp {USER.tokenExp}</span>
+          </div>
+          <div className="hdr-right">
+            <span className="screen-id">BOF-UI-02</span>
+            <span className="env-badge-hdr"><span className="env-bdot" />Local Sandbox</span>
+          </div>
+        </div>
+
+        {/* MAIN BODY */}
+        <div className="main-body">
+          <MetricsStrip />
+          <PriorityLane onSelect={handlePrioritySelect} />
+          <QueueGrid selectedQueue={selectedQueue} onSelect={handleQueueSelect} />
+
+          {/* TABLE SECTION */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <FilterBar
+              filterP={filterP} setFilterP={setFilterP}
+              filterSla={filterSla} setFilterSla={setFilterSla}
+              assignedMe={assignedMe} setAssignedMe={setAssignedMe}
+              search={search} setSearch={setSearch}
+            />
+            <WorkTable items={filteredItems} selectedId={selectedItem} onSelect={handleItemSelect} />
+            {selectedItem && (
+              <DetailPanel itemId={selectedItem} onClose={() => setSelectedItem(null)} />
+            )}
+          </div>
+
+          {/* RBAC NOTE for limited queue */}
+          {selectedQueue && QUEUES.find(q => q.id === selectedQueue)?.access === 'ro' && (
+            <Alrt type="warn" icon="i">
+              <strong>Read-only access:</strong> You are viewing <strong>{selectedQueueLabel}</strong> as compliance_officer.
+              Approve, reject, and write actions require backoffice_operator or senior_compliance role.
+              Contact your senior compliance admin to request elevated access.
+            </Alrt>
+          )}
+          {selectedQueue === 'chargebacks' && (
+            <Alrt type="pu" icon="×">
+              <strong>senior_compliance required:</strong> Chargeback decisions require senior_compliance role.
+              You can view this queue but all action buttons are disabled.
+            </Alrt>
+          )}
+        </div>
+      </div>
+      <AuditRail selectedItem={selectedItem} />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
