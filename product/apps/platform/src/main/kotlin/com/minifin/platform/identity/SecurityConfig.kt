@@ -1,9 +1,11 @@
 package com.minifin.platform.identity
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.minifin.platform.publicapi.PublicApiAuthFilter
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
@@ -11,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.beans.factory.annotation.Value
 
 @Configuration
@@ -21,6 +24,21 @@ class SecurityConfig(
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder(12)
 
     @Bean
+    @Order(1)
+    fun publicApiSecurityFilterChain(
+        http: HttpSecurity,
+        publicApiAuthFilter: PublicApiAuthFilter,
+    ): SecurityFilterChain =
+        http
+            .securityMatcher("/v1/**")
+            .csrf { it.disable() }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .authorizeHttpRequests { it.anyRequest().permitAll() }
+            .addFilterBefore(publicApiAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
+            .build()
+
+    @Bean
+    @Order(2)
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain =
         http
             .csrf { it.disable() }

@@ -1,6 +1,6 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-16 (Phase 03 Slice 04 backend/runtime sub-scope executed).
+Last updated: 2026-05-16 (Phase 04 Slice 01 backend/runtime sub-scope executed).
 
 ---
 
@@ -28,25 +28,25 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md` — backend/runtime sub-scope executed v0.2.
 - `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — backend/runtime sub-scope executed v0.2.
 - `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.2.
 
 Completed workstream — latest:
-- Phase 03 Slice 04 wallet internal transfer implemented in `platform`;
-- `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05` passed for the internal transfer path;
-- regression subset passed: ledger reconciliation after transfer flows;
+- Phase 04 Slice 01 merchant API keys, public API authentication and public write idempotency primitive implemented in `platform`;
+- `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` passed; `AUD-01` extended to API key lifecycle; `LDG-05` regression passed;
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
 
 Latest executed slice:
-- `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
-- Scope: end-user internal transfer under EUR 10k with sender debit, receiver credit, sufficient-funds guard, idempotency and actor-control write block for sender and receiver.
-- Target checks: `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05`, `LDG-99`.
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.2.
+- Scope: merchant dashboard API key lifecycle (create / list / revoke) with one-time visibility and hashed/fingerprinted storage; public API authentication via `Authorization: Bearer mfp_live_*`; public write idempotency primitive backed by `idempotency.idempotency_keys`; minimal `POST /v1/payment_intents` shell in state `REQUIRES_PAYMENT_METHOD`.
+- Target checks: `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03`.
 
 ## Next
 
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`.**
 
 Next planned product step:
-- Review the parallel high-value controls planning branch, then decide whether to continue Phase 03 placeholders or move to the next approved implementation slice.
+- Decide whether the next Phase 04 slice covers Stripe Connect onboarding (`MRC-01`), Stripe webhook receiver (`MRC-02`) — owned by a separate branch — or moves toward Phase 05 card path. The merchant API key and public idempotency primitives are now available as a foundation.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
@@ -124,11 +124,11 @@ Latest executed slice planning note:
 10. `planning/runtime_checklists.md` — approved runtime check registry.
 11. `planning/implementation_status.md` and `planning/runtime_evidence_log.md` — factual implementation/evidence state.
 12. Previous executed slice note:
-    `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md`.
-13. Latest executed slice note:
     `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md`.
+13. Latest executed slice note:
+    `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md`.
 
-После прочтения — review the parallel high-value controls planning branch, then decide the next approved implementation slice.
+После прочтения — decide the next approved implementation slice (Stripe Connect onboarding owned by a separate branch; otherwise move toward Phase 05 card path).
 
 ## Do-not-do-yet rules
 
@@ -190,12 +190,12 @@ docker compose -f deploy/docker-compose.yml ps
 docker compose -f deploy/docker-compose.yml down
 ```
 
-Current Phase 03 Slice 04:
-- `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
-- Implemented: `wallet.internal_transfers`, end-user `POST /api/v1/transfers`, `GET /api/v1/wallet` transfer history, balanced sender debit / receiver credit posting through `ledger.post_journal(...)`, insufficient-funds guard, `Idempotency-Key` duplicate protection and actor-control hook for sender and receiver.
+Current Phase 04 Slice 01:
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.2.
+- Implemented: `merchant.api_keys`, `merchant.payment_intents` shell, `idempotency.idempotency_keys` (append-only on update); merchant dashboard API key lifecycle (`POST/GET /api/v1/merchant/api-keys`, `POST /api/v1/merchant/api-keys/{id}/revoke`) with one-time visibility and SHA-256 hashed/fingerprinted storage; public API key auth via `Authorization: Bearer mfp_live_*` through a dedicated Spring Security chain for `/v1/**`; public write idempotency primitive with deterministic request fingerprint; minimal `POST /v1/payment_intents` shell in state `REQUIRES_PAYMENT_METHOD` and `GET /v1/payment_intents/{id}`.
 - Runtime evidence recorded in `planning/runtime_evidence_log.md`.
-- `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05` are passed for transfer; `LDG-99` foundation regression passed.
-- `WLT-03`, `WLT-04` are not claimed because SoF and two-eyes workflows do not exist yet.
-- No frontend work in this slice.
+- `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` are passed; `AUD-01` extended to API key create/revoke audit rows; `LDG-05` regression passed.
+- `MRC-01`, `MRC-02` are not claimed; Stripe Connect onboarding and webhook receiver are owned by a separate branch.
+- No frontend work in this slice. Public API endpoints currently mounted in `platform`; moving them into `acquirer` is a deferred later Phase 04 slice gated on a real service-to-service auth primitive.
 
-Next planned step: review the parallel high-value controls planning branch. Frontend implementation for backoffice manual deposits, manual withdrawals and end-user wallet remains gated by their respective accepted standalone HTML prototypes.
+Next planned step: decide the next Phase 04 slice (Stripe Connect onboarding / webhook receiver owned by a separate branch, or move toward Phase 05 card path).
