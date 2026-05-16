@@ -947,7 +947,7 @@ Result tag notes:
 - `MRC-02` — pass.
 - `AUD-01` — pass extension for webhook-driven KYB state-change, signature-failure, timestamp-failure and duplicate-delivery audit rows.
 - `MRC-01` — blocked; not claimed.
-- `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` — not in scope.
+- `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` were not in this slice; they are covered by Phase 04 Slice 01.
 
 Next planned step:
 - Either provide real Stripe Connect sandbox credentials and implement `MRC-01`, or continue with the separate merchant API key / public API idempotency branch without changing this webhook proof.
@@ -968,3 +968,120 @@ Verification result after fix:
 - Retrying the same payload/event id with a valid signature returns outcome `PROCESSED`.
 - Merchant `kyb_status` transitions to `VERIFIED`.
 - Exactly one `PROCESSED` event row exists after the valid retry.
+
+---
+
+## 2026-05-16 — Phase 04 Slice 01 Merchant API Keys and Public API Idempotency Runtime Verification
+
+Scope:
+- Phase 04 Slice 01 backend/runtime sub-scope.
+- Merchant dashboard API key lifecycle (create / list / revoke), public API authentication via merchant API key, public write idempotency primitive, minimal public payment-intent creation shell.
+- No Stripe Connect onboarding, no Stripe webhook receiver, no card authorization/capture/refund/settlement, no frontend implementation.
+
+Build/runtime evidence:
+- `docker compose -f deploy/docker-compose.yml build platform` passed.
+- `docker compose -f deploy/docker-compose.yml up -d platform` passed.
+- `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+- Flyway applied `V11__merchant_api_keys_and_idempotency.sql` cleanly. The migration is intentionally numbered V11 because a sibling Stripe webhook branch owns V10.
+
+New Phase 04 script evidence:
+- `product/scripts/runtime/reg_phase04_api_key_lifecycle.sh`:
+  - `MRC-03` — pass.
+  - `AUD-01` — pass for `merchant.api_key_created` and `merchant.api_key_revoked` audit rows.
+  - Concrete observations:
+    - `POST /api/v1/merchant/api-keys` returned a one-time `mfp_live_*` secret, an `apiKeyId`, a `keyPrefix` and a 16-hex `fingerprint`; the raw key was never persisted; `key_hash` in `merchant.api_keys` matched `sha256(rawKey)`.
+    - `GET /api/v1/merchant/api-keys` returned the key with prefix/fingerprint/status only, never the raw key.
+    - Active key successfully created a payment intent via `POST /v1/payment_intents`.
+    - `POST /api/v1/merchant/api-keys/{id}/revoke` flipped the key to `REVOKED` and set `revoked_at`; a second revoke returned `REVOKED` idempotently without a second audit row.
+    - Revoked key on `POST /v1/payment_intents` returned HTTP 401 `invalid_api_key`.
+    - Missing `Authorization` header returned HTTP 401 `unauthenticated`.
+    - Malformed bearer token returned HTTP 401 `invalid_api_key`.
+- `product/scripts/runtime/reg_phase04_public_api_response_shape.sh`:
+  - `PAY-01` — pass.
+  - Concrete observations:
+    - Success response was `{"data":{...payment_intent...},"errors":[]}` with `state=REQUIRES_PAYMENT_METHOD`.
+    - `GET /v1/payment_intents/{id}` returned the same shape.
+    - Missing `Idempotency-Key` returned HTTP 400 with `errors:[{code:"idempotency_key_required",...}]` and `data:null`.
+    - Invalid amount returned HTTP 400 with `errors:[{code:"invalid_amount", field:"amount",...}]` and `data:null`.
+    - Unauthenticated request returned HTTP 401 with `errors:[{code:"unauthenticated",...}]` and `data:null`.
+    - Cross-merchant `GET /v1/payment_intents/{id}` returned HTTP 404 with `errors:[{code:"payment_intent_not_found",...}]`.
+- `product/scripts/runtime/reg_phase04_public_api_idempotency_replay.sh`:
+  - `PAY-02` — pass.
+  - Concrete observations:
+    - Same `Idempotency-Key` + identical body returned byte-identical response body and `id`/`createdAt`.
+    - Stored `idempotency.idempotency_keys.response_status` = `201`.
+    - Exactly one row in `merchant.payment_intents` for the merchant after the replay pair.
+    - A different `Idempotency-Key` with the same body created a separate payment intent (independent op).
+    - Same `Idempotency-Key` reused by a different merchant created an independent payment intent (per-merchant scope).
+- `product/scripts/runtime/reg_phase04_public_api_idempotency_conflict.sh`:
+  - `PAY-03` — pass.
+  - Concrete observations:
+    - Same `Idempotency-Key` with a different amount returned HTTP 409 `idempotency_conflict`.
+    - Same `Idempotency-Key` with a different `description` returned HTTP 409 `idempotency_conflict`.
+    - No second `merchant.payment_intents` row was created.
+    - Replaying the original body still returned HTTP 201 with the original `id` and an unchanged stored response.
+
+Regression evidence:
+- `product/scripts/runtime/reg_phase03_ledger_reconciliation.sh` — `LDG-05` pass.
+
+Final Phase 04 Slice 01 script output:
+
+```text
+MRC-03 api key lifecycle pass
+MRC-03 dashboard api key idempotency pass
+PAY-01 public API response shape pass
+PAY-02 public API idempotency replay pass
+PAY-03 public API idempotency conflict pass
+PAY-02 atomic concurrent idempotency pass
+PAY-02 PAY-03 idempotency per-merchant per-route scope pass
+Idempotency append-only (no-update on finalized + no-delete) pass
+LDG-05 ledger reconciliation pass
+```
+
+Result tag notes:
+- `MRC-03` is passed for API key one-time visibility, hashed/fingerprinted storage and revoked-key rejection.
+- `PAY-01` is passed for public API `{data, errors}` shape on success and on errors.
+- `PAY-02` is passed for same key/body replay returning the cached response, including concurrent callers and per-route/per-merchant scope.
+- `PAY-03` is passed for same route/key/different body returning HTTP 409, while same-key reuse on a different route is independent.
+- `MRC-01` remains blocked/unclaimed. `MRC-02` is covered by Phase 04 Slice 02.
+
+Next planned step:
+- Provide real Stripe Connect sandbox credentials to implement `MRC-01`, or choose the next approved backend/runtime slice toward Phase 05 card path; the API key, public idempotency and inbound webhook primitives are now available as foundations.
+
+---
+
+## 2026-05-16 — Post-merge Reviewer Verification for Phase 04 Slice 01 + Slice 02
+
+Scope:
+- Reviewer merge of `task/p04s01-api-keys-idempotency` into `orchestration` after Phase 04 Slice 02 was already accepted.
+- Verified combined `platform` image containing both `V10__merchant_stripe_webhooks.sql` and `V11__merchant_api_keys_and_idempotency.sql`.
+
+Build/runtime evidence:
+- `docker compose -f deploy/docker-compose.yml build platform` passed on the merged tree.
+- Isolated review compose project on alternate ports started successfully.
+- `curl -fsS http://127.0.0.1:28082/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+- Fresh isolated `platform-db` Flyway history contains V1..V8, `10:merchant stripe webhooks`, `11:merchant api keys and idempotency`; both V10 and V11 applied cleanly in version order.
+
+Reviewer runtime checks on isolated review stack:
+
+```text
+MRC-03 api key lifecycle pass
+MRC-03 dashboard api key idempotency pass
+PAY-01 public API response shape pass
+PAY-02 public API idempotency replay pass
+PAY-03 public API idempotency conflict pass
+PAY-02 atomic concurrent idempotency pass
+PAY-02 PAY-03 idempotency per-merchant per-route scope pass
+Idempotency append-only (no-update on finalized + no-delete) pass
+MRC-02 Stripe webhook valid signature pass
+LDG-05 ledger reconciliation pass
+```
+
+Security merge check:
+- `SecurityConfig` now keeps the ordered `/v1/**` public API key filter chain and the normal chain still permits `/webhooks/**`, so API key auth does not block Stripe webhook delivery.
+
+Local DB hygiene note:
+- The default local `platform-db` had a branch-run artifact: V11 was already applied without V10, so the merged app initially failed Flyway validation with "resolved migration not applied: 10".
+- The missing V10 SQL was applied manually to the default local DB and a matching Flyway history row was inserted using the checksum observed from the isolated fresh DB.
+- This was local runtime hygiene only; repository migrations are V10 + V11 and validate cleanly on a fresh DB.
+- Default stack was restored afterward; `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.

@@ -1,6 +1,6 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-16 (Phase 04 Slice 02 webhook backend/runtime sub-scope executed; MRC-01 blocked on Stripe sandbox credentials).
+Last updated: 2026-05-16 (Phase 04 Slice 01 API keys/idempotency and Slice 02 webhook backend/runtime sub-scopes executed; MRC-01 blocked on Stripe sandbox credentials).
 
 ---
 
@@ -28,18 +28,23 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md` — backend/runtime sub-scope executed v0.2.
 - `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — backend/runtime sub-scope executed v0.2.
 - `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3.
 - `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocked on Stripe sandbox credentials.
 
-Completed workstream — latest:
+Completed workstream — latest accepted state:
+- Phase 04 Slice 01 merchant API keys, public API authentication and hardened public/dashboard write idempotency primitive implemented in `platform`;
+- `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` passed, including dashboard create idempotency, concurrent public idempotency, per-route scope and append-only idempotency guards; `AUD-01` extended to API key lifecycle; `LDG-05` regression passed;
 - Phase 04 Slice 02 Stripe webhook backend/runtime sub-scope implemented in `platform`;
 - `MRC-02` passed for Stripe-format HMAC-SHA256 signature verification, timestamp tolerance and duplicate event id idempotency;
 - `AUD-01` extended for webhook-driven KYB state change, signature/timestamp failure and duplicate-delivery audit rows;
 - `MRC-01` Stripe Connect onboarding start remains blocked on missing real Stripe sandbox credentials and is not claimed;
-- regression subset passed: ledger reconciliation after webhook checks;
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
 
-Latest executed slice:
+Latest accepted backend/runtime slices:
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3.
+- Scope: merchant dashboard API key lifecycle (create / list / revoke) with one-time visibility and hashed/fingerprinted storage; public API authentication via `Authorization: Bearer mfp_live_*`; public/dashboard write idempotency primitive backed by `idempotency.idempotency_keys` scoped per merchant/route/key; minimal `POST /v1/payment_intents` shell in state `REQUIRES_PAYMENT_METHOD`.
+- Target checks: `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03`.
 - `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocked on Stripe sandbox credentials.
 - Scope: `POST /webhooks/stripe/v1`, Stripe-format HMAC-SHA256 signature verification, timestamp tolerance, event-id idempotency, `account.updated` KYB mapping and audit rows.
 - Target checks: `MRC-02`, webhook branch of `AUD-01`, `LDG-05` regression.
@@ -50,7 +55,7 @@ Latest executed slice:
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`.**
 
 Next planned product step:
-- Either provide real Stripe Connect sandbox credentials to implement `MRC-01`, or continue the separate merchant API key / public API idempotency workstream. Keep API key/public API idempotency out of this webhook slice.
+- Provide real Stripe Connect sandbox credentials to implement `MRC-01`, or choose the next approved backend/runtime slice toward Phase 05 card path. The merchant API key, public idempotency and inbound webhook primitives are now available as foundations.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
@@ -109,10 +114,10 @@ First slice planning note approved:
 - Scope: create `product/` skeleton, five Spring Boot service shells, three Vite SPA shells, Docker Compose core infra, baseline migrations, health endpoints, retained Phase 01 runtime scripts.
 - Linked checks: `RUN-01`..`RUN-08`, `UI-01`.
 
-Latest executed slice planning note:
+Latest accepted Phase 04 slice planning notes:
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3.
 - `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocked on Stripe sandbox credentials.
-- Scope: inbound Stripe webhook handling with real local Stripe-format signature verification and idempotent event processing.
-- Linked checks: `MRC-02`, webhook branch of `AUD-01`, `LDG-05` regression.
+- Linked checks: `MRC-02`, `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03`, `AUD-01`, `LDG-05` regression.
 
 ## Read-first order (новая AI-сессия)
 
@@ -128,11 +133,12 @@ Latest executed slice planning note:
 10. `planning/runtime_checklists.md` — approved runtime check registry.
 11. `planning/implementation_status.md` and `planning/runtime_evidence_log.md` — factual implementation/evidence state.
 12. Previous executed slice note:
-    `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md`.
-13. Latest executed slice note:
     `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md`.
+13. Latest accepted Phase 04 slice notes:
+    `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md`;
+    `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md`.
 
-После прочтения — review the parallel high-value controls planning branch, then decide the next approved implementation slice.
+После прочтения — decide the next approved implementation slice (`MRC-01` if Stripe sandbox credentials are available; otherwise move toward Phase 05 card path).
 
 ## Do-not-do-yet rules
 
@@ -194,12 +200,19 @@ docker compose -f deploy/docker-compose.yml ps
 docker compose -f deploy/docker-compose.yml down
 ```
 
+Current Phase 04 Slice 01:
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3.
+- Implemented: `merchant.api_keys`, `merchant.payment_intents` shell, `idempotency.idempotency_keys` (append-only on update); merchant dashboard API key lifecycle (`POST/GET /api/v1/merchant/api-keys`, `POST /api/v1/merchant/api-keys/{id}/revoke`) with one-time visibility and SHA-256 hashed/fingerprinted storage; public API key auth via `Authorization: Bearer mfp_live_*` through a dedicated Spring Security chain for `/v1/**`; public write idempotency primitive with deterministic request fingerprint; minimal `POST /v1/payment_intents` shell in state `REQUIRES_PAYMENT_METHOD` and `GET /v1/payment_intents/{id}`.
+- Runtime evidence recorded in `planning/runtime_evidence_log.md`.
+- `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` are passed; `AUD-01` extended to API key create/revoke audit rows; `LDG-05` regression passed.
+- No frontend work in this slice. Public API endpoints currently mounted in `platform`; moving them into `acquirer` is a deferred later Phase 04 slice gated on a real service-to-service auth primitive.
+
 Current Phase 04 Slice 02:
 - `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocked on Stripe sandbox credentials.
 - Implemented: `merchant.stripe_account_links`, `merchant.stripe_webhook_events`, `POST /webhooks/stripe/v1`, real Stripe-format HMAC-SHA256 signature verification, timestamp tolerance, duplicate Stripe event id idempotency, `account.updated` KYB mapping and audit rows.
 - Runtime evidence recorded in `planning/runtime_evidence_log.md`.
 - `MRC-02` and webhook branch of `AUD-01` pass; `LDG-05`/`LDG-99` regression passed.
-- `MRC-01`, `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` are not claimed.
+- `MRC-01` is not claimed.
 - No frontend work in this slice.
 
-Next planned step: provide Stripe Connect sandbox credentials for `MRC-01`, or continue separate merchant API key / public API idempotency work. Frontend implementation remains gated by accepted standalone HTML prototypes.
+Next planned step: provide Stripe Connect sandbox credentials for `MRC-01`, or choose the next approved backend/runtime slice toward Phase 05 card path. Frontend implementation remains gated by accepted standalone HTML prototypes.

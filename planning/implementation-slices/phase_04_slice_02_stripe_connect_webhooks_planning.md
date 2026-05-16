@@ -35,13 +35,13 @@ This slice is next because:
 - `planning/06_implementation_guide.md` (Phase 04) lists Stripe Connect sandbox onboarding and webhook signature/idempotency as the merchant-onboarding foundation that other phases depend on.
 - `planning/runtime_checklists.md` keeps `MRC-01`, `MRC-02` and the webhook-driven path of `AUD-01` pending until a real Stripe webhook receiver exists.
 - Phase 02 Slice 02 already created the merchant entity, employees, sessions and `merchant.merchants.kyb_status` field that this slice updates.
-- Webhook signature verification and event-id idempotency are independent from public-API key lifecycle (`MRC-03`) and public-API idempotency (`PAY-01..PAY-03`), which are owned by another branch per `AGENT_TASK.md`.
+- Webhook signature verification and event-id idempotency are independent from public-API key lifecycle (`MRC-03`) and public-API idempotency (`PAY-01..PAY-03`), which are owned by a separate Phase 04 slice.
 
 If onboarding-start were attempted first against the real Stripe API, the slice would be blocked end-to-end. By scoping this slice to the webhook path and explicitly documenting the onboarding-start blocker, real production-working signature/idempotency proofs ship now and unblock later phases (KYB transitions, merchant-payment lifecycle gating, settlement payout webhooks).
 
 ## 3. Stripe Sandbox Credentials Blocker
 
-`AGENT_TASK.md` §Notes:
+Branch execution constraint:
 
 > If real Stripe sandbox credentials are unavailable, stop at a documented blocker instead of faking Stripe behavior.
 

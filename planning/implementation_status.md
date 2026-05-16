@@ -467,8 +467,7 @@ Implemented backend/runtime scope:
 
 Explicitly not started / blocked:
 - `MRC-01` Stripe Connect onboarding start is blocked because real Stripe sandbox credentials are unavailable; no fake `Account.create` or `AccountLink.create` path exists.
-- Merchant API key lifecycle (`MRC-03`).
-- Public API response/idempotency checks (`PAY-01`, `PAY-02`, `PAY-03`).
+- Merchant API key lifecycle (`MRC-03`) and public API response/idempotency checks (`PAY-01`, `PAY-02`, `PAY-03`) were not in this slice; they are covered by Phase 04 Slice 01.
 - Payment intent authorization/capture/settlement.
 - Frontend implementation.
 
@@ -488,3 +487,64 @@ Next planned step:
 Follow-up hardening after review:
 - Rejected webhook deliveries no longer insert into `merchant.stripe_webhook_events`, so invalid signature/timestamp attempts cannot poison later valid retries for the same Stripe event id.
 - Added retained regression script `product/scripts/runtime/reg_phase04_stripe_webhook_bad_then_valid_retry.sh`.
+
+---
+
+## Phase 04 Slice 01 — Merchant API Keys and Public API Idempotency
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — frontend not in scope**.
+
+Planning contract:
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3; frontend not in scope.
+
+Implemented backend/runtime scope:
+- Platform DB migration `V11__merchant_api_keys_and_idempotency.sql` for `merchant.api_keys`, `merchant.payment_intents` shell (state `REQUIRES_PAYMENT_METHOD` only), `idempotency` schema with `idempotency.idempotency_keys`, primary key scoped by `(merchant_id, route, idempotency_key)`, reservation placeholders, finalize-only update guard and no-delete trigger.
+- Merchant dashboard API key endpoints in `com.minifin.platform.merchant.apikeys`:
+  - `POST /api/v1/merchant/api-keys` — `merchant_admin` only; generates an `mfp_live_*` key, returns it once with `apiKeyId`, `keyPrefix` (`mfp_live_` + 3 chars), 16-hex `fingerprint`, `status=ACTIVE`; stores only `key_hash = sha256(rawKey)` and `fingerprint`; optional `Idempotency-Key` returns the same metadata on replay but never replays the one-time raw secret.
+  - `GET /api/v1/merchant/api-keys` — returns prefix/fingerprint/status only; raw key is never returned again.
+  - `POST /api/v1/merchant/api-keys/{id}/revoke` — `merchant_admin` only; transitions key to `REVOKED`; idempotent on already-revoked key.
+- Public API surface in `com.minifin.platform.publicapi`:
+  - `PublicApiAuthFilter` runs only for `/v1/**`, parses `Authorization: Bearer mfp_live_*`, resolves an `ACTIVE` key by `sha256(rawKey)` lookup, rejects missing/malformed/unknown/revoked keys with HTTP 401 and a `{data, errors}` body, writes an audit row on failure and attaches a `PublicApiPrincipal(merchantId, apiKeyId)` to the request on success.
+  - `SecurityConfig` was extended with an ordered public-API filter chain that matches `/v1/**` and bypasses the OIDC chain.
+  - Idempotency repository/service backed by `idempotency.idempotency_keys`. Request fingerprint is `sha256(method + "|" + route + "|" + rawBody)`. Replay with same `(merchantId, route, key, method, fingerprint)` returns the cached HTTP status and body verbatim; same route/key with different fingerprint returns HTTP 409 `idempotency_conflict`; the same key string is independent across merchants and routes. The business write and cache finalization run in one transaction behind a placeholder row to serialize concurrent callers.
+  - `POST /v1/payment_intents` — minimal shell; requires non-empty `Idempotency-Key`; persists a `merchant.payment_intents` row in state `REQUIRES_PAYMENT_METHOD`; returns `{"data":{"object":"payment_intent",...},"errors":[]}`.
+  - `GET /v1/payment_intents/{id}` — returns own payment intent; cross-merchant lookup returns HTTP 404 `payment_intent_not_found`.
+- Audit rows for `merchant.api_key_created`, `merchant.api_key_revoked`, and `publicapi.auth_failed`.
+- Retained runtime scripts:
+  - `product/scripts/runtime/lib_phase04_public_api.sh`
+  - `product/scripts/runtime/reg_phase04_api_key_lifecycle.sh`
+  - `product/scripts/runtime/reg_phase04_public_api_response_shape.sh`
+  - `product/scripts/runtime/reg_phase04_public_api_idempotency_replay.sh`
+  - `product/scripts/runtime/reg_phase04_public_api_idempotency_conflict.sh`
+  - `product/scripts/runtime/reg_phase04_public_api_concurrent_idempotency.sh`
+  - `product/scripts/runtime/reg_phase04_public_api_idempotency_per_route.sh`
+  - `product/scripts/runtime/reg_phase04_idempotency_append_only.sh`
+  - `product/scripts/runtime/reg_phase04_dashboard_api_key_idempotency.sh`
+
+Deliberate scope-narrowing decisions:
+- Public API endpoints (`/v1/**`) are mounted in `platform` rather than in `acquirer` for this slice. Reasons: API key material lives in the same DB as the merchant identity used to manage it, and no service-to-service auth library exists yet to let `acquirer` validate platform-owned API keys. Moving public routes into `acquirer` is a deliberately deferred later Phase 04 slice gated on a real service-auth primitive.
+- API key rotation is not a separate route; "generate new key + revoke old key" satisfies rotation via the existing lifecycle endpoints in this slice.
+- Idempotency TTL cleanup is not implemented in this slice; rows are stored with `created_at` and can be aged out by a later operational slice.
+
+Explicitly not started:
+- Stripe Connect onboarding (`MRC-01`);
+- Stripe webhook receiver (`MRC-02`);
+- payment intent state machine beyond `REQUIRES_PAYMENT_METHOD`;
+- card authorization / capture / refund / settlement / outbound webhook delivery;
+- merchant dashboard webhook endpoint, payments list, refunds, settlements, payouts;
+- frontend implementation under `spa-merchant` or `spa-enduser`.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-16 — Phase 04 Slice 01 Merchant API Keys and Public API Idempotency Runtime Verification`.
+- `MRC-03` — pass for one-time visibility, hashed/fingerprinted at rest and revoked-key rejection.
+- `PAY-01` — pass for `{data, errors}` shape on success and on errors.
+- `PAY-02` — pass for same key/body cached replay, atomic concurrent replay and per-route scope.
+- `PAY-03` — pass for same route/key with different body returning HTTP 409; same key reused on another route is independent.
+- `AUD-01` — pass for API key create/revoke audit rows.
+- `LDG-05` — pass regression after the slice.
+
+Result tag notes:
+- `MRC-01`, `MRC-02` are not claimed; Stripe Connect onboarding and webhook receiver are owned by a separate branch.
+
+Next planned step:
+- Provide real Stripe Connect sandbox credentials to implement `MRC-01`, or choose the next approved backend/runtime slice toward Phase 05 card path; the API key, public idempotency and inbound webhook primitives are now available as foundations.
