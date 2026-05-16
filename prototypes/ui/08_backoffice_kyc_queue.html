@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniFin — KYC Cases — BOF-UI-05</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #eceae5; --surface: #ffffff; --surf2: #f7f6f3; --hover: #f0efe9;
+      --sb: #0e0e12; --sb-bdr: #1e1e22; --sb-muted: #545460; --sb-active: #1e1e28;
+      --bdr: #dddad2; --bdr-mid: #c5c2ba; --bdr-focus: #1c1c1f;
+      --t1: #1c1c1f; --t2: #575763; --t3: #9898a6; --t4: #d0d0da;
+      --g: #166534; --g-bg: #f0fdf4; --g-bd: #bbf7d0;
+      --am: #854d0e; --am-bg: #fffbeb; --am-bd: #fde68a;
+      --rd: #9b1c1c; --rd-bg: #fef2f2; --rd-bd: #fecaca;
+      --pu: #5b21b6; --pu-bg: #f5f3ff; --pu-bd: #ddd6fe;
+      --bl: #1e40af; --bl-bg: #eff6ff; --bl-bd: #bfdbfe;
+      --f-ui: 'IBM Plex Sans', sans-serif; --f-mono: 'IBM Plex Mono', monospace;
+      --w-sb: 210px; --w-au: 256px; --r: 4px;
+    }
+    html, body, #root { height: 100%; font-family: var(--f-ui); font-size: 13px; background: var(--bg); color: var(--t1); }
+    .app-shell { display: flex; height: 100vh; overflow: hidden; }
+
+    /* Sidebar */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb); border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 14px 16px 10px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-product { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+    .sb-surface { font-size: 10px; font-weight: 500; color: var(--sb-muted); text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+    .sb-env { margin: 8px 14px; padding: 3px 8px; background: #1e3a5f; border: 1px solid #2d4f7a; border-radius: var(--r); font-size: 9px; font-weight: 600; color: #7cb9f4; text-transform: uppercase; letter-spacing: .6px; text-align: center; }
+    .sb-sec { font-size: 9px; font-weight: 600; color: var(--sb-muted); text-transform: uppercase; letter-spacing: .6px; padding: 10px 16px 4px; }
+    .sb-nav { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .sb-item { display: flex; align-items: center; gap: 8px; padding: 7px 16px; color: #9898a6; font-size: 12.5px; cursor: pointer; transition: background .12s, color .12s; position: relative; }
+    .sb-item:hover { background: rgba(255,255,255,.04); color: #ccc; }
+    .sb-item.active { background: var(--sb-active); color: #fff; }
+    .sb-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #7cb9f4; }
+    .sb-icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+    .sb-bdg { margin-left: auto; font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 10px; }
+    .sb-bdg.ro { background: #2d3748; color: #90cdf4; }
+    .sb-bdg.sr { background: #2d1a4a; color: #c4b5fd; }
+    .sb-bdg.cnt { background: #1a2e1a; color: #86efac; }
+    .sb-user { padding: 10px 16px; border-top: 1px solid var(--sb-bdr); }
+    .sb-user-name { font-size: 12px; font-weight: 500; color: #e2e8f0; }
+    .sb-user-role { font-size: 10px; color: var(--sb-muted); margin-top: 1px; }
+
+    /* Main */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 0 20px; height: 44px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .topbar-screen { font-size: 10px; font-weight: 600; color: var(--t3); font-family: var(--f-mono); }
+    .topbar-host { font-size: 11px; color: var(--t2); font-family: var(--f-mono); }
+    .topbar-sep { color: var(--t4); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+    /* Badge */
+    .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; border: 1px solid; white-space: nowrap; }
+    .badge.green { color: var(--g); background: var(--g-bg); border-color: var(--g-bd); }
+    .badge.amber { color: var(--am); background: var(--am-bg); border-color: var(--am-bd); }
+    .badge.red { color: var(--rd); background: var(--rd-bg); border-color: var(--rd-bd); }
+    .badge.purple { color: var(--pu); background: var(--pu-bg); border-color: var(--pu-bd); }
+    .badge.blue { color: var(--bl); background: var(--bl-bg); border-color: var(--bl-bd); }
+    .badge.neutral { color: var(--t2); background: var(--surf2); border-color: var(--bdr); }
+
+    /* Page header */
+    .page-hdr { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 14px 20px 0; flex-shrink: 0; }
+    .page-title-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+    .page-title { font-size: 17px; font-weight: 700; color: var(--t1); letter-spacing: -.3px; }
+    .page-sub { font-size: 12px; color: var(--t3); }
+    .stats-strip { display: flex; border-top: 1px solid var(--bdr); margin: 0 -20px; }
+    .stat-cell { padding: 8px 14px; border-right: 1px solid var(--bdr); display: flex; flex-direction: column; gap: 2px; }
+    .stat-cell:last-child { border-right: none; }
+    .stat-val { font-size: 18px; font-weight: 700; font-family: var(--f-mono); }
+    .stat-val.rd { color: var(--rd); }
+    .stat-val.am { color: var(--am); }
+    .stat-val.bl { color: var(--bl); }
+    .stat-lbl { font-size: 10px; color: var(--t3); font-weight: 500; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+
+    /* Action bar */
+    .action-bar { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 8px 20px; display: flex; align-items: center; gap: 5px; flex-shrink: 0; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: var(--r); font-size: 12px; font-weight: 500; font-family: var(--f-ui); border: 1px solid; cursor: pointer; transition: all .12s; white-space: nowrap; }
+    .btn-primary { background: var(--t1); color: #fff; border-color: var(--t1); }
+    .btn-primary:hover { background: #2d2d31; }
+    .btn-default { background: var(--surface); color: var(--t1); border-color: var(--bdr-mid); }
+    .btn-default:hover { background: var(--hover); }
+    .btn-danger { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-warn { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .btn-disabled { background: var(--surf2) !important; color: var(--t4) !important; border-color: var(--bdr) !important; cursor: not-allowed !important; opacity: .7; }
+    .btn-sep { width: 1px; height: 20px; background: var(--bdr); margin: 0 2px; flex-shrink: 0; }
+
+    /* Filter bar */
+    .filter-bar { background: var(--surf2); border-bottom: 1px solid var(--bdr); padding: 7px 20px; display: flex; align-items: center; gap: 7px; flex-shrink: 0; flex-wrap: wrap; }
+    .filter-lbl { font-size: 11px; color: var(--t3); font-weight: 500; flex-shrink: 0; }
+    .filter-select { font-size: 11.5px; font-family: var(--f-ui); padding: 3px 7px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); cursor: pointer; }
+    .filter-search { flex: 1; max-width: 220px; font-size: 11.5px; font-family: var(--f-ui); padding: 3px 8px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); }
+    .filter-chip { display: inline-flex; align-items: center; padding: 3px 9px; border: 1px solid var(--bdr-mid); border-radius: 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--t2); cursor: pointer; transition: all .12s; }
+    .filter-chip.active { background: var(--t1); color: #fff; border-color: var(--t1); }
+
+    /* State flow strip */
+    .state-strip { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 8px 20px; flex-shrink: 0; }
+    .state-strip-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; cursor: pointer; user-select: none; }
+    .state-strip-title { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; }
+    .sf-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .sf-row-lbl { font-size: 9px; font-weight: 600; color: var(--t4); text-transform: uppercase; letter-spacing: .5px; min-width: 38px; flex-shrink: 0; }
+    .sf-flow { display: flex; align-items: center; overflow-x: auto; padding-bottom: 2px; }
+    .sf-node { display: flex; align-items: center; flex-shrink: 0; }
+    .sf-s { padding: 3px 8px; border-radius: 10px; font-size: 9.5px; font-weight: 600; font-family: var(--f-mono); background: var(--surf2); color: var(--t3); border: 1px solid var(--bdr); white-space: nowrap; }
+    .sf-s.cur { background: var(--bl-bg); color: var(--bl); border-color: var(--bl-bd); }
+    .sf-s.good { background: var(--g-bg); color: var(--g); border-color: var(--g-bd); }
+    .sf-s.bad { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    .sf-s.side { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .sf-s.esc { background: var(--pu-bg); color: var(--pu); border-color: var(--pu-bd); }
+    .sf-arr { color: var(--t4); font-size: 11px; padding: 0 3px; }
+
+    /* Content */
+    .content-area { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+    .table-area { flex: 0 0 57%; overflow-y: auto; border-right: 1px solid var(--bdr); }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead th { background: var(--surf2); padding: 6px 9px; text-align: left; font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--bdr); white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+    tbody tr { border-bottom: 1px solid var(--bdr); cursor: pointer; transition: background .1s; }
+    tbody tr:hover { background: var(--hover); }
+    tbody tr.sel { background: #eef3ff; }
+    tbody td { padding: 7px 9px; vertical-align: middle; }
+    .mono { font-family: var(--f-mono); }
+    .p-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .p-dot.critical { background: #dc2626; }
+    .p-dot.high { background: #ea580c; }
+    .p-dot.medium { background: #ca8a04; }
+    .p-dot.low { background: #16a34a; }
+    .sla-ok { color: var(--t3); font-family: var(--f-mono); font-size: 10px; font-weight: 600; }
+    .sla-warn { color: var(--am); font-family: var(--f-mono); font-size: 10px; font-weight: 600; }
+    .sla-breach { color: var(--rd); font-family: var(--f-mono); font-size: 10px; font-weight: 600; }
+    .rchip { display: inline-flex; font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; margin: 1px; white-space: nowrap; font-family: var(--f-mono); border: 1px solid; }
+    .rchip.red { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    .rchip.amber { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .rchip.purple { background: var(--pu-bg); color: var(--pu); border-color: var(--pu-bd); }
+    .rchip.neutral { background: var(--surf2); color: var(--t2); border-color: var(--bdr); }
+
+    /* Detail panel */
+    .detail-panel { flex: 1; overflow-y: auto; background: var(--surface); }
+    .detail-empty { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--t3); font-size: 13px; }
+    .detail-hdr { padding: 10px 14px; border-bottom: 1px solid var(--bdr); display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; background: var(--surf2); position: sticky; top: 0; z-index: 2; }
+    .detail-id { font-family: var(--f-mono); font-weight: 600; font-size: 13px; color: var(--t1); }
+    .detail-name { font-size: 12px; color: var(--t2); margin-top: 2px; }
+    .detail-sec { padding: 10px 14px; border-bottom: 1px solid var(--bdr); }
+    .detail-sec-title { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 7px; }
+    .kv { width: 100%; border-collapse: collapse; }
+    .kv tr { border-bottom: 1px solid var(--bdr); }
+    .kv tr:last-child { border-bottom: none; }
+    .kv td { padding: 4px 0; vertical-align: top; }
+    .kv td:first-child { font-size: 11px; color: var(--t3); font-weight: 500; width: 44%; padding-right: 8px; }
+    .kv td:last-child { font-size: 11.5px; color: var(--t1); font-weight: 500; }
+
+    /* Doc grid */
+    .doc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .doc-item { background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); padding: 7px 9px; }
+    .doc-item-name { font-size: 11px; font-weight: 600; color: var(--t1); margin-bottom: 2px; }
+    .doc-item-meta { font-size: 10px; color: var(--t3); font-family: var(--f-mono); line-height: 1.5; }
+    .gate-box { background: var(--am-bg); border: 1px solid var(--am-bd); border-radius: var(--r); padding: 9px 11px; margin-top: 8px; }
+    .gate-title { font-size: 11px; font-weight: 700; color: var(--am); margin-bottom: 3px; }
+    .gate-text { font-size: 11px; color: var(--am); line-height: 1.5; margin-bottom: 7px; }
+    .preview-placeholder { background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); padding: 9px 11px; margin-top: 8px; }
+
+    /* Provider box */
+    .provider-box { background: var(--pu-bg); border: 1px solid var(--pu-bd); border-radius: var(--r); padding: 9px 11px; }
+    .prov-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 7px; }
+    .prov-title { font-size: 11px; font-weight: 700; color: var(--pu); }
+    .prov-note { font-size: 9px; font-weight: 600; color: var(--pu); background: var(--pu-bd); padding: 2px 6px; border-radius: 10px; }
+    .rej-label { display: inline-flex; font-size: 9px; font-weight: 700; font-family: var(--f-mono); padding: 2px 6px; background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); border-radius: 3px; margin: 1px; }
+    .raw-blocked { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r); padding: 7px 9px; margin-top: 7px; display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: var(--t3); }
+
+    /* Decision */
+    .blocked-box { background: var(--rd-bg); border: 1px solid var(--rd-bd); border-radius: var(--r); padding: 9px 11px; margin-bottom: 8px; }
+    .blocked-title { font-size: 11px; font-weight: 700; color: var(--rd); margin-bottom: 3px; }
+    .blocked-text { font-size: 11px; color: var(--rd); line-height: 1.4; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+    .form-lbl { font-size: 11px; font-weight: 600; color: var(--t2); }
+    .form-sel, .form-ta { font-size: 12px; font-family: var(--f-ui); padding: 6px 8px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); width: 100%; }
+    .form-sel:focus, .form-ta:focus { outline: none; border-color: var(--bdr-focus); }
+    .form-ta { resize: vertical; min-height: 66px; }
+    .form-chk { display: flex; align-items: flex-start; gap: 7px; font-size: 11px; color: var(--t2); cursor: pointer; line-height: 1.4; margin-bottom: 6px; }
+    .form-chk input { margin-top: 2px; cursor: pointer; }
+    .decision-btn-row { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+    .success-box { background: var(--g-bg); border: 1px solid var(--g-bd); border-radius: var(--r); padding: 9px 11px; }
+    .success-title { font-size: 12px; font-weight: 700; color: var(--g); margin-bottom: 3px; }
+    .success-body { font-size: 11px; color: var(--g); }
+    .senior-note { background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); padding: 7px 9px; margin-top: 8px; font-size: 10px; color: var(--t3); }
+
+    /* Timeline */
+    .tl { display: flex; flex-direction: column; }
+    .tl-item { display: flex; gap: 9px; padding: 5px 0; border-bottom: 1px solid var(--bdr); }
+    .tl-item:last-child { border-bottom: none; }
+    .tl-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--t4); margin-top: 4px; flex-shrink: 0; }
+    .tl-dot.live { background: var(--bl); }
+    .tl-ev { font-size: 10.5px; font-weight: 600; font-family: var(--f-mono); color: var(--t1); }
+    .tl-meta { font-size: 10px; color: var(--t3); margin-top: 1px; }
+
+    /* Alert */
+    .alert { padding: 7px 10px; border-radius: var(--r); font-size: 11px; line-height: 1.5; border: 1px solid; margin-bottom: 6px; }
+    .alert.green { background: var(--g-bg); color: var(--g); border-color: var(--g-bd); }
+    .alert.amber { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .alert.red { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    .alert.blue { background: var(--bl-bg); color: var(--bl); border-color: var(--bl-bd); }
+
+    /* Audit rail */
+    .audit-rail { width: var(--w-au); flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .au-hdr { padding: 10px 14px 8px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .au-title { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; }
+    .au-body { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 12px; }
+    .au-sec-title { font-size: 9px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px; }
+    .au-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; margin-bottom: 3px; }
+    .au-k { font-size: 10px; color: var(--t3); }
+    .au-v { font-size: 10px; font-weight: 500; color: var(--t1); text-align: right; font-family: var(--f-mono); }
+    .au-ev { padding: 4px 0; border-bottom: 1px solid var(--bdr); }
+    .au-ev:last-child { border-bottom: none; }
+    .au-ev-type { font-size: 10px; font-weight: 600; font-family: var(--f-mono); color: var(--bl); }
+    .au-ev-meta { font-size: 9px; color: var(--t3); margin-top: 1px; }
+    .au-inv { font-size: 10px; color: var(--t2); padding: 3px 0; border-bottom: 1px solid var(--bdr); display: flex; gap: 5px; line-height: 1.4; }
+    .au-inv::before { content: '—'; color: var(--t4); flex-shrink: 0; }
+    .au-inv:last-child { border-bottom: none; }
+    .divider { height: 1px; background: var(--bdr); margin: 2px 0; }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--t4); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const CASES = [
+  {
+    id: 'KYC-1042', userId: 'usr_Sf7kL2mPq4nRvWy', name: 'Sofia Laurent',
+    country: 'FR', priority: 'high',
+    providerStatus: 'REVIEW_COMPLETED', providerResult: 'Document mismatch',
+    kycState: 'IN_REVIEW', docStatus: 'mismatch',
+    riskFlags: ['address_mismatch', 'manual_review_required'],
+    riskLevel: 'HIGH', assignedTo: 'Maya Ivanova',
+    submittedAt: '2026-05-14 09:12', slaDeadline: '2026-05-16 17:12',
+    slaStatus: 'warn', age: '2d 6h', requiredRole: 'compliance_officer',
+    applicantId: 'ssub_63f2a8d1e4b0c7',
+    documents: {
+      'Passport Front': { status: 'received', ts: '2026-05-14 09:10', hash: 'sha256:4f7e2a…a3c9' },
+      'Passport Back': { status: 'not_required' },
+      'Selfie': { status: 'received', ts: '2026-05-14 09:10', hash: 'sha256:8b2d1f…f6a4' },
+      'Proof of Address': { status: 'received', ts: '2026-05-14 09:11', hash: 'sha256:2c8f4e…d1e7' },
+    },
+    providerData: {
+      reviewStatus: 'completed', reviewAnswer: 'RED',
+      rejectLabels: ['DOCUMENT_MISMATCH', 'ADDRESS_MISMATCH'],
+      comment: 'Address on document does not match provided residential address. Passport data and selfie are valid.',
+      lastSync: '2026-05-14 09:15', webhook: 'delivered',
+    },
+    docType: 'Passport', docCountry: 'FR', docExpiry: '2028-09-14',
+    selfieCheck: 'Passed', addrCheck: 'Mismatch', sanctionsBlock: false,
+  },
+  {
+    id: 'KYC-1048', userId: 'usr_Ef3nX8kPq2mTvLrJy', name: 'Elena Fischer',
+    country: 'DE', priority: 'medium',
+    providerStatus: 'REVIEW_COMPLETED', providerResult: 'Approved — velocity flag',
+    kycState: 'PENDING_MANUAL_REVIEW', docStatus: 'ok',
+    riskFlags: ['velocity_flag'],
+    riskLevel: 'MEDIUM', assignedTo: '—',
+    submittedAt: '2026-05-15 14:30', slaDeadline: '2026-05-17 14:30',
+    slaStatus: 'ok', age: '1d 2h', requiredRole: 'compliance_officer',
+    applicantId: 'ssub_71a4c9e2f8b1d5',
+    documents: {
+      'Passport Front': { status: 'received', ts: '2026-05-15 14:28', hash: 'sha256:9d1a3b…c2f8' },
+      'Passport Back': { status: 'not_required' },
+      'Selfie': { status: 'received', ts: '2026-05-15 14:28', hash: 'sha256:5e8c2a…b4d1' },
+      'Proof of Address': { status: 'not_submitted' },
+    },
+    providerData: {
+      reviewStatus: 'completed', reviewAnswer: 'GREEN',
+      rejectLabels: [],
+      comment: 'All documents valid. Flagged for manual review due to registration velocity pattern.',
+      lastSync: '2026-05-15 14:35', webhook: 'delivered',
+    },
+    docType: 'Passport', docCountry: 'DE', docExpiry: '2029-03-22',
+    selfieCheck: 'Passed', addrCheck: 'N/A', sanctionsBlock: false,
+  },
+  {
+    id: 'KYC-1053', userId: 'usr_Mw2kP9nQr5sVtLxZ', name: 'Mark Weber',
+    country: 'AT', priority: 'critical',
+    providerStatus: 'REVIEW_COMPLETED', providerResult: 'Sanctions precheck hit',
+    kycState: 'ESCALATED_COMPLIANCE', docStatus: 'ok',
+    riskFlags: ['sanctions_precheck', 'compliance_escalated'],
+    riskLevel: 'CRITICAL', assignedTo: 'Senior Team',
+    submittedAt: '2026-05-13 11:00', slaDeadline: '2026-05-15 11:00',
+    slaStatus: 'breach', age: '3d 5h', requiredRole: 'senior_compliance',
+    applicantId: 'ssub_52b7f3c1a9e4d8',
+    documents: {
+      'Passport Front': { status: 'received', ts: '2026-05-13 10:58', hash: 'sha256:3f9d2e…a1b7' },
+      'Passport Back': { status: 'not_required' },
+      'Selfie': { status: 'received', ts: '2026-05-13 10:58', hash: 'sha256:7c4b1a…e9d2' },
+      'Proof of Address': { status: 'received', ts: '2026-05-13 10:59', hash: 'sha256:1a8e5d…f3c4' },
+    },
+    providerData: {
+      reviewStatus: 'completed', reviewAnswer: 'RED',
+      rejectLabels: ['SANCTIONS_PRECHECK_HIT'],
+      comment: 'Possible match on consolidated sanctions list. Requires manual compliance review.',
+      lastSync: '2026-05-13 11:05', webhook: 'delivered',
+    },
+    docType: 'Passport', docCountry: 'AT', docExpiry: '2027-07-11',
+    selfieCheck: 'Passed', addrCheck: 'Passed', sanctionsBlock: true,
+  },
+  {
+    id: 'KYC-1061', userId: 'usr_Jk9nM3pQs7tWvLzY', name: 'Jonas Keller',
+    country: 'DE', priority: 'low',
+    providerStatus: 'REVIEW_COMPLETED', providerResult: 'Expired document',
+    kycState: 'RESUBMISSION_REQUESTED', docStatus: 'expired',
+    riskFlags: ['expired_document'],
+    riskLevel: 'LOW', assignedTo: 'Maya Ivanova',
+    submittedAt: '2026-05-12 08:45', slaDeadline: '2026-05-18 08:45',
+    slaStatus: 'ok', age: '4d 7h', requiredRole: 'backoffice_operator',
+    applicantId: 'ssub_44e8a2f6d3b1c7',
+    documents: {
+      'ID Card Front': { status: 'received', ts: '2026-05-12 08:43', hash: 'sha256:6b2c4a…d9f1' },
+      'ID Card Back': { status: 'received', ts: '2026-05-12 08:43', hash: 'sha256:4d7a1e…b3c8' },
+      'Selfie': { status: 'received', ts: '2026-05-12 08:43', hash: 'sha256:2e9b3c…a5f7' },
+      'Proof of Address': { status: 'not_submitted' },
+    },
+    providerData: {
+      reviewStatus: 'completed', reviewAnswer: 'RED',
+      rejectLabels: ['EXPIRED_DOCUMENT'],
+      comment: 'ID document expired 2024-11-30. User notified to resubmit with valid document.',
+      lastSync: '2026-05-12 08:50', webhook: 'delivered',
+    },
+    docType: 'ID Card', docCountry: 'DE', docExpiry: '2024-11-30',
+    selfieCheck: 'Passed', addrCheck: 'N/A', sanctionsBlock: false,
+  },
+  {
+    id: 'KYC-1068', userId: 'usr_Ln4kP8mQr2sVtWzX', name: 'Lara Novak',
+    country: 'NL', priority: 'low',
+    providerStatus: 'PENDING', providerResult: 'Awaiting provider',
+    kycState: 'SUBMITTED', docStatus: 'pending',
+    riskFlags: [],
+    riskLevel: 'LOW', assignedTo: '—',
+    submittedAt: '2026-05-16 07:20', slaDeadline: '2026-05-18 07:20',
+    slaStatus: 'ok', age: '4h', requiredRole: 'backoffice_operator',
+    applicantId: 'ssub_38c5b9a1e7f4d2',
+    documents: {
+      'Passport Front': { status: 'received', ts: '2026-05-16 07:19', hash: 'sha256:2e5b9a…c7f3' },
+      'Passport Back': { status: 'not_required' },
+      'Selfie': { status: 'received', ts: '2026-05-16 07:19', hash: 'sha256:8f1a4e…d6b2' },
+      'Proof of Address': { status: 'pending' },
+    },
+    providerData: {
+      reviewStatus: 'pending', reviewAnswer: null,
+      rejectLabels: [], comment: '',
+      lastSync: '2026-05-16 07:22', webhook: 'delivered',
+    },
+    docType: 'Passport', docCountry: 'NL', docExpiry: '2030-02-18',
+    selfieCheck: 'Pending', addrCheck: 'Pending', sanctionsBlock: false,
+  },
+  {
+    id: 'KYC-1074', userId: 'usr_Am6kR1nPs4tVwLyZ', name: 'Anton Meyer',
+    country: 'DE', priority: 'medium',
+    providerStatus: 'REVIEW_COMPLETED', providerResult: 'Address mismatch',
+    kycState: 'IN_REVIEW', docStatus: 'mismatch',
+    riskFlags: ['address_mismatch'],
+    riskLevel: 'MEDIUM', assignedTo: '—',
+    submittedAt: '2026-05-15 16:40', slaDeadline: '2026-05-17 16:40',
+    slaStatus: 'warn', age: '23h', requiredRole: 'compliance_officer',
+    applicantId: 'ssub_91d2e7f4b3a8c6',
+    documents: {
+      'Passport Front': { status: 'received', ts: '2026-05-15 16:38', hash: 'sha256:5c1d8b…e4f2' },
+      'Passport Back': { status: 'not_required' },
+      'Selfie': { status: 'received', ts: '2026-05-15 16:38', hash: 'sha256:7a3f2c…b9d1' },
+      'Proof of Address': { status: 'received', ts: '2026-05-15 16:39', hash: 'sha256:3b9e1a…c5d7' },
+    },
+    providerData: {
+      reviewStatus: 'completed', reviewAnswer: 'RED',
+      rejectLabels: ['ADDRESS_MISMATCH'],
+      comment: 'Proof of address shows different municipality than registered address.',
+      lastSync: '2026-05-15 16:45', webhook: 'delivered',
+    },
+    docType: 'Passport', docCountry: 'DE', docExpiry: '2028-12-03',
+    selfieCheck: 'Passed', addrCheck: 'Mismatch', sanctionsBlock: false,
+  },
+  {
+    id: 'KYC-1082', userId: 'usr_Acb5kT2nPq9sVwMzR', name: 'Acme — Beneficial Owner',
+    country: 'IE', priority: 'high',
+    providerStatus: 'REVIEW_COMPLETED', providerResult: 'Pending manual review',
+    kycState: 'PENDING_MANUAL_REVIEW', docStatus: 'ok',
+    riskFlags: ['business_owner_verification', 'manual_review_required'],
+    riskLevel: 'HIGH', assignedTo: '—',
+    submittedAt: '2026-05-14 11:50', slaDeadline: '2026-05-16 11:50',
+    slaStatus: 'breach', age: '2d 4h', requiredRole: 'compliance_officer',
+    applicantId: 'ssub_27a4d8c3b9f5e1',
+    documents: {
+      'Passport Front': { status: 'received', ts: '2026-05-14 11:48', hash: 'sha256:1f9c3b…a7d2' },
+      'Passport Back': { status: 'not_required' },
+      'Selfie': { status: 'received', ts: '2026-05-14 11:48', hash: 'sha256:4d2a8e…f1b6' },
+      'Proof of Address': { status: 'received', ts: '2026-05-14 11:49', hash: 'sha256:8b5f3c…e9a1' },
+    },
+    providerData: {
+      reviewStatus: 'completed', reviewAnswer: 'GREEN',
+      rejectLabels: [],
+      comment: 'Individual KYC passed. Beneficial owner relationship to merchant requires manual compliance verification.',
+      lastSync: '2026-05-14 11:55', webhook: 'delivered',
+    },
+    docType: 'Passport', docCountry: 'IE', docExpiry: '2031-04-07',
+    selfieCheck: 'Passed', addrCheck: 'Passed', sanctionsBlock: false,
+  },
+];
+
+const MAIN_STATES = ['NOT_STARTED','SUBMITTED','PROVIDER_PENDING','PENDING_MANUAL_REVIEW','IN_REVIEW','APPROVED'];
+const ALT_STATES = [
+  { id: 'RESUBMISSION_REQUESTED', cls: 'side' },
+  { id: 'REJECTED', cls: 'bad' },
+  { id: 'ESCALATED_COMPLIANCE', cls: 'esc' },
+  { id: 'EXPIRED', cls: 'bad' },
+  { id: 'BLOCKED_BY_SANCTIONS', cls: 'bad' },
+];
+const REASON_CODES = [
+  '— select reason code —','DOCUMENT_MISMATCH','EXPIRED_DOCUMENT','ADDRESS_MISMATCH',
+  'SANCTIONS_PRECHECK','PROVIDER_FALSE_POSITIVE','USER_RESUBMISSION_REQUIRED',
+  'MANUAL_REVIEW_PASSED','BUSINESS_OWNER_VERIFIED',
+];
+
+function stateBadge(s) {
+  if (s === 'APPROVED') return 'green';
+  if (s === 'IN_REVIEW') return 'blue';
+  if (['PENDING_MANUAL_REVIEW','RESUBMISSION_REQUESTED'].includes(s)) return 'amber';
+  if (['SUBMITTED','PROVIDER_PENDING'].includes(s)) return 'neutral';
+  if (s === 'ESCALATED_COMPLIANCE') return 'purple';
+  if (['REJECTED','BLOCKED_BY_SANCTIONS','EXPIRED'].includes(s)) return 'red';
+  return 'neutral';
+}
+function riskChip(f) {
+  if (['sanctions_precheck','compliance_escalated'].includes(f)) return 'red';
+  if (['velocity_flag','manual_review_required','expired_document'].includes(f)) return 'amber';
+  if (['business_owner_verification'].includes(f)) return 'purple';
+  return 'neutral';
+}
+function docStatusColor(s) {
+  if (s === 'received') return 'var(--g)';
+  if (s === 'not_required') return 'var(--t4)';
+  if (s === 'not_submitted') return 'var(--rd)';
+  return 'var(--am)';
+}
+
+const NAV = [
+  { icon: '⬡', label: 'Dashboard', path: 'dash' },
+  { icon: '◈', label: 'Work Queue', path: 'wq', cnt: '130' },
+  { icon: '◎', label: 'KYC Cases', path: 'kyc', cnt: '26', active: true },
+  { icon: '⚡', label: 'AML Alerts', path: 'aml', cnt: '14' },
+  { icon: '⊘', label: 'Sanctions Hits', path: 'snx', cnt: '4' },
+  { icon: '⬕', label: 'Manual Deposits', path: 'dep', role: 'ro', cnt: '18' },
+  { icon: '⬔', label: 'Manual Withdrawals', path: 'wdr', role: 'ro', cnt: '11' },
+  { icon: '⊟', label: 'Chargebacks', path: 'chb', role: 'sr', cnt: '9' },
+  { icon: '⊞', label: 'Frozen Accounts', path: 'frz', cnt: '6' },
+  { icon: '☷', label: 'Audit Log', path: 'aud' },
+];
+
+function App() {
+  const [selId, setSelId] = useState('KYC-1042');
+  const [localSt, setLocalSt] = useState({});
+  const [fState, setFState] = useState('');
+  const [fCountry, setFCountry] = useState('');
+  const [fAssigned, setFAssigned] = useState(false);
+  const [fSearch, setFSearch] = useState('');
+  const [sfOpen, setSfOpen] = useState(true);
+  const [showGate, setShowGate] = useState(false);
+  const [gateConfirmed, setGateConfirmed] = useState(false);
+  const [showProv, setShowProv] = useState(false);
+  const [rationale, setRationale] = useState('');
+  const [reasonCode, setReasonCode] = useState('');
+  const [chkDoc, setChkDoc] = useState(false);
+  const [chkAudit, setChkAudit] = useState(false);
+  const [evLog, setEvLog] = useState([
+    { type: 'kyc.case_opened', meta: 'KYC-1042 · Maya Ivanova · 09:18' },
+    { type: 'kyc.provider_result_synced', meta: 'KYC-1042 · Sumsub webhook · 09:15' },
+  ]);
+
+  function addEv(type, meta) {
+    setEvLog(p => [{ type, meta }, ...p]);
+  }
+
+  const sel = CASES.find(c => c.id === selId);
+  const selState = (selId && localSt[selId]) || sel?.kycState;
+
+  const canDecide = sel && ['IN_REVIEW','PENDING_MANUAL_REVIEW'].includes(selState) && !sel.sanctionsBlock && !localSt[selId];
+  const canReject = canDecide && !!rationale;
+  const canEscalate = sel && !['APPROVED','REJECTED','BLOCKED_BY_SANCTIONS'].includes(selState) && !localSt[selId];
+  const isDone = selId && !!localSt[selId];
+
+  const filtered = CASES.filter(c => {
+    const st = localSt[c.id] || c.kycState;
+    if (fState && st !== fState) return false;
+    if (fCountry && c.country !== fCountry) return false;
+    if (fAssigned && c.assignedTo !== 'Maya Ivanova') return false;
+    if (fSearch) {
+      const q = fSearch.toLowerCase();
+      if (!c.id.toLowerCase().includes(q) && !c.name.toLowerCase().includes(q) && !c.applicantId.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  function selectCase(id) {
+    setSelId(id);
+    setShowGate(false); setGateConfirmed(false); setShowProv(false);
+    setRationale(''); setReasonCode(''); setChkDoc(false); setChkAudit(false);
+    const now = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    addEv('kyc.case_opened', `${id} · Maya Ivanova · ${now}`);
+  }
+
+  function doApprove() {
+    setLocalSt(p => ({...p, [selId]: 'APPROVED'}));
+    addEv('kyc.approved', `${selId} · Maya Ivanova · ${reasonCode || 'MANUAL_REVIEW_PASSED'}`);
+  }
+  function doReject() {
+    setLocalSt(p => ({...p, [selId]: 'REJECTED'}));
+    addEv('kyc.rejected', `${selId} · Maya Ivanova · ${reasonCode}`);
+  }
+  function doResubmit() {
+    setLocalSt(p => ({...p, [selId]: 'RESUBMISSION_REQUESTED'}));
+    addEv('kyc.resubmission_requested', `${selId} · Maya Ivanova · ${reasonCode}`);
+  }
+  function doEscalate() {
+    setLocalSt(p => ({...p, [selId]: 'ESCALATED_COMPLIANCE'}));
+    addEv('kyc.escalated_compliance', `${selId} · Maya Ivanova`);
+  }
+  function doGateConfirm() {
+    setGateConfirmed(true); setShowGate(false);
+    const now = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    addEv('read_audit.kyc_document_previewed', `${selId} · Maya Ivanova · ${sel?.docType} ${sel?.docCountry} · ${now}`);
+  }
+
+  return (
+    <div className="app-shell">
+      {/* Sidebar */}
+      <aside className="sidebar">
+        <div className="sb-brand">
+          <div className="sb-product">MiniFin</div>
+          <div className="sb-surface">Backoffice</div>
+        </div>
+        <div className="sb-env">Local Sandbox</div>
+        <div className="sb-nav">
+          <div className="sb-sec">Queues</div>
+          {NAV.map(n => (
+            <div key={n.path} className={`sb-item${n.active ? ' active' : ''}`}>
+              <span className="sb-icon">{n.icon}</span>
+              <span>{n.label}</span>
+              {n.role === 'ro' && <span className="sb-bdg ro">RO</span>}
+              {n.role === 'sr' && <span className="sb-bdg sr">SR</span>}
+              {n.cnt && <span className="sb-bdg cnt">{n.cnt}</span>}
+            </div>
+          ))}
+        </div>
+        <div className="sb-user">
+          <div className="sb-user-name">Maya Ivanova</div>
+          <div className="sb-user-role">compliance_officer · KC OIDC</div>
+        </div>
+      </aside>
+
+      {/* Main */}
+      <div className="main">
+        {/* Topbar */}
+        <div className="topbar">
+          <span className="topbar-screen">BOF-UI-05</span>
+          <span className="topbar-sep">·</span>
+          <span className="topbar-host">backoffice.miniefin.local</span>
+          <div className="topbar-right">
+            <span className="badge blue">OIDC Active</span>
+            <span className="badge neutral">Token exp 18:30</span>
+            <span className="badge green">● CO</span>
+          </div>
+        </div>
+
+        {/* Page header */}
+        <div className="page-hdr">
+          <div className="page-title-row">
+            <div className="page-title">KYC Cases</div>
+            <div className="page-sub">Review identity verification cases and provider results</div>
+          </div>
+          <div className="stats-strip">
+            <div className="stat-cell"><div className="stat-val">26</div><div className="stat-lbl">Open</div></div>
+            <div className="stat-cell"><div className="stat-val am">7</div><div className="stat-lbl">High Priority</div></div>
+            <div className="stat-cell"><div className="stat-val rd">4</div><div className="stat-lbl">SLA Breached</div></div>
+            <div className="stat-cell"><div className="stat-val am">6</div><div className="stat-lbl">Doc Mismatch</div></div>
+            <div className="stat-cell"><div className="stat-val rd">3</div><div className="stat-lbl">Sanctions Hit</div></div>
+            <div className="stat-cell"><div className="stat-val bl">9</div><div className="stat-lbl">Awaiting Resubmission</div></div>
+          </div>
+        </div>
+
+        {/* Action bar */}
+        <div className="action-bar">
+          <button className="btn btn-default">Assign to me</button>
+          <div className="btn-sep"/>
+          <button className={`btn ${canDecide && chkDoc ? 'btn-primary' : 'btn-disabled'}`}
+            onClick={canDecide && chkDoc ? doApprove : undefined}>✓ Approve KYC</button>
+          <button className={`btn ${canReject ? 'btn-danger' : 'btn-disabled'}`}
+            onClick={canReject ? doReject : undefined}>✕ Reject KYC</button>
+          <button className={`btn ${canDecide ? 'btn-warn' : 'btn-disabled'}`}
+            onClick={canDecide ? doResubmit : undefined}>↩ Request Resubmission</button>
+          <button className={`btn ${canEscalate ? 'btn-default' : 'btn-disabled'}`}
+            onClick={canEscalate ? doEscalate : undefined}>↑ Escalate to Compliance</button>
+          <div className="btn-sep"/>
+          <button className="btn btn-disabled" title="senior_compliance only">⊘ Senior Override</button>
+          <div style={{marginLeft:'auto'}}>
+            <button className="btn btn-default"
+              onClick={() => { if(selId) setShowProv(p=>!p); }}>
+              {showProv ? 'Hide' : 'Open'} Provider Result
+            </button>
+          </div>
+        </div>
+
+        {/* Filter bar */}
+        <div className="filter-bar">
+          <span className="filter-lbl">Filter:</span>
+          <select className="filter-select" value={fState} onChange={e=>setFState(e.target.value)}>
+            <option value="">All States</option>
+            {['SUBMITTED','PROVIDER_PENDING','PENDING_MANUAL_REVIEW','IN_REVIEW','ESCALATED_COMPLIANCE','RESUBMISSION_REQUESTED','APPROVED','REJECTED'].map(s=>
+              <option key={s} value={s}>{s}</option>
+            )}
+          </select>
+          <select className="filter-select" value={fCountry} onChange={e=>setFCountry(e.target.value)}>
+            <option value="">All Countries</option>
+            {['DE','FR','AT','NL','IE'].map(c=><option key={c} value={c}>{c}</option>)}
+          </select>
+          <span className={`filter-chip${fAssigned?' active':''}`} onClick={()=>setFAssigned(p=>!p)}>
+            Assigned to me
+          </span>
+          <input className="filter-search" placeholder="Search case ID, user, applicant ID…"
+            value={fSearch} onChange={e=>setFSearch(e.target.value)}/>
+        </div>
+
+        {/* State flow strip */}
+        <div className="state-strip">
+          <div className="state-strip-hdr" onClick={()=>setSfOpen(p=>!p)}>
+            <span className="state-strip-title">KYC State Flow</span>
+            <span style={{color:'var(--t4)',fontSize:'10px'}}>{sfOpen?'▲':'▼'}</span>
+          </div>
+          {sfOpen && (<>
+            <div className="sf-row">
+              <span className="sf-row-lbl">Main</span>
+              <div className="sf-flow">
+                {MAIN_STATES.map((s,i) => (
+                  <div key={s} className="sf-node">
+                    <span className={`sf-s${selState===s?' cur':s==='APPROVED'?' good':''}`}>{s}</span>
+                    {i < MAIN_STATES.length-1 && <span className="sf-arr">→</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="sf-row" style={{marginBottom:0}}>
+              <span className="sf-row-lbl">Alt</span>
+              <div className="sf-flow" style={{gap:'5px'}}>
+                {ALT_STATES.map(s => (
+                  <span key={s.id} className={`sf-s ${s.cls}${selState===s.id?' cur':''}`}>{s.id}</span>
+                ))}
+              </div>
+            </div>
+          </>)}
+        </div>
+
+        {/* Content area */}
+        <div className="content-area">
+          {/* Table */}
+          <div className="table-area">
+            <table>
+              <thead>
+                <tr>
+                  <th style={{width:'20px'}}>P</th>
+                  <th>Case ID</th>
+                  <th>User</th>
+                  <th>CC</th>
+                  <th>KYC State</th>
+                  <th>Provider</th>
+                  <th>Risk Flags</th>
+                  <th>Assigned</th>
+                  <th>Age / SLA</th>
+                  <th>Role</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(c => {
+                  const st = localSt[c.id] || c.kycState;
+                  return (
+                    <tr key={c.id} className={selId===c.id?'sel':''} onClick={()=>selectCase(c.id)}>
+                      <td><span className={`p-dot ${c.priority}`} title={c.priority}/></td>
+                      <td><span className="mono" style={{fontSize:'11px',fontWeight:600}}>{c.id}</span></td>
+                      <td style={{maxWidth:'120px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.name}</td>
+                      <td><span className="mono" style={{fontSize:'11px'}}>{c.country}</span></td>
+                      <td><span className={`badge ${stateBadge(st)}`} style={{fontSize:'9px',padding:'1px 5px'}}>{st.replace(/_/g,' ')}</span></td>
+                      <td><span className="badge neutral" style={{fontSize:'9px',padding:'1px 5px'}}>{c.providerStatus}</span></td>
+                      <td>
+                        {c.riskFlags.length===0
+                          ? <span style={{color:'var(--t4)',fontSize:'11px'}}>—</span>
+                          : c.riskFlags.slice(0,2).map(f=>(
+                              <span key={f} className={`rchip ${riskChip(f)}`}>{f.replace(/_/g,' ')}</span>
+                            ))
+                        }
+                      </td>
+                      <td style={{fontSize:'11px',color:c.assignedTo==='—'?'var(--t4)':'var(--t2)'}}>{c.assignedTo}</td>
+                      <td>
+                        <div className={`sla-${c.slaStatus}`}>{c.age}</div>
+                        {c.slaStatus==='breach' && <div style={{fontSize:'9px',color:'var(--rd)',fontWeight:700,fontFamily:'var(--f-mono)'}}>BREACH</div>}
+                      </td>
+                      <td>
+                        {c.requiredRole==='senior_compliance'
+                          ? <span className="badge purple" style={{fontSize:'9px'}}>SR</span>
+                          : c.requiredRole==='compliance_officer'
+                          ? <span className="badge blue" style={{fontSize:'9px'}}>CO</span>
+                          : <span className="badge neutral" style={{fontSize:'9px'}}>OP</span>}
+                      </td>
+                      <td>
+                        {localSt[c.id]
+                          ? <span style={{fontSize:'10px',color:'var(--g)',fontWeight:600}}>✓ Done</span>
+                          : c.requiredRole==='senior_compliance'
+                          ? <span style={{fontSize:'10px',color:'var(--t4)'}}>SR only</span>
+                          : <span style={{fontSize:'10px',color:'var(--bl)',fontWeight:600}}>Review →</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Detail panel */}
+          <div className="detail-panel">
+            {!sel ? (
+              <div className="detail-empty">Select a case to review</div>
+            ) : (<>
+              {/* Header */}
+              <div className="detail-hdr">
+                <div>
+                  <div className="detail-id">{sel.id}</div>
+                  <div className="detail-name">{sel.name} · {sel.country}</div>
+                </div>
+                <div style={{display:'flex',gap:'5px',flexWrap:'wrap',justifyContent:'flex-end'}}>
+                  <span className={`badge ${stateBadge(selState)}`}>{selState?.replace(/_/g,' ')}</span>
+                  <span className={`badge ${sel.riskLevel==='CRITICAL'?'red':sel.riskLevel==='HIGH'?'amber':sel.riskLevel==='MEDIUM'?'blue':'neutral'}`}>
+                    {sel.riskLevel}
+                  </span>
+                </div>
+              </div>
+
+              {/* Case KV */}
+              <div className="detail-sec">
+                <div className="detail-sec-title">Case Details</div>
+                <table className="kv"><tbody>
+                  <tr><td>Case ID</td><td><span className="mono">{sel.id}</span></td></tr>
+                  <tr><td>User ID</td><td><span className="mono" style={{fontSize:'10px'}}>{sel.userId}</span></td></tr>
+                  <tr><td>Full Name</td><td>{sel.name}</td></tr>
+                  <tr><td>Country</td><td><span className="mono">{sel.country}</span></td></tr>
+                  <tr><td>Risk Level</td><td>
+                    <span className={`badge ${sel.riskLevel==='CRITICAL'?'red':sel.riskLevel==='HIGH'?'amber':sel.riskLevel==='MEDIUM'?'blue':'neutral'}`}>{sel.riskLevel}</span>
+                  </td></tr>
+                  <tr><td>KYC State</td><td><span className={`badge ${stateBadge(selState)}`}>{selState?.replace(/_/g,' ')}</span></td></tr>
+                  <tr><td>Provider</td><td>Sumsub Sandbox</td></tr>
+                  <tr><td>Applicant ID</td><td><span className="mono" style={{fontSize:'10px'}}>{sel.applicantId}</span></td></tr>
+                  <tr><td>Provider Status</td><td><span className="badge neutral">{sel.providerStatus}</span></td></tr>
+                  <tr><td>Provider Result</td><td style={{fontWeight:600}}>{sel.providerResult}</td></tr>
+                  <tr><td>Submitted</td><td><span className="mono" style={{fontSize:'10px'}}>{sel.submittedAt}</span></td></tr>
+                  <tr><td>SLA Deadline</td><td>
+                    <span className={`mono sla-${sel.slaStatus}`} style={{fontSize:'10px'}}>
+                      {sel.slaDeadline}{sel.slaStatus==='breach'?' ⚠ BREACH':''}
+                    </span>
+                  </td></tr>
+                  <tr><td>Assigned To</td><td>{sel.assignedTo}</td></tr>
+                </tbody></table>
+              </div>
+
+              {/* Risk flags */}
+              {sel.riskFlags.length > 0 && (
+                <div className="detail-sec">
+                  <div className="detail-sec-title">Risk Flags</div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:'4px',marginBottom:'6px'}}>
+                    {sel.riskFlags.map(f=>(
+                      <span key={f} className={`rchip ${riskChip(f)}`} style={{fontSize:'10px',padding:'3px 8px'}}>{f}</span>
+                    ))}
+                  </div>
+                  {sel.sanctionsBlock && (
+                    <div className="alert red">
+                      <strong>Sanctions precheck hit.</strong> Normal approval is blocked. Only Senior Compliance can resolve sanctions-flagged cases.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Document metadata */}
+              <div className="detail-sec">
+                <div className="detail-sec-title">Document Metadata</div>
+                <table className="kv" style={{marginBottom:'8px'}}><tbody>
+                  <tr><td>Document Type</td><td>{sel.docType}</td></tr>
+                  <tr><td>Doc Country</td><td><span className="mono">{sel.docCountry}</span></td></tr>
+                  <tr><td>Doc Expiry</td><td>
+                    <span className={`mono${sel.docExpiry < '2026-05-16' ? ' sla-breach' : ''}`} style={{fontSize:'11px'}}>
+                      {sel.docExpiry}{sel.docExpiry < '2026-05-16' ? ' ⚠ EXPIRED' : ''}
+                    </span>
+                  </td></tr>
+                  <tr><td>Selfie Check</td><td>
+                    <span className={`badge ${sel.selfieCheck==='Passed'?'green':sel.selfieCheck==='Pending'?'amber':'red'}`}>{sel.selfieCheck}</span>
+                  </td></tr>
+                  <tr><td>Address Check</td><td>
+                    <span className={`badge ${sel.addrCheck==='Passed'?'green':sel.addrCheck==='N/A'||sel.addrCheck==='Pending'?'neutral':'amber'}`}>{sel.addrCheck}</span>
+                  </td></tr>
+                  <tr><td>Source</td><td>Sumsub Sandbox</td></tr>
+                </tbody></table>
+
+                <div className="doc-grid">
+                  {Object.entries(sel.documents).map(([name, doc]) => (
+                    <div key={name} className="doc-item">
+                      <div className="doc-item-name">{name}</div>
+                      <div className="doc-item-meta">
+                        <span style={{color:docStatusColor(doc.status),fontWeight:600}}>{doc.status.replace(/_/g,' ')}</span>
+                        {doc.ts && <><br/>↑ {doc.ts}</>}
+                        {doc.hash && <><br/>{doc.hash}</>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{marginTop:'8px'}}>
+                  {!gateConfirmed && !showGate && (
+                    <button className="btn btn-default" style={{fontSize:'11px'}} onClick={()=>setShowGate(true)}>
+                      Preview Document (read-audit required)
+                    </button>
+                  )}
+                  {showGate && (
+                    <div className="gate-box">
+                      <div className="gate-title">⚠ Read-Audit Required Before Preview</div>
+                      <div className="gate-text">
+                        Previewing identity documents is a sensitive operation. A read-audit event will be recorded with your identity, timestamp, and case ID before access is granted. This log is immutable and subject to compliance review.
+                      </div>
+                      <div style={{display:'flex',gap:'6px'}}>
+                        <button className="btn btn-warn" style={{fontSize:'11px'}} onClick={doGateConfirm}>
+                          Confirm &amp; write read-audit
+                        </button>
+                        <button className="btn btn-default" style={{fontSize:'11px'}} onClick={()=>setShowGate(false)}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                  {gateConfirmed && (
+                    <div className="preview-placeholder">
+                      <div style={{fontSize:'11px',fontWeight:600,color:'var(--t2)',marginBottom:'6px'}}>
+                        Document Preview — {sel.docType} ({sel.docCountry})
+                      </div>
+                      <div style={{background:'var(--bdr)',height:'72px',borderRadius:'var(--r)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',color:'var(--t3)'}}>
+                        [Document preview placeholder — real images not shown in prototype]
+                      </div>
+                      <div className="alert blue" style={{marginTop:'6px',fontSize:'10px',marginBottom:0}}>
+                        read_audit.kyc_document_previewed recorded · Maya Ivanova · {sel.docType} {sel.docCountry}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Provider result (toggled) */}
+              {showProv && (
+                <div className="detail-sec">
+                  <div className="detail-sec-title">Provider Result — Sumsub</div>
+                  <div className="provider-box">
+                    <div className="prov-hdr">
+                      <span className="prov-title">Sumsub Review Result</span>
+                      <span className="prov-note">Advisory input — not platform decision</span>
+                    </div>
+                    <table className="kv" style={{marginBottom:'7px'}}><tbody>
+                      <tr><td>Applicant ID</td><td><span className="mono" style={{fontSize:'10px'}}>{sel.applicantId}</span></td></tr>
+                      <tr><td>External User ID</td><td><span className="mono" style={{fontSize:'10px'}}>{sel.userId}</span></td></tr>
+                      <tr><td>Review Status</td><td><span className="badge neutral">{sel.providerData.reviewStatus}</span></td></tr>
+                      <tr><td>Review Answer</td><td>
+                        <span className={`badge ${sel.providerData.reviewAnswer==='GREEN'?'green':sel.providerData.reviewAnswer==='RED'?'red':'neutral'}`}>
+                          {sel.providerData.reviewAnswer || 'PENDING'}
+                        </span>
+                      </td></tr>
+                      <tr><td>Last Sync</td><td><span className="mono" style={{fontSize:'10px'}}>{sel.providerData.lastSync}</span></td></tr>
+                      <tr><td>Webhook</td><td><span className="badge green">{sel.providerData.webhook}</span></td></tr>
+                    </tbody></table>
+                    {sel.providerData.rejectLabels.length > 0 && (
+                      <div style={{marginBottom:'7px'}}>
+                        <div style={{fontSize:'10px',fontWeight:600,color:'var(--pu)',marginBottom:'3px'}}>Reject Labels</div>
+                        {sel.providerData.rejectLabels.map(l=><span key={l} className="rej-label">{l}</span>)}
+                      </div>
+                    )}
+                    {sel.providerData.comment && (
+                      <div style={{background:'white',border:'1px solid var(--pu-bd)',borderRadius:'var(--r)',padding:'8px',fontSize:'11px',color:'var(--t2)',lineHeight:'1.5',marginBottom:'7px'}}>
+                        <span style={{fontWeight:600,color:'var(--pu)',fontSize:'10px'}}>Moderation Comment: </span>
+                        {sel.providerData.comment}
+                      </div>
+                    )}
+                    <div className="raw-blocked">
+                      <span>Raw provider payload — senior_compliance only</span>
+                      <span className="badge red" style={{fontSize:'9px'}}>BLOCKED for Maya</span>
+                    </div>
+                    <div style={{fontSize:'10px',color:'var(--pu)',marginTop:'6px',lineHeight:'1.4'}}>
+                      Provider result is advisory input. The platform decision (approve / reject) is recorded separately with reviewer rationale and reason code.
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Decision */}
+              <div className="detail-sec">
+                <div className="detail-sec-title">Decision</div>
+
+                {isDone ? (
+                  <div className="success-box">
+                    <div className="success-title">
+                      {localSt[selId]==='APPROVED' && '✓ KYC Approved'}
+                      {localSt[selId]==='REJECTED' && '✕ KYC Rejected'}
+                      {localSt[selId]==='RESUBMISSION_REQUESTED' && '↩ Resubmission Requested'}
+                      {localSt[selId]==='ESCALATED_COMPLIANCE' && '↑ Escalated to Senior Compliance'}
+                    </div>
+                    <div className="success-body">
+                      Decision recorded. State updated to: <strong>{localSt[selId]}</strong>. Audit event written to log.
+                    </div>
+                  </div>
+                ) : (<>
+                  {sel.sanctionsBlock && (
+                    <div className="blocked-box">
+                      <div className="blocked-title">× Approve KYC — BLOCKED: Sanctions precheck hit</div>
+                      <div className="blocked-text">
+                        Unresolved sanctions flag. Normal approval is blocked for compliance_officer role. Escalate to Senior Compliance for resolution. The senior reviewer will determine whether to clear or block.
+                      </div>
+                    </div>
+                  )}
+
+                  {!['IN_REVIEW','PENDING_MANUAL_REVIEW'].includes(selState) && !sel.sanctionsBlock && (
+                    <div className="alert amber" style={{marginBottom:'8px'}}>
+                      State is <strong>{selState}</strong>. Decision actions are available only for IN_REVIEW or PENDING_MANUAL_REVIEW cases.
+                    </div>
+                  )}
+
+                  {(['IN_REVIEW','PENDING_MANUAL_REVIEW'].includes(selState) || sel.sanctionsBlock) && (
+                    <>
+                      <div className="form-group">
+                        <label className="form-lbl">Reason Code</label>
+                        <select className="form-sel" value={reasonCode} onChange={e=>setReasonCode(e.target.value)}>
+                          {REASON_CODES.map((r,i)=><option key={i} value={i===0?'':r}>{r}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label className="form-lbl">Decision Rationale <span style={{color:'var(--rd)'}}>*</span></label>
+                        <textarea className="form-ta"
+                          placeholder="Describe the basis for your decision. Required for reject actions."
+                          value={rationale} onChange={e=>setRationale(e.target.value)}/>
+                      </div>
+                      <label className="form-chk">
+                        <input type="checkbox" checked={chkDoc} onChange={e=>setChkDoc(e.target.checked)}/>
+                        I confirm I have reviewed the document metadata and provider result for this case.
+                      </label>
+                      <label className="form-chk">
+                        <input type="checkbox" checked={chkAudit} onChange={e=>setChkAudit(e.target.checked)}/>
+                        I confirm that a read-audit event was written before accessing any document previews.
+                      </label>
+                      <div className="decision-btn-row">
+                        <button className={`btn ${canDecide&&chkDoc?'btn-primary':'btn-disabled'}`}
+                          onClick={canDecide&&chkDoc?doApprove:undefined}>✓ Approve</button>
+                        <button className={`btn ${canReject?'btn-danger':'btn-disabled'}`}
+                          title={!rationale?'Rationale required':''}
+                          onClick={canReject?doReject:undefined}>✕ Reject</button>
+                        <button className={`btn ${canDecide?'btn-warn':'btn-disabled'}`}
+                          onClick={canDecide?doResubmit:undefined}>↩ Resubmit</button>
+                        <button className={`btn ${canEscalate?'btn-default':'btn-disabled'}`}
+                          onClick={canEscalate?doEscalate:undefined}>↑ Escalate</button>
+                      </div>
+                      {!chkDoc && (
+                        <div style={{fontSize:'10px',color:'var(--am)',marginTop:'5px'}}>
+                          Approve requires confirming document review (checkbox above).
+                        </div>
+                      )}
+                      {!rationale && (
+                        <div style={{fontSize:'10px',color:'var(--t3)',marginTop:'3px'}}>
+                          Reject requires rationale text.
+                        </div>
+                      )}
+                      <div className="senior-note">
+                        <strong style={{color:'var(--t2)'}}>Senior Only:</strong> Senior Override and raw provider payload access require <span className="badge purple" style={{fontSize:'9px'}}>senior_compliance</span>. Not available for Maya (compliance_officer). Action would generate <span className="badge red" style={{fontSize:'9px'}}>kyc.raw_payload_denied</span> audit event.
+                      </div>
+                    </>
+                  )}
+                </>)}
+              </div>
+
+              {/* Timeline */}
+              <div className="detail-sec">
+                <div className="detail-sec-title">Case Timeline</div>
+                <div className="tl">
+                  {isDone && (
+                    <div className="tl-item">
+                      <div className="tl-dot live"/>
+                      <div><div className="tl-ev">kyc.{localSt[selId]?.toLowerCase()}</div><div className="tl-meta">Maya Ivanova · just now · reason: {reasonCode||'—'}</div></div>
+                    </div>
+                  )}
+                  {gateConfirmed && (
+                    <div className="tl-item">
+                      <div className="tl-dot live"/>
+                      <div><div className="tl-ev">read_audit.kyc_document_previewed</div><div className="tl-meta">Maya Ivanova · {sel.docType} {sel.docCountry}</div></div>
+                    </div>
+                  )}
+                  <div className="tl-item">
+                    <div className="tl-dot"/>
+                    <div><div className="tl-ev">kyc.case_opened</div><div className="tl-meta">Maya Ivanova · {sel.id}</div></div>
+                  </div>
+                  <div className="tl-item">
+                    <div className="tl-dot"/>
+                    <div><div className="tl-ev">kyc.provider_result_synced</div><div className="tl-meta">Sumsub webhook · {sel.providerData.lastSync}</div></div>
+                  </div>
+                  <div className="tl-item">
+                    <div className="tl-dot"/>
+                    <div><div className="tl-ev">kyc.submitted</div><div className="tl-meta">{sel.name} · {sel.submittedAt}</div></div>
+                  </div>
+                </div>
+              </div>
+            </>)}
+          </div>
+        </div>
+      </div>
+
+      {/* Audit rail */}
+      <aside className="audit-rail">
+        <div className="au-hdr"><div className="au-title">Security &amp; Audit</div></div>
+        <div className="au-body">
+          <div>
+            <div className="au-sec-title">Session</div>
+            <div className="au-row"><span className="au-k">User</span><span className="au-v">Maya Ivanova</span></div>
+            <div className="au-row"><span className="au-k">OIDC Role</span><span className="au-v">compliance_officer</span></div>
+            <div className="au-row"><span className="au-k">Platform Role</span><span className="au-v">compliance_officer</span></div>
+            <div className="au-row"><span className="au-k">Auth</span><span className="au-v">Keycloak OIDC</span></div>
+            <div className="au-row"><span className="au-k">Token exp</span><span className="au-v">18:30</span></div>
+          </div>
+          <div className="divider"/>
+          <div>
+            <div className="au-sec-title">Access Rules</div>
+            <div className="au-inv">Sensitive document preview requires synchronous read-audit before access</div>
+            <div className="au-inv">KYC decisions are permanently audited — immutable log</div>
+            <div className="au-inv">Provider webhook events are independently audited</div>
+            <div className="au-inv">Raw provider payload: senior_compliance only — blocked for Maya</div>
+            <div className="au-inv">Sanctions-flagged cases require Senior Compliance resolution</div>
+            <div className="au-inv">End-user and merchant sessions cannot access this screen</div>
+          </div>
+          <div className="divider"/>
+          <div>
+            <div className="au-sec-title">Event Log</div>
+            {evLog.map((ev,i)=>(
+              <div key={i} className="au-ev">
+                <div className="au-ev-type">{ev.type}</div>
+                <div className="au-ev-meta">{ev.meta}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
