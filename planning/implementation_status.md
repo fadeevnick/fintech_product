@@ -141,6 +141,7 @@ Created:
 - `prototypes/ui/03_enduser_auth.html` — standalone end-user auth HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 - `prototypes/ui/04_backoffice_oidc_login.html` — standalone `BOF-UI-01` backoffice OIDC login HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 - `prototypes/ui/05_backoffice_work_queue_home.html` — standalone `BOF-UI-02` backoffice work queue home HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
+- `prototypes/ui/06_backoffice_manual_deposits.html` — standalone `BOF-UI-03` backoffice manual deposits HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;
@@ -242,4 +243,33 @@ Runtime evidence:
 - `WLT-02` is not claimed; real wallet writes do not exist yet.
 
 Next planned step:
-- Draft the next non-frontend implementation slice.
+- Review/approve `planning/implementation-slices/phase_03_slice_01_ledger_foundation_planning.md`, then implement its non-frontend backend/runtime scope if accepted.
+
+---
+
+## Phase 03 Slice 01 — Ledger Foundation
+
+Status: **PLANNING DRAFT — not approved, no product code started**.
+
+Planning contract:
+- `planning/implementation-slices/phase_03_slice_01_ledger_foundation_planning.md` — DRAFT v0.1.
+
+Proposed scope:
+- Platform double-entry ledger foundation;
+- ledger accounts, journal entries and postings;
+- stored-procedure-only balanced journal insertion;
+- append-only protections for ledger tables;
+- balance derivation from postings;
+- retained reconciliation/runtime scripts.
+
+Explicitly not started:
+- product code for this slice;
+- wallet account creation;
+- manual deposit/withdraw workflows;
+- internal transfers;
+- card/payment authorization holds;
+- merchant settlement;
+- frontend implementation.
+
+Next planned step:
+- Review/approve the Slice 01 draft and open questions before writing product code.
