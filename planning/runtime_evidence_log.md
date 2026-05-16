@@ -364,3 +364,102 @@ Implementation note:
 
 Next planned step:
 - Draft the next non-frontend Phase 02 slice for the remaining identity/audit foundation work, while frontend implementation remains gated by accepted standalone HTML prototypes.
+
+---
+
+## 2026-05-16 — Phase 02 Slice 04 Read-Audit and Actor Controls Runtime Verification
+
+Scope:
+- Read-audit backend primitive for future compliance-sensitive reads.
+- Generic end-user and merchant actor controls.
+- Write-guard probe for blocked/frozen actors.
+- No wallet, payment, KYC, AML, sanctions, audit viewer or frontend implementation was added.
+
+Preconditions:
+- Phase 01 local compose stack was already running.
+- Docker commands run with Codex escalation because normal sandboxed Docker CLI cannot access the daemon.
+- `planning/implementation-slices/phase_02_slice_04_read_audit_account_controls_planning.md` was approved by owner with `го`.
+
+Build evidence:
+- `docker compose -f deploy/docker-compose.yml build platform` passed.
+- `docker compose -f deploy/docker-compose.yml up -d platform` passed.
+- Platform startup applied `V4__read_audit_actor_controls.sql` through Flyway.
+- `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+
+Implementation evidence:
+- Added append-only `audit.read_audit_log`.
+- Added `identity.actor_controls` for `END_USER` and `MERCHANT` actor states.
+- Added backoffice read-audit probe endpoint:
+  - `GET /api/v1/backoffice/read-audit/probe/{resourceId}`
+- Added backoffice actor control mutation endpoint:
+  - `POST /api/v1/backoffice/actor-controls`
+- Added write-guard probe endpoints:
+  - `POST /api/v1/enduser/write-guard/probe`
+  - `POST /api/v1/merchant/write-guard/probe`
+
+Phase 02 slice script evidence:
+- `product/scripts/runtime/reg_phase02_read_audit_probe.sh`:
+  - `AUD-03` — partial/foundation.
+  - Backoffice read-audit probe wrote one `audit.read_audit_log` row before the response was accepted.
+  - `AUD-99` — partial/foundation.
+  - Direct `UPDATE audit.read_audit_log ...` is rejected by DB trigger with `audit.audit_log is append-only`.
+- `product/scripts/runtime/reg_phase02_actor_control_enduser.sh`:
+  - actor-control precursor — pass.
+  - Active end-user session passed write-guard probe.
+  - Backoffice set end-user control to `FROZEN`.
+  - Frozen end-user write-guard probe returned 403 with `actor_control_blocked`.
+  - Backoffice restored state to `ACTIVE`; probe passed again.
+  - Control changes and denied probe wrote audit rows.
+- `product/scripts/runtime/reg_phase02_actor_control_merchant.sh`:
+  - actor-control precursor — pass.
+  - Active merchant session passed write-guard probe.
+  - Backoffice set merchant control to `BLOCKED`.
+  - Blocked merchant write-guard probe returned 403 with `actor_control_blocked`.
+  - Backoffice restored state to `ACTIVE`; probe passed again.
+  - Control changes and denied probe wrote audit rows.
+
+Regression evidence:
+- `product/scripts/runtime/reg_phase01_runtime_health.sh`:
+  - `RUN-01` — pass.
+- `product/scripts/runtime/reg_phase02_backoffice_oidc.sh`:
+  - `AUTH-03` — pass.
+- `product/scripts/runtime/reg_phase02_enduser_auth.sh`:
+  - `AUTH-01` — pass.
+- `product/scripts/runtime/reg_phase02_merchant_auth.sh`:
+  - `AUTH-02` — pass.
+- `product/scripts/runtime/reg_phase02_backoffice_role_denial.sh`:
+  - `AUTH-05` — pass.
+- `product/scripts/runtime/reg_phase02_auth_audit.sh`:
+  - `AUD-01` — pass.
+  - `AUD-02` — pass.
+- `product/scripts/runtime/reg_phase02_backoffice_auth_audit.sh`:
+  - `AUD-01` — pass.
+
+Final Phase 02 script output:
+
+```text
+AUD-03 read-audit primitive partial
+AUD-99 read-audit append-only foundation partial
+ACT-CTRL end-user blocked write-guard probe pass
+ACT-CTRL merchant blocked write-guard probe pass
+RUN-01 network health pass
+RUN-01 issuer health pass
+RUN-01 acquirer health pass
+RUN-01 platform health pass
+RUN-01 vault health pass
+AUTH-03 backoffice OIDC role mapping pass
+AUTH-01 end-user register verify login me pass
+AUTH-02 merchant register verify login me pass
+AUTH-05 backoffice unauthenticated and wrong-role denial pass
+AUD-01 auth audit events pass
+AUD-02 audit append-only protection pass
+AUD-01 backoffice auth audit events pass
+```
+
+Result tag notes:
+- `AUD-03` remains partial/foundation because the primitive is real, but real compliance-sensitive reads arrive in later phases.
+- `AUD-99` remains partial/foundation until all sensitive read paths exist.
+- `WLT-02` is not claimed; this slice proves only the actor-control hook and write-guard probe, not real wallet writes.
+
+Next planned step:
+- Draft the next non-frontend implementation slice.

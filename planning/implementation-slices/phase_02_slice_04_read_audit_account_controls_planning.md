@@ -1,10 +1,14 @@
 # Phase 02 Slice 04 — Read-Audit Primitive and Account Control Hook — Planning Note
 
-Status: **DRAFT v0.1**.
+Status: **BACKEND/RUNTIME SUB-SCOPE EXECUTED v0.2; frontend not in scope**.
 
 This document fixes the fourth implementation slice inside `Phase 02 — Identity, RBAC, Sessions and Audit`.
 
 It is a pre-code scope contract. It is not implementation status and not runtime evidence.
+
+Execution note:
+- The backend/domain/runtime portion was approved with `го`, implemented and verified on 2026-05-16.
+- No frontend implementation was in scope.
 
 ---
 
@@ -340,28 +344,30 @@ planning/runtime_evidence_log.md
 
 1. **Read-audit storage**
 
-   Recommendation: create a dedicated `audit.read_audit_log` table with append-only protection, instead of overloading `audit.audit_log`.
+   Decision: create a dedicated `audit.read_audit_log` table with append-only protection, instead of overloading `audit.audit_log`.
 
    Reason: read-audit has different query and retention patterns than auth/domain audit events, and future `AUD-99` can target it explicitly.
 
 2. **Control subject model**
 
-   Recommendation: store controls by `(actor_type, actor_id)` with actor types `END_USER` and `MERCHANT`, not wallet/account ids yet.
+   Decision: store controls by `(actor_type, actor_id)` with actor types `END_USER` and `MERCHANT`, not wallet/account ids yet.
 
    Reason: wallet accounts do not exist yet. Actor-level controls give future wallet/payment slices a real enforcement hook without inventing placeholder wallet rows.
 
 3. **Runtime proof endpoints**
 
-   Recommendation: add narrow probe endpoints with explicit names such as `/write-guard/probe` and `/read-audit/probe`, then keep them until real endpoints supersede them.
+   Decision: add narrow probe endpoints with explicit names `/write-guard/probe` and `/read-audit/probe`, then keep them until real endpoints supersede them.
 
    Reason: this is honest runtime evidence for a primitive. It avoids fake wallet/compliance workflows while still proving behavior.
 
 4. **Result tags**
 
-   Recommendation: record `AUD-03` as `partial/foundation`, not full pass.
+   Decision: record `AUD-03` as `partial/foundation`, not full pass.
 
    Reason: the primitive is real, but real sensitive reads such as KYC preview, frozen account review and audit viewer arrive in later phases.
 
 ## 13. Next Planned Step
 
-Owner reviews this draft and approves or changes the open questions. Only after approval should product code for Phase 02 Slice 04 start.
+Backend/runtime implementation is verified and recorded in `planning/runtime_evidence_log.md`.
+
+Next planned step: draft the next non-frontend implementation slice.

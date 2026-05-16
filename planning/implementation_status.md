@@ -205,26 +205,41 @@ Next planned step:
 
 ## Phase 02 Slice 04 — Read-Audit Primitive and Account Control Hook
 
-Status: **PLANNING DRAFT — not approved, no product code started**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — frontend not started**.
 
 Planning contract:
-- `planning/implementation-slices/phase_02_slice_04_read_audit_account_controls_planning.md` — DRAFT v0.1.
+- `planning/implementation-slices/phase_02_slice_04_read_audit_account_controls_planning.md` — backend/runtime sub-scope executed v0.2; frontend not in scope.
 
-Proposed scope:
-- synchronous read-audit primitive for future compliance-sensitive reads;
-- generic actor/account control storage for end-user and merchant actors;
-- write-guard probe that denies blocked/frozen end-user and merchant actors;
-- narrow backoffice/runtime proof endpoints;
+Implemented backend/runtime scope:
+- append-only `audit.read_audit_log`;
+- `identity.actor_controls` for `END_USER` and `MERCHANT`;
+- synchronous read-audit probe endpoint:
+  - `GET /api/v1/backoffice/read-audit/probe/{resourceId}`;
+- backoffice actor-control mutation endpoint:
+  - `POST /api/v1/backoffice/actor-controls`;
+- write-guard probe endpoints:
+  - `POST /api/v1/enduser/write-guard/probe`;
+  - `POST /api/v1/merchant/write-guard/probe`;
 - audit rows for read-audit, control changes and denied probes;
-- retained runtime scripts for `AUD-03` foundation and actor-control proof.
+- retained runtime scripts:
+  - `product/scripts/runtime/reg_phase02_read_audit_probe.sh`
+  - `product/scripts/runtime/reg_phase02_actor_control_enduser.sh`
+  - `product/scripts/runtime/reg_phase02_actor_control_merchant.sh`
 
 Explicitly not started:
-- product code for this slice;
 - wallet writes or `WLT-02` full proof;
 - KYC/AML/sanctions/manual ops queues;
 - account freeze/unfreeze UI;
 - audit viewer UI;
 - sensitive read-audit workflows beyond the primitive/probe.
 
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-16 — Phase 02 Slice 04 Read-Audit and Actor Controls Runtime Verification`.
+- `AUD-03` — partial/foundation for read-audit primitive.
+- `AUD-99` — partial/foundation for read-audit append-only behavior.
+- Actor-control precursor — pass for end-user and merchant write-guard probes.
+- `AUTH-01`, `AUTH-02`, `AUTH-03`, `AUTH-05`, `AUD-01`, `AUD-02`, `RUN-01` regressions passed.
+- `WLT-02` is not claimed; real wallet writes do not exist yet.
+
 Next planned step:
-- Review/approve the Slice 04 draft and open questions before writing product code.
+- Draft the next non-frontend implementation slice.

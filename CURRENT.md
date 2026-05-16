@@ -238,10 +238,13 @@ Current Phase 02 Slice 03:
 - No backoffice SPA/frontend work in this slice.
 - Runtime evidence recorded in `planning/runtime_evidence_log.md`.
 
-Current Phase 02 Slice 04 draft:
-- `planning/implementation-slices/phase_02_slice_04_read_audit_account_controls_planning.md` — DRAFT v0.1.
-- Proposed scope: synchronous read-audit primitive, generic end-user/merchant actor control storage, write-guard probe for blocked/frozen actors, and retained runtime evidence.
-- No SPA/frontend work in this slice.
-- Open questions: read-audit storage, control subject model, runtime proof endpoints, result tags.
+Current Phase 02 Slice 04:
+- `planning/implementation-slices/phase_02_slice_04_read_audit_account_controls_planning.md` — backend/runtime sub-scope executed v0.2; frontend not in scope.
+- Implemented: append-only `audit.read_audit_log`, generic end-user/merchant actor controls, backoffice read-audit probe, backoffice actor-control mutation endpoint, and end-user/merchant write-guard probes.
+- Runtime evidence recorded in `planning/runtime_evidence_log.md`.
+- `AUD-03` and `AUD-99` are partial/foundation; `WLT-02` is not claimed because wallet writes do not exist yet.
 
-Next planned step: review/approve Phase 02 Slice 04 planning note, then implement its non-frontend backend/runtime scope if accepted.
+Processed UI prototype artifacts include:
+- `prototypes/ui/05_backoffice_work_queue_home.html`
+
+Next planned step: draft the next non-frontend implementation slice.
