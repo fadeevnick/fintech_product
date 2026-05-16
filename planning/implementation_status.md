@@ -143,4 +143,4 @@ Explicitly not started:
 - backoffice OIDC/RBAC implementation.
 
 Next planned step:
-- Continue the UI prototype baseline before product code starts, likely with end-user auth or backoffice OIDC landing.
+- Continue UI prototype baseline with `03_enduser_auth.html` in parallel, or approve Phase 02 Slice 02 and start non-frontend merchant identity work. Frontend implementation remains gated by accepted standalone HTML prototypes.
