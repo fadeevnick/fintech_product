@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — KYC Status — UEW-UI-02</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --inp:     #faf9f7;
+      --hover:   #f0efe9;
+
+      --sb:        #111114;
+      --sb-bdr:    #1e1e22;
+      --sb-t:      #c8c8d4;
+      --sb-muted:  #545460;
+      --sb-hover:  #191920;
+      --sb-active: #1e1e28;
+
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+
+      --t1: #1c1c1f;
+      --t2: #575763;
+      --t3: #9898a6;
+      --t4: #d0d0da;
+
+      --cta:     #1c1c1f;
+      --cta-hov: #2e2e35;
+      --cta-t:   #ffffff;
+
+      --g:    #166534;  --g-bg: #f0fdf4;  --g-bd: #bbf7d0;
+      --am:   #854d0e;  --am-bg:#fffbeb;  --am-bd:#fde68a;
+      --rd:   #9b1c1c;  --rd-bg:#fef2f2;  --rd-bd:#fecaca;
+      --or:   #b45309;  --or-bg:#fff7ed;  --or-bd:#fed7aa;
+      --pu:   #5b21b6;  --pu-bg:#f5f3ff;  --pu-bd:#ddd6fe;
+
+      --sb-env-bg:  #1a1030;
+      --sb-env-t:   #b39cf0;
+      --sb-env-bd:  #362566;
+
+      --f-ui:   'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+
+      --r:    3px;
+      --r-lg: 5px;
+      --w-sb: 220px;
+      --w-tl: 244px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+
+    #root { height: 100vh; display: flex; overflow: hidden; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 15px 15px 13px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-name  { font-size: 14.5px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; margin-top: 4px; }
+    .sb-nav   { flex: 1; padding: 10px 7px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 9px 5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 12px;
+      cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.35; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; opacity: 1; }
+    .nav-lock { margin-left: auto; display: flex; align-items: center; opacity: 0.6; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono);
+      color: var(--sb-muted); opacity: 0.8; }
+    .sb-div   { height: 1px; background: var(--sb-bdr); margin: 5px 0; }
+    .sb-footer { padding: 10px 14px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 10px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 4px; }
+    .env-dot   { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host  { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); }
+
+    /* MAIN */
+    .main-wrap    { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .page-hdr     { display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 22px; border-bottom: 1px solid var(--bdr);
+      background: var(--surface); flex-shrink: 0; }
+    .page-bc      { font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 5px; }
+    .page-bc strong { color: var(--t1); font-weight: 500; }
+    .page-bc .sep { color: var(--t3); }
+    .page-bc .mode { font-family: var(--f-mono); font-size: 11.5px; color: var(--t2); }
+    .page-meta    { display: flex; align-items: center; gap: 8px; }
+    .screen-id    { font-size: 10px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge    { font-size: 10px; font-family: var(--f-mono); color: var(--am);
+      background: var(--am-bg); border: 1px solid var(--am-bd);
+      padding: 2px 8px; border-radius: var(--r); display: flex; align-items: center; gap: 5px; }
+    .env-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--am); }
+    .user-chip    { display: flex; align-items: center; gap: 7px; padding: 3px 9px 3px 3px;
+      border: 1px solid var(--bdr); border-radius: 20px; background: var(--surf2); }
+    .user-avatar  { width: 22px; height: 22px; border-radius: 50%; background: var(--cta);
+      color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center;
+      justify-content: center; letter-spacing: 0.03em; flex-shrink: 0; }
+    .user-name    { font-size: 11.5px; color: var(--t2); font-weight: 500; }
+
+    /* CONTENT */
+    .content-area { flex: 1; display: flex; overflow: hidden; }
+    .left-scroll  { flex: 1; overflow-y: auto; padding: 16px 20px;
+      background: var(--bg); display: flex; flex-direction: column; gap: 12px; }
+
+    /* PANELS */
+    .panel     { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .panel-title { font-size: 11.5px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 13px 16px; }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em;
+      font-family: var(--f-mono); border: 1px solid transparent; white-space: nowrap; }
+    .b-active     { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-done       { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-notstarted { background: var(--hover); color: var(--t2);  border-color: var(--bdr); }
+    .b-locked     { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-limited    { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-pending    { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-action     { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-expired    { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-dev        { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+
+    /* KV */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--t3); min-width: 148px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center;
+      gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--r); font-size: 12.5px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover:not(:disabled) { background: var(--cta-hov); }
+    .btn-ghost   { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); cursor: pointer; }
+    .btn-ghost:hover { background: var(--hover); color: var(--t1); }
+    .btn-sm      { padding: 4px 10px; font-size: 11px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    /* ALERTS */
+    .alert { display: flex; gap: 10px; padding: 9px 12px 9px 13px; font-size: 12px;
+      line-height: 1.55; border-left-width: 3px; border-left-style: solid; }
+    .alert-icon { flex-shrink: 0; font-style: normal; font-size: 11px;
+      margin-top: 1px; font-weight: 600; }
+    .alert-warn { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-info { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+
+    /* KYC STATUS PANEL */
+    .kyc-panel { background: var(--surface); border: 1px solid var(--bdr);
+      border-left: 3px solid var(--am); border-radius: var(--r-lg); overflow: hidden; }
+    .kyc-warn-bar { display: flex; align-items: center; gap: 8px; padding: 7px 14px;
+      background: var(--am-bg); border-top: 1px solid var(--am-bd);
+      font-size: 11.5px; color: #78350f; }
+
+    /* STEP TRACKER */
+    @keyframes pulse-am {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(133,77,14,0.2); }
+      50%       { box-shadow: 0 0 0 5px rgba(133,77,14,0.06); }
+    }
+
+    /* REQUIREMENTS */
+    .req-table { display: flex; flex-direction: column; }
+    .req-row   { display: flex; align-items: flex-start; gap: 10px; padding: 8px 14px;
+      border-bottom: 1px solid var(--bdr); transition: background 0.1s; }
+    .req-row:last-child { border-bottom: none; }
+    .req-action { background: #fffcf0; border-left: 3px solid var(--am);
+      padding-left: 11px; cursor: pointer; }
+    .req-action:hover { background: var(--am-bg); }
+    .req-expand { padding: 11px 14px 13px; background: var(--am-bg);
+      border-top: 1px solid var(--am-bd); }
+
+    /* LIMITS */
+    .lim-row { display: flex; align-items: center; padding: 7px 0;
+      border-bottom: 1px solid var(--hover); gap: 8px; }
+    .lim-row:last-child { border-bottom: none; }
+
+    /* TIMELINE RAIL */
+    .tl-rail  { width: var(--w-tl); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .tl-hdr   { padding: 10px 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+      font-size: 9.5px; font-weight: 600; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.1em; }
+    .tl-body  { flex: 1; overflow-y: auto; padding: 10px 14px; }
+    .tl-evt   { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hover); }
+    .tl-evt:last-child { border-bottom: none; }
+    .tl-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .tl-dot.ok   { background: var(--g); }
+    .tl-dot.pend { background: var(--am); }
+    .tl-dot.bad  { background: var(--rd); }
+    .tl-dot.pu   { background: var(--pu); }
+    .tl-line  { width: 1px; flex: 1; background: var(--bdr); margin: 4px 0; min-height: 12px; }
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-ts    { font-size: 9.5px; font-family: var(--f-mono); color: var(--t3); margin-bottom: 1px; }
+    .tl-name  { font-size: 11.5px; font-weight: 500; color: var(--t1); margin-bottom: 3px; }
+    .tl-desc  { font-size: 10.5px; color: var(--t3); line-height: 1.4; margin-top: 3px; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,20,0.52);
+      display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal     { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); width: 490px; max-width: 100%; max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08); }
+    .modal-hdr { display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 13px 16px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+      background: var(--surf2); }
+    .modal-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .modal-sub   { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .modal-close { width: 24px; height: 24px; border-radius: var(--r); background: transparent;
+      border: none; color: var(--t3); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: background 0.1s, color 0.1s; flex-shrink: 0; margin-top: 1px; }
+    .modal-close:hover { background: var(--hover); color: var(--t1); }
+    .modal-body   { flex: 1; overflow-y: auto; padding: 16px; display: flex;
+      flex-direction: column; gap: 12px; }
+    .modal-footer { padding: 12px 16px; border-top: 1px solid var(--bdr); display: flex;
+      gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+
+    /* UPLOAD ZONE */
+    .upload-zone { border: 1.5px dashed var(--bdr-mid); border-radius: var(--r-lg);
+      padding: 22px; text-align: center; cursor: pointer; transition: all 0.12s;
+      background: var(--surf2); }
+    .upload-zone:hover { border-color: var(--cta); background: var(--hover); }
+    .upload-file { display: flex; align-items: center; gap: 10px; padding: 10px 13px;
+      background: var(--g-bg); border: 1px solid var(--g-bd); border-radius: var(--r); }
+
+    /* MISC */
+    .grid2    { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .col      { display: flex; flex-direction: column; gap: 12px; }
+    .quick-link { display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+      border: 1px solid var(--bdr); border-radius: var(--r); font-size: 12px;
+      color: var(--t2); cursor: pointer; background: var(--surface); transition: all 0.1s; }
+    .quick-link:hover { background: var(--hover); color: var(--t1); border-color: var(--bdr-mid); }
+    .sandbox-note { font-size: 10px; color: var(--t3); font-family: var(--f-mono);
+      padding: 4px 9px; background: var(--surf2); border: 1px solid var(--bdr);
+      border-radius: var(--r); }
+    .link-btn { background: none; border: none; color: var(--am); font-size: 11px;
+      font-family: var(--f-ui); cursor: pointer; text-decoration: underline;
+      text-underline-offset: 2px; padding: 0; }
+    .link-btn:hover { color: var(--cta); }
+    textarea  { background: var(--surface); border: 1px solid var(--bdr-mid);
+      border-radius: var(--r); padding: 8px 10px; font-size: 12.5px; color: var(--t1);
+      font-family: var(--f-ui); width: 100%; resize: vertical; outline: none;
+      transition: border-color 0.12s; min-height: 72px; }
+    textarea:focus { border-color: var(--bdr-focus); }
+
+    @media (max-width: 1100px) { :root { --w-tl: 210px; } }
+    @media (max-width: 960px)  { .tl-rail { display: none; } }
+    @media (max-width: 800px)  { .grid2 { grid-template-columns: 1fr; } }
+    @media (max-width: 640px)  { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ── ICONS ─────────────────────────────────────────────────────────── */
+const LogoMark = () => (
+  <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+    <rect width="26" height="26" rx="4" fill="#1e1e28"/>
+    <rect x="6" y="9"    width="14" height="2" rx="1" fill="#ddddf0"/>
+    <rect x="6" y="13.5" width="9"  height="2" rx="1" fill="#7070e0"/>
+    <rect x="6" y="18"   width="5"  height="2" rx="1" fill="#4040a0" opacity="0.8"/>
+  </svg>
+);
+const IcoWallet   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 6h12" stroke="currentColor" strokeWidth="1.2"/><circle cx="9.5" cy="8.5" r="1" fill="currentColor"/></svg>;
+const IcoVerify   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoCard     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3.5" width="12" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><line x1="1" y1="6.5" x2="13" y2="6.5" stroke="currentColor" strokeWidth="1.2"/><rect x="3" y="8.5" width="3" height="1.5" rx="0.5" fill="currentColor"/></svg>;
+const IcoTransfer = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5h10M9 2.5L12 5l-3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 9H2M5 6.5L2 9l3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoDeposit  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoWithdraw = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 9V2M4 5l3-3 3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoDispute  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="10.2" r="0.7" fill="currentColor"/></svg>;
+const IcoProfile  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M2 13c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoLockSm   = () => <svg width="11" height="12" viewBox="0 0 11 12" fill="none"><rect x="1.5" y="5" width="8" height="6.5" rx="0.75" stroke="currentColor" strokeWidth="1.1"/><path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const IcoUpload   = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 8.5V2M4 4.5l2.5-2.5L9 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M1.5 10.5h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
+const IcoX        = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;
+const IcoFile     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 1h5.5L11 3.5V13H3V1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><path d="M8.5 1v3H11" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="5" y1="7" x2="9" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><line x1="5" y1="9.5" x2="9" y2="9.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoChev     = ({ up }) => <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d={up ? "M2 6.5l3-3 3 3" : "M2 3.5l3 3 3-3"} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoArrow    = () => <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5h6M5.5 2.5L8 5l-2.5 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+
+/* ── BADGE ─────────────────────────────────────────────────────────── */
+const BADGE_MAP = {
+  IN_REVIEW:       ['b-pending', 'IN_REVIEW'],
+  COMPLETED:       ['b-done',    'COMPLETED'],
+  ACTION_REQUIRED: ['b-action',  'ACTION REQUIRED'],
+  PENDING:         ['b-pending', 'PENDING'],
+  LOCKED:          ['b-locked',  'LOCKED'],
+  APPROVED:        ['b-active',  'APPROVED'],
+  REJECTED:        ['b-expired', 'REJECTED'],
+  LIMITED:         ['b-limited', 'LIMITED'],
+  STARTED:         ['b-dev',     'STARTED'],
+  REVIEW:          ['b-pending', 'REVIEW'],
+  NO_ACTION:       ['b-done',    'NO ACTION REQ.'],
+  CONFIRMED:       ['b-done',    'CONFIRMED'],
+  ENABLED:         ['b-active',  'ENABLED'],
+  SUMSUB_PENDING:  ['b-pending', 'SUMSUB PENDING'],
+  DEPOSITS_ON:     ['b-active',  'DEPOSITS ON'],
+  WITHDRAWALS_LTD: ['b-limited', 'WITHDRAWALS LTD'],
+  BLOCKED:         ['b-action',  'BLOCKED'],
+  PASSED:          ['b-done',    'PASSED'],
+  READY:           ['b-done',    'READY'],
+};
+const Badge = ({ type, label }) => {
+  const [cls, fallback] = BADGE_MAP[type] || ['b-notstarted', type];
+  return <span className={`badge ${cls}`}>{label || fallback}</span>;
+};
+
+/* ── KV ────────────────────────────────────────────────────────────── */
+const KV = ({ k, v, mono, children }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className={`kv-v${mono ? ' mono' : ''}`}>{children !== undefined ? children : v}</div>
+  </div>
+);
+
+/* ── SIDEBAR ───────────────────────────────────────────────────────── */
+const NAV = [
+  { ico: <IcoWallet />,   label: 'Wallet',            locked: true },
+  { ico: <IcoVerify />,   label: 'Verification',       locked: false, current: true, id: 'UEW-UI-02' },
+  { ico: <IcoCard />,     label: 'Cards',              locked: true },
+  { ico: <IcoTransfer />, label: 'Transfers',          locked: true },
+  { ico: <IcoDeposit />,  label: 'Deposits',           locked: true },
+  { ico: <IcoWithdraw />, label: 'Withdrawals',        locked: true },
+  { ico: <IcoDispute />,  label: 'Disputes',           locked: true },
+  { ico: <IcoProfile />,  label: 'Profile / Security', locked: true },
+];
+const Sidebar = () => (
+  <aside className="sidebar">
+    <div className="sb-brand">
+      <div className="sb-mark"><LogoMark /><div className="sb-name">MiniFin</div></div>
+      <div className="sb-sub">End-User Web</div>
+    </div>
+    <nav className="sb-nav">
+      <div className="nav-sec">Navigation</div>
+      {NAV.map((n, i) => (
+        <div key={i} className={`nav-item${n.locked ? ' locked' : ''}${n.current ? ' current' : ''}`}>
+          <span style={{ width: 14, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{n.ico}</span>
+          <span>{n.label}</span>
+          {n.locked && <span className="nav-lock"><IcoLockSm /></span>}
+          {n.id    && <span className="nav-id">{n.id}</span>}
+        </div>
+      ))}
+    </nav>
+    <div className="sb-footer">
+      <div className="env-chip"><div className="env-dot"/><span>Local Sandbox</span></div>
+      <div className="env-host">app.miniefin.local</div>
+    </div>
+  </aside>
+);
+
+/* ── PAGE HEADER ───────────────────────────────────────────────────── */
+const PageHeader = () => (
+  <div className="page-hdr">
+    <div className="page-bc">
+      <span>End-User Web</span><span className="sep">/</span>
+      <strong>Verification</strong><span className="sep">·</span>
+      <span className="mode">KYC Status</span>
+    </div>
+    <div className="page-meta">
+      <span className="screen-id">UEW-UI-02</span>
+      <span className="env-badge"><span className="env-badge-dot"/>Local Sandbox</span>
+      <div className="user-chip">
+        <div className="user-avatar">EM</div>
+        <span className="user-name">Elena Markovic</span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── KYC STATUS HEADER ─────────────────────────────────────────────── */
+const KycStatusHeader = () => (
+  <div className="kyc-panel">
+    <div className="panel-hdr" style={{ background: '#fffdf5', borderBottomColor: 'var(--am-bd)' }}>
+      <span className="panel-title">KYC Verification Status</span>
+      <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+        <Badge type="IN_REVIEW" />
+        <span style={{ fontSize: '10px', color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>
+          Last updated: 2026-05-17 10:42
+        </span>
+      </div>
+    </div>
+    <div className="panel-body">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="kv-table">
+          <KV k="Name"    v="Elena Markovic" />
+          <KV k="User ID" v="EU-10482" mono />
+          <KV k="Email"   v="elena.markovic@example.test" />
+          <KV k="Country" v="Germany (DE)" />
+        </div>
+        <div className="kv-table">
+          <KV k="KYC state"><Badge type="IN_REVIEW" /></KV>
+          <KV k="Provider state"><Badge type="SUMSUB_PENDING" /></KV>
+          <KV k="Account control">
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              <Badge type="DEPOSITS_ON" /><Badge type="WITHDRAWALS_LTD" />
+            </div>
+          </KV>
+          <KV k="Review provider" v="Sumsub sandbox" />
+        </div>
+      </div>
+    </div>
+    <div className="kyc-warn-bar">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ flexShrink: 0 }}>
+        <path d="M6.5 1.5L12 11.5H1L6.5 1.5Z" stroke="#854d0e" strokeWidth="1.2" strokeLinejoin="round"/>
+        <line x1="6.5" y1="5" x2="6.5" y2="8" stroke="#854d0e" strokeWidth="1.2" strokeLinecap="round"/>
+        <circle cx="6.5" cy="9.5" r="0.65" fill="#854d0e"/>
+      </svg>
+      <span>
+        <strong>Action required</strong> — proof of address document not yet submitted.
+        Verification is paused pending this document.
+      </span>
+    </div>
+  </div>
+);
+
+/* ── STEP TRACKER ──────────────────────────────────────────────────── */
+const STEPS = [
+  { label: 'Profile\nDetails',   state: 'done',    sub: 'Completed' },
+  { label: 'Identity\nDocument', state: 'done',    sub: 'Completed' },
+  { label: 'Liveness\nCheck',    state: 'done',    sub: 'Completed' },
+  { label: 'Address\nCheck',     state: 'action',  sub: 'Action required' },
+  { label: 'Review',             state: 'current', sub: 'In progress' },
+  { label: 'Decision',           state: 'pending', sub: 'Pending' },
+];
+const stepStyle = (state) => ({
+  width: 22, height: 22, borderRadius: '50%',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  flexShrink: 0, fontSize: 11, fontWeight: 700,
+  ...(state === 'done'    ? { background: 'var(--g-bg)',   color: 'var(--g)',   border: '1.5px solid var(--g-bd)' } :
+      state === 'action'  ? { background: 'var(--am-bg)',  color: 'var(--am)',  border: '1.5px solid var(--am)', animation: 'pulse-am 2s ease-in-out infinite' } :
+      state === 'current' ? { background: 'var(--cta)',    color: '#fff',       border: '1.5px solid var(--cta)' } :
+                            { background: 'var(--surf2)',  color: 'var(--t4)',  border: '1.5px solid var(--bdr)' }),
+});
+const stepLabelColor = s =>
+  s === 'done' ? 'var(--t2)' : s === 'action' ? 'var(--am)' : s === 'current' ? 'var(--t1)' : 'var(--t4)';
+const stepSubColor = s =>
+  s === 'done' ? 'var(--g)' : s === 'action' ? 'var(--am)' : s === 'current' ? 'var(--t3)' : 'var(--t4)';
+
+const StepIcon = ({ state }) => {
+  if (state === 'done')    return <span>✓</span>;
+  if (state === 'action')  return <span>!</span>;
+  if (state === 'current') return <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#fff', display: 'block' }} />;
+  return null;
+};
+
+const StepTracker = () => (
+  <div className="panel">
+    <div className="panel-hdr">
+      <span className="panel-title">Verification Progress</span>
+      <span style={{ fontSize: '11px', color: 'var(--t3)' }}>Step 5 of 6 — In Review</span>
+    </div>
+    <div className="panel-body">
+      <div style={{ display: 'flex', alignItems: 'flex-start', overflowX: 'auto', paddingBottom: 4 }}>
+        {STEPS.map((step, i) => {
+          const isLast = i === STEPS.length - 1;
+          return (
+            <React.Fragment key={i}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 'none', minWidth: 78 }}>
+                <div style={stepStyle(step.state)}><StepIcon state={step.state} /></div>
+                <div style={{
+                  fontSize: '10px', marginTop: 6, textAlign: 'center', padding: '0 3px', lineHeight: 1.3,
+                  color: stepLabelColor(step.state),
+                  fontWeight: step.state === 'current' || step.state === 'action' ? 600 : 400
+                }}>
+                  {step.label.split('\n').map((ln, j) => <span key={j} style={{ display: 'block' }}>{ln}</span>)}
+                </div>
+                <div style={{ fontSize: '9px', marginTop: 2, textAlign: 'center', color: stepSubColor(step.state) }}>
+                  {step.sub}
+                </div>
+              </div>
+              {!isLast && (
+                <div style={{
+                  flex: 1, height: 2, marginTop: 11, minWidth: 16,
+                  background: step.state === 'done' ? 'var(--g-bd)' : 'var(--bdr)',
+                  borderRadius: 1,
+                }} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div style={{ marginTop: 11, paddingTop: 10, borderTop: '1px solid var(--bdr)',
+        fontSize: '10.5px', color: 'var(--t3)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span>If rejected:</span>
+        <span style={{ fontFamily: 'var(--f-mono)', color: 'var(--rd)', fontSize: '10px' }}>
+          REJECTED → Resubmission required → Review → Decision
+        </span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── ACTIONS BAR ───────────────────────────────────────────────────── */
+const ActionsBar = ({ onUpload, onDetails, onSupport }) => (
+  <div className="panel">
+    <div className="panel-body" style={{ padding: '11px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <button className="btn btn-ghost" disabled
+          title="Waiting for address document — verification is currently under review">
+          Continue Verification
+        </button>
+        <button className="btn btn-primary" onClick={onUpload}>
+          <IcoUpload /> Upload Additional Document
+        </button>
+        <button className="btn btn-ghost" onClick={onDetails}>
+          View Submitted Details
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={onSupport} style={{ marginLeft: 'auto' }}>
+          Contact Support
+        </button>
+      </div>
+      <div style={{ fontSize: '11px', color: 'var(--t3)', marginTop: 7 }}>
+        Verification is currently under review. No action is required unless you are specifically asked to submit additional documents.
+      </div>
+    </div>
+  </div>
+);
+
+/* ── REQUIREMENTS PANEL ────────────────────────────────────────────── */
+const REQS = [
+  { name: 'Legal name',               ts: '2026-05-14 09:15', src: 'Sumsub SDK',      status: 'NO_ACTION' },
+  { name: 'Date of birth',            ts: '2026-05-14 09:15', src: 'Sumsub SDK',      status: 'NO_ACTION' },
+  { name: 'Residential address',      ts: '2026-05-14 09:15', src: 'Sumsub SDK',      status: 'CONFIRMED' },
+  { name: 'Government ID (Passport)', ts: '2026-05-15 14:30', src: 'Document upload', status: 'NO_ACTION' },
+  { name: 'Liveness / selfie check',  ts: '2026-05-15 14:45', src: 'Sumsub liveness', status: 'NO_ACTION' },
+  { name: 'Proof of address',         ts: '—',                src: '—',               status: 'ACTION_REQUIRED', isAction: true },
+];
+
+const RequirementsPanel = ({ expanded, setExpanded, onUpload }) => (
+  <div className="panel">
+    <div className="panel-hdr">
+      <span className="panel-title">Verification Requirements</span>
+      <span style={{ fontSize: '10px', color: 'var(--am)', fontFamily: 'var(--f-mono)' }}>
+        1 item requires action
+      </span>
+    </div>
+    <div className="req-table">
+      {REQS.map((r, i) => (
+        <React.Fragment key={i}>
+          <div
+            className={`req-row${r.isAction ? ' req-action' : ''}`}
+            onClick={r.isAction ? () => setExpanded(expanded ? null : 'proof') : undefined}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{
+                  fontSize: '12px', fontWeight: 500,
+                  color: r.isAction ? 'var(--am)' : 'var(--t1)'
+                }}>{r.name}</span>
+                {r.isAction && (
+                  <span style={{ marginLeft: 'auto', color: 'var(--t3)', display: 'flex' }}>
+                    <IcoChev up={expanded === 'proof'} />
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 12, marginTop: 2, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '10.5px', color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>{r.ts}</span>
+                <span style={{ fontSize: '10.5px', color: 'var(--t3)' }}>{r.src}</span>
+              </div>
+            </div>
+            <div style={{ flexShrink: 0 }}><Badge type={r.status} /></div>
+          </div>
+          {r.isAction && expanded === 'proof' && (
+            <div className="req-expand">
+              <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--am)', marginBottom: 9 }}>
+                Proof of address — action required
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 11 }}>
+                <div>
+                  <div style={{ fontSize: '9.5px', color: 'var(--am)', textTransform: 'uppercase',
+                    letterSpacing: '0.08em', marginBottom: 5 }}>Accepted documents</div>
+                  {['Utility bill', 'Bank statement', 'Municipal authority letter'].map(d => (
+                    <div key={d} style={{ fontSize: '11.5px', color: 'var(--t2)', display: 'flex', gap: 6, padding: '2px 0' }}>
+                      <span style={{ color: 'var(--g)' }}>✓</span>{d}
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div style={{ fontSize: '9.5px', color: 'var(--am)', textTransform: 'uppercase',
+                    letterSpacing: '0.08em', marginBottom: 5 }}>Requirements</div>
+                  {['Issued within 3 months', 'Shows full name and address', 'PDF or JPEG format'].map(r => (
+                    <div key={r} style={{ fontSize: '11.5px', color: 'var(--t2)', display: 'flex', gap: 6, padding: '2px 0' }}>
+                      <span style={{ color: 'var(--t3)' }}>—</span>{r}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button className="btn btn-primary btn-sm" onClick={onUpload}>
+                <IcoUpload /> Upload Document
+              </button>
+            </div>
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  </div>
+);
+
+/* ── PROVIDER PANEL ────────────────────────────────────────────────── */
+const ProviderPanel = () => (
+  <div className="panel">
+    <div className="panel-hdr"><span className="panel-title">Provider / Review Context</span></div>
+    <div className="panel-body">
+      <div className="kv-table">
+        <KV k="Provider"          v="Sumsub sandbox" />
+        <KV k="Applicant ID"      v="SUMSUB-APL-58291" mono />
+        <KV k="Review status"><Badge type="PENDING" /></KV>
+        <KV k="Pending reason"    v="Proof of address missing" />
+        <KV k="Expected review"   v="1–2 business days after all documents submitted" />
+        <KV k="Manual review"     v="May be required if document quality is low" />
+        <KV k="Sandbox mode"      v="Yes — test documents accepted" />
+      </div>
+    </div>
+  </div>
+);
+
+/* ── WALLET LIMITS PANEL ───────────────────────────────────────────── */
+const LIMITS = [
+  { name: 'Wallet balance visibility', badge: 'ENABLED',         value: 'Enabled — limited view', color: 'var(--g)' },
+  { name: 'Deposits',                  badge: 'LIMITED',         value: 'Up to EUR 1,000 / day',  color: 'var(--or)' },
+  { name: 'Withdrawals',               badge: 'BLOCKED',         value: 'Blocked until verification complete', color: 'var(--rd)' },
+  { name: 'Internal transfers',        badge: 'LIMITED',         value: 'Verified recipients only', color: 'var(--or)' },
+  { name: 'Card usage',                badge: 'LOCKED',          value: 'Not available until KYC approved', color: 'var(--t4)', lock: true },
+  { name: 'Higher limits',             badge: 'LOCKED',          value: 'Locked', color: 'var(--t4)', lock: true },
+];
+
+const LockIco = () => (
+  <svg width="11" height="12" viewBox="0 0 11 12" fill="none" style={{ color: 'var(--t4)', flexShrink: 0 }}>
+    <rect x="1.5" y="5" width="8" height="7" rx="1" fill="currentColor" opacity="0.2"/>
+    <rect x="1.5" y="5" width="8" height="7" rx="1" stroke="currentColor" strokeWidth="1.1"/>
+    <path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+  </svg>
+);
+
+const WalletLimitsPanel = () => (
+  <div className="panel">
+    <div className="panel-hdr"><span className="panel-title">Account Limits — KYC Impact</span></div>
+    <div className="panel-body">
+      {LIMITS.map((lm, i) => (
+        <div key={i} className="lim-row">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1, fontSize: '12px', color: 'var(--t1)' }}>
+            {lm.lock && <LockIco />}{lm.name}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2, textAlign: 'right' }}>
+            <Badge type={lm.badge} />
+            <div style={{ fontSize: '10.5px', color: lm.color, maxWidth: 160 }}>{lm.value}</div>
+          </div>
+        </div>
+      ))}
+      <div style={{ marginTop: 10, paddingTop: 9, borderTop: '1px solid var(--bdr)',
+        fontSize: '11px', color: 'var(--t3)' }}>
+        Full limits unlock when KYC status reaches{' '}
+        <span style={{ fontFamily: 'var(--f-mono)', color: 'var(--g)' }}>APPROVED</span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── WHAT HAPPENS NEXT ─────────────────────────────────────────────── */
+const WhatNextPanel = () => (
+  <div className="panel">
+    <div className="panel-hdr"><span className="panel-title">What Happens Next</span></div>
+    <div className="panel-body">
+      {[
+        {
+          dot: 'var(--g)', title: 'If approved',
+          desc: 'Full wallet access unlocked. Card issuance enabled. All deposit, withdrawal, and transfer limits apply. KYC state changes to APPROVED.',
+        },
+        {
+          dot: 'var(--am)', title: 'If more information is needed',
+          desc: 'You receive an email notification. The specific requirement is flagged here with ACTION REQUIRED status. Resubmission required before review can continue.',
+        },
+        {
+          dot: 'var(--rd)', title: 'If rejected',
+          desc: 'Account remains restricted. A resubmission path may be available depending on rejection reason. Contact support to discuss escalation options.',
+        },
+      ].map((o, i) => (
+        <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 0',
+          borderBottom: i < 2 ? '1px solid var(--hover)' : 'none' }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: o.dot,
+            flexShrink: 0, marginTop: 4 }} />
+          <div>
+            <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--t1)', marginBottom: 2 }}>{o.title}</div>
+            <div style={{ fontSize: '11px', color: 'var(--t3)', lineHeight: 1.45 }}>{o.desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+/* ── TIMELINE RAIL ─────────────────────────────────────────────────── */
+const EVENTS = [
+  { ts: '2026-05-17 10:42', name: 'Review started',           desc: 'Sumsub manual review queue entered',                dot: 'pend', badge: 'REVIEW' },
+  { ts: '2026-05-17 09:15', name: 'Action required',          desc: 'Proof of address document requested by provider',   dot: 'bad',  badge: 'ACTION_REQUIRED' },
+  { ts: '2026-05-15 14:45', name: 'Liveness check completed', desc: 'Biometric liveness verified by Sumsub',             dot: 'ok',   badge: 'COMPLETED' },
+  { ts: '2026-05-15 14:30', name: 'ID document uploaded',     desc: 'Passport uploaded and accepted by Sumsub OCR',      dot: 'ok',   badge: 'COMPLETED' },
+  { ts: '2026-05-14 09:15', name: 'Profile details submitted',desc: 'Name, DOB, address submitted via KYC flow',         dot: 'ok',   badge: 'COMPLETED' },
+  { ts: '2026-05-13 17:00', name: 'KYC started',              desc: 'Verification flow initiated by user',               dot: 'pu',   badge: 'STARTED' },
+];
+
+const TimelineRail = () => (
+  <aside className="tl-rail">
+    <div className="tl-hdr">Verification Events</div>
+    <div className="tl-body">
+      {EVENTS.map((ev, i) => (
+        <div key={i} className="tl-evt">
+          <div className="tl-spine">
+            <div className={`tl-dot ${ev.dot}`} />
+            {i < EVENTS.length - 1 && <div className="tl-line" />}
+          </div>
+          <div className="tl-content">
+            <div className="tl-ts">{ev.ts}</div>
+            <div className="tl-name">{ev.name}</div>
+            <div style={{ margin: '2px 0' }}><Badge type={ev.badge} /></div>
+            <div className="tl-desc">{ev.desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </aside>
+);
+
+/* ── MODAL SHELL ───────────────────────────────────────────────────── */
+const ModalShell = ({ title, subtitle, onClose, footer, children }) => (
+  <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="modal">
+      <div className="modal-hdr">
+        <div>
+          <div className="modal-title">{title}</div>
+          {subtitle && <div className="modal-sub">{subtitle}</div>}
+        </div>
+        <button className="modal-close" onClick={onClose}><IcoX /></button>
+      </div>
+      <div className="modal-body">{children}</div>
+      {footer && <div className="modal-footer">{footer}</div>}
+    </div>
+  </div>
+);
+
+/* ── UPLOAD MODAL ──────────────────────────────────────────────────── */
+const UploadModal = ({ onClose }) => {
+  const [fileReady, setFileReady] = useState(false);
+  return (
+    <ModalShell
+      title="Upload Additional Document"
+      subtitle="Required: Proof of Address"
+      onClose={onClose}
+      footer={<>
+        <button className="btn btn-primary" disabled={!fileReady}>Submit Document</button>
+        <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        <div style={{ marginLeft: 'auto' }}><span className="sandbox-note">Sandbox — no file actually uploaded</span></div>
+      </>}
+    >
+      <div style={{ display: 'flex', gap: 10, padding: '9px 12px 9px 13px', fontSize: '12px',
+        background: 'var(--am-bg)', borderLeft: '3px solid var(--am)', color: '#78350f', lineHeight: 1.5 }}>
+        <span style={{ flexShrink: 0, fontWeight: 600, marginTop: 1 }}>!</span>
+        <div>
+          <strong>Accepted:</strong> utility bill, bank statement, municipal authority letter.
+          Must be dated within the last 3 months and clearly show your full name and address.
+        </div>
+      </div>
+
+      {!fileReady ? (
+        <div className="upload-zone" onClick={() => setFileReady(true)}>
+          <div style={{ fontSize: 22, marginBottom: 7, opacity: 0.45 }}>📄</div>
+          <div style={{ fontSize: '12.5px', fontWeight: 500, color: 'var(--t2)', marginBottom: 4 }}>
+            Drop file here or click to browse
+          </div>
+          <div style={{ fontSize: '10.5px', color: 'var(--t3)' }}>
+            PDF, JPG, PNG · Max 10 MB · Click to simulate upload
+          </div>
+        </div>
+      ) : (
+        <div className="upload-file">
+          <span style={{ color: 'var(--g)', display: 'flex' }}><IcoFile /></span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: 'var(--f-mono)', fontSize: '11.5px', color: 'var(--t1)', fontWeight: 500 }}>
+              statement_may2026.pdf
+            </div>
+            <div style={{ fontSize: '10.5px', color: 'var(--t3)', marginTop: 1 }}>284 KB · PDF</div>
+          </div>
+          <Badge type="READY" />
+        </div>
+      )}
+
+      <div className="kv-table" style={{ background: 'var(--surf2)', padding: '10px 12px',
+        borderRadius: 'var(--r)', border: '1px solid var(--bdr)' }}>
+        <KV k="Document type"    v="Proof of address" />
+        <KV k="Provider"         v="Sumsub sandbox" />
+        <KV k="Formats accepted" v="PDF, JPG, PNG (max 10 MB)" />
+        <KV k="Date requirement" v="Issued within the last 3 months" />
+      </div>
+
+      {fileReady && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '11.5px', color: 'var(--g)' }}>
+          <span>✓</span> File selected — click "Submit Document" to continue.
+          <button className="link-btn" style={{ marginLeft: 6 }} onClick={() => setFileReady(false)}>
+            Remove file
+          </button>
+        </div>
+      )}
+    </ModalShell>
+  );
+};
+
+/* ── DETAILS MODAL ─────────────────────────────────────────────────── */
+const DetailsModal = ({ onClose }) => (
+  <ModalShell
+    title="Submitted Verification Details"
+    subtitle="Read-only — submitted via Sumsub KYC flow"
+    onClose={onClose}
+    footer={<>
+      <button className="btn btn-ghost" onClick={onClose}>Close</button>
+      <div style={{ marginLeft: 'auto' }}><span className="sandbox-note">Sandbox — sample data only</span></div>
+    </>}
+  >
+    <div className="kv-table">
+      <KV k="Full name"           v="Elena Markovic" />
+      <KV k="Date of birth"       v="1989-03-22" mono />
+      <KV k="Nationality"         v="German" />
+      <KV k="Residential address" v="Friedrichstraße 45, 10117 Berlin, Germany" />
+      <KV k="Government ID type"  v="Passport" />
+      <KV k="Passport number"     v="C4B8****7" mono />
+      <KV k="ID expiry"           v="2031-09-15" mono />
+      <KV k="Liveness check">
+        <Badge type="PASSED" />
+        <span style={{ fontSize: '11px', color: 'var(--t3)' }}>2026-05-15 14:45</span>
+      </KV>
+      <KV k="Submitted by"        v="User — self-service via Sumsub SDK" />
+    </div>
+    <div style={{ fontSize: '10.5px', color: 'var(--t3)', paddingTop: 9,
+      borderTop: '1px solid var(--bdr)', lineHeight: 1.5 }}>
+      Sensitive fields are partially masked. Full data is held only by Sumsub in their secure document vault.
+    </div>
+  </ModalShell>
+);
+
+/* ── SUPPORT MODAL ─────────────────────────────────────────────────── */
+const SupportModal = ({ onClose }) => {
+  const [msg, setMsg]   = useState('Hi, I need help with my verification status...');
+  const [sent, setSent] = useState(false);
+  return (
+    <ModalShell
+      title="Verification Support"
+      subtitle="Contact platform support about your KYC verification"
+      onClose={onClose}
+      footer={<>
+        {!sent
+          ? <button className="btn btn-primary" onClick={() => setSent(true)}>Send Message</button>
+          : <span style={{ fontSize: '12px', color: 'var(--g)', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <span>✓</span> Message recorded
+            </span>
+        }
+        <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        <div style={{ marginLeft: 'auto' }}><span className="sandbox-note">Sandbox — messages not sent</span></div>
+      </>}
+    >
+      <div style={{ fontSize: '11.5px', color: 'var(--t2)', padding: '8px 11px',
+        background: 'var(--surf2)', border: '1px solid var(--bdr)', borderRadius: 'var(--r)' }}>
+        Your KYC reference:{' '}
+        <span style={{ fontFamily: 'var(--f-mono)', color: 'var(--t1)', fontWeight: 500 }}>
+          EU-10482 / SUMSUB-APL-58291
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <label style={{ fontSize: '10.5px', fontWeight: 500, color: 'var(--t2)',
+          textTransform: 'uppercase', letterSpacing: '0.06em' }}>Your message</label>
+        <textarea value={msg} onChange={e => setMsg(e.target.value)} disabled={sent} />
+      </div>
+
+      <div>
+        <div style={{ fontSize: '9.5px', color: 'var(--t3)', textTransform: 'uppercase',
+          letterSpacing: '0.08em', marginBottom: 6 }}>Quick options</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {['Check verification FAQ', 'Request status update', 'Escalate to compliance team'].map(lbl => (
+            <div key={lbl} className="quick-link">
+              <IcoArrow /><span>{lbl}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {sent && (
+        <div style={{ display: 'flex', gap: 10, padding: '9px 12px 9px 13px', fontSize: '12px',
+          background: 'var(--hover)', borderLeft: '3px solid var(--bdr-mid)', color: 'var(--t2)', lineHeight: 1.5 }}>
+          <span style={{ flexShrink: 0, fontWeight: 600, marginTop: 1 }}>i</span>
+          <div>
+            Message recorded in sandbox. In production, this would create a support case and notify
+            the compliance team. Expected response time: 1 business day.
+          </div>
+        </div>
+      )}
+    </ModalShell>
+  );
+};
+
+/* ── APP ───────────────────────────────────────────────────────────── */
+function App() {
+  const [modal,    setModal]    = useState(null);
+  const [expanded, setExpanded] = useState(null);
+
+  const openUpload = () => setModal('upload');
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+        <PageHeader />
+        <div className="content-area">
+          <div className="left-scroll">
+            <KycStatusHeader />
+            <StepTracker />
+            <ActionsBar onUpload={openUpload} onDetails={() => setModal('details')} onSupport={() => setModal('support')} />
+            <div className="grid2">
+              <div className="col">
+                <RequirementsPanel expanded={expanded} setExpanded={setExpanded} onUpload={openUpload} />
+                <ProviderPanel />
+              </div>
+              <div className="col">
+                <WalletLimitsPanel />
+                <WhatNextPanel />
+              </div>
+            </div>
+            <div style={{ height: 6 }} />
+          </div>
+          <TimelineRail />
+        </div>
+      </div>
+
+      {modal === 'upload'  && <UploadModal  onClose={() => setModal(null)} />}
+      {modal === 'details' && <DetailsModal onClose={() => setModal(null)} />}
+      {modal === 'support' && <SupportModal onClose={() => setModal(null)} />}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
