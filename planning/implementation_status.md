@@ -385,7 +385,52 @@ Runtime evidence:
 
 Result tag notes:
 - `LDG-03` is passed.
-- `WLT-01`, `WLT-03`, `WLT-04` are not claimed; transfer, SoF and two-eyes workflows do not exist yet.
+- At this point in history, `WLT-01`, `WLT-03`, `WLT-04` were not claimed; transfer was implemented in the following slice.
 
 Next planned step:
-- Draft the next Phase 03 wallet/manual-operation slice, likely internal end-user transfer targeting `WLT-01`.
+- Completed by Phase 03 Slice 04 below.
+
+---
+
+## Phase 03 Slice 04 — Wallet Internal Transfer
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — frontend not in scope**.
+
+Planning contract:
+- `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2; frontend not in scope.
+
+Implemented backend/runtime scope:
+- Platform DB migration `V8__wallet_internal_transfer.sql` for `wallet.internal_transfers`.
+- End-user `POST /api/v1/transfers` for internal transfers under EUR 10k.
+- Sender wallet debit and receiver wallet credit through one balanced `ledger.post_journal(...)` journal with `journal_type = 'WALLET_INTERNAL_TRANSFER'`.
+- Sufficient-funds guard before posting.
+- Self-transfer, missing receiver and inactive receiver refusal.
+- Actor-control write block for sender and receiver across `FROZEN` and `BLOCKED`.
+- Optional `Idempotency-Key` duplicate protection: same sender/key/body returns the original completed transfer; same sender/key with a different normalized request returns 409.
+- `GET /api/v1/wallet` includes own sent/received transfer history.
+- Retained runtime scripts:
+  - `product/scripts/runtime/reg_phase03_wallet_transfer_happy_path.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_transfer_insufficient_funds.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_transfer_actor_control_block.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_transfer_idempotency.sh`
+
+Explicitly not started:
+- Source of Funds (`WLT-03`);
+- two-eyes (`WLT-04`);
+- AML velocity/structuring rules;
+- transfer cancellation/reversal;
+- frontend implementation.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-16 — Phase 03 Slice 04 Wallet Internal Transfer Runtime Verification`.
+- `WLT-01` — pass for atomic internal transfer debit/credit.
+- `WLT-02` — pass for sender and receiver actor-control blocks.
+- `AUD-01` — pass for transfer success and actor-control denial audit rows.
+- `LDG-05` / `LDG-99` — pass via ledger reconciliation after transfer flows.
+
+Result tag notes:
+- `WLT-01` is passed.
+- `WLT-03`, `WLT-04` are not claimed; SoF and two-eyes workflows do not exist yet.
+
+Next planned step:
+- Review the parallel high-value controls planning branch, then decide whether to continue Phase 03 placeholders or move to the next approved implementation slice.

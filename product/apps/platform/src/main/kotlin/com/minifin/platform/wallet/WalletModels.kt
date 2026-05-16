@@ -39,6 +39,24 @@ data class WithdrawalRequestResponse(
     val decidedAt: String?,
 )
 
+data class InternalTransferCreate(
+    val receiverUserId: String,
+    val amount: String,
+    val currency: String = "EUR",
+)
+
+data class InternalTransferResponse(
+    val transferId: String,
+    val senderUserId: String,
+    val receiverUserId: String,
+    val amount: String,
+    val currency: String,
+    val state: String,
+    val journalEntryId: String?,
+    val createdAt: String,
+    val completedAt: String?,
+)
+
 data class WalletSummaryResponse(
     val walletId: String,
     val ledgerAccountId: String,
@@ -46,6 +64,7 @@ data class WalletSummaryResponse(
     val balance: String,
     val deposits: List<DepositRequestResponse>,
     val withdrawals: List<WithdrawalRequestResponse>,
+    val transfers: List<InternalTransferResponse>,
 )
 
 data class ManualOpsDepositDecision(

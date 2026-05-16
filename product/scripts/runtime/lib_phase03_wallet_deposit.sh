@@ -94,6 +94,25 @@ wd_create_withdrawal() {
     >"${out_body}"
 }
 
+wd_create_transfer() {
+  local cookie_jar="$1"
+  local receiver_user_id="$2"
+  local amount="$3"
+  local out_body="$4"
+  local idempotency_key="${5:-}"
+  local header_args=()
+
+  if test -n "${idempotency_key}"; then
+    header_args=(-H "Idempotency-Key: ${idempotency_key}")
+  fi
+
+  curl -fsS -b "${cookie_jar}" -X POST "${base_url}/api/v1/transfers" \
+    -H "Content-Type: application/json" \
+    "${header_args[@]}" \
+    -d "{\"receiverUserId\":\"${receiver_user_id}\",\"amount\":\"${amount}\",\"currency\":\"EUR\"}" \
+    >"${out_body}"
+}
+
 wd_psql() {
   docker compose -f "${compose_file}" exec -T platform-db psql -U platform -d platform -Atc "$1"
 }
