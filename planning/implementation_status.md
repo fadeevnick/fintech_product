@@ -139,6 +139,7 @@ Created:
 - `prototypes/ui/01_app_shell_cross_surface.html` — standalone cross-surface app shell HTML prototype from UI/UX prototype workflow.
 - `prototypes/ui/02_merchant_auth.html` — standalone `MDB-UI-01` merchant auth HTML prototype from UI/UX prototype workflow.
 - `prototypes/ui/03_enduser_auth.html` — standalone end-user auth HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
+- `prototypes/ui/04_backoffice_oidc_login.html` — standalone `BOF-UI-01` backoffice OIDC login HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;

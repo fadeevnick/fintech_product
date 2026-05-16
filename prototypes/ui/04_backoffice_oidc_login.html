@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Backoffice OIDC Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --hover:   #f0efe9;
+
+      /* Sidebar — slightly cooler than merchant/end-user to signal higher-privilege surface */
+      --sb:        #0e0e12;
+      --sb-bdr:    #1a1a20;
+      --sb-t:      #c4c4d2;
+      --sb-muted:  #4e4e5c;
+      --sb-hover:  #161620;
+      --sb-active: #1c1c2a;
+
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+
+      --t1: #1c1c1f;
+      --t2: #575763;
+      --t3: #9898a6;
+      --t4: #d0d0da;
+
+      --cta:     #1c1c1f;
+      --cta-hov: #2e2e35;
+      --cta-t:   #ffffff;
+
+      --g:    #166534;  --g-bg: #f0fdf4;  --g-bd: #bbf7d0;
+      --am:   #854d0e;  --am-bg:#fffbeb;  --am-bd:#fde68a;
+      --rd:   #9b1c1c;  --rd-bg:#fef2f2;  --rd-bd:#fecaca;
+      --or:   #b45309;  --or-bg:#fff7ed;  --or-bd:#fed7aa;
+      --pu:   #5b21b6;  --pu-bg:#f5f3ff;  --pu-bd:#ddd6fe;
+      --bl:   #1e40af;  --bl-bg:#eff6ff;  --bl-bd:#bfdbfe;
+
+      --sb-env-bg:  #0e1a30;
+      --sb-env-t:   #93c5fd;
+      --sb-env-bd:  #1e3a6a;
+
+      --f-ui:   'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+      --r:    3px;
+      --r-lg: 5px;
+      --w-sb: 220px;
+      --w-au: 272px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+    #root { height: 100vh; display: flex; overflow: hidden; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 15px 15px 13px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-name  { font-size: 14.5px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; margin-top: 4px; }
+    .sb-nav   { flex: 1; padding: 10px 7px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 9px 5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 12px;
+      cursor: default; user-select: none; transition: background 0.1s; position: relative; }
+    .nav-item.locked  { opacity: 0.3; }
+    .nav-item.limited { opacity: 0.65; }
+    .nav-item.active-nav { background: var(--sb-active); color: #a5b4fc; opacity: 1; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; opacity: 1; }
+    .nav-lock { margin-left: auto; display: flex; align-items: center; opacity: 0.6; }
+    .nav-badge-ro { margin-left: auto; font-size: 8.5px; font-family: var(--f-mono);
+      color: var(--or); background: var(--or-bg); border: 1px solid var(--or-bd);
+      padding: 1px 4px; border-radius: 2px; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono);
+      color: var(--sb-muted); opacity: 0.8; }
+    .sb-div   { height: 1px; background: var(--sb-bdr); margin: 5px 0; }
+    .sb-footer { padding: 10px 14px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 10px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 4px; }
+    .env-dot   { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host  { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); }
+
+    /* ── MAIN ── */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .page-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 22px; border-bottom: 1px solid var(--bdr);
+      background: var(--surface); flex-shrink: 0; }
+    .page-bc   { font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 5px; }
+    .page-bc strong { color: var(--t1); font-weight: 500; }
+    .page-bc .sep   { color: var(--t3); }
+    .page-bc .mode  { font-family: var(--f-mono); font-size: 11.5px; color: var(--t2); }
+    .page-meta { display: flex; align-items: center; gap: 8px; }
+    .screen-id { font-size: 10px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge { font-size: 10px; font-family: var(--f-mono); color: var(--bl);
+      background: var(--bl-bg); border: 1px solid var(--bl-bd);
+      padding: 2px 8px; border-radius: var(--r); display: flex; align-items: center; gap: 5px; }
+    .env-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--bl); }
+    .main-body { flex: 1; overflow-y: auto; padding: 18px 22px; background: var(--bg); }
+
+    /* ── STATE TABS ── */
+    .mode-tabs { display: flex; border-bottom: 1px solid var(--bdr); margin-bottom: 18px; }
+    .mode-tab  { padding: 7px 15px; font-size: 12px; font-weight: 500; color: var(--t3);
+      cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+      white-space: nowrap; user-select: none; transition: color 0.12s, border-color 0.12s; }
+    .mode-tab:hover  { color: var(--t2); }
+    .mode-tab.active { color: var(--t1); border-bottom-color: var(--t1); }
+    .mode-tab.err-tab { color: var(--rd); }
+    .mode-tab.err-tab.active { border-bottom-color: var(--rd); }
+
+    /* ── PANELS ── */
+    .panel      { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; }
+    .panel-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .panel-title { font-size: 11.5px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 14px 16px; }
+
+    /* ── FORM / FIELDS ── */
+    .field     { display: flex; flex-direction: column; gap: 4px; }
+    .field-lbl { font-size: 10.5px; font-weight: 500; color: var(--t2);
+      text-transform: uppercase; letter-spacing: 0.06em; }
+    .field-hint { font-size: 10.5px; color: var(--t3); }
+
+    /* ── BUTTONS ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--r); font-size: 12.5px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover { background: var(--cta-hov); }
+    .btn-ghost   { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover { background: var(--hover); color: var(--t1); }
+    .btn-oidc    { background: #1a3a6e; color: #fff; gap: 9px; }
+    .btn-oidc:hover { background: #163060; }
+    .btn-sm      { padding: 4px 10px; font-size: 11px; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── ALERTS ── */
+    .alert { display: flex; gap: 10px; padding: 9px 12px 9px 13px; font-size: 12px;
+      line-height: 1.55; border-radius: 0 var(--r) var(--r) 0;
+      border-left-width: 3px; border-left-style: solid; }
+    .alert-icon { flex-shrink: 0; font-style: normal; font-size: 11px; margin-top: 1px; font-weight: 600; }
+    .alert-err  { background: var(--rd-bg); border-left-color: var(--rd); color: #7f1d1d; }
+    .alert-ok   { background: var(--g-bg);  border-left-color: var(--g);  color: #14532d; }
+    .alert-warn { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-info { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-blue { background: var(--bl-bg); border-left-color: var(--bl); color: #1e3a8a; }
+
+    /* ── BADGES ── */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em;
+      font-family: var(--f-mono); border: 1px solid transparent; }
+    .b-active     { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-denied     { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-expired    { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-locked     { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-ro         { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-oidc       { background: var(--bl-bg); color: var(--bl);  border-color: var(--bl-bd); }
+    .b-pending    { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-missing    { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-allowed    { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-401        { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-403        { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-role-op    { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+    .b-role-co    { background: var(--pu-bg); color: var(--pu); border-color: var(--pu-bd); }
+    .b-role-sc    { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+
+    /* ── KV TABLE ── */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--t3); min-width: 160px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+
+    /* ── SUCCESS BLOCK ── */
+    .success-hdr    { display: flex; align-items: center; gap: 12px; padding: 11px 14px;
+      background: var(--g-bg); border: 1px solid var(--g-bd);
+      border-left: 3px solid var(--g); border-radius: 0 var(--r) var(--r) 0; }
+    .success-circle { width: 26px; height: 26px; border-radius: 50%; background: var(--g);
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; flex-shrink: 0; font-weight: 700; }
+    .success-title  { font-size: 13px; font-weight: 600; color: var(--g); }
+    .success-sub    { font-size: 11px; color: #2d6a4f; margin-top: 2px; }
+
+    /* ── PERMISSIONS GRID ── */
+    .perm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .perm-row  { display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 8px; border-radius: var(--r); background: var(--surf2); }
+    .perm-name { font-size: 11.5px; color: var(--t2); }
+    .perm-row.allowed { background: var(--g-bg); }
+    .perm-row.denied  { background: var(--hover); opacity: 0.7; }
+    .perm-row.ro      { background: var(--or-bg); }
+
+    /* ── ROLE TABLE ── */
+    .role-table { display: flex; flex-direction: column; gap: 0; }
+    .role-row   { display: flex; align-items: center; gap: 12px; padding: 8px 10px;
+      border-bottom: 1px solid var(--bdr); }
+    .role-row:last-child { border-bottom: none; }
+    .role-row.active-role { background: var(--pu-bg); }
+    .role-name  { font-family: var(--f-mono); font-size: 11px; color: var(--t1); min-width: 190px; }
+    .role-desc  { font-size: 11px; color: var(--t3); flex: 1; }
+
+    /* ── EVENT LOG ── */
+    .ev-log   { display: flex; flex-direction: column; }
+    .ev-row   { display: grid; grid-template-columns: 80px 1fr 90px 52px; gap: 10px;
+      padding: 5px 0; border-bottom: 1px solid var(--hover); align-items: center; }
+    .ev-row:last-child { border-bottom: none; }
+    .ev-ts    { font-size: 10px; color: var(--t3); font-family: var(--f-mono); }
+    .ev-name  { font-size: 11px; color: var(--t1); font-family: var(--f-mono); }
+    .ev-actor { font-size: 10.5px; color: var(--t2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ev-out   { display: flex; justify-content: flex-end; }
+
+    /* ── REDIRECTING SPINNER ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--bdr);
+      border-top-color: var(--bl); border-radius: 50%;
+      animation: spin 0.8s linear infinite; flex-shrink: 0; }
+
+    /* ── POLICY DRAWER ── */
+    .policy-drawer { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; }
+    .policy-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+
+    /* ── AUDIT RAIL ── */
+    .audit-rail { width: var(--w-au); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .audit-hdr  { padding: 10px 14px; border-bottom: 1px solid var(--bdr);
+      font-size: 9.5px; font-weight: 600; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.1em; }
+    .audit-body { flex: 1; overflow-y: auto; padding: 12px 14px; }
+    .audit-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--t3); margin-bottom: 7px; margin-top: 2px; }
+    .audit-evt  { display: flex; gap: 9px; padding: 5.5px 0; border-bottom: 1px solid var(--hover); }
+    .audit-evt:last-child { border-bottom: none; }
+    .audit-dot  { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .audit-dot.ok   { background: var(--g); }
+    .audit-dot.pend { background: var(--am); }
+    .audit-dot.bad  { background: var(--rd); }
+    .audit-dot.dim  { background: var(--t4); }
+    .audit-dot.bl   { background: var(--bl); }
+    .audit-name { font-size: 11px; font-family: var(--f-mono); color: var(--t1); }
+    .audit-meta { font-size: 10px; color: var(--t3); margin-top: 1px; }
+    .sec-fact { display: flex; gap: 9px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .sec-fact:last-child { border-bottom: none; }
+    .sec-mark { font-size: 10px; color: var(--t3); flex-shrink: 0; margin-top: 2px; font-family: var(--f-mono); }
+    .sec-text { font-size: 11px; color: var(--t2); line-height: 1.45; }
+
+    /* ── UTILITY ── */
+    .col   { display: flex; flex-direction: column; gap: 12px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .hr    { height: 1px; background: var(--bdr); margin: 11px 0; }
+
+    /* OIDC provider chip */
+    .oidc-chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px;
+      border-radius: var(--r); background: var(--bl-bg); border: 1px solid var(--bl-bd);
+      font-size: 11px; color: var(--bl); font-family: var(--f-mono); }
+    .oidc-mark { width: 8px; height: 8px; border-radius: 50%; background: var(--bl); }
+
+    /* denied code */
+    .denied-code { font-size: 36px; font-weight: 600; font-family: var(--f-mono); line-height: 1; }
+    .code-rd  { color: var(--rd); }
+    .code-or  { color: var(--or); }
+    .code-pu  { color: var(--pu); }
+
+    @media (max-width: 1100px) { :root { --w-au: 240px; } }
+    @media (max-width: 900px)  { .audit-rail { display: none; } }
+    @media (max-width: 680px)  { .sidebar { display: none; } .grid2, .perm-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const S = {
+  user:      'Maya Ivanova',
+  email:     'maya.ivanova@minifin.local',
+  role:      'compliance_officer',
+  dept:      'Compliance Operations',
+  org:       'MiniFin Internal',
+  tokenAud:  'backoffice-api',
+  tokenExp:  '2026-05-16T18:30:00Z',
+  sessionId: 'kc_sess_R4mBx9nQy7vTwLpZ',
+  loginAt:   '2026-05-16T14:12:08Z',
+  kcGroup:   '/minifin/compliance',
+  kcRole:    'compliance_officer',
+  realm:     'MiniFin Local',
+  client:    'backoffice-workflow-ui',
+  denied: {
+    user:  'Alex Kim',
+    email: 'alex.kim@minifin.local',
+    error: 'backoffice_role_missing',
+  },
+};
+
+/* ── SVG ICONS ── */
+const IcoQueue = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="1.5" y="2" width="11" height="2" rx="0.5" fill="currentColor" opacity="0.8"/>
+    <rect x="1.5" y="6" width="11" height="2" rx="0.5" fill="currentColor" opacity="0.6"/>
+    <rect x="1.5" y="10" width="7" height="2" rx="0.5" fill="currentColor" opacity="0.4"/>
+  </svg>
+);
+const IcoDeposit = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoWithdraw = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M7 9V2M4 5l3-3 3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoKyc = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2"/>
+    <path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoAml = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+    <line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+    <circle cx="7" cy="10.2" r="0.7" fill="currentColor"/>
+  </svg>
+);
+const IcoSanctions = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2"/>
+    <line x1="3.1" y1="3.1" x2="10.9" y2="10.9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoChargeback = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <path d="M2 5h10M9 2.5L12 5l-3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M12 9H2M5 6.5L2 9l3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+const IcoAudit = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+    <line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+    <line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+    <line x1="4.5" y1="10" x2="7.5" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+  </svg>
+);
+const IcoLock = () => (
+  <svg width="13" height="14" viewBox="0 0 13 14" fill="none">
+    <rect x="1.5" y="5.5" width="10" height="7.5" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+    <path d="M4 5.5V4a2.5 2.5 0 0 1 5 0v1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoLockSm = () => (
+  <svg width="11" height="12" viewBox="0 0 11 12" fill="none">
+    <rect x="1.5" y="5" width="8" height="6.5" rx="0.75" stroke="currentColor" strokeWidth="1.1"/>
+    <path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/>
+  </svg>
+);
+const IcoAuth = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="5" cy="7" r="3" stroke="currentColor" strokeWidth="1.2"/>
+    <path d="M8 7h5M11 5.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg>
+);
+const IcoKeycloak = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <rect width="16" height="16" rx="3" fill="#1a3a6e"/>
+    <path d="M4 8l4-4 4 4-4 4-4-4Z" stroke="#93c5fd" strokeWidth="1.2" strokeLinejoin="round"/>
+    <circle cx="8" cy="8" r="1.5" fill="#93c5fd"/>
+  </svg>
+);
+const LogoMark = () => (
+  <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+    <rect width="26" height="26" rx="4" fill="#1e1e28"/>
+    <rect x="6" y="9" width="14" height="2" rx="1" fill="#ddddf0"/>
+    <rect x="6" y="13.5" width="9" height="2" rx="1" fill="#7070e0"/>
+    <rect x="6" y="18" width="5" height="2" rx="1" fill="#4040a0" opacity="0.8"/>
+  </svg>
+);
+
+/* ── MICRO COMPONENTS ── */
+const Badge = ({ type, label }) => {
+  const map = {
+    ACTIVE:    ['b-active',  'ACTIVE'],
+    DENIED:    ['b-denied',  'DENIED'],
+    EXPIRED:   ['b-expired', 'EXPIRED'],
+    LOCKED:    ['b-locked',  'LOCKED'],
+    RO:        ['b-ro',      'READ-ONLY'],
+    OIDC:      ['b-oidc',    'OIDC'],
+    PENDING:   ['b-pending', 'PENDING'],
+    MISSING:   ['b-missing', 'CLAIM MISSING'],
+    ALLOWED:   ['b-allowed', 'ALLOWED'],
+    '401':     ['b-401',     '401'],
+    '403':     ['b-403',     '403'],
+    OP:        ['b-role-op', 'backoffice_operator'],
+    CO:        ['b-role-co', 'compliance_officer'],
+    SC:        ['b-role-sc', 'senior_compliance'],
+  };
+  const [cls, dflt] = map[type] || ['b-locked', type];
+  return <span className={`badge ${cls}`}>{label || dflt}</span>;
+};
+
+const KV = ({ k, v, mono, badge, badgeLabel }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className={`kv-v${mono ? ' mono' : ''}`}>
+      {v}{badge && <Badge type={badge} label={badgeLabel} />}
+    </div>
+  </div>
+);
+
+const Alrt = ({ type, icon, children }) => (
+  <div className={`alert alert-${type}`}>
+    <em className="alert-icon">{icon}</em>
+    <div>{children}</div>
+  </div>
+);
+
+/* ── POLICY DRAWER ── */
+const PolicyDrawer = ({ onClose }) => (
+  <div className="policy-drawer">
+    <div className="policy-hdr">
+      <span className="panel-title">Access Policy — Backoffice</span>
+      <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+    </div>
+    <div className="panel-body col">
+      <Alrt type="blue" icon="i">
+        Backoffice access is exclusively authenticated via Keycloak OIDC.
+        MiniFin does not collect or store backoffice passwords.
+      </Alrt>
+      <div className="kv-table">
+        <KV k="Auth protocol"       v="OpenID Connect (OIDC) / OAuth 2.0" />
+        <KV k="IdP"                 v="Keycloak" mono />
+        <KV k="Realm"               v={S.realm} mono />
+        <KV k="Client ID"           v={S.client} mono />
+        <KV k="Token type"          v="Bearer (JWT) — not platform cookie session" />
+        <KV k="Token audience"      v={S.tokenAud} mono />
+        <KV k="Role source"         v="Keycloak group + role claim in access token" />
+        <KV k="Session isolation"   v="Backoffice bearer token ≠ end-user or merchant cookie" />
+        <KV k="Role mapping"        v="Server-side RBAC enforced on every request" />
+      </div>
+      <div className="role-table panel" style={{ marginTop: 0 }}>
+        <div className="panel-hdr"><span className="panel-title">Role Definitions</span></div>
+        <div style={{ padding: '4px 0' }}>
+          {[
+            { role: 'backoffice_operator', desc: 'General operations access — deposits, withdrawals, chargebacks', badge: 'OP' },
+            { role: 'compliance_officer',  desc: 'KYC queue, AML alerts, sanctions hits, audit log — read/review access', badge: 'CO' },
+            { role: 'senior_compliance',   desc: 'All compliance_officer permissions + override, escalation, admin actions', badge: 'SC' },
+          ].map((r, i) => (
+            <div key={i} className="role-row">
+              <span className="role-name">{r.role}</span>
+              <span className="role-desc">{r.desc}</span>
+              <Badge type={r.badge} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── READY STATE ── */
+const ReadyPanel = ({ onLogin, showPolicy, setShowPolicy }) => (
+  <div className="col">
+    <div className="panel" style={{ maxWidth: 520 }}>
+      <div className="panel-hdr">
+        <span className="panel-title">Backoffice Sign In</span>
+        <Badge type="OIDC" />
+      </div>
+      <div className="panel-body col">
+        <div className="kv-table">
+          <KV k="OIDC provider"  v="Keycloak" mono />
+          <KV k="Realm"          v={S.realm} mono />
+          <KV k="Client"         v={S.client} mono />
+          <KV k="Environment"    v="Local Sandbox" mono />
+          <KV k="Token audience" v={S.tokenAud} mono />
+        </div>
+        <Alrt type="blue" icon="i">
+          Password entry is handled entirely by <strong>Keycloak</strong> — not by MiniFin UI.
+          Clicking below redirects to the Keycloak login page.
+        </Alrt>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="btn btn-oidc" onClick={onLogin}>
+            <IcoKeycloak />
+            Continue with Keycloak
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowPolicy(p => !p)}>
+            {showPolicy ? 'Hide access policy' : 'View access policy'}
+          </button>
+        </div>
+        <div style={{ fontSize: '11px', color: 'var(--t3)', borderTop: '1px solid var(--bdr)', paddingTop: '10px' }}>
+          Auth surface: backoffice only · Bearer token session · Role mapped from Keycloak group claim
+        </div>
+      </div>
+    </div>
+    {showPolicy && <PolicyDrawer onClose={() => setShowPolicy(false)} />}
+  </div>
+);
+
+/* ── REDIRECTING STATE ── */
+const RedirectingPanel = ({ onAuthenticated }) => (
+  <div className="col">
+    <div className="panel" style={{ maxWidth: 520 }}>
+      <div className="panel-hdr">
+        <span className="panel-title">Redirecting to Keycloak</span>
+        <Badge type="PENDING" />
+      </div>
+      <div className="panel-body col">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '10px 0' }}>
+          <div className="spinner" />
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--t1)' }}>
+              Redirecting to Keycloak authorization endpoint…
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--t3)', marginTop: '3px' }}>
+              realm: {S.realm} · client: {S.client}
+            </div>
+          </div>
+        </div>
+        <div className="kv-table">
+          <KV k="PKCE flow"         v="Authorization Code + PKCE (S256)" mono />
+          <KV k="Redirect URI"      v="http://backoffice.miniefin.local/auth/callback" mono />
+          <KV k="State / nonce"     v="randomly generated, verified on callback" />
+          <KV k="Scopes requested"  v="openid profile email roles" mono />
+        </div>
+        <Alrt type="info" icon="i">
+          Browser will be redirected to Keycloak. MiniFin does not receive the password at any point.
+        </Alrt>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-primary btn-sm" onClick={onAuthenticated}>
+            Simulate callback received ✓
+          </button>
+          <button className="btn btn-ghost btn-sm">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── AUTHENTICATED STATE ── */
+const AuthenticatedPanel = () => {
+  const perms = [
+    { name: 'KYC queue',            level: 'allowed' },
+    { name: 'AML alerts',           level: 'allowed' },
+    { name: 'Sanctions hits',       level: 'allowed' },
+    { name: 'Audit log viewer',     level: 'allowed' },
+    { name: 'Manual deposits',      level: 'ro' },
+    { name: 'Manual withdrawals',   level: 'ro' },
+    { name: 'Merchant API keys',    level: 'denied' },
+    { name: 'Vault detokenize',     level: 'denied' },
+  ];
+
+  const permBadge = { allowed: 'ALLOWED', ro: 'RO', denied: 'DENIED' };
+  const permBadgeType = { allowed: 'ALLOWED', ro: 'RO', denied: 'DENIED' };
+
+  return (
+    <div className="col">
+      <div className="success-hdr">
+        <div className="success-circle">✓</div>
+        <div>
+          <div className="success-title">Authenticated via Keycloak OIDC</div>
+          <div className="success-sub">Bearer token validated · role mapped · backoffice session active</div>
+        </div>
+      </div>
+
+      <div className="grid2">
+        <div className="panel">
+          <div className="panel-hdr"><span className="panel-title">Session Identity</span><Badge type="ACTIVE" /></div>
+          <div className="panel-body">
+            <div className="kv-table">
+              <KV k="name"           v={S.user} />
+              <KV k="email"          v={S.email} mono />
+              <KV k="role"           badge="CO" />
+              <KV k="department"     v={S.dept} />
+              <KV k="org / tenant"   v={S.org} />
+              <KV k="sessionId"      v={S.sessionId} mono />
+              <KV k="session source" v="Keycloak OIDC" />
+              <KV k="token audience" v={S.tokenAud} mono />
+              <KV k="token expiry"   v="2026-05-16T18:30:00Z" mono />
+              <KV k="loginAt"        v={S.loginAt} mono />
+              <KV k="auditEvent"     v="backoffice.login_succeeded" mono />
+            </div>
+          </div>
+        </div>
+
+        <div className="panel">
+          <div className="panel-hdr">
+            <span className="panel-title">OIDC → RBAC Mapping</span>
+            <Badge type="OIDC" />
+          </div>
+          <div className="panel-body">
+            <div className="kv-table" style={{ marginBottom: 14 }}>
+              <KV k="Keycloak group"  v={S.kcGroup} mono />
+              <KV k="Keycloak role"   v={S.kcRole} mono />
+              <KV k="Platform role"   badge="CO" />
+              <KV k="Auth source"     v="OIDC access token claim" />
+              <KV k="Session type"    v="bearer token — not platform cookie" />
+              <KV k="Token validated" v="server-side only" />
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--t3)', textTransform: 'uppercase',
+              letterSpacing: '0.09em', marginBottom: '7px' }}>All backoffice roles</div>
+            <div className="role-table">
+              {[
+                { type: 'OP', desc: 'Operator — ops access' },
+                { type: 'CO', desc: 'Compliance — KYC/AML/Sanctions/Audit', active: true },
+                { type: 'SC', desc: 'Senior — all + admin override' },
+              ].map((r, i) => (
+                <div key={i} className={`role-row${r.active ? ' active-role' : ''}`}>
+                  <Badge type={r.type} />
+                  <span className="role-desc" style={{ marginLeft: 8 }}>{r.desc}</span>
+                  {r.active && <span style={{ fontSize: '10px', color: 'var(--pu)', marginLeft: 'auto' }}>active</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Permission Map — compliance_officer</span>
+          <span style={{ fontSize: '11px', color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>6 allowed · 2 denied</span>
+        </div>
+        <div className="panel-body">
+          <div className="perm-grid">
+            {perms.map((p, i) => (
+              <div key={i} className={`perm-row ${p.level}`}>
+                <span className="perm-name">{p.name}</span>
+                <Badge type={p.level === 'allowed' ? 'ALLOWED' : p.level === 'ro' ? 'RO' : 'DENIED'}
+                  label={p.level === 'allowed' ? 'allowed' : p.level === 'ro' ? 'read-only' : 'denied'} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-hdr"><span className="panel-title">OIDC Callback — Token Details</span></div>
+        <div className="panel-body">
+          <div className="grid2">
+            <div className="kv-table">
+              <KV k="iss"         v={`http://keycloak.miniefin.local/realms/${S.realm}`} mono />
+              <KV k="sub"         v="kc_sub_Mv4xQr8nPk2sLtW" mono />
+              <KV k="aud"         v={S.tokenAud} mono />
+              <KV k="azp"         v={S.client} mono />
+            </div>
+            <div className="kv-table">
+              <KV k="email_verified" v="true" mono />
+              <KV k="realm_access"   v={`{ roles: ["${S.kcRole}"] }`} mono />
+              <KV k="groups"         v={`["${S.kcGroup}"]`} mono />
+              <KV k="exp"            v="2026-05-16T18:30:00Z" mono />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── DENIED STATE ── */
+const DeniedPanel = () => (
+  <div className="col">
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Access Denied — Role Missing</span>
+        <Badge type="403" />
+      </div>
+      <div className="panel-body">
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px',
+          marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid var(--bdr)' }}>
+          <div className="denied-code code-rd">403</div>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t1)', marginBottom: 4, letterSpacing: '-0.01em' }}>
+              Keycloak OIDC login succeeded — platform RBAC denied
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--t2)' }}>
+              User authenticated with Keycloak, but no backoffice role is assigned in the token.
+            </div>
+          </div>
+        </div>
+        <div className="kv-table">
+          <KV k="user"             v={S.denied.user} />
+          <KV k="email"            v={S.denied.email} mono />
+          <KV k="OIDC auth"        v="succeeded" />
+          <KV k="realm_access"     v='{ roles: [] }' mono />
+          <KV k="groups"           v="[ ] — no /minifin group membership" mono />
+          <KV k="error.code"       v={S.denied.error} mono />
+          <KV k="error.message"    v="No valid backoffice role claim found in access token" />
+          <KV k="platform RBAC"    badge="DENIED" />
+          <KV k="auditEvent"       v="backoffice.access_denied" mono />
+        </div>
+      </div>
+    </div>
+    <Alrt type="err" icon="×">
+      <strong>OIDC authentication is not the same as platform authorization.</strong> Keycloak confirmed Alex Kim's
+      identity, but the access token contains no backoffice role claim. Platform RBAC denies access.
+    </Alrt>
+    <Alrt type="warn" icon="!">
+      <strong>Suggested action:</strong> Contact a senior compliance admin to add the correct Keycloak group membership
+      (<code>/minifin/compliance</code> or <code>/minifin/ops</code>).
+    </Alrt>
+    <div className="panel">
+      <div className="panel-hdr"><span className="panel-title">Isolation Note</span></div>
+      <div className="panel-body">
+        <div className="kv-table">
+          <KV k="end-user cookie session"   v="cannot access backoffice endpoints" />
+          <KV k="merchant cookie session"   v="cannot access backoffice endpoints" />
+          <KV k="required"                  v="backoffice bearer token with valid role claim" />
+          <KV k="enforced"                  v="server-side on every backoffice API request" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── EXPIRED STATE ── */
+const ExpiredPanel = ({ onLogin }) => (
+  <div className="col">
+    <div className="panel" style={{ maxWidth: 520 }}>
+      <div className="panel-hdr">
+        <span className="panel-title">Session Expired</span>
+        <Badge type="EXPIRED" />
+      </div>
+      <div className="panel-body col">
+        <Alrt type="warn" icon="!">
+          Your Keycloak session token has expired. Re-authentication via Keycloak is required.
+          There is no local password form — MiniFin does not store backoffice credentials.
+        </Alrt>
+        <div className="kv-table">
+          <KV k="previous user"   v={S.user} />
+          <KV k="previous role"   badge="CO" />
+          <KV k="token expired"   v="2026-05-16T18:30:00Z" mono />
+          <KV k="detected at"     v="2026-05-16T18:32:14Z" mono />
+          <KV k="session action"  v="invalidated server-side" />
+          <KV k="auditEvent"      v="backoffice.session_expired" mono />
+        </div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button className="btn btn-oidc" onClick={onLogin}>
+            <IcoKeycloak />
+            Continue with Keycloak
+          </button>
+        </div>
+        <div style={{ fontSize: '11px', color: 'var(--t3)', borderTop: '1px solid var(--bdr)', paddingTop: '10px' }}>
+          Keycloak may issue a new token silently via refresh token if the SSO session is still valid.
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── MISSING ROLE STATE ── */
+const MissingRolePanel = () => (
+  <div className="col">
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Role Claim Missing</span>
+        <Badge type="MISSING" />
+      </div>
+      <div className="panel-body col">
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px',
+          paddingBottom: 14, borderBottom: '1px solid var(--bdr)' }}>
+          <div className="denied-code code-pu">—</div>
+          <div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--t1)', marginBottom: 4, letterSpacing: '-0.01em' }}>
+              Token valid — no mappable role claim
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--t2)' }}>
+              OIDC callback received. JWT signature and expiry verified. Role/group claim absent or unrecognized.
+            </div>
+          </div>
+        </div>
+        <div className="kv-table" style={{ marginTop: 14 }}>
+          <KV k="JWT signature"    v="valid" />
+          <KV k="Token expiry"     v="valid — not expired" />
+          <KV k="realm_access"     v="present but empty or unrecognized role" mono />
+          <KV k="groups"           v="absent from token" mono />
+          <KV k="RBAC mapping"     badge="MISSING" />
+          <KV k="platform access"  badge="DENIED" />
+          <KV k="error.code"       v="backoffice_role_missing" mono />
+          <KV k="auditEvent"       v="backoffice.role_mapping_failed" mono />
+        </div>
+      </div>
+    </div>
+    <Alrt type="err" icon="×">
+      Token is cryptographically valid, but the platform cannot map any claim to a recognized backoffice role.
+      Access is denied. This event is recorded in the audit log.
+    </Alrt>
+    <Alrt type="info" icon="i">
+      <strong>Expected claims:</strong> <code>realm_access.roles</code> must contain
+      <code> backoffice_operator</code>, <code>compliance_officer</code>, or <code>senior_compliance</code>.
+      Group claim <code>/minifin/…</code> is also accepted. Contact the Keycloak admin to fix role assignment.
+    </Alrt>
+  </div>
+);
+
+/* ── EVENT LOG ── */
+const EvLog = ({ mode }) => {
+  const logs = {
+    ready: [
+      { ts: '—', name: 'oidc.login_started', actor: '—', out: 'pending' },
+    ],
+    redirecting: [
+      { ts: '14:11:52', name: 'oidc.login_started',    actor: 'browser → kc',    out: 'ok' },
+      { ts: '14:11:53', name: 'oidc.redirect_sent',    actor: 'backoffice-ui',   out: 'ok' },
+    ],
+    authenticated: [
+      { ts: '14:11:52', name: 'oidc.login_started',      actor: 'browser',         out: 'ok' },
+      { ts: '14:12:05', name: 'oidc.callback_received',  actor: 'kc → backoffice', out: 'ok' },
+      { ts: '14:12:06', name: 'backoffice.role_mapped',  actor: 'compliance_officer', out: 'ok' },
+      { ts: '14:12:08', name: 'backoffice.login_succeeded', actor: S.email,        out: 'ok' },
+    ],
+    denied: [
+      { ts: '14:15:30', name: 'oidc.login_started',      actor: S.denied.email,   out: 'ok' },
+      { ts: '14:15:38', name: 'oidc.callback_received',  actor: 'kc → backoffice',out: 'ok' },
+      { ts: '14:15:38', name: 'backoffice.access_denied',actor: S.denied.email,   out: 'bad' },
+    ],
+    expired: [
+      { ts: '14:12:08', name: 'backoffice.login_succeeded', actor: S.email,       out: 'ok' },
+      { ts: '18:32:14', name: 'backoffice.session_expired', actor: S.email,       out: 'bad' },
+      { ts: '18:32:14', name: 'oidc.reauth_required',       actor: 'server',      out: 'pend' },
+    ],
+    missing: [
+      { ts: '14:20:11', name: 'oidc.callback_received',       actor: 'kc → backoffice', out: 'ok' },
+      { ts: '14:20:11', name: 'backoffice.role_mapping_failed', actor: 'rbac',           out: 'bad' },
+      { ts: '14:20:11', name: 'backoffice.access_denied',      actor: 'rbac',            out: 'bad' },
+    ],
+  };
+  const rows = logs[mode] || logs.ready;
+  const dotCls = { ok: 'ok', bad: 'bad', pend: 'pend', pending: 'pend' };
+
+  return (
+    <div style={{ marginTop: 2 }}>
+      <div className="audit-sec">Event log</div>
+      <div className="ev-log">
+        <div className="ev-row" style={{ color: 'var(--t3)', fontSize: '9.5px', fontWeight: 600,
+          textTransform: 'uppercase', letterSpacing: '0.07em', paddingBottom: 3 }}>
+          <span>Time</span><span>Event</span><span>Actor</span><span style={{ textAlign: 'right' }}>Out</span>
+        </div>
+        {rows.map((r, i) => (
+          <div key={i} className="ev-row">
+            <span className="ev-ts">{r.ts}</span>
+            <span className="ev-name">{r.name}</span>
+            <span className="ev-actor">{r.actor}</span>
+            <span className="ev-out"><div className={`audit-dot ${dotCls[r.out] || 'dim'}`} style={{ margin: 0 }} /></span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ── AUDIT RAIL ── */
+const SECURITY_FACTS = [
+  { mark: '—', text: 'No backoffice password is collected by MiniFin UI.' },
+  { mark: '—', text: 'OIDC token validated server-side on every API request.' },
+  { mark: '—', text: 'Backoffice endpoints require bearer token — not platform cookie.' },
+  { mark: '—', text: 'End-user and merchant cookie sessions cannot access backoffice APIs.' },
+  { mark: '—', text: 'Role mapping enforced server-side from Keycloak group/role claim.' },
+  { mark: '—', text: 'Login success, denied access, and session expiry are audited.' },
+  { mark: '—', text: 'PKCE prevents authorization code interception attacks.' },
+];
+
+const AuditRail = ({ mode }) => (
+  <aside className="audit-rail">
+    <div className="audit-hdr">Audit &amp; Security</div>
+    <div className="audit-body">
+      <EvLog mode={mode} />
+      <div className="hr" />
+      <div className="audit-sec">Security invariants</div>
+      {SECURITY_FACTS.map((f, i) => (
+        <div key={i} className="sec-fact">
+          <span className="sec-mark">{f.mark}</span>
+          <span className="sec-text">{f.text}</span>
+        </div>
+      ))}
+    </div>
+  </aside>
+);
+
+/* ── SIDEBAR ── */
+const NAV_LOCKED = [
+  { ico: <IcoQueue />,     label: 'Work Queue' },
+  { ico: <IcoDeposit />,  label: 'Manual Deposits' },
+  { ico: <IcoWithdraw />, label: 'Manual Withdrawals' },
+  { ico: <IcoKyc />,      label: 'KYC Cases' },
+  { ico: <IcoAml />,      label: 'AML Alerts' },
+  { ico: <IcoSanctions />,label: 'Sanctions Hits' },
+  { ico: <IcoChargeback />,label: 'Chargebacks' },
+  { ico: <IcoAudit />,    label: 'Audit Log' },
+];
+
+const NAV_AUTH = [
+  { ico: <IcoQueue />,     label: 'Work Queue',        state: 'active-nav' },
+  { ico: <IcoDeposit />,  label: 'Manual Deposits',   state: 'limited', tag: 'ro' },
+  { ico: <IcoWithdraw />, label: 'Manual Withdrawals',state: 'limited', tag: 'ro' },
+  { ico: <IcoKyc />,      label: 'KYC Cases',          state: 'active-nav' },
+  { ico: <IcoAml />,      label: 'AML Alerts',         state: 'active-nav' },
+  { ico: <IcoSanctions />,label: 'Sanctions Hits',     state: 'active-nav' },
+  { ico: <IcoChargeback />,label: 'Chargebacks',       state: 'locked', tag: 'lock' },
+  { ico: <IcoAudit />,    label: 'Audit Log',          state: 'active-nav' },
+];
+
+const Sidebar = ({ mode }) => {
+  const isAuth = mode === 'authenticated';
+  const navItems = isAuth ? NAV_AUTH : NAV_LOCKED;
+
+  return (
+    <aside className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-mark">
+          <LogoMark />
+          <div className="sb-name">MiniFin</div>
+        </div>
+        <div className="sb-sub">Backoffice</div>
+      </div>
+      <nav className="sb-nav">
+        <div className="nav-sec">Workflow</div>
+        {navItems.map((item, i) => {
+          const cls = item.state === 'active-nav' ? 'active-nav'
+                    : item.state === 'limited'    ? 'limited'
+                    : 'locked';
+          return (
+            <div key={i} className={`nav-item ${cls}`}
+              title={!isAuth ? 'Locked — authenticate first' : item.state === 'locked' ? 'senior_compliance required' : ''}>
+              <span style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{item.ico}</span>
+              <span>{item.label}</span>
+              {item.tag === 'ro'   && <span className="nav-badge-ro">RO</span>}
+              {item.tag === 'lock' && <span className="nav-lock"><IcoLockSm /></span>}
+              {!isAuth             && <span className="nav-lock"><IcoLockSm /></span>}
+            </div>
+          );
+        })}
+        <div className="sb-div" />
+        <div className="nav-item current">
+          <span style={{ width: 14, height: 14, display: 'flex', alignItems: 'center', flexShrink: 0 }}><IcoAuth /></span>
+          <span>Authentication</span>
+          <span className="nav-id">BOF-UI-01</span>
+        </div>
+      </nav>
+      <div className="sb-footer">
+        <div className="env-chip">
+          <div className="env-dot" />
+          <span>Local Sandbox</span>
+        </div>
+        <div className="env-host">backoffice.miniefin.local</div>
+      </div>
+    </aside>
+  );
+};
+
+/* ── APP ── */
+const MODES = [
+  { id: 'ready',         label: 'Ready to login' },
+  { id: 'redirecting',   label: 'Redirecting' },
+  { id: 'authenticated', label: 'Authenticated' },
+  { id: 'denied',        label: 'Access denied',     err: true },
+  { id: 'expired',       label: 'Session expired',   err: true },
+  { id: 'missing',       label: 'Missing role claim', err: true },
+];
+
+const MODE_LABELS = {
+  ready:         'Ready to Login',
+  redirecting:   'Redirecting to Keycloak',
+  authenticated: 'Authenticated',
+  denied:        'Access Denied',
+  expired:       'Session Expired',
+  missing:       'Missing Role Claim',
+};
+
+function App() {
+  const [mode, setMode] = useState('ready');
+  const [showPolicy, setShowPolicy] = useState(false);
+
+  const goRedirect = () => setMode('redirecting');
+  const goAuth     = () => setMode('authenticated');
+
+  const renderPanel = () => {
+    switch (mode) {
+      case 'ready':         return <ReadyPanel onLogin={goRedirect} showPolicy={showPolicy} setShowPolicy={setShowPolicy} />;
+      case 'redirecting':   return <RedirectingPanel onAuthenticated={goAuth} />;
+      case 'authenticated': return <AuthenticatedPanel />;
+      case 'denied':        return <DeniedPanel />;
+      case 'expired':       return <ExpiredPanel onLogin={goRedirect} />;
+      case 'missing':       return <MissingRolePanel />;
+      default:              return null;
+    }
+  };
+
+  return (
+    <>
+      <Sidebar mode={mode} />
+      <div className="main-wrap">
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>Backoffice</span>
+            <span className="sep">/</span>
+            <strong>Authentication</strong>
+            <span className="sep">·</span>
+            <span className="mode">{MODE_LABELS[mode]}</span>
+          </div>
+          <div className="page-meta">
+            <span className="screen-id">BOF-UI-01</span>
+            <span className="env-badge">
+              <span className="env-badge-dot" />
+              Local Sandbox
+            </span>
+          </div>
+        </div>
+
+        <div className="main-body">
+          <div className="mode-tabs">
+            {MODES.map(m => (
+              <div key={m.id}
+                className={`mode-tab${m.err ? ' err-tab' : ''}${mode === m.id ? ' active' : ''}`}
+                onClick={() => { setMode(m.id); setShowPolicy(false); }}>
+                {m.label}
+              </div>
+            ))}
+          </div>
+          {renderPanel()}
+        </div>
+      </div>
+      <AuditRail mode={mode} />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

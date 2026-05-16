@@ -35,7 +35,7 @@ Completed workstream — Phase 01 Slice 01:
 
 ## Next
 
-**Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`.**
+**Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`.**
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
@@ -218,6 +218,7 @@ Current Phase 02 Slice 02 draft:
   - `prototypes/ui/01_app_shell_cross_surface.html`
   - `prototypes/ui/02_merchant_auth.html`
   - `prototypes/ui/03_enduser_auth.html`
+  - `prototypes/ui/04_backoffice_oidc_login.html`
 - Phase 02 Slice 02 backend/runtime sub-scope is implemented and verified:
   - Platform migration `V3__merchant_identity_foundation.sql`.
   - Merchant register/email verify/login/logout/me.
