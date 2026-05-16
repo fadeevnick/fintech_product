@@ -19,6 +19,7 @@ Implemented runtime behavior so far:
 - Phase 03 Slice 02 wallet account + manual deposit backend/runtime sub-scope in `platform`: `wallet.wallet_accounts`, `wallet.deposit_requests` (under EUR 10k), end-user `POST /api/v1/deposits` and `GET /api/v1/wallet`, backoffice `GET/POST /api/v1/backoffice/manual-ops/deposits[/{id}/decision]`, balanced approve through `ledger.post_journal(...)`, actor-control wallet-write block (`FROZEN` ∪ `BLOCKED`).
 - Phase 03 Slice 03 wallet manual withdraw backend/runtime sub-scope in `platform`: `wallet.withdraw_requests` (under EUR 10k), end-user `POST /api/v1/withdrawals`, backoffice `GET/POST /api/v1/backoffice/manual-ops/withdrawals[/{id}/decision]`, ledger hold/final-debit/release postings, insufficient-funds guard and actor-control wallet-write block.
 - Phase 03 Slice 04 wallet internal transfer backend/runtime sub-scope in `platform`: `wallet.internal_transfers` (under EUR 10k), end-user `POST /api/v1/transfers`, sender debit / receiver credit through `ledger.post_journal(...)`, sufficient-funds guard, `Idempotency-Key` duplicate protection and actor-control wallet-write block for sender and receiver.
+- Phase 04 Slice 02 Stripe webhook backend/runtime sub-scope in `platform`: `merchant.stripe_account_links`, `merchant.stripe_webhook_events`, `POST /webhooks/stripe/v1`, real Stripe-format HMAC-SHA256 signature verification, timestamp tolerance, duplicate Stripe event id idempotency, `account.updated` KYB state mapping and audit rows. Stripe Connect onboarding-start remains blocked on real sandbox credentials; no fake Stripe API path exists.
 
 ## Local Commands
 
@@ -85,3 +86,14 @@ scripts/runtime/reg_phase03_wallet_transfer_insufficient_funds.sh
 scripts/runtime/reg_phase03_wallet_transfer_actor_control_block.sh
 scripts/runtime/reg_phase03_wallet_transfer_idempotency.sh
 ```
+
+## Stripe Webhook Local Runtime
+
+Phase 04 Slice 02 implements the inbound Stripe webhook receiver only. For local runtime the default signing secret is:
+
+```bash
+STRIPE_WEBHOOK_SIGNING_SECRET=whsec_local_test_secret
+STRIPE_WEBHOOK_TOLERANCE_SECONDS=300
+```
+
+Retained scripts under `product/scripts/runtime/reg_phase04_stripe_webhook_*.sh` sign local Stripe-format payloads with this secret and verify valid signature, invalid signature rejection, timestamp tolerance and duplicate event id idempotency. Real Stripe Connect onboarding start (`MRC-01`) is blocked until sandbox credentials are provided.

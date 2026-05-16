@@ -18,6 +18,13 @@ minifin:
       jwk-set-uri: ${BACKOFFICE_OIDC_JWK_SET_URI:http://localhost:18080/realms/minifin-backoffice/protocol/openid-connect/certs}
       client-id: ${BACKOFFICE_OIDC_CLIENT_ID:minifin-backoffice-local}
       issuer-display: ${BACKOFFICE_OIDC_ISSUER_DISPLAY:http://localhost:18080/realms/minifin-backoffice}
+  merchant:
+    stripe:
+      # Local-test placeholder. Phase 04 Slice 02 implements only the webhook receiver.
+      # The onboarding-start path is recorded as a blocker pending real Stripe sandbox credentials.
+      # In production this must be set to the per-environment Stripe webhook signing secret.
+      webhook-signing-secret: ${STRIPE_WEBHOOK_SIGNING_SECRET:whsec_local_test_secret}
+      webhook-tolerance-seconds: ${STRIPE_WEBHOOK_TOLERANCE_SECONDS:300}
 server:
   port: ${PLATFORM_HTTP_PORT:8081}
 management:

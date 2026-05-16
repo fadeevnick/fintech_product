@@ -434,3 +434,57 @@ Result tag notes:
 
 Next planned step:
 - Review the parallel high-value controls planning branch, then decide whether to continue Phase 03 placeholders or move to the next approved implementation slice.
+
+---
+
+## Phase 04 Slice 02 — Stripe Connect Webhooks
+
+Status: **WEBHOOK BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — onboarding-start blocked on Stripe sandbox credentials**.
+
+Planning contract:
+- `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocker recorded.
+
+Implemented backend/runtime scope:
+- Platform DB migration `V10__merchant_stripe_webhooks.sql` for:
+  - `merchant.stripe_account_links`;
+  - `merchant.stripe_webhook_events` with unique Stripe event id.
+- Local env/config wiring for `STRIPE_WEBHOOK_SIGNING_SECRET` and `STRIPE_WEBHOOK_TOLERANCE_SECONDS`.
+- Public vendor endpoint `POST /webhooks/stripe/v1`.
+- Stripe-format HMAC-SHA256 signature verification over exact raw body bytes using `Stripe-Signature: t=<unix_ts>,v1=<signature>`.
+- Timestamp tolerance enforcement.
+- Idempotent duplicate handling by Stripe event id: duplicate delivery returns outcome `DUPLICATE`, does not rerun state changes.
+- `account.updated` handling for known `merchant.stripe_account_links.stripe_account_id`:
+  - `charges_enabled=true && payouts_enabled=true` ⇒ merchant `kyb_status = VERIFIED`;
+  - `details_submitted=true` ⇒ merchant `kyb_status = PENDING` unless already verified path applies.
+- Audit rows for valid `account.updated`, invalid signature, old timestamp and duplicate event delivery.
+- Retained runtime scripts:
+  - `product/scripts/runtime/lib_phase04_stripe_webhook.sh`
+  - `product/scripts/runtime/reg_phase04_stripe_webhook_signature_valid.sh`
+  - `product/scripts/runtime/reg_phase04_stripe_webhook_signature_invalid.sh`
+  - `product/scripts/runtime/reg_phase04_stripe_webhook_timestamp_tolerance.sh`
+  - `product/scripts/runtime/reg_phase04_stripe_webhook_idempotency.sh`
+  - `product/scripts/runtime/reg_phase04_stripe_webhook_bad_then_valid_retry.sh`
+
+Explicitly not started / blocked:
+- `MRC-01` Stripe Connect onboarding start is blocked because real Stripe sandbox credentials are unavailable; no fake `Account.create` or `AccountLink.create` path exists.
+- Merchant API key lifecycle (`MRC-03`).
+- Public API response/idempotency checks (`PAY-01`, `PAY-02`, `PAY-03`).
+- Payment intent authorization/capture/settlement.
+- Frontend implementation.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-16 — Phase 04 Slice 02 Stripe Webhook Runtime Verification`.
+- `MRC-02` — pass for valid signature, invalid signature rejection without idempotency poisoning, timestamp tolerance rejection and duplicate event id idempotency.
+- `AUD-01` — pass extension for webhook-driven KYB update and webhook failure/duplicate audit rows.
+- `LDG-05` / `LDG-99` — ledger reconciliation regression still passes.
+
+Result tag notes:
+- `MRC-01` remains blocked and unclaimed until Stripe Connect sandbox credentials are available.
+- This slice seeds `merchant.stripe_account_links` only inside runtime scripts to represent the account-link row that a future real onboarding-start implementation would create. No Stripe API behavior is faked.
+
+Next planned step:
+- Provide Stripe Connect sandbox credentials to implement `MRC-01`, or continue the separate merchant API key / public API idempotency workstream.
+
+Follow-up hardening after review:
+- Rejected webhook deliveries no longer insert into `merchant.stripe_webhook_events`, so invalid signature/timestamp attempts cannot poison later valid retries for the same Stripe event id.
+- Added retained regression script `product/scripts/runtime/reg_phase04_stripe_webhook_bad_then_valid_retry.sh`.
