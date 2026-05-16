@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniFin — Sanctions Hits — BOF-UI-07</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #eceae5; --surface: #ffffff; --surf2: #f7f6f3; --hover: #f0efe9;
+      --sb: #0e0e12; --sb-bdr: #1e1e22; --sb-muted: #545460; --sb-active: #1e1e28;
+      --bdr: #dddad2; --bdr-mid: #c5c2ba; --bdr-focus: #1c1c1f;
+      --t1: #1c1c1f; --t2: #575763; --t3: #9898a6; --t4: #d0d0da;
+      --g: #166534; --g-bg: #f0fdf4; --g-bd: #bbf7d0;
+      --am: #854d0e; --am-bg: #fffbeb; --am-bd: #fde68a;
+      --rd: #9b1c1c; --rd-bg: #fef2f2; --rd-bd: #fecaca;
+      --pu: #5b21b6; --pu-bg: #f5f3ff; --pu-bd: #ddd6fe;
+      --bl: #1e40af; --bl-bg: #eff6ff; --bl-bd: #bfdbfe;
+      --or: #9a3412; --or-bg: #fff7ed; --or-bd: #fed7aa;
+      --frz: #86198f; --frz-bg: #fdf2f8; --frz-bd: #f0abfc;
+      --f-ui: 'IBM Plex Sans', sans-serif; --f-mono: 'IBM Plex Mono', monospace;
+      --w-sb: 210px; --w-au: 258px; --r: 4px;
+    }
+    html, body, #root { height: 100%; font-family: var(--f-ui); font-size: 13px; background: var(--bg); color: var(--t1); }
+    .app-shell { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb); border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 14px 16px 10px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-product { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+    .sb-surface { font-size: 10px; font-weight: 500; color: var(--sb-muted); text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+    .sb-env { margin: 8px 14px; padding: 3px 8px; background: #1e3a5f; border: 1px solid #2d4f7a; border-radius: var(--r); font-size: 9px; font-weight: 600; color: #7cb9f4; text-transform: uppercase; letter-spacing: .6px; text-align: center; }
+    .sb-sec { font-size: 9px; font-weight: 600; color: var(--sb-muted); text-transform: uppercase; letter-spacing: .6px; padding: 10px 16px 4px; }
+    .sb-nav { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .sb-item { display: flex; align-items: center; gap: 8px; padding: 7px 16px; color: #9898a6; font-size: 12.5px; cursor: pointer; transition: background .12s, color .12s; position: relative; }
+    .sb-item:hover { background: rgba(255,255,255,.04); color: #ccc; }
+    .sb-item.active { background: var(--sb-active); color: #fff; }
+    .sb-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #7cb9f4; }
+    .sb-icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+    .sb-bdg { margin-left: auto; font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 10px; }
+    .sb-bdg.ro { background: #2d3748; color: #90cdf4; }
+    .sb-bdg.sr { background: #2d1a4a; color: #c4b5fd; }
+    .sb-bdg.cnt { background: #1a2e1a; color: #86efac; }
+    .sb-bdg.alrt { background: #4a1a1a; color: #f87171; }
+    .sb-user { padding: 10px 16px; border-top: 1px solid var(--sb-bdr); }
+    .sb-user-name { font-size: 12px; font-weight: 500; color: #e2e8f0; }
+    .sb-user-role { font-size: 10px; color: var(--sb-muted); margin-top: 1px; }
+    .sb-user-session { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+    .sess-dot { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+    .sess-txt { font-size: 9px; color: #3d6b3d; font-family: var(--f-mono); }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 0 20px; height: 44px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .topbar-screen { font-size: 10px; font-weight: 600; color: var(--t3); font-family: var(--f-mono); }
+    .topbar-host { font-size: 11px; color: var(--t2); font-family: var(--f-mono); }
+    .topbar-sep { color: var(--t4); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+    /* ── Badges ── */
+    .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; border: 1px solid; white-space: nowrap; }
+    .badge.green  { color: var(--g);   background: var(--g-bg);   border-color: var(--g-bd); }
+    .badge.amber  { color: var(--am);  background: var(--am-bg);  border-color: var(--am-bd); }
+    .badge.red    { color: var(--rd);  background: var(--rd-bg);  border-color: var(--rd-bd); }
+    .badge.purple { color: var(--pu);  background: var(--pu-bg);  border-color: var(--pu-bd); }
+    .badge.blue   { color: var(--bl);  background: var(--bl-bg);  border-color: var(--bl-bd); }
+    .badge.orange { color: var(--or);  background: var(--or-bg);  border-color: var(--or-bd); }
+    .badge.neutral{ color: var(--t2);  background: var(--surf2);  border-color: var(--bdr); }
+
+    /* ── Page header ── */
+    .page-hdr { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 14px 20px 0; flex-shrink: 0; }
+    .page-title-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+    .page-title { font-size: 17px; font-weight: 700; color: var(--t1); letter-spacing: -.3px; }
+    .page-sub { font-size: 12px; color: var(--t3); }
+    .stats-strip { display: flex; border-top: 1px solid var(--bdr); margin: 0 -20px; }
+    .stat-cell { padding: 8px 14px; border-right: 1px solid var(--bdr); display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
+    .stat-cell:last-child { border-right: none; }
+    .stat-val { font-size: 18px; font-weight: 700; font-family: var(--f-mono); }
+    .stat-val.rd { color: var(--rd); }
+    .stat-val.am { color: var(--am); }
+    .stat-val.bl { color: var(--bl); }
+    .stat-val.pu { color: var(--frz); }
+    .stat-val.or { color: var(--or); }
+    .stat-lbl { font-size: 10px; color: var(--t3); font-weight: 500; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+
+    /* ── Action bar ── */
+    .action-bar { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 8px 20px; display: flex; align-items: center; gap: 5px; flex-shrink: 0; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: var(--r); font-size: 12px; font-weight: 500; font-family: var(--f-ui); border: 1px solid; cursor: pointer; transition: all .12s; white-space: nowrap; }
+    .btn-primary { background: var(--t1); color: #fff; border-color: var(--t1); }
+    .btn-primary:hover { background: #2d2d31; }
+    .btn-default { background: var(--surface); color: var(--t1); border-color: var(--bdr-mid); }
+    .btn-default:hover { background: var(--hover); }
+    .btn-danger { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-warn { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .btn-warn:hover { background: #fef3c7; }
+    .btn-purple { background: var(--pu-bg); color: var(--pu); border-color: var(--pu-bd); }
+    .btn-purple:hover { background: #ede9fe; }
+    .btn-disabled { background: var(--surf2) !important; color: var(--t4) !important; border-color: var(--bdr) !important; cursor: not-allowed !important; }
+    .btn-sep { width: 1px; height: 20px; background: var(--bdr); margin: 0 2px; flex-shrink: 0; }
+
+    /* ── Filter bar ── */
+    .filter-bar { background: var(--surf2); border-bottom: 1px solid var(--bdr); padding: 7px 20px; display: flex; align-items: center; gap: 7px; flex-shrink: 0; flex-wrap: wrap; }
+    .filter-lbl { font-size: 11px; color: var(--t3); font-weight: 500; flex-shrink: 0; }
+    .filter-select { font-size: 11.5px; font-family: var(--f-ui); padding: 3px 7px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); cursor: pointer; }
+    .filter-search { max-width: 200px; font-size: 11.5px; font-family: var(--f-ui); padding: 3px 8px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); }
+    .filter-chip { display: inline-flex; align-items: center; padding: 3px 9px; border: 1px solid var(--bdr-mid); border-radius: 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--t2); cursor: pointer; transition: all .12s; }
+    .filter-chip.active { background: var(--t1); color: #fff; border-color: var(--t1); }
+    .filter-count { margin-left: auto; font-size: 10px; color: var(--t3); font-family: var(--f-mono); }
+
+    /* ── State flow strip ── */
+    .state-strip { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 7px 20px; flex-shrink: 0; }
+    .state-strip-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .state-strip-title { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; }
+    .sf-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .sf-row-lbl { font-size: 9px; font-weight: 600; color: var(--t4); text-transform: uppercase; letter-spacing: .5px; min-width: 40px; flex-shrink: 0; }
+    .sf-flow { display: flex; align-items: center; overflow-x: auto; gap: 0; }
+    .sf-node { display: flex; align-items: center; flex-shrink: 0; }
+    .sf-s { padding: 2px 7px; border-radius: 10px; font-size: 9px; font-weight: 600; font-family: var(--f-mono); background: var(--surf2); color: var(--t3); border: 1px solid var(--bdr); white-space: nowrap; }
+    .sf-s.cur  { background: var(--bl-bg);  color: var(--bl);  border-color: var(--bl-bd); }
+    .sf-s.good { background: var(--g-bg);   color: var(--g);   border-color: var(--g-bd); }
+    .sf-s.bad  { background: var(--rd-bg);  color: var(--rd);  border-color: var(--rd-bd); }
+    .sf-s.side { background: var(--am-bg);  color: var(--am);  border-color: var(--am-bd); }
+    .sf-s.esc  { background: var(--pu-bg);  color: var(--pu);  border-color: var(--pu-bd); }
+    .sf-arr { color: var(--t4); font-size: 11px; padding: 0 3px; }
+
+    /* ── Content area ── */
+    .content-area { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+    .table-area { flex: 0 0 56%; overflow-y: auto; border-right: 1px solid var(--bdr); }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead th { background: var(--surf2); padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--bdr); white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+    thead th:first-child { padding-left: 12px; }
+    tbody tr { border-bottom: 1px solid var(--bdr); cursor: pointer; transition: background .1s; }
+    tbody tr:hover { background: var(--hover); }
+    tbody tr.sel { background: #eef3ff; }
+    tbody td { padding: 7px 8px; vertical-align: middle; }
+    tbody td:first-child { padding-left: 12px; }
+    .mono { font-family: var(--f-mono); }
+
+    /* match score / confidence */
+    .score-val { font-family: var(--f-mono); font-size: 12px; font-weight: 700; }
+    .sc-crit { color: var(--rd); }
+    .sc-high { color: var(--or); }
+    .sc-med  { color: var(--am); }
+    .sc-low  { color: var(--g); }
+    .confidence-bar { display: flex; align-items: center; gap: 5px; }
+    .conf-dots { display: flex; gap: 2px; }
+    .conf-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--bdr); }
+    .conf-dot.filled.crit { background: var(--rd); }
+    .conf-dot.filled.high { background: var(--or); }
+    .conf-dot.filled.med  { background: var(--am); }
+    .conf-dot.filled.low  { background: var(--g); }
+
+    /* priority indicator */
+    .pri-cell { display: flex; align-items: center; gap: 5px; }
+    .pri-bar { width: 3px; height: 22px; border-radius: 2px; flex-shrink: 0; }
+    .pri-bar.P1 { background: var(--rd); }
+    .pri-bar.P2 { background: var(--or); }
+    .pri-bar.P3 { background: var(--am); }
+    .pri-bar.P4 { background: var(--g); }
+    .pri-lbl { font-size: 10px; font-weight: 700; font-family: var(--f-mono); }
+    .pri-lbl.P1 { color: var(--rd); }
+    .pri-lbl.P2 { color: var(--or); }
+    .pri-lbl.P3 { color: var(--am); }
+    .pri-lbl.P4 { color: var(--g); }
+
+    /* state chips */
+    .rchip { display: inline-flex; font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px; white-space: nowrap; font-family: var(--f-mono); border: 1px solid; }
+    .rchip.blue   { background: var(--bl-bg);  color: var(--bl);  border-color: var(--bl-bd); }
+    .rchip.amber  { background: var(--am-bg);  color: var(--am);  border-color: var(--am-bd); }
+    .rchip.orange { background: var(--or-bg);  color: var(--or);  border-color: var(--or-bd); }
+    .rchip.red    { background: var(--rd-bg);  color: var(--rd);  border-color: var(--rd-bd); }
+    .rchip.green  { background: var(--g-bg);   color: var(--g);   border-color: var(--g-bd); }
+    .rchip.purple { background: var(--pu-bg);  color: var(--pu);  border-color: var(--pu-bd); }
+    .rchip.neutral{ background: var(--surf2);  color: var(--t2);  border-color: var(--bdr); }
+
+    /* SLA */
+    .sla-ok     { color: var(--t3); font-family: var(--f-mono); font-size: 10px; font-weight: 600; }
+    .sla-warn   { color: var(--am); font-family: var(--f-mono); font-size: 10px; font-weight: 600; }
+    .sla-breach { color: var(--rd); font-family: var(--f-mono); font-size: 10px; font-weight: 600; }
+
+    /* block indicator */
+    .blk-active { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 700; font-family: var(--f-mono); color: var(--rd); background: var(--rd-bg); border: 1px solid var(--rd-bd); padding: 1px 5px; border-radius: 3px; }
+    .blk-none { display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 600; color: var(--t3); font-family: var(--f-mono); }
+
+    /* ── Detail panel ── */
+    .detail-panel { flex: 1; overflow-y: auto; background: var(--surface); }
+    .detail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--t3); gap: 8px; }
+    .detail-empty-icon { font-size: 28px; opacity: .35; }
+
+    .detail-hdr { padding: 11px 14px; border-bottom: 1px solid var(--bdr); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; background: var(--surf2); position: sticky; top: 0; z-index: 2; }
+    .detail-id { font-family: var(--f-mono); font-weight: 600; font-size: 11px; color: var(--t3); margin-bottom: 2px; }
+    .detail-name { font-size: 15px; font-weight: 700; color: var(--t1); letter-spacing: -.2px; }
+    .detail-hdr-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+    .detail-sec { padding: 10px 14px; border-bottom: 1px solid var(--bdr); }
+    .detail-sec-title { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+
+    .kv { width: 100%; border-collapse: collapse; }
+    .kv tr { border-bottom: 1px solid var(--bdr); }
+    .kv tr:last-child { border-bottom: none; }
+    .kv td { padding: 4px 0; vertical-align: top; }
+    .kv td:first-child { font-size: 11px; color: var(--t3); font-weight: 500; width: 46%; padding-right: 8px; }
+    .kv td:last-child { font-size: 11.5px; color: var(--t1); font-weight: 500; }
+
+    /* match comparison */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .compare-side { border: 1px solid var(--bdr); border-radius: var(--r); overflow: hidden; }
+    .compare-side-hdr { padding: 6px 10px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; border-bottom: 1px solid var(--bdr); }
+    .compare-side.platform .compare-side-hdr { background: var(--bl-bg); color: var(--bl); }
+    .compare-side.watchlist .compare-side-hdr { background: var(--rd-bg); color: var(--rd); }
+    .compare-body { padding: 8px 10px; background: var(--surface); }
+    .cmp-field { display: flex; flex-direction: column; gap: 1px; margin-bottom: 7px; }
+    .cmp-field:last-child { margin-bottom: 0; }
+    .cmp-lbl { font-size: 9px; color: var(--t3); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+    .cmp-val { font-size: 11.5px; color: var(--t1); font-weight: 500; font-family: var(--f-mono); }
+    .cmp-val.matched { color: var(--or); font-weight: 700; }
+    .cmp-val.unmatched { color: var(--g); }
+
+    /* match details */
+    .match-box { background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); padding: 10px 12px; }
+    .match-score-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .match-score-big { font-size: 22px; font-weight: 700; font-family: var(--f-mono); }
+    .match-score-big.crit { color: var(--rd); }
+    .match-score-big.high { color: var(--or); }
+    .match-score-big.med  { color: var(--am); }
+    .match-score-lbl { font-size: 11px; color: var(--t3); }
+    .match-score-conf { font-size: 11px; font-weight: 700; }
+    .match-score-conf.crit { color: var(--rd); }
+    .match-score-conf.high { color: var(--or); }
+    .match-score-conf.med  { color: var(--am); }
+    .match-fields { display: flex; gap: 12px; margin-bottom: 8px; }
+    .match-field-col { display: flex; flex-direction: column; gap: 3px; }
+    .mf-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--t3); margin-bottom: 2px; }
+    .mf-chip { font-size: 9px; font-weight: 600; font-family: var(--f-mono); padding: 2px 6px; border-radius: 3px; display: inline-block; }
+    .mf-chip.matched { background: var(--or-bg); color: var(--or); border: 1px solid var(--or-bd); }
+    .mf-chip.unmatched { background: var(--g-bg); color: var(--g); border: 1px solid var(--g-bd); }
+    .rec-box { background: var(--am-bg); border: 1px solid var(--am-bd); border-radius: var(--r); padding: 5px 8px; font-size: 11px; color: var(--am); font-weight: 500; }
+
+    /* read-audit notice */
+    .read-audit-notice { display: flex; gap: 8px; align-items: flex-start; background: var(--am-bg); border: 1px solid var(--am-bd); border-radius: var(--r); padding: 7px 10px; margin: 8px 14px; font-size: 11px; color: var(--am); line-height: 1.5; }
+
+    /* workflow block panel */
+    .wfblk-panel { background: var(--rd-bg); border: 1px solid var(--rd-bd); border-radius: var(--r); padding: 10px 12px; }
+    .wfblk-title { font-size: 11px; font-weight: 700; color: var(--rd); margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
+    .wfblk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .wfblk-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; border-radius: var(--r); background: rgba(255,255,255,.6); font-size: 11px; }
+    .wfblk-item-name { font-weight: 500; color: var(--t1); }
+    .wfblk-status-blocked { font-size: 9px; font-weight: 700; font-family: var(--f-mono); color: var(--rd); }
+    .wfblk-status-allowed { font-size: 9px; font-weight: 700; font-family: var(--f-mono); color: var(--g); }
+    .wfblk-note { font-size: 10px; color: var(--rd); margin-top: 7px; padding-top: 6px; border-top: 1px solid var(--rd-bd); line-height: 1.4; }
+
+    /* senior-blocked item */
+    .senior-blk-box { background: var(--pu-bg); border: 1px solid var(--pu-bd); border-radius: var(--r); padding: 8px 10px; margin-top: 8px; }
+    .senior-blk-title { font-size: 11px; font-weight: 700; color: var(--pu); margin-bottom: 3px; }
+    .senior-blk-items { display: flex; flex-direction: column; gap: 4px; }
+    .senior-blk-item { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--pu); }
+    .senior-blk-item::before { content: '🔒'; font-size: 10px; }
+
+    /* timeline */
+    .tl { display: flex; flex-direction: column; }
+    .tl-item { display: flex; gap: 9px; padding: 5px 0; border-bottom: 1px solid var(--bdr); }
+    .tl-item:last-child { border-bottom: none; }
+    .tl-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--t4); margin-top: 4px; flex-shrink: 0; }
+    .tl-dot.danger  { background: var(--rd); }
+    .tl-dot.warn    { background: var(--am); }
+    .tl-dot.success { background: var(--g); }
+    .tl-dot.purple  { background: var(--pu); }
+    .tl-dot.live    { background: var(--bl); }
+    .tl-dot.muted   { background: var(--t4); }
+    .tl-ev { font-size: 10.5px; font-weight: 600; font-family: var(--f-mono); color: var(--t1); }
+    .tl-meta { font-size: 10px; color: var(--t3); margin-top: 1px; }
+
+    /* decision panel */
+    .decision-panel { background: var(--surface); border-top: 2px solid var(--bdr); }
+    .decision-hdr { background: var(--surf2); padding: 8px 14px; border-bottom: 1px solid var(--bdr); display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+    .decision-hdr-title { font-size: 10px; font-weight: 700; color: var(--t2); text-transform: uppercase; letter-spacing: .5px; }
+    .decision-body { padding: 12px 14px; }
+    .decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
+    .dec-btn { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 10px; border-radius: var(--r); font-size: 11.5px; font-weight: 500; font-family: var(--f-ui); border: 1px solid; cursor: pointer; transition: all .12s; text-align: center; flex-wrap: wrap; }
+    .dec-btn.primary { background: var(--t1);      color: #fff;       border-color: var(--t1); }
+    .dec-btn.primary:hover { background: #2d2d31; }
+    .dec-btn.default { background: var(--surface);  color: var(--t1);  border-color: var(--bdr-mid); }
+    .dec-btn.default:hover { background: var(--hover); }
+    .dec-btn.danger  { background: var(--rd-bg);   color: var(--rd);  border-color: var(--rd-bd); }
+    .dec-btn.warn    { background: var(--am-bg);   color: var(--am);  border-color: var(--am-bd); }
+    .dec-btn.purple  { background: var(--pu-bg);   color: var(--pu);  border-color: var(--pu-bd); }
+    .dec-btn.blocked { background: var(--surf2);   color: var(--t4);  border-color: var(--bdr); cursor: not-allowed; }
+    .dec-btn.blocked:hover { background: var(--surf2); }
+    .blocked-ind { font-size: 9px; font-weight: 600; font-family: var(--f-mono); padding: 1px 4px; background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); border-radius: 3px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+    .form-lbl { font-size: 11px; font-weight: 600; color: var(--t2); }
+    .form-sel, .form-ta { font-size: 12px; font-family: var(--f-ui); padding: 6px 8px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); width: 100%; }
+    .form-sel:focus, .form-ta:focus { outline: none; border-color: var(--bdr-focus); }
+    .form-ta { resize: vertical; min-height: 64px; }
+    .form-chk { display: flex; align-items: flex-start; gap: 7px; font-size: 11px; color: var(--t2); cursor: pointer; line-height: 1.4; margin-bottom: 6px; }
+    .form-chk input { margin-top: 1px; cursor: pointer; accent-color: var(--t1); }
+    .dec-btn-row { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+    .blocked-box { background: var(--rd-bg); border: 1px solid var(--rd-bd); border-radius: var(--r); padding: 7px 10px; margin-bottom: 8px; }
+    .blocked-title { font-size: 11px; font-weight: 700; color: var(--rd); margin-bottom: 2px; }
+    .blocked-text { font-size: 10.5px; color: var(--rd); line-height: 1.4; }
+    .success-box { background: var(--g-bg); border: 1px solid var(--g-bd); border-radius: var(--r); padding: 8px 10px; margin-bottom: 8px; }
+    .success-title { font-size: 11.5px; font-weight: 700; color: var(--g); margin-bottom: 2px; }
+    .success-body  { font-size: 11px; color: var(--g); }
+    .alert-box { padding: 7px 10px; border-radius: var(--r); font-size: 11px; line-height: 1.5; border: 1px solid; margin-bottom: 6px; }
+    .alert-box.amber { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .alert-box.red   { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+
+    /* ── Audit rail ── */
+    .audit-rail { width: var(--w-au); flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .au-hdr { padding: 10px 14px 8px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .au-title { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; }
+    .au-sub { font-size: 10px; color: var(--t3); margin-top: 2px; }
+    .au-body { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 12px; }
+    .au-sec-title { font-size: 9px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px; }
+    .au-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; margin-bottom: 3px; }
+    .au-k { font-size: 10px; color: var(--t3); }
+    .au-v { font-size: 10px; font-weight: 500; color: var(--t1); text-align: right; font-family: var(--f-mono); }
+    .au-v.ok { color: var(--g); }
+    .au-v.warn { color: var(--am); }
+    .au-v.danger { color: var(--rd); }
+    .au-ev-log { background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); overflow: hidden; }
+    .au-ev { padding: 5px 8px; border-bottom: 1px solid var(--bdr); }
+    .au-ev:last-child { border-bottom: none; }
+    .au-ev-code { font-size: 10px; font-weight: 600; font-family: var(--f-mono); color: var(--bl); }
+    .au-ev-code.new { color: var(--rd); animation: flash .45s ease; }
+    .au-ev-meta { font-size: 9px; color: var(--t3); margin-top: 1px; }
+    @keyframes flash { from { opacity: 0; } to { opacity: 1; } }
+    .au-rbac-row { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--bdr); font-size: 10px; line-height: 1.4; }
+    .au-rbac-row:last-child { border-bottom: none; }
+    .au-rbac-ico { flex-shrink: 0; margin-top: 1px; }
+    .au-rbac-ico.ok { color: var(--g); }
+    .au-rbac-ico.no { color: var(--rd); }
+    .au-rbac-txt { color: var(--t2); }
+    .au-rbac-txt.blocked { color: var(--rd); }
+    .au-rbac-txt strong { color: var(--t1); font-weight: 600; }
+    .au-inv { font-size: 10px; color: var(--t2); padding: 3px 0; border-bottom: 1px solid var(--bdr); display: flex; gap: 5px; line-height: 1.4; }
+    .au-inv::before { content: '—'; color: var(--t4); flex-shrink: 0; }
+    .au-inv:last-child { border-bottom: none; }
+    .divider { height: 1px; background: var(--bdr); margin: 2px 0; }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--t4); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ════════════════════ DATA ════════════════════ */
+
+const USER = {
+  name: 'Maya Ivanova', initials: 'MI',
+  role: 'compliance_officer', roleLabel: 'Compliance Officer',
+  authSource: 'Keycloak OIDC',
+};
+
+const INITIAL_HITS = [
+  {
+    id: 'SNX-2110',
+    priority: 'P1',
+    subjectId: 'usr_MarkWeber',
+    subjectName: 'Mark Weber',
+    subjectType: 'individual',
+    matchedList: 'OFAC SDN',
+    matchedEntity: 'Markus Weber',
+    matchedEntityId: 'OS-884219',
+    matchScore: 91,
+    state: 'OPEN',
+    workflowBlock: true,
+    source: 'OpenSanctions',
+    assignedTo: 'Maya Ivanova',
+    ageHours: 3,
+    slaDue: '2026-05-17 08:14',
+    slaBreached: false,
+    requiredRole: 'compliance_officer',
+    kycStatus: 'PENDING_MANUAL',
+    accountStatus: 'ACTIVE',
+    screeningRunId: 'SCRN-RUN-20260516-0042',
+    screeningTs: '2026-05-16 08:14:02',
+    platform: {
+      name: 'Mark Weber',
+      dob: '1984-03-12',
+      country: 'Austria',
+      userId: 'usr_MarkWeber',
+      kycStatus: 'Pending manual review',
+      accountStatus: 'Active',
+      relatedWorkflows: ['KYC pending', 'Withdrawal WDR-3063'],
+    },
+    watchlist: {
+      list: 'OFAC SDN',
+      matchedName: 'Markus Weber',
+      alias: 'Mark Weber',
+      dob: '1984',
+      country: 'Austria',
+      program: 'Example Sanctions Program',
+      entityId: 'OS-884219',
+      source: 'OpenSanctions',
+    },
+    matchDetails: {
+      score: 91,
+      confidence: 'Possible true match',
+      confidenceClass: 'high',
+      matchedFields: ['name', 'country', 'birth_year'],
+      unmatchedFields: ['exact_dob_day_month'],
+      recommendation: 'Start review and apply temporary block pending further verification',
+    },
+    workflowBlocks: [
+      { name: 'KYC Approval', blocked: true },
+      { name: 'Withdrawal WDR-3063', blocked: true },
+      { name: 'Wallet read', blocked: false },
+      { name: 'New transfer', blocked: true },
+      { name: 'Card issuance', blocked: true },
+      { name: 'Merchant onboard', blocked: false },
+    ],
+    timeline: [
+      { dot: 'warn', ev: 'sanctions.hit_detected', meta: 'SCRN-RUN-20260516-0042 · 2026-05-16 08:14', actor: 'system' },
+      { dot: 'warn', ev: 'sanctions.hit_opened', meta: 'auto-assigned to Maya Ivanova · 08:14', actor: 'system' },
+    ],
+    riskIndicators: ['name_alias_match', 'country_match', 'birth_year_match', 'ofac_program'],
+  },
+  {
+    id: 'SNX-2114',
+    priority: 'P1',
+    subjectId: 'ubo_OrbitMarket',
+    subjectName: 'Orbit Market UBO',
+    subjectType: 'beneficial_owner',
+    matchedList: 'EU Consolidated',
+    matchedEntity: 'Viktor Bauer',
+    matchedEntityId: 'OS-221047',
+    matchScore: 87,
+    state: 'IN_REVIEW',
+    workflowBlock: true,
+    source: 'OpenSanctions',
+    assignedTo: 'Maya Ivanova',
+    ageHours: 6,
+    slaDue: '2026-05-17 06:22',
+    slaBreached: false,
+    requiredRole: 'compliance_officer',
+    kycStatus: 'IN_REVIEW',
+    accountStatus: 'ACTIVE',
+    screeningRunId: 'SCRN-RUN-20260516-0039',
+    screeningTs: '2026-05-16 06:22:11',
+    platform: { name: 'Viktor Bauer (UBO)', dob: '1971-07-04', country: 'Germany', userId: 'ubo_OrbitMarket', kycStatus: 'In review', accountStatus: 'Active', relatedWorkflows: ['Merchant KYB', 'Payout PLT-7821'] },
+    watchlist: { list: 'EU Consolidated List', matchedName: 'Viktor B.', alias: 'Viktor Bauer', dob: '1971', country: 'Germany', program: 'EU Asset Freeze', entityId: 'OS-221047', source: 'OpenSanctions' },
+    matchDetails: { score: 87, confidence: 'Possible true match', confidenceClass: 'high', matchedFields: ['name', 'country', 'birth_year'], unmatchedFields: ['exact_dob_month', 'nationality'], recommendation: 'Apply block on merchant KYB and payout pending review' },
+    workflowBlocks: [
+      { name: 'Merchant KYB', blocked: true },
+      { name: 'Payout PLT-7821', blocked: true },
+      { name: 'Existing API keys', blocked: false },
+      { name: 'New card issuance', blocked: true },
+    ],
+    timeline: [
+      { dot: 'warn', ev: 'sanctions.hit_detected', meta: 'SCRN-RUN-20260516-0039 · 2026-05-16 06:22', actor: 'system' },
+      { dot: 'live', ev: 'sanctions.review_started', meta: 'Maya Ivanova · 08:45', actor: 'user' },
+      { dot: 'warn', ev: 'read_audit.sanctions_hit_detail_viewed', meta: 'Maya Ivanova · 08:45', actor: 'audit' },
+    ],
+    riskIndicators: ['eu_list_match', 'ubo_match', 'merchant_block_active'],
+  },
+  {
+    id: 'SNX-2120',
+    priority: 'P2',
+    subjectId: 'mrch_AcmeMfg',
+    subjectName: 'Acme Manufacturing',
+    subjectType: 'business',
+    matchedList: 'UK HMT',
+    matchedEntity: 'ACME MANUFACTURING LTD',
+    matchedEntityId: 'OS-338812',
+    matchScore: 76,
+    state: 'REQUEST_MORE_INFO',
+    workflowBlock: true,
+    source: 'OpenSanctions',
+    assignedTo: 'Unassigned',
+    ageHours: 11,
+    slaDue: '2026-05-16 19:01',
+    slaBreached: false,
+    requiredRole: 'compliance_officer',
+    kycStatus: 'SUBMITTED',
+    accountStatus: 'ACTIVE',
+    screeningRunId: 'SCRN-RUN-20260515-0217',
+    screeningTs: '2026-05-15 19:01:44',
+    platform: { name: 'Acme Manufacturing Ltd.', dob: 'n/a', country: 'United Kingdom', userId: 'mrch_AcmeMfg', kycStatus: 'Submitted', accountStatus: 'Active', relatedWorkflows: ['Merchant onboarding', 'KYB documents'] },
+    watchlist: { list: 'UK HMT', matchedName: 'ACME MANUFACTURING LTD', alias: 'Acme Manufacturing', dob: 'n/a', country: 'United Kingdom', program: 'HMT Financial Sanctions', entityId: 'OS-338812', source: 'OpenSanctions' },
+    matchDetails: { score: 76, confidence: 'Possible match — information required', confidenceClass: 'med', matchedFields: ['name', 'country'], unmatchedFields: ['registration_number', 'director_names', 'address'], recommendation: 'Request company registration and director confirmation before deciding' },
+    workflowBlocks: [
+      { name: 'Merchant onboarding', blocked: true },
+      { name: 'KYB approval', blocked: true },
+      { name: 'Existing account read', blocked: false },
+    ],
+    timeline: [
+      { dot: 'warn', ev: 'sanctions.hit_detected', meta: 'SCRN-RUN-20260515-0217 · 2026-05-15 19:01', actor: 'system' },
+      { dot: 'warn', ev: 'sanctions.more_info_requested', meta: 'Maya Ivanova · 2026-05-16 07:30', actor: 'user' },
+    ],
+    riskIndicators: ['uk_hmt_name_match', 'business_entity'],
+  },
+  {
+    id: 'SNX-2128',
+    priority: 'P4',
+    subjectId: 'usr_ElenaFischer',
+    subjectName: 'Elena Fischer',
+    subjectType: 'individual',
+    matchedList: 'OpenSanctions PEP',
+    matchedEntity: 'Elena Fischer (PEP)',
+    matchedEntityId: 'OS-119944',
+    matchScore: 64,
+    state: 'CLEARED_REVIEW',
+    workflowBlock: false,
+    source: 'OpenSanctions',
+    assignedTo: 'Maya Ivanova',
+    ageHours: 28,
+    slaDue: '2026-05-15 12:00',
+    slaBreached: true,
+    requiredRole: 'compliance_officer',
+    kycStatus: 'APPROVED',
+    accountStatus: 'ACTIVE',
+    screeningRunId: 'SCRN-RUN-20260514-0088',
+    screeningTs: '2026-05-14 12:00:00',
+    platform: { name: 'Elena Fischer', dob: '1988-11-21', country: 'Austria', userId: 'usr_ElenaFischer', kycStatus: 'Approved', accountStatus: 'Active', relatedWorkflows: [] },
+    watchlist: { list: 'OpenSanctions PEP / Sanctions-adjacent', matchedName: 'Elena Fischer-Kovac', alias: 'Elena Fischer', dob: '1962', country: 'Slovakia', program: 'PEP monitoring', entityId: 'OS-119944', source: 'OpenSanctions' },
+    matchDetails: { score: 64, confidence: 'Low confidence — probable false positive', confidenceClass: 'low', matchedFields: ['name'], unmatchedFields: ['dob', 'country', 'nationality'], recommendation: 'DOB and country mismatch strongly suggests different person — close as false positive' },
+    workflowBlocks: [],
+    timeline: [
+      { dot: 'warn', ev: 'sanctions.hit_detected', meta: 'SCRN-RUN-20260514-0088 · 2026-05-14 12:00', actor: 'system' },
+      { dot: 'live', ev: 'sanctions.review_started', meta: 'Maya Ivanova · 2026-05-15 09:10', actor: 'user' },
+      { dot: 'success', ev: 'sanctions.false_positive_cleared', meta: 'Maya Ivanova · DOB_MISMATCH, COUNTRY_MISMATCH · 2026-05-15 09:25', actor: 'user' },
+    ],
+    riskIndicators: ['pep_adjacent', 'name_only_match'],
+  },
+  {
+    id: 'SNX-2133',
+    priority: 'P1',
+    subjectId: 'usr_AntonMeyer',
+    subjectName: 'Anton Meyer',
+    subjectType: 'individual',
+    matchedList: 'OFAC SDN',
+    matchedEntity: 'Anton Meyer',
+    matchedEntityId: 'OS-774400',
+    matchScore: 98,
+    state: 'TRUE_MATCH',
+    workflowBlock: true,
+    source: 'OpenSanctions',
+    assignedTo: 'Senior Compliance',
+    ageHours: 48,
+    slaDue: '2026-05-14 09:00',
+    slaBreached: true,
+    requiredRole: 'senior_compliance',
+    kycStatus: 'BLOCKED',
+    accountStatus: 'FROZEN',
+    screeningRunId: 'SCRN-RUN-20260514-0011',
+    screeningTs: '2026-05-14 09:00:52',
+    platform: { name: 'Anton Meyer', dob: '1976-04-03', country: 'Syria', userId: 'usr_AntonMeyer', kycStatus: 'Blocked', accountStatus: 'Frozen — TRUE MATCH', relatedWorkflows: [] },
+    watchlist: { list: 'OFAC SDN', matchedName: 'Anton Meyer', alias: 'ANTO MAYR', dob: '1976-04-03', country: 'Syria', program: 'OFAC Global Terrorism', entityId: 'OS-774400', source: 'OpenSanctions' },
+    matchDetails: { score: 98, confidence: 'True match confirmed', confidenceClass: 'crit', matchedFields: ['name', 'country', 'dob_exact', 'alias'], unmatchedFields: [], recommendation: 'Account permanently blocked. SAR recommended. Senior compliance ownership.' },
+    workflowBlocks: [
+      { name: 'All withdrawals', blocked: true },
+      { name: 'All transfers', blocked: true },
+      { name: 'Card issuance', blocked: true },
+      { name: 'KYC/onboarding', blocked: true },
+      { name: 'Account access', blocked: true },
+    ],
+    timeline: [
+      { dot: 'danger', ev: 'sanctions.hit_detected', meta: 'SCRN-RUN-20260514-0011 · 2026-05-14 09:00', actor: 'system' },
+      { dot: 'danger', ev: 'sanctions.auto_block_applied', meta: 'system — score ≥95 auto-block · 09:00', actor: 'system' },
+      { dot: 'live', ev: 'sanctions.review_started', meta: 'Maya Ivanova · 09:15', actor: 'user' },
+      { dot: 'danger', ev: 'sanctions.true_match_marked', meta: 'Senior Compliance · rationale logged · 10:02', actor: 'user' },
+      { dot: 'danger', ev: 'sanctions.account_permanently_frozen', meta: 'system · account frozen · 10:02', actor: 'system' },
+    ],
+    riskIndicators: ['ofac_sdn_exact', 'dob_exact_match', 'alias_match', 'country_match', 'auto_blocked'],
+  },
+  {
+    id: 'SNX-2142',
+    priority: 'P2',
+    subjectId: 'mrch_NovaTrading',
+    subjectName: 'Nova Trading GmbH',
+    subjectType: 'merchant',
+    matchedList: 'EU Consolidated',
+    matchedEntity: 'Nova Trading GmbH',
+    matchedEntityId: 'OS-552219',
+    matchScore: 82,
+    state: 'ESCALATED_SENIOR',
+    workflowBlock: true,
+    source: 'OpenSanctions',
+    assignedTo: 'Senior Compliance',
+    ageHours: 16,
+    slaDue: '2026-05-17 14:00',
+    slaBreached: false,
+    requiredRole: 'senior_compliance',
+    kycStatus: 'IN_REVIEW',
+    accountStatus: 'ACTIVE',
+    screeningRunId: 'SCRN-RUN-20260515-0199',
+    screeningTs: '2026-05-15 14:00:31',
+    platform: { name: 'Nova Trading GmbH', dob: 'n/a', country: 'Germany', userId: 'mrch_NovaTrading', kycStatus: 'In review', accountStatus: 'Active', relatedWorkflows: ['Merchant KYB', 'Payout PLT-8100'] },
+    watchlist: { list: 'EU Consolidated List', matchedName: 'NOVA TRADING GMBH', alias: 'Nova Trade', dob: 'n/a', country: 'Germany', program: 'EU restrictive measures — energy sector', entityId: 'OS-552219', source: 'OpenSanctions' },
+    matchDetails: { score: 82, confidence: 'High confidence match — senior review required', confidenceClass: 'high', matchedFields: ['name', 'country', 'legal_form'], unmatchedFields: ['registration_number'], recommendation: 'Escalate to senior compliance for true match determination' },
+    workflowBlocks: [
+      { name: 'Merchant KYB', blocked: true },
+      { name: 'Payout PLT-8100', blocked: true },
+      { name: 'Existing API read', blocked: false },
+    ],
+    timeline: [
+      { dot: 'warn', ev: 'sanctions.hit_detected', meta: 'SCRN-RUN-20260515-0199 · 2026-05-15 14:00', actor: 'system' },
+      { dot: 'live', ev: 'sanctions.review_started', meta: 'Maya Ivanova · 2026-05-16 07:00', actor: 'user' },
+      { dot: 'purple', ev: 'sanctions.escalated_senior', meta: 'Maya Ivanova → Senior Compliance · 07:45', actor: 'user' },
+    ],
+    riskIndicators: ['eu_list_name_match', 'merchant_entity', 'legal_form_match'],
+  },
+];
+
+const REASON_CODES = [
+  { value: '', label: 'Select reason code…' },
+  { value: 'NAME_ONLY_FALSE_POSITIVE', label: 'NAME_ONLY_FALSE_POSITIVE' },
+  { value: 'DOB_MISMATCH', label: 'DOB_MISMATCH' },
+  { value: 'COUNTRY_MISMATCH', label: 'COUNTRY_MISMATCH' },
+  { value: 'POSSIBLE_TRUE_MATCH', label: 'POSSIBLE_TRUE_MATCH' },
+  { value: 'TRUE_MATCH_CONFIRMED', label: 'TRUE_MATCH_CONFIRMED' },
+  { value: 'MORE_INFORMATION_REQUIRED', label: 'MORE_INFORMATION_REQUIRED' },
+  { value: 'SENIOR_REVIEW_REQUIRED', label: 'SENIOR_REVIEW_REQUIRED' },
+  { value: 'BLOCK_REQUIRED', label: 'BLOCK_REQUIRED' },
+];
+
+/* ════════════════════ HELPERS ════════════════════ */
+
+function scoreClass(s) {
+  if (s >= 90) return 'crit';
+  if (s >= 80) return 'high';
+  if (s >= 70) return 'med';
+  return 'low';
+}
+
+function scoreBarFill(s) {
+  if (s >= 90) return 4;
+  if (s >= 80) return 3;
+  if (s >= 70) return 2;
+  return 1;
+}
+
+function stateChip(s) {
+  const map = {
+    OPEN: 'blue',
+    IN_REVIEW: 'amber',
+    REQUEST_MORE_INFO: 'orange',
+    CLEARED_REVIEW: 'green',
+    TRUE_MATCH: 'red',
+    FALSE_POSITIVE: 'green',
+    ESCALATED_SENIOR: 'purple',
+    BLOCK_APPLIED: 'red',
+    BLOCK_RELEASED: 'neutral',
+    EXPIRED: 'neutral',
+  };
+  return map[s] || 'neutral';
+}
+
+function stateLabel(s) {
+  const map = {
+    OPEN: 'OPEN',
+    IN_REVIEW: 'IN_REVIEW',
+    REQUEST_MORE_INFO: 'MORE_INFO',
+    CLEARED_REVIEW: 'CLEARED',
+    TRUE_MATCH: 'TRUE_MATCH',
+    FALSE_POSITIVE: 'FALSE_POSITIVE',
+    ESCALATED_SENIOR: 'ESCALATED',
+    BLOCK_APPLIED: 'BLOCK_APPLIED',
+    BLOCK_RELEASED: 'BLOCK_RELEASED',
+    EXPIRED: 'EXPIRED',
+  };
+  return map[s] || s;
+}
+
+function slaClass(breached, h) {
+  if (breached) return 'sla-breach';
+  if (h < 4) return 'sla-warn';
+  return 'sla-ok';
+}
+
+function now() {
+  const d = new Date();
+  return d.toISOString().slice(0, 16).replace('T', ' ');
+}
+
+/* ════════════════════ MAIN APP ════════════════════ */
+
+function App() {
+  const [hits, setHits] = useState(INITIAL_HITS);
+  const [selId, setSelId] = useState('SNX-2110');
+  const [fState, setFState] = useState('');
+  const [fSource, setFSource] = useState('');
+  const [fType, setFType] = useState('');
+  const [fBlock, setFBlock] = useState('');
+  const [fMe, setFMe] = useState(false);
+  const [fQ, setFQ] = useState('');
+
+  const [decOpen, setDecOpen] = useState(true);
+  const [decAction, setDecAction] = useState(null);
+  const [rationale, setRationale] = useState('');
+  const [reasonCode, setReasonCode] = useState('');
+  const [evidenceSummary, setEvidenceSummary] = useState('');
+  const [chkReadAudit, setChkReadAudit] = useState(false);
+  const [chkBlockImpact, setChkBlockImpact] = useState(false);
+  const [blockedMsg, setBlockedMsg] = useState(null);
+  const [lastResult, setLastResult] = useState(null);
+  const [showSens, setShowSens] = useState(false);
+
+  const [auditLog, setAuditLog] = useState([
+    { code: 'sanctions.hit_opened', meta: 'SNX-2110 · system · 08:14', isNew: false },
+    { code: 'session.auth_success', meta: 'Maya Ivanova · Keycloak OIDC · 08:10', isNew: false },
+  ]);
+
+  const pushAudit = (code, meta) => {
+    setAuditLog(prev => [{ code, meta: meta || `${now()} · Maya Ivanova`, isNew: true }, ...prev.slice(0, 13)]);
+  };
+
+  const sel = hits.find(h => h.id === selId) || null;
+
+  const selectRow = (id) => {
+    const h = hits.find(x => x.id === id);
+    setSelId(id);
+    setDecAction(null);
+    setBlockedMsg(null);
+    setLastResult(null);
+    setRationale('');
+    setReasonCode('');
+    setEvidenceSummary('');
+    setChkReadAudit(false);
+    setChkBlockImpact(false);
+    setShowSens(false);
+    if (h && (h.matchScore >= 80 || h.state === 'TRUE_MATCH')) {
+      pushAudit('read_audit.sanctions_hit_detail_viewed', `${h.id} · ${h.subjectName} · ${now()}`);
+      pushAudit('sanctions.hit_opened', `${h.id} viewed · ${now()}`);
+    } else if (h) {
+      pushAudit('sanctions.hit_opened', `${h.id} · ${h.subjectName} · ${now()}`);
+    }
+  };
+
+  const startAction = (action) => {
+    setDecAction(action);
+    setBlockedMsg(null);
+    setLastResult(null);
+    setRationale('');
+    setReasonCode('');
+    setEvidenceSummary('');
+    setChkReadAudit(false);
+    setChkBlockImpact(false);
+  };
+
+  const showBlocked = (msg) => {
+    setBlockedMsg(msg);
+    setDecAction(null);
+    pushAudit('sanctions.block_release_denied', `${sel?.id} · senior_compliance required · ${now()}`);
+  };
+
+  const submit = () => {
+    if (!sel) return;
+    if ((decAction === 'clear_match' || decAction === 'mark_true' || decAction === 'request_info') && rationale.trim().length < 20) {
+      setLastResult({ type: 'error', msg: 'Rationale must be at least 20 characters.' });
+      return;
+    }
+    if (decAction !== 'request_info' && decAction !== 'add_note' && !chkReadAudit) {
+      setLastResult({ type: 'error', msg: 'You must confirm that sensitive details were read-audited before submitting.' });
+      return;
+    }
+
+    let newState = sel.state;
+    let newBlock = sel.workflowBlock;
+    let newAccountStatus = sel.accountStatus;
+    let evCode = '';
+    let evDot = 'live';
+    let evMeta = '';
+
+    switch (decAction) {
+      case 'start_review':
+        newState = 'IN_REVIEW';
+        evCode = 'sanctions.review_started';
+        evDot = 'live';
+        evMeta = `Maya Ivanova · ${now()}`;
+        pushAudit('sanctions.review_started', `${sel.id} · ${now()}`);
+        break;
+      case 'clear_match':
+        newState = 'CLEARED_REVIEW';
+        newBlock = false;
+        evCode = 'sanctions.false_positive_cleared';
+        evDot = 'success';
+        evMeta = `Maya Ivanova · ${reasonCode} · ${now()}`;
+        pushAudit('sanctions.false_positive_cleared', `${sel.id} · ${reasonCode} · ${now()}`);
+        break;
+      case 'mark_true':
+        newState = 'TRUE_MATCH';
+        newBlock = true;
+        newAccountStatus = 'FROZEN';
+        evCode = 'sanctions.true_match_marked';
+        evDot = 'danger';
+        evMeta = `Maya Ivanova · ${reasonCode} · ${now()}`;
+        pushAudit('sanctions.true_match_marked', `${sel.id} · ${reasonCode} · ${now()}`);
+        break;
+      case 'request_info':
+        newState = 'REQUEST_MORE_INFO';
+        evCode = 'sanctions.more_info_requested';
+        evDot = 'warn';
+        evMeta = `Maya Ivanova · ${now()}`;
+        pushAudit('sanctions.more_info_requested', `${sel.id} · ${now()}`);
+        break;
+      case 'escalate':
+        newState = 'ESCALATED_SENIOR';
+        evCode = 'sanctions.escalated_senior';
+        evDot = 'purple';
+        evMeta = `Maya Ivanova → Senior Compliance · ${now()}`;
+        pushAudit('sanctions.escalated_senior', `${sel.id} · ${now()}`);
+        break;
+      case 'apply_block':
+        newBlock = true;
+        evCode = 'sanctions.temporary_block_applied';
+        evDot = 'danger';
+        evMeta = `Maya Ivanova · ${now()}`;
+        pushAudit('sanctions.temporary_block_applied', `${sel.id} · ${now()}`);
+        break;
+      case 'add_note':
+        if (rationale.trim().length < 5) {
+          setLastResult({ type: 'error', msg: 'Case note must be at least 5 characters.' });
+          return;
+        }
+        evCode = 'sanctions.case_note_added';
+        evDot = 'muted';
+        evMeta = `Maya Ivanova · ${now()}`;
+        pushAudit('sanctions.case_note_added', `${sel.id} · ${now()}`);
+        break;
+    }
+
+    setHits(prev => prev.map(h => {
+      if (h.id !== sel.id) return h;
+      const newTimeline = evCode
+        ? [{ dot: evDot, ev: evCode, meta: evMeta, actor: 'user' }, ...h.timeline]
+        : h.timeline;
+      return {
+        ...h,
+        state: newState,
+        workflowBlock: newBlock,
+        accountStatus: newAccountStatus,
+        timeline: newTimeline,
+        assignedTo: (decAction === 'start_review' && h.assignedTo === 'Unassigned') ? 'Maya Ivanova' : (decAction === 'escalate' ? 'Senior Compliance' : h.assignedTo),
+      };
+    }));
+
+    setLastResult({ type: 'success', msg: `${decAction?.replace(/_/g,' ')} recorded for ${sel.id}.` });
+    setDecAction(null);
+  };
+
+  const filtered = hits.filter(h => {
+    if (fState && h.state !== fState) return false;
+    if (fSource && h.source !== fSource) return false;
+    if (fType && h.subjectType !== fType) return false;
+    if (fBlock === 'active' && !h.workflowBlock) return false;
+    if (fBlock === 'none' && h.workflowBlock) return false;
+    if (fMe && h.assignedTo !== USER.name) return false;
+    if (fQ) {
+      const q = fQ.toLowerCase();
+      if (!h.id.toLowerCase().includes(q) && !h.subjectName.toLowerCase().includes(q) && !h.matchedList.toLowerCase().includes(q) && !h.matchedEntity.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  // action-bar enablement
+  const canStart     = sel && sel.state === 'OPEN';
+  const canClear     = sel && ['OPEN','IN_REVIEW','REQUEST_MORE_INFO'].includes(sel.state);
+  const canMarkTrue  = sel && ['OPEN','IN_REVIEW','REQUEST_MORE_INFO'].includes(sel.state) && sel.state !== 'TRUE_MATCH';
+  const canReqInfo   = sel && ['OPEN','IN_REVIEW'].includes(sel.state);
+  const canEscalate  = sel && !['ESCALATED_SENIOR','TRUE_MATCH','CLEARED_REVIEW','FALSE_POSITIVE'].includes(sel.state);
+  const canApplyBlk  = sel && !sel.workflowBlock && !['TRUE_MATCH','CLEARED_REVIEW','FALSE_POSITIVE'].includes(sel.state);
+  const canReleaseBlk= false; // always disabled for Maya
+
+  const actionBarBtn = (label, cls, action, enabled, onClickFn) => (
+    <button
+      className={`btn ${enabled ? cls : 'btn-disabled'}`}
+      onClick={enabled ? (onClickFn || (() => startAction(action))) : undefined}
+      title={!enabled ? 'Not available for current state or role' : label}
+    >{label}</button>
+  );
+
+  return (
+    <div className="app-shell">
+      {/* ── Sidebar ── */}
+      <aside className="sidebar">
+        <div className="sb-brand">
+          <div className="sb-product">MiniFin</div>
+          <div className="sb-surface">Backoffice</div>
+        </div>
+        <div className="sb-env">⬡ Local Sandbox</div>
+        <div className="sb-sec">Queues</div>
+        <nav className="sb-nav">
+          <div className="sb-item"><span className="sb-icon">⊞</span>Work Queue<span className="sb-bdg ro">12</span></div>
+          <div className="sb-item"><span className="sb-icon">↓</span>Manual Deposits</div>
+          <div className="sb-item"><span className="sb-icon">↑</span>Manual Withdrawals</div>
+          <div className="sb-sec">Compliance</div>
+          <div className="sb-item"><span className="sb-icon">◎</span>KYC Queue<span className="sb-bdg cnt">8</span></div>
+          <div className="sb-item"><span className="sb-icon">⚑</span>AML Alerts<span className="sb-bdg alrt">14</span></div>
+          <div className="sb-item active"><span className="sb-icon">◈</span>Sanctions Hits<span className="sb-bdg sr">4</span></div>
+          <div className="sb-item"><span className="sb-icon">⚖</span>Chargeback</div>
+          <div className="sb-sec">Audit</div>
+          <div className="sb-item"><span className="sb-icon">≡</span>Audit Log</div>
+        </nav>
+        <div className="sb-user">
+          <div className="sb-user-name">{USER.name}</div>
+          <div className="sb-user-role">{USER.roleLabel}</div>
+          <div className="sb-user-session">
+            <div className="sess-dot"></div>
+            <div className="sess-txt">Keycloak · session active</div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── Main ── */}
+      <div className="main">
+        {/* Topbar */}
+        <div className="topbar">
+          <span className="topbar-screen">BOF-UI-07</span>
+          <span className="topbar-sep">/</span>
+          <span className="topbar-host">back.miniefin.local</span>
+          <span className="topbar-sep">·</span>
+          <span className="topbar-screen">OpenSanctions v2 · SCRN engine v1.4</span>
+          <div className="topbar-right">
+            <span className="badge neutral">⬡ sandbox</span>
+            <span className="badge blue">compliance_officer</span>
+          </div>
+        </div>
+
+        {/* Page header */}
+        <div className="page-hdr">
+          <div className="page-title-row">
+            <span className="page-title">Sanctions Hits</span>
+            <span className="page-sub">Review OpenSanctions matches and compliance blocking decisions</span>
+          </div>
+          <div className="stats-strip">
+            <div className="stat-cell"><span className="stat-val rd">4</span><span className="stat-lbl">Open</span></div>
+            <div className="stat-cell"><span className="stat-val rd">4</span><span className="stat-lbl">High Priority</span></div>
+            <div className="stat-cell"><span className="stat-val or">2</span><span className="stat-lbl">Possible True Matches</span></div>
+            <div className="stat-cell"><span className="stat-val rd">1</span><span className="stat-lbl">Confirmed True Match</span></div>
+            <div className="stat-cell"><span className="stat-val am">3</span><span className="stat-lbl">Workflow Blocks Active</span></div>
+            <div className="stat-cell"><span className="stat-val bl">2</span><span className="stat-lbl">Assigned to Me</span></div>
+          </div>
+        </div>
+
+        {/* Action bar */}
+        <div className="action-bar">
+          {actionBarBtn('Assign to Me', 'btn-default', 'assign', !!sel && sel.assignedTo !== USER.name)}
+          {actionBarBtn('Start Review', 'btn-primary', 'start_review', canStart)}
+          <div className="btn-sep"></div>
+          {actionBarBtn('Clear Match', 'btn-default', 'clear_match', canClear)}
+          {actionBarBtn('Mark True Match', 'btn-danger', 'mark_true', canMarkTrue)}
+          {actionBarBtn('Request More Info', 'btn-warn', 'request_info', canReqInfo)}
+          {actionBarBtn('Escalate to Senior', 'btn-purple', 'escalate', canEscalate)}
+          <div className="btn-sep"></div>
+          {actionBarBtn('Apply Block', 'btn-danger', 'apply_block', canApplyBlk)}
+          <button
+            className="btn btn-disabled"
+            onClick={() => showBlocked('Release Block requires senior_compliance role. Maya Ivanova (compliance_officer) cannot release blocks on active sanctions hits. Escalate to Senior Compliance or await senior review.')}
+            style={{cursor:'pointer'}}
+            title="Release Block — senior_compliance required"
+          >Release Block <span className="blocked-ind">SENIOR</span></button>
+        </div>
+
+        {/* Filter bar */}
+        <div className="filter-bar">
+          <span className="filter-lbl">Filter:</span>
+          <input className="filter-search" placeholder="Search ID / subject / list / entity…" value={fQ} onChange={e => setFQ(e.target.value)} />
+          <select className="filter-select" value={fState} onChange={e => setFState(e.target.value)}>
+            <option value="">All states</option>
+            <option>OPEN</option>
+            <option>IN_REVIEW</option>
+            <option>REQUEST_MORE_INFO</option>
+            <option>CLEARED_REVIEW</option>
+            <option>TRUE_MATCH</option>
+            <option>ESCALATED_SENIOR</option>
+          </select>
+          <select className="filter-select" value={fSource} onChange={e => setFSource(e.target.value)}>
+            <option value="">All sources</option>
+            <option>OpenSanctions</option>
+          </select>
+          <select className="filter-select" value={fType} onChange={e => setFType(e.target.value)}>
+            <option value="">All subject types</option>
+            <option value="individual">Individual</option>
+            <option value="business">Business</option>
+            <option value="merchant">Merchant</option>
+            <option value="beneficial_owner">Beneficial Owner</option>
+          </select>
+          <select className="filter-select" value={fBlock} onChange={e => setFBlock(e.target.value)}>
+            <option value="">All block states</option>
+            <option value="active">Block active</option>
+            <option value="none">No block</option>
+          </select>
+          <span className={`filter-chip${fMe ? ' active' : ''}`} onClick={() => setFMe(p => !p)}>Assigned to me</span>
+          <span className="filter-count">{filtered.length} of {hits.length} hits</span>
+        </div>
+
+        {/* State flow strip */}
+        <div className="state-strip">
+          <div className="state-strip-hdr">
+            <span className="state-strip-title">Sanctions State Machine</span>
+          </div>
+          <div className="sf-row">
+            <span className="sf-row-lbl">Main</span>
+            <div className="sf-flow">
+              {['OPEN','IN_REVIEW','REQUEST_MORE_INFO','CLEARED_REVIEW'].map((s, i, arr) => {
+                const isCur = sel && sel.state === s;
+                return (
+                  <div key={s} className="sf-node">
+                    <span className={`sf-s${isCur ? ' cur' : (s === 'CLEARED_REVIEW' ? ' good' : '')}`}>{s}</span>
+                    {i < arr.length - 1 && <span className="sf-arr">›</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="sf-row">
+            <span className="sf-row-lbl">Alt</span>
+            <div className="sf-flow" style={{gap:'6px'}}>
+              {[
+                { s: 'TRUE_MATCH', cls: 'bad' },
+                { s: 'FALSE_POSITIVE', cls: 'good' },
+                { s: 'ESCALATED_SENIOR', cls: 'esc' },
+                { s: 'BLOCK_APPLIED', cls: 'bad' },
+                { s: 'BLOCK_RELEASED', cls: 'good' },
+                { s: 'EXPIRED', cls: '' },
+              ].map(({ s, cls }) => {
+                const isCur = sel && sel.state === s;
+                return <span key={s} className={`sf-s${isCur ? ' cur' : (' ' + cls)}`}>{s}</span>;
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="content-area">
+          {/* Table */}
+          <div className="table-area">
+            <table>
+              <thead>
+                <tr>
+                  <th>Pri</th>
+                  <th>Hit ID</th>
+                  <th>Subject</th>
+                  <th>Type</th>
+                  <th>Matched List / Entity</th>
+                  <th>Score</th>
+                  <th>State</th>
+                  <th>Block</th>
+                  <th>Assigned</th>
+                  <th>Age / SLA</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(h => {
+                  const sc = scoreClass(h.matchScore);
+                  const sfil = scoreBarFill(h.matchScore);
+                  return (
+                    <tr key={h.id} className={selId === h.id ? 'sel' : ''} onClick={() => selectRow(h.id)}>
+                      <td>
+                        <div className="pri-cell">
+                          <div className={`pri-bar ${h.priority}`}></div>
+                          <span className={`pri-lbl ${h.priority}`}>{h.priority}</span>
+                        </div>
+                      </td>
+                      <td><span className="mono" style={{fontSize:'11px',fontWeight:600}}>{h.id}</span></td>
+                      <td>
+                        <div style={{fontWeight:600,fontSize:'12px'}}>{h.subjectName}</div>
+                        <div style={{fontSize:'10px',color:'var(--t3)',fontFamily:'var(--f-mono)'}}>{h.subjectId}</div>
+                      </td>
+                      <td><span style={{fontSize:'10px',color:'var(--t2)'}}>{h.subjectType.replace('_',' ')}</span></td>
+                      <td>
+                        <div style={{fontSize:'11px',fontWeight:600}}>{h.matchedList}</div>
+                        <div style={{fontSize:'10px',color:'var(--t3)'}}>{h.matchedEntity}</div>
+                      </td>
+                      <td>
+                        <div className="confidence-bar">
+                          <div className="conf-dots">
+                            {[1,2,3,4].map(i => (
+                              <div key={i} className={`conf-dot${i <= sfil ? ` filled ${sc}` : ''}`}></div>
+                            ))}
+                          </div>
+                          <span className={`score-val sc-${sc}`}>{h.matchScore}</span>
+                        </div>
+                      </td>
+                      <td><span className={`rchip ${stateChip(h.state)}`}>{stateLabel(h.state)}</span></td>
+                      <td>{h.workflowBlock ? <span className="blk-active">✕ BLOCKED</span> : <span className="blk-none">—</span>}</td>
+                      <td style={{fontSize:'11px',maxWidth:'80px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{h.assignedTo}</td>
+                      <td>
+                        <span className={slaClass(h.slaBreached, h.ageHours)}>
+                          {h.ageHours}h{h.slaBreached ? ' ⚑' : ''}
+                        </span>
+                      </td>
+                      <td><span className={`rchip ${h.requiredRole === 'senior_compliance' ? 'purple' : 'blue'}`}>{h.requiredRole === 'senior_compliance' ? 'senior' : 'comp.'}</span></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Detail panel */}
+          <div className="detail-panel">
+            {!sel ? (
+              <div className="detail-empty">
+                <div className="detail-empty-icon">◈</div>
+                <div>Select a sanctions hit to review</div>
+              </div>
+            ) : (
+              <DetailView
+                hit={sel}
+                showSens={showSens}
+                setShowSens={setShowSens}
+                decOpen={decOpen}
+                setDecOpen={setDecOpen}
+                decAction={decAction}
+                startAction={startAction}
+                showBlocked={showBlocked}
+                blockedMsg={blockedMsg}
+                lastResult={lastResult}
+                rationale={rationale}
+                setRationale={setRationale}
+                reasonCode={reasonCode}
+                setReasonCode={setReasonCode}
+                evidenceSummary={evidenceSummary}
+                setEvidenceSummary={setEvidenceSummary}
+                chkReadAudit={chkReadAudit}
+                setChkReadAudit={setChkReadAudit}
+                chkBlockImpact={chkBlockImpact}
+                setChkBlockImpact={setChkBlockImpact}
+                submit={submit}
+                canStart={canStart}
+                canClear={canClear}
+                canMarkTrue={canMarkTrue}
+                canReqInfo={canReqInfo}
+                canEscalate={canEscalate}
+                canApplyBlk={canApplyBlk}
+                pushAudit={pushAudit}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Audit rail */}
+      <AuditRail auditLog={auditLog} sel={sel} />
+    </div>
+  );
+}
+
+/* ════════════════════ DETAIL VIEW ════════════════════ */
+
+function DetailView({ hit, showSens, setShowSens, decOpen, setDecOpen, decAction, startAction, showBlocked, blockedMsg, lastResult, rationale, setRationale, reasonCode, setReasonCode, evidenceSummary, setEvidenceSummary, chkReadAudit, setChkReadAudit, chkBlockImpact, setChkBlockImpact, submit, canStart, canClear, canMarkTrue, canReqInfo, canEscalate, canApplyBlk, pushAudit }) {
+  const sc = scoreClass(hit.matchScore);
+  const isHighSensitive = hit.matchScore >= 80 || hit.state === 'TRUE_MATCH';
+
+  const decBtnCls = (action, cls, enabled) =>
+    `dec-btn ${enabled ? cls : 'blocked'}`;
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'100%'}}>
+      {/* Sticky header */}
+      <div className="detail-hdr">
+        <div>
+          <div className="detail-id">{hit.id} · {hit.screeningRunId}</div>
+          <div className="detail-name">{hit.subjectName}</div>
+          <div className="detail-hdr-badges">
+            <span className={`rchip ${stateChip(hit.state)}`}>{hit.state}</span>
+            <span className={`badge ${hit.workflowBlock ? 'red' : 'neutral'}`}>{hit.workflowBlock ? '✕ Block Active' : 'No Block'}</span>
+            <span className="badge neutral">{hit.subjectType.replace(/_/g,' ')}</span>
+            <span className={`badge ${hit.matchScore >= 90 ? 'red' : hit.matchScore >= 80 ? 'orange' : hit.matchScore >= 70 ? 'amber' : 'green'}`}>score {hit.matchScore}</span>
+            {hit.slaBreached && <span className="badge red">SLA BREACHED</span>}
+            {hit.requiredRole === 'senior_compliance' && <span className="badge purple">senior only</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Scrollable body */}
+      <div style={{flex:1,overflowY:'auto'}}>
+
+        {/* Read-audit notice for high-sensitivity */}
+        {isHighSensitive && (
+          <div className="read-audit-notice">
+            <span>⚠</span>
+            <div>
+              <strong>Read-audit required.</strong> Full sanctions hit detail for score ≥ 80 or TRUE_MATCH is gated behind synchronous read-audit. Your access has been logged as <code style={{fontFamily:'var(--f-mono)',fontSize:'10px'}}>read_audit.sanctions_hit_detail_viewed</code>.
+              {!showSens && (
+                <div style={{marginTop:'5px'}}>
+                  <button className="btn btn-warn" style={{fontSize:'11px',padding:'3px 8px'}} onClick={() => { setShowSens(true); pushAudit('read_audit.raw_detail_revealed', `${hit.id} · ${hit.subjectName}`); }}>
+                    View Full Detail (audit-logged)
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Hit metadata */}
+        <div className="detail-sec">
+          <div className="detail-sec-title">Hit Details</div>
+          <table className="kv">
+            <tbody>
+              <tr><td>Hit ID</td><td><span className="mono">{hit.id}</span></td></tr>
+              <tr><td>Subject ID</td><td><span className="mono">{hit.subjectId}</span></td></tr>
+              <tr><td>Subject type</td><td>{hit.subjectType.replace(/_/g,' ')}</td></tr>
+              <tr><td>Screening run</td><td><span className="mono" style={{fontSize:'10px'}}>{hit.screeningRunId}</span></td></tr>
+              <tr><td>Screened at</td><td><span className="mono" style={{fontSize:'10px'}}>{hit.screeningTs}</span></td></tr>
+              <tr><td>Matched entity ID</td><td><span className="mono" style={{fontSize:'10px'}}>{showSens ? hit.matchedEntityId : '••••••••'}</span></td></tr>
+              <tr><td>Watchlist source</td><td>{hit.source}</td></tr>
+              <tr><td>State</td><td><span className={`rchip ${stateChip(hit.state)}`}>{hit.state}</span></td></tr>
+              <tr><td>Workflow block</td><td>{hit.workflowBlock ? <span className="blk-active">✕ ACTIVE</span> : <span style={{color:'var(--g)',fontSize:'11px',fontWeight:600}}>none</span>}</td></tr>
+              <tr><td>Assigned to</td><td>{hit.assignedTo}</td></tr>
+              <tr><td>SLA due</td><td><span className={slaClass(hit.slaBreached, hit.ageHours)}>{hit.slaDue}{hit.slaBreached ? ' ⚑ BREACHED' : ''}</span></td></tr>
+              <tr><td>Account status</td><td>
+                {hit.accountStatus === 'FROZEN'
+                  ? <span className="acct-frozen">FROZEN</span>
+                  : <span className="acct-active">{hit.accountStatus}</span>}
+              </td></tr>
+              <tr><td>KYC status</td><td><span className={`rchip ${hit.kycStatus === 'APPROVED' ? 'green' : hit.kycStatus === 'BLOCKED' ? 'red' : 'amber'}`}>{hit.kycStatus}</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Match comparison */}
+        <div className="detail-sec">
+          <div className="detail-sec-title">Subject vs. Watchlist Comparison</div>
+          <div className="compare-grid">
+            <div className="compare-side platform">
+              <div className="compare-side-hdr">Platform Subject</div>
+              <div className="compare-body">
+                <div className="cmp-field"><div className="cmp-lbl">Name</div><div className="cmp-val matched">{hit.platform.name}</div></div>
+                <div className="cmp-field"><div className="cmp-lbl">Date of Birth</div><div className="cmp-val">{hit.platform.dob}</div></div>
+                <div className="cmp-field"><div className="cmp-lbl">Country</div><div className="cmp-val matched">{hit.platform.country}</div></div>
+                <div className="cmp-field"><div className="cmp-lbl">User ID</div><div className="cmp-val" style={{fontSize:'10px'}}>{hit.platform.userId}</div></div>
+                <div className="cmp-field"><div className="cmp-lbl">KYC Status</div><div className="cmp-val">{hit.platform.kycStatus}</div></div>
+                <div className="cmp-field"><div className="cmp-lbl">Related Workflows</div><div className="cmp-val" style={{fontSize:'10px'}}>{hit.platform.relatedWorkflows.join(', ') || '—'}</div></div>
+              </div>
+            </div>
+            <div className="compare-side watchlist">
+              <div className="compare-side-hdr">Watchlist Entity</div>
+              <div className="compare-body">
+                <div className="cmp-field"><div className="cmp-lbl">Matched Name</div><div className="cmp-val matched">{showSens ? hit.watchlist.matchedName : '••••••'}</div></div>
+                <div className="cmp-field"><div className="cmp-lbl">Alias</div><div className="cmp-val">{showSens ? hit.watchlist.alias : '••••'}</div></div>
+                <div className="cmp-field"><div className="cmp-lbl">Date of Birth</div><div className="cmp-val">{showSens ? hit.watchlist.dob : '••••'}</div></div>
+                <div className="cmp-field"><div className="cmp-lbl">Country</div><div className="cmp-val matched">{hit.watchlist.country}</div></div>
+                <div className="cmp-field"><div className="cmp-lbl">Program</div><div className="cmp-val" style={{fontSize:'10px'}}>{showSens ? hit.watchlist.program : '••••••••••'}</div></div>
+                <div className="cmp-field"><div className="cmp-lbl">List</div><div className="cmp-val">{hit.matchedList}</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Match details / risk */}
+        <div className="detail-sec">
+          <div className="detail-sec-title">Match Analysis</div>
+          <div className="match-box">
+            <div className="match-score-row">
+              <span className={`match-score-big ${hit.matchDetails.confidenceClass}`}>{hit.matchScore}</span>
+              <div>
+                <div className="match-score-lbl">Match score / 100</div>
+                <div className={`match-score-conf ${hit.matchDetails.confidenceClass}`}>{hit.matchDetails.confidence}</div>
+              </div>
+            </div>
+            <div className="match-fields">
+              <div className="match-field-col">
+                <div className="mf-label">Matched fields</div>
+                {hit.matchDetails.matchedFields.map(f => <span key={f} className="mf-chip matched">{f}</span>)}
+              </div>
+              {hit.matchDetails.unmatchedFields.length > 0 && (
+                <div className="match-field-col">
+                  <div className="mf-label">Unmatched fields</div>
+                  {hit.matchDetails.unmatchedFields.map(f => <span key={f} className="mf-chip unmatched">{f}</span>)}
+                </div>
+              )}
+            </div>
+            <div style={{marginBottom:'6px'}}>
+              <div style={{fontSize:'10px',color:'var(--t3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'.4px',marginBottom:'4px'}}>Risk Indicators</div>
+              <div className="conf-dots" style={{gap:'4px',flexWrap:'wrap',display:'flex'}}>
+                {hit.riskIndicators.map(ri => (
+                  <span key={ri} style={{fontSize:'9px',fontWeight:600,fontFamily:'var(--f-mono)',padding:'2px 6px',borderRadius:'3px',background:'var(--or-bg)',color:'var(--or)',border:'1px solid var(--or-bd)'}}>{ri}</span>
+                ))}
+              </div>
+            </div>
+            <div className="rec-box">⚑ {hit.matchDetails.recommendation}</div>
+          </div>
+        </div>
+
+        {/* Workflow block panel */}
+        {hit.workflowBlocks.length > 0 && (
+          <div className="detail-sec">
+            <div className="detail-sec-title">Workflow Impact</div>
+            <div className="wfblk-panel">
+              <div className="wfblk-title">
+                {hit.workflowBlock ? '✕ Block active — enforced server-side' : '○ No block currently active'}
+              </div>
+              <div className="wfblk-grid">
+                {hit.workflowBlocks.map((w, i) => (
+                  <div key={i} className="wfblk-row">
+                    <span className="wfblk-item-name">{w.name}</span>
+                    {w.blocked
+                      ? <span className="wfblk-status-blocked">✕ BLOCKED</span>
+                      : <span className="wfblk-status-allowed">✓ allowed</span>}
+                  </div>
+                ))}
+              </div>
+              <div className="wfblk-note">
+                Block decisions are enforced server-side. Release block requires resolved false positive or <strong>senior_compliance</strong> override. TRUE_MATCH keeps account permanently blocked.
+              </div>
+            </div>
+
+            {/* Senior-only actions */}
+            <div className="senior-blk-box">
+              <div className="senior-blk-title">🔒 Senior Compliance — Blocked for Maya Ivanova</div>
+              <div className="senior-blk-items">
+                <div className="senior-blk-item">Release True Match Block</div>
+                <div className="senior-blk-item">Senior Override Decision</div>
+                <div className="senior-blk-item">View Raw OpenSanctions Payload</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Timeline */}
+        <div className="detail-sec">
+          <div className="detail-sec-title">Case Timeline</div>
+          <div className="tl">
+            {hit.timeline.map((t, i) => (
+              <div key={i} className="tl-item">
+                <div className={`tl-dot ${t.dot}`}></div>
+                <div>
+                  <div className="tl-ev">{t.ev}</div>
+                  <div className="tl-meta">{t.meta}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Decision panel */}
+        <div className="decision-panel">
+          <div className="decision-hdr" onClick={() => setDecOpen(p => !p)}>
+            <span className="decision-hdr-title">Decision Controls</span>
+            <span style={{marginLeft:'auto',fontSize:'11px',color:'var(--t3)'}}>{decOpen ? '▲' : '▼'}</span>
+          </div>
+          {decOpen && (
+            <div className="decision-body">
+              {blockedMsg && (
+                <div className="blocked-box">
+                  <div className="blocked-title">🔒 Action blocked — RBAC</div>
+                  <div className="blocked-text">{blockedMsg}</div>
+                </div>
+              )}
+              {lastResult && lastResult.type === 'success' && (
+                <div className="success-box">
+                  <div className="success-title">✓ Decision recorded</div>
+                  <div className="success-body">{lastResult.msg}</div>
+                </div>
+              )}
+              {lastResult && lastResult.type === 'error' && (
+                <div className="alert-box red">{lastResult.msg}</div>
+              )}
+
+              {!decAction && (
+                <div className="decision-grid">
+                  <button className={decBtnCls('start_review','primary',canStart)} onClick={canStart ? () => startAction('start_review') : undefined}>▶ Start Review</button>
+                  <button className={decBtnCls('clear_match','default',canClear)} onClick={canClear ? () => startAction('clear_match') : undefined}>✓ Clear Match</button>
+                  <button className={decBtnCls('mark_true','danger',canMarkTrue)} onClick={canMarkTrue ? () => startAction('mark_true') : undefined}>✕ Mark True Match</button>
+                  <button className={decBtnCls('request_info','warn',canReqInfo)} onClick={canReqInfo ? () => startAction('request_info') : undefined}>? Request More Info</button>
+                  <button className={decBtnCls('escalate','purple',canEscalate)} onClick={canEscalate ? () => startAction('escalate') : undefined}>↑ Escalate to Senior</button>
+                  <button className={decBtnCls('apply_block','danger',canApplyBlk)} onClick={canApplyBlk ? () => startAction('apply_block') : undefined}>⊘ Apply Block</button>
+                  <button className="dec-btn blocked" onClick={() => showBlocked('Release Block requires senior_compliance. Compliance officers can apply blocks but cannot release them after a sanctions hit is confirmed. Escalate to Senior Compliance.')}>
+                    ○ Release Block <span className="blocked-ind">SENIOR</span>
+                  </button>
+                  <button className="dec-btn blocked" onClick={() => showBlocked('Raw OpenSanctions payload is restricted to senior_compliance. This prevents data from bypassing read-audit and investigation controls.')}>
+                    ≡ Raw OS Payload <span className="blocked-ind">SENIOR</span>
+                  </button>
+                  <button className={`dec-btn ${decBtnCls('add_note','default',true)}`} onClick={() => startAction('add_note')}>+ Add Case Note</button>
+                </div>
+              )}
+
+              {decAction && (
+                <div>
+                  <div className="alert-box amber" style={{marginBottom:'8px'}}>
+                    Action: <strong>{decAction.replace(/_/g,' ').toUpperCase()}</strong> — fill in the form and confirm before submitting.
+                  </div>
+
+                  {decAction !== 'add_note' && decAction !== 'start_review' && decAction !== 'apply_block' && (
+                    <div className="form-group">
+                      <label className="form-lbl">Decision reason code *</label>
+                      <select className="form-sel" value={reasonCode} onChange={e => setReasonCode(e.target.value)}>
+                        {REASON_CODES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  {decAction !== 'start_review' && decAction !== 'apply_block' && (
+                    <div className="form-group">
+                      <label className="form-lbl">Rationale {decAction === 'add_note' ? '' : '*'} <span style={{fontWeight:400,color:'var(--t3)'}}>({decAction === 'add_note' ? '≥5' : '≥20'} chars)</span></label>
+                      <textarea className="form-ta" value={rationale} onChange={e => setRationale(e.target.value)} placeholder={decAction === 'add_note' ? 'Case note…' : 'Explain the basis for this decision including evidence reviewed…'} />
+                    </div>
+                  )}
+
+                  {(decAction === 'clear_match' || decAction === 'mark_true') && (
+                    <div className="form-group">
+                      <label className="form-lbl">Evidence summary</label>
+                      <textarea className="form-ta" style={{minHeight:'44px'}} value={evidenceSummary} onChange={e => setEvidenceSummary(e.target.value)} placeholder="Document key evidence used to reach this decision…" />
+                    </div>
+                  )}
+
+                  {decAction !== 'add_note' && (
+                    <label className="form-chk">
+                      <input type="checkbox" checked={chkReadAudit} onChange={e => setChkReadAudit(e.target.checked)} />
+                      I confirm that sensitive hit details were reviewed and the read-audit has been accepted.
+                    </label>
+                  )}
+
+                  {(decAction === 'apply_block' || decAction === 'mark_true' || decAction === 'clear_match') && (
+                    <label className="form-chk">
+                      <input type="checkbox" checked={chkBlockImpact} onChange={e => setChkBlockImpact(e.target.checked)} />
+                      I have reviewed the workflow block impact — affected flows: {hit.workflowBlocks.filter(w => w.blocked).map(w => w.name).join(', ') || 'none'}.
+                    </label>
+                  )}
+
+                  <div className="dec-btn-row">
+                    <button className="btn btn-primary" onClick={submit}>Submit Decision</button>
+                    <button className="btn btn-default" onClick={() => { setDecAction(null); }}>Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════ AUDIT RAIL ════════════════════ */
+
+function AuditRail({ auditLog, sel }) {
+  return (
+    <aside className="audit-rail">
+      <div className="au-hdr">
+        <div className="au-title">Security &amp; Audit</div>
+        <div className="au-sub">BOF-UI-07 · read-audit active</div>
+      </div>
+      <div className="au-body">
+
+        {/* Session */}
+        <div>
+          <div className="au-sec-title">Session</div>
+          <div className="au-row"><span className="au-k">User</span><span className="au-v">Maya Ivanova</span></div>
+          <div className="au-row"><span className="au-k">OIDC role</span><span className="au-v">compliance_officer</span></div>
+          <div className="au-row"><span className="au-k">Platform role</span><span className="au-v ok">compliance_officer</span></div>
+          <div className="au-row"><span className="au-k">Auth source</span><span className="au-v">Keycloak OIDC</span></div>
+          <div className="au-row"><span className="au-k">Session status</span><span className="au-v ok">active</span></div>
+          <div className="au-row"><span className="au-k">Screen</span><span className="au-v">BOF-UI-07</span></div>
+        </div>
+
+        {/* RBAC */}
+        <div>
+          <div className="au-sec-title">RBAC — Maya's Permissions</div>
+          <div className="au-rbac-row"><span className="au-rbac-ico ok">✓</span><span className="au-rbac-txt">Can <strong>view</strong> all sanctions hits</span></div>
+          <div className="au-rbac-row"><span className="au-rbac-ico ok">✓</span><span className="au-rbac-txt">Can <strong>start review</strong> and assign</span></div>
+          <div className="au-rbac-row"><span className="au-rbac-ico ok">✓</span><span className="au-rbac-txt">Can <strong>clear</strong> low/med confidence FP with rationale</span></div>
+          <div className="au-rbac-row"><span className="au-rbac-ico ok">✓</span><span className="au-rbac-txt">Can <strong>apply temporary block</strong></span></div>
+          <div className="au-rbac-row"><span className="au-rbac-ico ok">✓</span><span className="au-rbac-txt">Can <strong>escalate</strong> to senior compliance</span></div>
+          <div className="au-rbac-row"><span className="au-rbac-ico ok">✓</span><span className="au-rbac-txt">Can <strong>request more info</strong></span></div>
+          <div className="au-rbac-row"><span className="au-rbac-ico no">✕</span><span className="au-rbac-txt blocked">Cannot <strong>release block</strong> after TRUE_MATCH</span></div>
+          <div className="au-rbac-row"><span className="au-rbac-ico no">✕</span><span className="au-rbac-txt blocked">Cannot view <strong>raw OS payload</strong></span></div>
+          <div className="au-rbac-row"><span className="au-rbac-ico no">✕</span><span className="au-rbac-txt blocked">Cannot perform <strong>senior override</strong></span></div>
+          <div className="au-rbac-row"><span className="au-rbac-ico no">✕</span><span className="au-rbac-txt blocked"><strong>Backoffice operator</strong> cannot view full hit detail</span></div>
+        </div>
+
+        {/* Audit requirements */}
+        <div>
+          <div className="au-sec-title">Audit Requirements</div>
+          <div className="au-inv">Hit detail view (score ≥80) requires synchronous <strong>read-audit</strong></div>
+          <div className="au-inv">Raw OpenSanctions payload is <strong>senior_compliance only</strong></div>
+          <div className="au-inv">Block and release decisions are <strong>strongly audited</strong></div>
+          <div className="au-inv">TRUE_MATCH decisions require rationale and evidence summary</div>
+          <div className="au-inv">End-user and merchant sessions cannot access this screen</div>
+        </div>
+
+        {/* Selected hit summary */}
+        {sel && (
+          <div>
+            <div className="au-sec-title">Selected Hit</div>
+            <div className="au-row"><span className="au-k">ID</span><span className="au-v">{sel.id}</span></div>
+            <div className="au-row"><span className="au-k">Score</span><span className={`au-v ${sel.matchScore >= 90 ? 'danger' : sel.matchScore >= 80 ? 'warn' : ''}`}>{sel.matchScore}/100</span></div>
+            <div className="au-row"><span className="au-k">State</span><span className="au-v">{sel.state}</span></div>
+            <div className="au-row"><span className="au-k">Block</span><span className={`au-v ${sel.workflowBlock ? 'danger' : 'ok'}`}>{sel.workflowBlock ? 'ACTIVE' : 'none'}</span></div>
+            <div className="au-row"><span className="au-k">Required role</span><span className={`au-v ${sel.requiredRole === 'senior_compliance' ? 'warn' : ''}`}>{sel.requiredRole}</span></div>
+          </div>
+        )}
+
+        {/* Live event log */}
+        <div>
+          <div className="au-sec-title">Live Event Log</div>
+          <div className="au-ev-log">
+            {auditLog.map((ev, i) => (
+              <div key={i} className="au-ev">
+                <div className={`au-ev-code${ev.isNew ? ' new' : ''}`}>{ev.code}</div>
+                <div className="au-ev-meta">{ev.meta}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </aside>
+  );
+}
+
+/* ════════════════════ MOUNT ════════════════════ */
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
