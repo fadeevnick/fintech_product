@@ -138,6 +138,7 @@ Implemented backend/runtime scope:
 Created:
 - `prototypes/ui/01_app_shell_cross_surface.html` — standalone cross-surface app shell HTML prototype from UI/UX prototype workflow.
 - `prototypes/ui/02_merchant_auth.html` — standalone `MDB-UI-01` merchant auth HTML prototype from UI/UX prototype workflow.
+- `prototypes/ui/03_enduser_auth.html` — standalone end-user auth HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;
@@ -155,4 +156,4 @@ Runtime evidence:
 - `AUD-02` — pass for audit append-only protection.
 
 Next planned step:
-- Inspect and accept/commit `prototypes/ui/03_enduser_auth.html` separately, then draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.
+- Draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.

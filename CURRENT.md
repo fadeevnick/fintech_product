@@ -217,6 +217,7 @@ Current Phase 02 Slice 02 draft:
 - Standalone prototype artifacts received:
   - `prototypes/ui/01_app_shell_cross_surface.html`
   - `prototypes/ui/02_merchant_auth.html`
+  - `prototypes/ui/03_enduser_auth.html`
 - Phase 02 Slice 02 backend/runtime sub-scope is implemented and verified:
   - Platform migration `V3__merchant_identity_foundation.sql`.
   - Merchant register/email verify/login/logout/me.
@@ -229,7 +230,4 @@ Current Phase 02 Slice 02 draft:
 - Backend/domain/runtime work may proceed even if unrelated UI prototypes are still being prepared.
 - Frontend implementation for a screen/workflow requires its accepted standalone HTML prototype first.
 
-Untracked/new prototype to process next:
-- `prototypes/ui/03_enduser_auth.html`
-
-Next planned step: inspect and accept/commit `prototypes/ui/03_enduser_auth.html` separately, then draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.
+Next planned step: draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.

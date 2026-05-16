@@ -351,4 +351,4 @@ planning/runtime_evidence_log.md
 
 Backend/runtime implementation is verified and recorded in `planning/runtime_evidence_log.md`.
 
-Next planned step: keep `spa-merchant` frontend implementation pending until the relevant accepted standalone HTML prototype is used as input, process `prototypes/ui/03_enduser_auth.html` as a separate prototype artifact, then draft the next non-frontend Phase 02 slice.
+Next planned step: keep frontend implementation pending until the relevant accepted standalone HTML prototype is used as input, then draft the next non-frontend Phase 02 slice.

@@ -279,4 +279,4 @@ Implementation note:
 - Fixed by setting `noRollbackFor = [IdentityException::class]` on end-user and merchant login flows, then rebuilding/recreating `platform` and rerunning the checks above.
 
 Next planned step:
-- Separately inspect and accept/commit `prototypes/ui/03_enduser_auth.html`, then draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.
+- Draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.
