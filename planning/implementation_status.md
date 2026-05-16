@@ -149,7 +149,7 @@ Created:
 - `prototypes/ui/11_backoffice_chargeback_arbitration.html` — standalone `BOF-UI-08` backoffice chargeback arbitration HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-17.
 - `prototypes/ui/12_backoffice_audit_log.html` — standalone `BOF-UI-09` backoffice audit log HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-17.
 - `prototypes/ui/13_enduser_kyc_status.html` — standalone `UEW-UI-02` end-user KYC status HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-17.
-- `prototypes/ui/14_enduser_wallet_home.html` — standalone `UEW-UI-03` end-user wallet home HTML prototype from UI/UX prototype workflow; minor JSX style syntax fixed locally; headless Chrome render check passed on 2026-05-17.
+- `prototypes/ui/14_enduser_wallet_home.html` — standalone `UEW-UI-03` end-user wallet home HTML prototype from UI/UX prototype workflow; minor JSX style syntax and flex layout clipping fixed locally; headless Chrome render check passed on 2026-05-17.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;
