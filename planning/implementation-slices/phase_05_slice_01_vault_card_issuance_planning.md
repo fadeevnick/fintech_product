@@ -1,6 +1,6 @@
 # Phase 05 Slice 01 — Vault Tokenization and Card Issuance Foundation — Planning Note
 
-Status: **DRAFT v0.1 — planning-only; no product code implemented**.
+Status: **APPROVED v0.1 — planning-only; no product code implemented**.
 
 This document fixes the first implementation slice inside `Phase 05 — Vault, Card Issuance and Authorization`.
 
