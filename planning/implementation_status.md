@@ -117,30 +117,42 @@ Next planned step:
 
 ## Phase 02 Slice 02 — Merchant Identity Foundation
 
-Status: **PLANNING DRAFT — not approved, no product code started**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — frontend checkpoint not started**.
 
 Planning contract:
-- `planning/implementation-slices/phase_02_slice_02_merchant_identity_planning.md` — DRAFT v0.1.
+- `planning/implementation-slices/phase_02_slice_02_merchant_identity_planning.md` — backend/runtime sub-scope executed v0.2; frontend checkpoint pending.
 
-Proposed scope:
-- merchant employee registration/login;
-- minimal merchant entity for real `merchant_id` scoping;
-- first merchant employee as `merchant_admin`;
-- merchant-scoped opaque session;
-- cross-pool email uniqueness proof across end-user and merchant pools;
-- merchant auth audit writes;
-- minimal `MDB-UI-01` product implementation checkpoint based on an accepted standalone HTML prototype.
+Implemented backend/runtime scope:
+- Platform DB migration `V3__merchant_identity_foundation.sql` for minimal merchants, merchant employees, merchant email verification records and `MERCHANT_EMPLOYEE` sessions.
+- Merchant registration, email verification, login, logout and `GET /api/v1/merchant/me`.
+- First merchant employee is `merchant_admin`; merchant starts with `kyb_status = NOT_STARTED`.
+- Cross-pool email uniqueness across end-user and merchant employee pools.
+- Wrong-role denial between end-user and merchant sessions.
+- Merchant auth audit writes, including login failure audit after fixing expected auth-error transaction rollback.
+- Retained runtime scripts:
+  - `product/scripts/runtime/reg_phase02_merchant_auth.sh`
+  - `product/scripts/runtime/reg_phase02_cross_pool_email_uniqueness.sh`
+  - `product/scripts/runtime/reg_phase02_cross_role_denial.sh`
+  - `product/scripts/runtime/reg_phase02_merchant_auth_audit.sh`
 
 Created:
 - `prototypes/ui/01_app_shell_cross_surface.html` — standalone cross-surface app shell HTML prototype from UI/UX prototype workflow.
 - `prototypes/ui/02_merchant_auth.html` — standalone `MDB-UI-01` merchant auth HTML prototype from UI/UX prototype workflow.
 
 Explicitly not started:
-- product code for this slice;
+- `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;
 - Stripe Connect onboarding;
 - merchant API keys;
 - public Payments API;
 - backoffice OIDC/RBAC implementation.
 
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-16 — Phase 02 Slice 02 Backend/Runtime Verification`.
+- `AUTH-02` — pass for merchant register/verify/login/me.
+- `AUTH-04` — pass for end-user vs merchant employee cross-pool email uniqueness.
+- `AUTH-05` — partial for unauthenticated and end-user/merchant wrong-role denial; full pass waits for backoffice OIDC/RBAC.
+- `AUD-01` — pass for end-user and merchant auth audit events.
+- `AUD-02` — pass for audit append-only protection.
+
 Next planned step:
-- Continue UI prototype baseline with `03_enduser_auth.html` in parallel, or approve Phase 02 Slice 02 and start non-frontend merchant identity work. Frontend implementation remains gated by accepted standalone HTML prototypes.
+- Inspect and accept/commit `prototypes/ui/03_enduser_auth.html` separately, then draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.

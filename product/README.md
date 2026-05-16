@@ -1,6 +1,6 @@
 # Mini Fintech Platform Product
 
-This directory contains the Phase 01 product skeleton.
+This directory contains the product implementation.
 
 ## Runtime Shape
 
@@ -8,7 +8,11 @@ This directory contains the Phase 01 product skeleton.
 - Frontend: three React/Vite SPA shells: end-user, merchant, backoffice.
 - Infra: Postgres per service, Kafka KRaft, Keycloak, SeaweedFS S3 API, Traefik, Prometheus, Grafana, Tempo, Loki, OTel Collector, Vector.
 
-No domain behavior is implemented in Phase 01 Slice 01.
+Implemented runtime behavior so far:
+
+- Phase 01 runtime skeleton for five backend services, three SPA shells and local infra.
+- Phase 02 Slice 01 end-user register/email verify/login/logout/me in `platform`.
+- Phase 02 Slice 02 merchant identity backend/runtime sub-scope in `platform`: merchant register/email verify/login/logout/me, first employee as `merchant_admin`, cross-pool email uniqueness and end-user/merchant wrong-role denial.
 
 ## Local Commands
 
@@ -43,4 +47,10 @@ scripts/runtime/reg_phase01_logs.sh
 scripts/runtime/reg_phase01_metrics.sh
 scripts/runtime/reg_phase01_traces.sh
 scripts/runtime/reg_phase01_spa_shells.sh
+scripts/runtime/reg_phase02_enduser_auth.sh
+scripts/runtime/reg_phase02_merchant_auth.sh
+scripts/runtime/reg_phase02_cross_pool_email_uniqueness.sh
+scripts/runtime/reg_phase02_cross_role_denial.sh
+scripts/runtime/reg_phase02_auth_audit.sh
+scripts/runtime/reg_phase02_merchant_auth_audit.sh
 ```

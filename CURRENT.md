@@ -6,7 +6,7 @@ Last updated: 2026-05-15.
 
 ## Focus
 
-UI prototype baseline is in progress in parallel with eligible non-frontend Phase 02 planning/work.
+UI prototype baseline is in progress in parallel with eligible non-frontend Phase 02 work.
 
 ## Status
 
@@ -217,8 +217,19 @@ Current Phase 02 Slice 02 draft:
 - Standalone prototype artifacts received:
   - `prototypes/ui/01_app_shell_cross_surface.html`
   - `prototypes/ui/02_merchant_auth.html`
-- Do not write product code for this slice until owner approval.
-- After slice approval, backend/domain/runtime work may proceed even if unrelated UI prototypes are still being prepared.
+- Phase 02 Slice 02 backend/runtime sub-scope is implemented and verified:
+  - Platform migration `V3__merchant_identity_foundation.sql`.
+  - Merchant register/email verify/login/logout/me.
+  - `merchant_admin` first employee and `kyb_status = NOT_STARTED`.
+  - Cross-pool end-user vs merchant employee email uniqueness.
+  - End-user/merchant wrong-role denial.
+  - Merchant auth audit rows.
+  - Runtime evidence recorded in `planning/runtime_evidence_log.md`.
+- `spa-merchant` frontend implementation checkpoint for `MDB-UI-01` is not started.
+- Backend/domain/runtime work may proceed even if unrelated UI prototypes are still being prepared.
 - Frontend implementation for a screen/workflow requires its accepted standalone HTML prototype first.
 
-Next planned step: either continue UI prototype baseline with `03_enduser_auth.html`, or approve Phase 02 Slice 02 and start non-frontend merchant identity work while UI design continues.
+Untracked/new prototype to process next:
+- `prototypes/ui/03_enduser_auth.html`
+
+Next planned step: inspect and accept/commit `prototypes/ui/03_enduser_auth.html` separately, then draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.

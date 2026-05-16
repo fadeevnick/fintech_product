@@ -20,10 +20,28 @@ data class RegisterRequest(
     val password: String,
 )
 
+data class MerchantRegisterRequest(
+    val email: String,
+    val password: String,
+    val companyName: String,
+    val country: String,
+    val businessType: String,
+)
+
 data class RegisterResponse(
     val userId: String,
     val email: String,
     val status: String,
+    val verificationToken: String? = null,
+)
+
+data class MerchantRegisterResponse(
+    val merchantId: String,
+    val employeeId: String,
+    val email: String,
+    val role: String,
+    val employeeStatus: String,
+    val merchantStatus: String,
     val verificationToken: String? = null,
 )
 
@@ -37,6 +55,15 @@ data class VerifyEmailResponse(
     val status: String,
 )
 
+data class MerchantVerifyEmailResponse(
+    val merchantId: String,
+    val employeeId: String,
+    val email: String,
+    val role: String,
+    val employeeStatus: String,
+    val merchantStatus: String,
+)
+
 data class LoginRequest(
     val email: String,
     val password: String,
@@ -48,10 +75,28 @@ data class LoginResponse(
     val status: String,
 )
 
+data class MerchantLoginResponse(
+    val merchantId: String,
+    val employeeId: String,
+    val email: String,
+    val role: String,
+    val employeeStatus: String,
+    val merchantStatus: String,
+)
+
 data class MeResponse(
     val userId: String,
     val email: String,
     val status: String,
+)
+
+data class MerchantMeResponse(
+    val merchantId: String,
+    val employeeId: String,
+    val email: String,
+    val role: String,
+    val employeeStatus: String,
+    val merchantStatus: String,
 )
 
 data class LogoutResponse(

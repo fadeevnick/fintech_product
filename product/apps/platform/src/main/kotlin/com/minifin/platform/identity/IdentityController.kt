@@ -58,6 +58,39 @@ class IdentityController(
         return ApiResponse(data = LogoutResponse(loggedOut))
     }
 
+    @PostMapping("/api/v1/merchant/register")
+    fun registerMerchant(@RequestBody request: MerchantRegisterRequest): ResponseEntity<ApiResponse<MerchantRegisterResponse>> =
+        ResponseEntity.status(HttpStatus.CREATED)
+            .body(ApiResponse(data = identityService.registerMerchant(request)))
+
+    @PostMapping("/api/v1/merchant/email/verify")
+    fun verifyMerchantEmail(@RequestBody request: VerifyEmailRequest): ApiResponse<MerchantVerifyEmailResponse> =
+        ApiResponse(data = identityService.verifyMerchantEmail(request))
+
+    @PostMapping("/api/v1/merchant/login")
+    fun loginMerchant(
+        @RequestBody request: LoginRequest,
+        response: HttpServletResponse,
+    ): ApiResponse<MerchantLoginResponse> {
+        val result = identityService.loginMerchant(request)
+        response.addCookie(sessionCookie(result.sessionToken))
+        return ApiResponse(data = result.employee.toMerchantLoginResponse())
+    }
+
+    @GetMapping("/api/v1/merchant/me")
+    fun merchantMe(@CookieValue(name = SESSION_COOKIE, required = false) sessionToken: String?): ApiResponse<MerchantMeResponse> =
+        ApiResponse(data = identityService.currentMerchant(sessionToken).toMerchantMeResponse())
+
+    @PostMapping("/api/v1/merchant/logout")
+    fun logoutMerchant(
+        @CookieValue(name = SESSION_COOKIE, required = false) sessionToken: String?,
+        response: HttpServletResponse,
+    ): ApiResponse<LogoutResponse> {
+        val loggedOut = identityService.logoutMerchant(sessionToken)
+        response.addCookie(expiredSessionCookie())
+        return ApiResponse(data = LogoutResponse(loggedOut))
+    }
+
     @ExceptionHandler(IdentityException::class)
     fun handleIdentityException(exception: IdentityException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(exception.status)
@@ -90,4 +123,24 @@ class IdentityController(
             maxAge = 0
             setAttribute("SameSite", "Lax")
         }
+
+    private fun MerchantEmployeeRecord.toMerchantLoginResponse(): MerchantLoginResponse =
+        MerchantLoginResponse(
+            merchantId = merchantId.toString(),
+            employeeId = id.toString(),
+            email = email,
+            role = role,
+            employeeStatus = status,
+            merchantStatus = merchantStatus,
+        )
+
+    private fun MerchantEmployeeRecord.toMerchantMeResponse(): MerchantMeResponse =
+        MerchantMeResponse(
+            merchantId = merchantId.toString(),
+            employeeId = id.toString(),
+            email = email,
+            role = role,
+            employeeStatus = status,
+            merchantStatus = merchantStatus,
+        )
 }

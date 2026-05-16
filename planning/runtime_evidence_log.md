@@ -1,6 +1,6 @@
 # Runtime Evidence Log
 
-Last updated: 2026-05-15.
+Last updated: 2026-05-16.
 
 This file records factual verification only. A runtime check is not marked passed unless the corresponding runtime command actually ran.
 
@@ -200,3 +200,83 @@ Final stack evidence:
 
 Next planned step:
 - Draft Phase 02 Slice 02 planning note for the next identity/RBAC segment before writing more product code.
+
+---
+
+## 2026-05-16 — Phase 02 Slice 02 Backend/Runtime Verification
+
+Scope:
+- Merchant identity backend/runtime sub-scope in Platform.
+- No `spa-merchant` frontend implementation was added in this verification; frontend work remains gated by accepted standalone HTML prototypes.
+
+Preconditions:
+- Phase 01 local compose stack was already running.
+- Docker commands run with Codex escalation because normal sandboxed Docker CLI cannot access the daemon.
+- `prototypes/ui/02_merchant_auth.html` exists as the standalone `MDB-UI-01` visual prototype artifact.
+
+Build evidence:
+- `docker compose -f deploy/docker-compose.yml build platform` passed.
+- `docker compose -f deploy/docker-compose.yml up -d platform` passed.
+- Platform startup applied `V3__merchant_identity_foundation.sql` through Flyway.
+- `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+
+Phase 01 regression evidence:
+- `product/scripts/runtime/reg_phase01_runtime_health.sh`:
+  - `RUN-01` — pass.
+  - all five backend services returned health responses.
+
+Phase 02 regression and slice script evidence:
+- `product/scripts/runtime/reg_phase02_enduser_auth.sh`:
+  - `AUTH-01` — pass.
+  - Existing end-user register/verify/login/me flow still works after generalized session actor handling.
+- `product/scripts/runtime/reg_phase02_protected_endpoint.sh`:
+  - `AUTH-05` — partial.
+  - Unauthenticated `GET /api/v1/enduser/me` still returns 401 with `unauthenticated`.
+- `product/scripts/runtime/reg_phase02_email_uniqueness.sh`:
+  - `AUTH-04` — partial regression.
+  - Duplicate end-user registration is still rejected through `identity.email_reservations`.
+- `product/scripts/runtime/reg_phase02_merchant_auth.sh`:
+  - `AUTH-02` — pass.
+  - Registered merchant, received local verification token, rejected unverified login, verified merchant employee email, logged in with `MFP_SESSION`, and authenticated `GET /api/v1/merchant/me`.
+- `product/scripts/runtime/reg_phase02_cross_pool_email_uniqueness.sh`:
+  - `AUTH-04` — pass for end-user vs merchant employee pools.
+  - End-user email cannot be reused for merchant registration, and merchant employee email cannot be reused for end-user registration.
+- `product/scripts/runtime/reg_phase02_cross_role_denial.sh`:
+  - `AUTH-05` — partial.
+  - End-user session is rejected by `GET /api/v1/merchant/me` with 403 `forbidden_actor_type`.
+  - Merchant employee session is rejected by `GET /api/v1/enduser/me` with 403 `forbidden_actor_type`.
+  - Remaining gap: full `AUTH-05` waits for backoffice OIDC/RBAC.
+- `product/scripts/runtime/reg_phase02_auth_audit.sh`:
+  - `AUD-01` — pass.
+  - Existing end-user auth audit rows still exist.
+  - `AUD-02` — pass.
+  - Direct `UPDATE audit.audit_log ...` is rejected by DB trigger with `audit.audit_log is append-only`.
+- `product/scripts/runtime/reg_phase02_merchant_auth_audit.sh`:
+  - `AUD-01` — pass.
+  - Merchant registration, email verification, login success and login failure audit rows exist.
+
+Final Phase 02 script output:
+
+```text
+AUTH-02 merchant register verify login me pass
+AUD-01 merchant auth audit events pass
+AUTH-01 end-user register verify login me pass
+AUTH-05 protected endpoint denial partial
+AUTH-04 global email uniqueness foundation partial
+AUTH-04 end-user merchant cross-pool email uniqueness pass
+AUTH-05 end-user merchant wrong-role denial partial
+AUD-01 auth audit events pass
+AUD-02 audit append-only protection pass
+RUN-01 network health pass
+RUN-01 issuer health pass
+RUN-01 acquirer health pass
+RUN-01 platform health pass
+RUN-01 vault health pass
+```
+
+Implementation note:
+- An audit rollback bug was found during verification: expected auth failures wrote audit rows inside a transaction that rolled back with `IdentityException`.
+- Fixed by setting `noRollbackFor = [IdentityException::class]` on end-user and merchant login flows, then rebuilding/recreating `platform` and rerunning the checks above.
+
+Next planned step:
+- Separately inspect and accept/commit `prototypes/ui/03_enduser_auth.html`, then draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.

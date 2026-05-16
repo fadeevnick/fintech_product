@@ -1,10 +1,14 @@
 # Phase 02 Slice 02 — Merchant Identity Foundation — Planning Note
 
-Status: **DRAFT v0.1**.
+Status: **BACKEND/RUNTIME SUB-SCOPE EXECUTED v0.2; frontend checkpoint pending**.
 
 This document fixes the second implementation slice inside `Phase 02 — Identity, RBAC, Sessions and Audit`.
 
 It is a pre-code scope contract. It is not implementation status and not runtime evidence.
+
+Execution note:
+- The backend/domain/runtime portion was implemented and verified on 2026-05-16 after the project workflow was clarified: UI/UX prototype work runs in parallel and blocks only frontend implementation for the affected screen/workflow.
+- The `spa-merchant` `MDB-UI-01` product frontend checkpoint remains pending.
 
 ---
 
@@ -321,28 +325,30 @@ planning/runtime_evidence_log.md
 
 1. **Merchant entity depth**
 
-   Recommendation: create a minimal local `merchant.merchants` row with `kyb_status = 'NOT_STARTED'`, but do not create Stripe accounts in this slice.
+   Decision: create a minimal local `merchant.merchants` row with `kyb_status = 'NOT_STARTED'`, but do not create Stripe accounts in this slice.
 
    Reason: `merchant_id` scoping must be real for RBAC, while Stripe Connect belongs to Phase 04.
 
 2. **First employee role**
 
-   Recommendation: first registered merchant employee is always `merchant_admin`; `merchant_member` invite/member management stays out of scope.
+   Decision: first registered merchant employee is always `merchant_admin`; `merchant_member` invite/member management stays out of scope.
 
    Reason: it proves merchant admin access without expanding into organization administration.
 
 3. **Merchant email verification**
 
-   Recommendation: require email verification before merchant login, matching the end-user hard gate.
+   Decision: require email verification before merchant login, matching the end-user hard gate.
 
    Reason: one auth policy across password-based pools is simpler and avoids unverified merchant dashboard sessions.
 
 4. **AUTH-05 result tag**
 
-   Recommendation: record `AUTH-05` as `partial` until backoffice OIDC exists, even if end-user/merchant wrong-role denial passes.
+   Decision: record `AUTH-05` as `partial` until backoffice OIDC exists, even if end-user/merchant wrong-role denial passes.
 
    Reason: the check definition says wrong-role actors broadly; full proof needs all user pools.
 
 ## 13. Next Planned Step
 
-Owner reviews/accepts `prototypes/ui/02_merchant_auth.html`, then reviews this draft and approves or changes the open questions. Only after prototype acceptance and slice approval should product code for Phase 02 Slice 02 start.
+Backend/runtime implementation is verified and recorded in `planning/runtime_evidence_log.md`.
+
+Next planned step: keep `spa-merchant` frontend implementation pending until the relevant accepted standalone HTML prototype is used as input, process `prototypes/ui/03_enduser_auth.html` as a separate prototype artifact, then draft the next non-frontend Phase 02 slice.
