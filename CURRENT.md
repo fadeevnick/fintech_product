@@ -237,4 +237,10 @@ Current Phase 02 Slice 03:
 - No backoffice SPA/frontend work in this slice.
 - Runtime evidence recorded in `planning/runtime_evidence_log.md`.
 
-Next planned step: draft the next non-frontend Phase 02 slice for the remaining identity/audit foundation work while frontend implementation remains gated by accepted standalone HTML prototypes.
+Current Phase 02 Slice 04 draft:
+- `planning/implementation-slices/phase_02_slice_04_read_audit_account_controls_planning.md` — DRAFT v0.1.
+- Proposed scope: synchronous read-audit primitive, generic end-user/merchant actor control storage, write-guard probe for blocked/frozen actors, and retained runtime evidence.
+- No SPA/frontend work in this slice.
+- Open questions: read-audit storage, control subject model, runtime proof endpoints, result tags.
+
+Next planned step: review/approve Phase 02 Slice 04 planning note, then implement its non-frontend backend/runtime scope if accepted.

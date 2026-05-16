@@ -198,4 +198,32 @@ Runtime evidence:
 - `RUN-04` — pass for Keycloak connectivity.
 
 Next planned step:
-- Draft the next non-frontend Phase 02 slice for the remaining identity/audit foundation work while frontend implementation remains gated by accepted standalone HTML prototypes.
+- Review/approve `planning/implementation-slices/phase_02_slice_04_read_audit_account_controls_planning.md`, then implement its non-frontend backend/runtime scope if accepted.
+
+---
+
+## Phase 02 Slice 04 — Read-Audit Primitive and Account Control Hook
+
+Status: **PLANNING DRAFT — not approved, no product code started**.
+
+Planning contract:
+- `planning/implementation-slices/phase_02_slice_04_read_audit_account_controls_planning.md` — DRAFT v0.1.
+
+Proposed scope:
+- synchronous read-audit primitive for future compliance-sensitive reads;
+- generic actor/account control storage for end-user and merchant actors;
+- write-guard probe that denies blocked/frozen end-user and merchant actors;
+- narrow backoffice/runtime proof endpoints;
+- audit rows for read-audit, control changes and denied probes;
+- retained runtime scripts for `AUD-03` foundation and actor-control proof.
+
+Explicitly not started:
+- product code for this slice;
+- wallet writes or `WLT-02` full proof;
+- KYC/AML/sanctions/manual ops queues;
+- account freeze/unfreeze UI;
+- audit viewer UI;
+- sensitive read-audit workflows beyond the primitive/probe.
+
+Next planned step:
+- Review/approve the Slice 04 draft and open questions before writing product code.
