@@ -1,6 +1,6 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-17 (Phase 04 Slice 03 merchant dashboard payments/webhook config backend/runtime sub-scope implemented; Phase 05 Slice 01 vault/card issuance planning approved; Phase 04 Slice 01 API keys/idempotency and Slice 02 webhook backend/runtime sub-scopes executed; UEW-UI-03 prototype accepted; MRC-01 blocked on Stripe sandbox credentials).
+Last updated: 2026-05-17 (Phase 04 Slice 03 merchant dashboard payments/webhook config and Phase 05 Slice 01 vault/card issuance backend/runtime sub-scopes verified; MRC-01 blocked on Stripe sandbox credentials).
 
 ---
 
@@ -40,7 +40,7 @@ Completed workstream — latest accepted state:
 - `MRC-01` Stripe Connect onboarding start remains blocked on missing real Stripe sandbox credentials and is not claimed;
 - Phase 04 Slice 03 merchant dashboard payment reads and webhook endpoint configuration backend/runtime sub-scope implemented in `platform`;
 - `MRC-04` and `MRC-05` passed; `MRC-03` and `PAY-01..PAY-03` targeted regressions passed; no `WBH-01..WBH-03` or `MRC-01` claim made;
-- Phase 05 Slice 01 planning approved: `planning/implementation-slices/phase_05_slice_01_vault_card_issuance_planning.md` (`APPROVED v0.1`, planning-only, no product code/runtime evidence);
+- Phase 05 Slice 01 backend/runtime scope is complete: Vault tokenization/detokenize, Issuer card records, Platform `POST /api/v1/cards` and retained `VLT-01`..`VLT-03` scripts have been added; isolated compile/runtime verification passed for `VLT-01`, `VLT-02` and `VLT-03`;
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
 
@@ -58,7 +58,7 @@ Latest accepted backend/runtime slices:
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`.**
 
 Next planned product step:
-- Choose and implement the next approved backend/runtime slice. Recommended next slice: Phase 05 Slice 01 vault tokenization and card issuance foundation. Alternatively provide real Stripe Connect sandbox credentials to implement blocked `MRC-01`.
+- Choose the next approved backend/runtime slice. Alternatively provide real Stripe Connect sandbox credentials to implement blocked `MRC-01`.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
