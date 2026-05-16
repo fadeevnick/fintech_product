@@ -16,6 +16,7 @@ Implemented runtime behavior so far:
 - Phase 02 Slice 03 backoffice OIDC/RBAC backend/runtime sub-scope in `platform`: Keycloak bearer token validation, approved backoffice role mapping, `GET /api/v1/backoffice/me` and all-pool protected endpoint denial.
 - Phase 02 Slice 04 read-audit/account controls backend/runtime sub-scope in `platform`: append-only read-audit log, end-user/merchant actor controls and write-guard probes.
 - Phase 03 Slice 01 ledger foundation backend/runtime sub-scope in `platform`: ledger accounts, journal entries, postings, balanced journal SQL function, append-only ledger protection, derived balances and reconciliation proof.
+- Phase 03 Slice 02 wallet account + manual deposit backend/runtime sub-scope in `platform`: `wallet.wallet_accounts`, `wallet.deposit_requests` (under EUR 10k), end-user `POST /api/v1/deposits` and `GET /api/v1/wallet`, backoffice `GET/POST /api/v1/backoffice/manual-ops/deposits[/{id}/decision]`, balanced approve through `ledger.post_journal(...)`, actor-control wallet-write block (`FROZEN` ∪ `BLOCKED`).
 
 ## Local Commands
 
@@ -66,4 +67,8 @@ scripts/runtime/reg_phase03_ledger_unbalanced_rejection.sh
 scripts/runtime/reg_phase03_ledger_balanced_posting.sh
 scripts/runtime/reg_phase03_ledger_append_only.sh
 scripts/runtime/reg_phase03_ledger_reconciliation.sh
+scripts/runtime/reg_phase03_wallet_deposit_happy_path.sh
+scripts/runtime/reg_phase03_wallet_deposit_reject.sh
+scripts/runtime/reg_phase03_wallet_deposit_actor_control_block.sh
+scripts/runtime/reg_phase03_wallet_deposit_double_decision.sh
 ```

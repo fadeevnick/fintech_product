@@ -560,3 +560,107 @@ Result tag notes:
 
 Next planned step:
 - Draft the next Phase 03 wallet/manual-operation slice, likely wallet account creation and manual deposit request lifecycle, while product frontend implementation remains gated by accepted standalone HTML prototypes.
+
+---
+
+## 2026-05-16 — Phase 03 Slice 02 Wallet Manual Deposit Runtime Verification
+
+Scope:
+- Backend/runtime sub-scope of Phase 03 Slice 02.
+- Targets `LDG-02`, `WLT-02`, `AUD-01`, `AUD-03`, and Phase 01..03 regression subset.
+- No frontend work in this slice.
+
+Preconditions:
+- `git rev-parse HEAD` before this verification = `1d3c811` (draft slice commit; product code uncommitted at verification time, committed in the slice execution commit that records this evidence).
+- Migration `V6__wallet_manual_deposit.sql` applied at platform boot (Flyway log: `Migrating schema "public" to version "6 - wallet manual deposit"` → `Successfully applied 1 migration ... now at version v6`).
+- Local docker stack up (`docker compose -f deploy/docker-compose.yml ps`), platform health endpoint returned `{"service":"platform","status":"UP"}` on `http://127.0.0.1:8081/internal/health`.
+- Host-to-bridge connectivity was previously broken (firewalld wiped docker iptables chains); restored by `sudo systemctl restart docker` before verification ran. No code change related to this fix.
+
+Build evidence:
+- `docker compose -f deploy/docker-compose.yml build platform` passed; final image `mini-fintech-platform-platform` rebuilt.
+- `docker compose -f deploy/docker-compose.yml up -d platform` recreated only the platform container; other services unchanged.
+
+New Phase 03 Slice 02 script evidence:
+- `product/scripts/runtime/reg_phase03_wallet_deposit_happy_path.sh`:
+  - `LDG-02` — pass.
+  - `AUD-01` — pass (deposit create + deposit approve audit rows).
+  - `AUD-03` — pass (read-audit row for `WALLET_DEPOSIT_REQUEST` written synchronously when operator listed pending deposit queue while deposit was still `PENDING_OPERATOR_REVIEW`).
+  - Concrete observations:
+    - End-user `POST /api/v1/deposits` with amount `12.0000` returned state `PENDING_OPERATOR_REVIEW`.
+    - Operator `GET /api/v1/backoffice/manual-ops/deposits` returned the deposit in pending queue.
+    - Operator `POST .../{id}/decision` with `APPROVE` returned state `COMPLETED` and `journalEntryId`.
+    - DB cross-check: ledger journal row exists for the deposit; exactly 2 postings exist; debit total = credit total = `12.0000`; debit account code = `EXTERNAL_DEPOSIT_CLEARING`; credit account code = `WALLET_USER:<userId>`.
+    - End-user `GET /api/v1/wallet` returned derived `balance = "12.0000"` and deposit state `COMPLETED`.
+    - Reconciliation script after the deposit cycle returned `balancedJournals=true, imbalancedJournalCount=0`.
+- `product/scripts/runtime/reg_phase03_wallet_deposit_reject.sh`:
+  - Deposit reject path — pass.
+  - Concrete observations:
+    - Operator `POST .../{id}/decision` with `REJECT` returned state `REJECTED` and `journalEntryId = null`.
+    - DB cross-check: zero ledger postings exist for the rejected deposit reference.
+    - End-user `GET /api/v1/wallet` returned `balance = "0.0000"`, deposit state `REJECTED`.
+    - Audit row `wallet.deposit_rejected` exists for the deposit.
+- `product/scripts/runtime/reg_phase03_wallet_deposit_actor_control_block.sh`:
+  - `WLT-02` — pass (all four sub-branches).
+  - Sub-branches:
+    - create + `FROZEN`: end-user `POST /api/v1/deposits` returned HTTP 403 with body code `actor_control_blocked`; zero deposit rows persisted for this user; `identity.actor_control_write_denied` audit row present.
+    - create + `BLOCKED`: same observations as `FROZEN` create branch.
+    - approve + `FROZEN`: operator `POST .../{id}/decision APPROVE` returned HTTP 403 with body code `actor_control_blocked`; deposit remained in `PENDING_OPERATOR_REVIEW`; zero ledger postings for this deposit reference.
+    - approve + `BLOCKED`: same observations as `FROZEN` approve branch.
+- `product/scripts/runtime/reg_phase03_wallet_deposit_double_decision.sh`:
+  - Double-decision idempotency — pass.
+  - Concrete observations:
+    - First `APPROVE` returned state `COMPLETED`.
+    - Second `APPROVE` on the same deposit returned HTTP 409 with body code `deposit_already_decided`.
+    - Late `REJECT` on the completed deposit also returned HTTP 409.
+    - DB cross-check: exactly one `wallet.deposit_approved` audit row and exactly one ledger journal entry exist for the deposit.
+
+Foundation regression (re-run with new wallet code present):
+- `product/scripts/runtime/reg_phase03_ledger_reconciliation.sh`:
+  - `LDG-05` — pass (`LDG-99` foundation regression).
+
+Phase 01/02/03 regression subset evidence:
+- `product/scripts/runtime/reg_phase01_runtime_health.sh`:
+  - `RUN-01` — pass (all five backend services healthy after restart).
+- `product/scripts/runtime/reg_phase02_backoffice_oidc.sh`:
+  - `AUTH-03` — pass.
+- `product/scripts/runtime/reg_phase02_read_audit_probe.sh`:
+  - `AUD-03` — partial/foundation still passes.
+  - `AUD-99` — partial/foundation still passes.
+- `product/scripts/runtime/reg_phase02_actor_control_enduser.sh`:
+  - actor-control precursor — pass.
+- `product/scripts/runtime/reg_phase02_auth_audit.sh`:
+  - `AUD-01` — pass.
+  - `AUD-02` — pass.
+- `product/scripts/runtime/reg_phase03_ledger_unbalanced_rejection.sh`:
+  - `LDG-01` — pass.
+- `product/scripts/runtime/reg_phase03_ledger_append_only.sh`:
+  - `LDG-04` — pass.
+
+Final Phase 03 Slice 02 script output:
+
+```text
+WLT deposit happy path pass
+WLT deposit reject pass
+WLT-02 actor-control block (FROZEN+BLOCKED, create+approve) pass
+WLT deposit double decision pass
+LDG-05 ledger reconciliation pass
+RUN-01 network/issuer/acquirer/platform/vault health pass
+AUTH-03 backoffice OIDC role mapping pass
+AUD-03 read-audit primitive partial
+AUD-99 read-audit append-only foundation partial
+ACT-CTRL end-user blocked write-guard probe pass
+AUD-01 auth audit events pass
+AUD-02 audit append-only protection pass
+LDG-01 unbalanced journal rejection pass
+LDG-04 ledger append-only protection pass
+```
+
+Result tag notes:
+- `LDG-02` is passed.
+- `WLT-02` is passed (all four sub-branches: create+FROZEN, create+BLOCKED, approve+FROZEN, approve+BLOCKED).
+- `AUD-01` is passed for wallet deposit create / approve / reject and actor-control denial audit rows.
+- `AUD-03` is passed for backoffice manual deposits queue read producing synchronous read-audit row.
+- `LDG-03`, `WLT-01`, `WLT-03`, `WLT-04` are not claimed; withdraw, transfer, SoF and two-eyes workflows do not exist yet.
+
+Next planned step:
+- Draft the next Phase 03 wallet/manual-operation slice (likely manual withdraw with hold/final-debit flow), continuing to gate frontend implementation by accepted standalone HTML prototypes.

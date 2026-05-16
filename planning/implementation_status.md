@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last updated: 2026-05-15.
+Last updated: 2026-05-16.
 
 ---
 
@@ -284,3 +284,53 @@ Runtime evidence:
 
 Next planned step:
 - Draft the next Phase 03 wallet/manual-operation slice before writing more product code.
+
+---
+
+## Phase 03 Slice 02 — Wallet Account and Manual Deposit
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — frontend not in scope**.
+
+Planning contract:
+- `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md` — backend/runtime sub-scope executed v0.2; frontend not in scope.
+
+Implemented backend/runtime scope:
+- Platform DB migration `V6__wallet_manual_deposit.sql` for `wallet` schema: `wallet.wallet_accounts`, `wallet.deposit_requests` with state constraint, `amount > 0 and amount < 10000.0000` constraint, `updated_at` trigger; idempotent seed of `ledger.accounts(code='EXTERNAL_DEPOSIT_CLEARING', account_type='EXTERNAL_CLEARING', normal_side='DEBIT')`.
+- End-user surface in `com.minifin.platform.wallet`:
+  - `POST /api/v1/deposits` — create deposit request (amount < EUR 10k); persists `REQUESTED` and immediately transitions to `PENDING_OPERATOR_REVIEW` in the same transaction; lazily provisions wallet ledger account `WALLET_USER:<userId>` and `wallet.wallet_accounts` row when missing; calls `ActorControlService.requireWriteAllowed("END_USER", user.id)`.
+  - `GET /api/v1/wallet` — lazy-provisions wallet, returns derived balance from `ledger.account_balances` and the user's deposit history.
+- Backoffice manual-ops surface (existing OIDC + role `backoffice_operator` or higher):
+  - `GET /api/v1/backoffice/manual-ops/deposits` — pending queue with synchronous read-audit per listed deposit.
+  - `POST /api/v1/backoffice/manual-ops/deposits/{id}/decision` — `APPROVE` posts a balanced journal through `ledger.post_journal(...)` (DEBIT `EXTERNAL_DEPOSIT_CLEARING`, CREDIT `WALLET_USER:<userId>`) and transitions to `COMPLETED`; `REJECT` transitions to `REJECTED` with no ledger movement; both produce write-audit; second decision returns 409.
+- Actor-control hook on both deposit create and approve, refusing for `actor_controls.state ∈ {FROZEN, BLOCKED}` with HTTP 403 `actor_control_blocked` and an `identity.actor_control_write_denied` audit row.
+- Retained runtime scripts:
+  - `product/scripts/runtime/lib_phase03_wallet_deposit.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_deposit_happy_path.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_deposit_reject.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_deposit_actor_control_block.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_deposit_double_decision.sh`
+
+Explicitly not started:
+- manual withdraw workflow (`LDG-03`);
+- internal end-user → end-user transfer (`WLT-01`);
+- Source of Funds and amount ≥ EUR 10k (`WLT-03`);
+- two-eyes / second-actor approval (`WLT-04`);
+- AML rule trip / AML auto-freeze;
+- card / payment authorization holds; merchant settlement;
+- backoffice manual deposits SPA frontend (HTML prototype `06_backoffice_manual_deposits.html` accepted, frontend implementation deferred);
+- end-user wallet/deposit SPA frontend (no accepted HTML prototype yet).
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-16 — Phase 03 Slice 02 Wallet Manual Deposit Runtime Verification`.
+- `LDG-02` — pass for balanced two-posting journal and derived balance increase on approve.
+- `WLT-02` — pass for all four sub-branches (create+`FROZEN`, create+`BLOCKED`, approve+`FROZEN`, approve+`BLOCKED`).
+- `AUD-01` — pass for deposit create / approve / reject and actor-control denial audit rows.
+- `AUD-03` — pass for backoffice manual deposits queue read producing synchronous read-audit row.
+- `LDG-99` foundation — pass via `reg_phase03_ledger_reconciliation.sh` re-run after deposit cycle.
+- Phase 01/02/03 regression subset passed: `RUN-01`, `AUTH-03`, `AUD-01`, `AUD-02`, `AUD-03` (partial/foundation), `AUD-99` (partial/foundation), actor-control precursor, `LDG-01`, `LDG-04`, `LDG-05`.
+
+Result tag notes:
+- `LDG-03`, `WLT-01`, `WLT-03`, `WLT-04` are not claimed; withdraw, transfer, SoF and two-eyes workflows do not exist yet.
+
+Next planned step:
+- Draft the next Phase 03 wallet/manual-operation slice (likely manual withdraw with hold/final-debit flow, targeting `LDG-03`) before writing more product code.

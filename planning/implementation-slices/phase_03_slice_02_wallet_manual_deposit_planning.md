@@ -1,10 +1,10 @@
 # Phase 03 Slice 02 — Wallet Account and Manual Deposit — Planning Note
 
-Status: **DRAFT v0.1**.
+Status: **BACKEND/RUNTIME SUB-SCOPE EXECUTED v0.2; frontend not in scope**.
 
 This document fixes the second implementation slice inside `Phase 03 — Ledger and Wallet Manual Operations`.
 
-It is a pre-code scope contract. It is not implementation status and not runtime evidence.
+It started as a pre-code scope contract. Runtime evidence is recorded separately in `planning/runtime_evidence_log.md`.
 
 ---
 
@@ -316,38 +316,38 @@ Evidence must be appended to:
 planning/runtime_evidence_log.md
 ```
 
-## 12. Open Questions
+## 12. Resolution Notes
 
 1. **High-value path scope split**
 
-   Recommendation: keep amount ≥ EUR 10k fully out of this slice and refuse it as `unsupported_high_value` at the API/DB level; SoF declaration, two-eyes approval and `WLT-03`/`WLT-04` move to a later `phase_03_slice_XX_high_value_deposit_controls`.
+   Resolution: accepted. The migration enforces `amount > 0 and amount < 10000.0000` at DB level; `WalletService` refuses values ≥ EUR 10k with `unsupported_high_value`. SoF declaration, two-eyes approval, `WLT-03` and `WLT-04` are deferred to a later high-value slice.
 
-   Reason: high-value path needs SoF UX, two-eyes role separation and backoffice secondary review — three independent scopes that would inflate this slice and lose runtime verifiability.
+   Note: only `< EUR 10k` deposits are exercised in this slice. `WLT-03` and `WLT-04` are not claimed.
 
 2. **System clearing account seeding**
 
-   Recommendation: seed `EXTERNAL_DEPOSIT_CLEARING` ledger account through the V6 migration in an idempotent way (insert if missing) rather than through a runtime endpoint.
+   Resolution: accepted. `V6__wallet_manual_deposit.sql` seeds `EXTERNAL_DEPOSIT_CLEARING` via `INSERT ... ON CONFLICT (code) DO NOTHING` against `ledger.accounts`. No runtime endpoint creates this account.
 
-   Reason: this account is not test data; it is part of the chart of accounts and must exist before any deposit can post. Migration ownership is honest production behavior, not a test fixture.
+   Note: `ManualOpsService.approve` looks up the account via `LedgerRepository.findAccountByCode("EXTERNAL_DEPOSIT_CLEARING")`. If the account is missing the operation fails with `clearing_account_missing` instead of silently posting against a wrong account.
 
 3. **`WLT-02` proof scope**
 
-   Recommendation: cover both `FROZEN` and `BLOCKED` states from `identity.actor_controls.state` and both action branches (deposit create and operator approve). Mark `WLT-02` as `pass` only if all four sub-branches pass (create+FROZEN, create+BLOCKED, approve+FROZEN, approve+BLOCKED); mark `partial` otherwise. Treat semantic distinction between freeze and block as later-scope and out of this slice.
+   Resolution: accepted. `reg_phase03_wallet_deposit_actor_control_block.sh` exercises all four sub-branches (create+`FROZEN`, create+`BLOCKED`, approve+`FROZEN`, approve+`BLOCKED`); each branch must return HTTP 403 with `actor_control_blocked` and produce an `identity.actor_control_write_denied` audit row. `WLT-02` is marked `pass` only because all four sub-branches passed.
 
-   Reason: `runtime_checklists.md` defines `WLT-02` as "frozen/blocked account cannot perform wallet writes", and `identity.actor_controls.state` already permits both values. Proving only `FROZEN` would silently leave a hole. Both states behave identically from this slice's perspective: refuse the wallet write and write an audit row. Distinct UX/semantics belong to compliance/AML slices that own the freeze vs block lifecycle.
+   Note: `WalletService.createDeposit` and `ManualOpsService.approve` both call `actorControlService.requireWriteAllowed("END_USER", userId)` and use `@Transactional(noRollbackFor = [ActorControlException::class])` so the denial audit row is preserved when the transaction unwinds.
 
 4. **Wallet balance computation**
 
-   Recommendation: compute balance live from postings through the existing derived-balance view added in Phase 03 Slice 01; do not store balance on `wallet.wallet_accounts`.
+   Resolution: accepted. `WalletService.walletSummary` derives balance through `LedgerService.balance(wallet.ledgerAccountId)` which reads `ledger.account_balances`. No balance column was added to `wallet.wallet_accounts`.
 
-   Reason: ADR-004 makes ledger the source of truth; storing a wallet-side balance would either drift or duplicate the ledger contract.
+   Note: `wallet.wallet_accounts` only stores `id`, `user_id`, `ledger_account_id`, `currency` and timestamps; the ledger remains the single source of truth.
 
 5. **Frontend gating for backoffice manual deposits**
 
-   Recommendation: keep backoffice manual deposits frontend implementation as a separate later slice gated by the already-accepted `prototypes/ui/06_backoffice_manual_deposits.html`; this slice remains backend/runtime sub-scope only, in line with Phase 02 Slice 02..04 and Phase 03 Slice 01.
+   Resolution: accepted. No SPA code was added in this slice; backoffice manual deposits frontend implementation remains a future slice gated by `prototypes/ui/06_backoffice_manual_deposits.html`.
 
-   Reason: bundling frontend implementation here would mix two slice shapes and contradict the established backend-first cadence; the prototype is accepted but the frontend slice has its own scope (API client, error handling, RBAC visibility, UX states).
+   Note: end-user wallet/deposit frontend implementation is also a future slice and is currently gated by a missing accepted end-user wallet HTML prototype.
 
 ## 13. Next Planned Step
 
-Owner reviews this draft and approves or changes the open questions. Only after approval should product code for Phase 03 Slice 02 start.
+Draft the next Phase 03 wallet/manual-operation slice (likely manual withdraw with hold/final-debit flow, targeting `LDG-03`) before writing more product code. Frontend implementation for backoffice manual deposits and end-user wallet remains gated by their respective standalone HTML prototypes.
