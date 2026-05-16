@@ -1,4 +1,4 @@
-name: mini-fintech-platform
+name: ${COMPOSE_PROJECT_NAME:-mini-fintech-platform}
 
 services:
   platform-db:
@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: platform
       POSTGRES_PASSWORD: platform
     ports:
-      - "5433:5432"
+      - "${PLATFORM_DB_HOST_PORT:-5433}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U platform -d platform"]
       interval: 10s
@@ -22,7 +22,7 @@ services:
       POSTGRES_USER: acquirer
       POSTGRES_PASSWORD: acquirer
     ports:
-      - "5434:5432"
+      - "${ACQUIRER_DB_HOST_PORT:-5434}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U acquirer -d acquirer"]
       interval: 10s
@@ -36,7 +36,7 @@ services:
       POSTGRES_USER: network
       POSTGRES_PASSWORD: network
     ports:
-      - "5435:5432"
+      - "${NETWORK_DB_HOST_PORT:-5435}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U network -d network"]
       interval: 10s
@@ -50,7 +50,7 @@ services:
       POSTGRES_USER: issuer
       POSTGRES_PASSWORD: issuer
     ports:
-      - "5436:5432"
+      - "${ISSUER_DB_HOST_PORT:-5436}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U issuer -d issuer"]
       interval: 10s
@@ -64,7 +64,7 @@ services:
       POSTGRES_USER: vault
       POSTGRES_PASSWORD: vault
     ports:
-      - "5437:5432"
+      - "${VAULT_DB_HOST_PORT:-5437}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vault -d vault"]
       interval: 10s
@@ -96,7 +96,7 @@ services:
       PLATFORM_DB_PASSWORD: platform
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       BACKOFFICE_OIDC_JWK_SET_URI: http://keycloak:8080/realms/minifin-backoffice/protocol/openid-connect/certs
-      BACKOFFICE_OIDC_ISSUER_DISPLAY: http://localhost:18080/realms/minifin-backoffice
+      BACKOFFICE_OIDC_ISSUER_DISPLAY: http://localhost:${KEYCLOAK_HOST_PORT:-18080}/realms/minifin-backoffice
       STRIPE_WEBHOOK_SIGNING_SECRET: ${STRIPE_WEBHOOK_SIGNING_SECRET:-whsec_local_test_secret}
       STRIPE_WEBHOOK_TOLERANCE_SECONDS: ${STRIPE_WEBHOOK_TOLERANCE_SECONDS:-300}
     depends_on:
@@ -107,7 +107,7 @@ services:
       keycloak:
         condition: service_started
     ports:
-      - "8081:8080"
+      - "${PLATFORM_HTTP_HOST_PORT:-8081}:8080"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.platform.rule=Host(`platform.miniefin.local`)"
@@ -128,7 +128,7 @@ services:
       acquirer-db:
         condition: service_healthy
     ports:
-      - "8082:8080"
+      - "${ACQUIRER_HTTP_HOST_PORT:-8082}:8080"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.acquirer.rule=Host(`api.miniefin.local`)"
@@ -149,7 +149,7 @@ services:
       network-db:
         condition: service_healthy
     ports:
-      - "8083:8080"
+      - "${NETWORK_HTTP_HOST_PORT:-8083}:8080"
 
   issuer:
     build:
@@ -166,7 +166,7 @@ services:
       issuer-db:
         condition: service_healthy
     ports:
-      - "8084:8080"
+      - "${ISSUER_HTTP_HOST_PORT:-8084}:8080"
 
   vault:
     build:
@@ -183,7 +183,7 @@ services:
       vault-db:
         condition: service_healthy
     ports:
-      - "8085:8080"
+      - "${VAULT_HTTP_HOST_PORT:-8085}:8080"
 
   kafka:
     image: apache/kafka:3.9.1
@@ -202,7 +202,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     ports:
-      - "9092:9092"
+      - "${KAFKA_HOST_PORT:-9092}:9092"
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
@@ -219,14 +219,14 @@ services:
       keycloak-db:
         condition: service_healthy
     ports:
-      - "18080:8080"
+      - "${KEYCLOAK_HOST_PORT:-18080}:8080"
 
   seaweedfs:
     image: chrislusf/seaweedfs:3.85
     command: "server -s3 -dir=/data"
     ports:
-      - "8333:8333"
-      - "9333:9333"
+      - "${SEAWEEDFS_S3_HOST_PORT:-8333}:8333"
+      - "${SEAWEEDFS_MASTER_HOST_PORT:-9333}:9333"
 
   spa-enduser:
     build:
@@ -235,7 +235,7 @@ services:
       args:
         APP_NAME: spa-enduser
     ports:
-      - "3000:80"
+      - "${SPA_ENDUSER_HOST_PORT:-3000}:80"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.spa-enduser.rule=Host(`wallet.miniefin.local`)"
@@ -248,7 +248,7 @@ services:
       args:
         APP_NAME: spa-merchant
     ports:
-      - "3001:80"
+      - "${SPA_MERCHANT_HOST_PORT:-3001}:80"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.spa-merchant.rule=Host(`merchant.miniefin.local`)"
@@ -261,7 +261,7 @@ services:
       args:
         APP_NAME: spa-backoffice
     ports:
-      - "3002:80"
+      - "${SPA_BACKOFFICE_HOST_PORT:-3002}:80"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.spa-backoffice.rule=Host(`backoffice.miniefin.local`)"
@@ -275,8 +275,8 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
     ports:
-      - "80:80"
-      - "18081:8080"
+      - "${TRAEFIK_HTTP_HOST_PORT:-80}:80"
+      - "${TRAEFIK_DASHBOARD_HOST_PORT:-18081}:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
@@ -287,7 +287,7 @@ services:
     volumes:
       - "./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_HOST_PORT:-9090}:9090"
 
   grafana:
     image: grafana/grafana:11.4.0
@@ -297,7 +297,7 @@ services:
     volumes:
       - "./grafana/provisioning:/etc/grafana/provisioning:ro"
     ports:
-      - "3003:3000"
+      - "${GRAFANA_HOST_PORT:-3003}:3000"
 
   tempo:
     image: grafana/tempo:2.6.1
@@ -305,14 +305,14 @@ services:
     volumes:
       - "./tempo.yml:/etc/tempo.yml:ro"
     ports:
-      - "3200:3200"
-      - "4317:4317"
+      - "${TEMPO_HTTP_HOST_PORT:-3200}:3200"
+      - "${TEMPO_GRPC_HOST_PORT:-4317}:4317"
 
   loki:
     image: grafana/loki:3.3.2
     command: ["-config.file=/etc/loki/local-config.yaml"]
     ports:
-      - "3100:3100"
+      - "${LOKI_HOST_PORT:-3100}:3100"
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.116.1
@@ -320,8 +320,8 @@ services:
     volumes:
       - "./otel/collector.yml:/etc/otelcol-contrib/config.yml:ro"
     ports:
-      - "4318:4318"
-      - "13133:13133"
+      - "${OTEL_HTTP_HOST_PORT:-4318}:4318"
+      - "${OTEL_HEALTH_HOST_PORT:-13133}:13133"
     depends_on:
       - tempo
 
@@ -332,6 +332,6 @@ services:
       - "./vector/vector.yml:/etc/vector/vector.yml:ro"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
     ports:
-      - "8686:8686"
+      - "${VECTOR_HOST_PORT:-8686}:8686"
     depends_on:
       - loki

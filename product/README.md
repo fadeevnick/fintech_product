@@ -30,6 +30,19 @@ From `product/`:
 docker compose -f deploy/docker-compose.yml up --build
 ```
 
+Parallel agent runtime slots can override the Compose project name and published ports without changing the default owner stack:
+
+```bash
+COMPOSE_PROJECT_NAME=mini-fintech-platform-a1 \
+PLATFORM_HTTP_HOST_PORT=18181 \
+PLATFORM_DB_HOST_PORT=15433 \
+KAFKA_HOST_PORT=19092 \
+KEYCLOAK_HOST_PORT=28080 \
+docker compose -f deploy/docker-compose.yml up -d platform
+```
+
+Use matching `PLATFORM_BASE_URL` when running runtime scripts against a slot.
+
 Backend build, if Gradle is available:
 
 ```bash
