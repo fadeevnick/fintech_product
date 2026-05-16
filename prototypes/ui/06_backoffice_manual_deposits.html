@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Backoffice Manual Deposits</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --hover:   #f0efe9;
+      --sb:        #0e0e12;
+      --sb-bdr:    #1a1a20;
+      --sb-muted:  #4e4e5c;
+      --sb-active: #1c1c2a;
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+      --t1: #1c1c1f; --t2: #575763; --t3: #9898a6; --t4: #d0d0da;
+      --cta: #1c1c1f; --cta-hov: #2e2e35; --cta-t: #ffffff;
+      --g:  #166534; --g-bg:  #f0fdf4; --g-bd:  #bbf7d0;
+      --am: #854d0e; --am-bg: #fffbeb; --am-bd: #fde68a;
+      --rd: #9b1c1c; --rd-bg: #fef2f2; --rd-bd: #fecaca;
+      --or: #b45309; --or-bg: #fff7ed; --or-bd: #fed7aa;
+      --pu: #5b21b6; --pu-bg: #f5f3ff; --pu-bd: #ddd6fe;
+      --bl: #1e40af; --bl-bg: #eff6ff; --bl-bd: #bfdbfe;
+      --sb-env-bg: #0e1a30; --sb-env-t: #93c5fd; --sb-env-bd: #1e3a6a;
+      --f-ui: 'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+      --r: 3px; --r-lg: 5px;
+      --w-sb: 210px; --w-au: 258px;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    #root { height: 100vh; display: flex; overflow: hidden; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 13px 13px 11px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 8px; }
+    .sb-name  { font-size: 14px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px; }
+    .sb-nav   { flex: 1; padding: 8px 6px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 8px 4px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 7px; padding: 5px 8px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 11.5px;
+      cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.28; }
+    .nav-item.limited { opacity: 0.7; }
+    .nav-item.nav-on  { color: #a5b4fc; opacity: 0.9; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; opacity: 1; }
+    .nav-badge-ro { margin-left: auto; font-size: 8px; font-family: var(--f-mono);
+      color: var(--or); background: var(--or-bg); border: 1px solid var(--or-bd); padding: 1px 4px; border-radius: 2px; }
+    .nav-lock { margin-left: auto; display: flex; align-items: center; opacity: 0.5; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono); color: var(--sb-muted); opacity: 0.7; }
+    .sb-div   { height: 1px; background: var(--sb-bdr); margin: 4px 0; }
+    .sb-footer { padding: 9px 12px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 9.5px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 3px; }
+    .env-dot  { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host { font-size: 9.5px; color: var(--sb-muted); font-family: var(--f-mono); }
+
+    /* MAIN WRAP */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+    /* PAGE HEADER */
+    .page-hdr { display: flex; align-items: center; border-bottom: 1px solid var(--bdr);
+      background: var(--surface); flex-shrink: 0; }
+    .hdr-bc   { display: flex; align-items: center; gap: 5px; padding: 9px 16px;
+      font-size: 12px; color: var(--t2); flex: 1; }
+    .hdr-bc strong { color: var(--t1); font-weight: 500; }
+    .hdr-sep  { color: var(--t4); }
+    .hdr-session { display: flex; align-items: center; gap: 7px; padding: 7px 12px;
+      border-left: 1px solid var(--bdr); flex-shrink: 0; }
+    .session-user { font-size: 11.5px; font-weight: 500; color: var(--t1); }
+    .session-meta { font-size: 10px; color: var(--t3); font-family: var(--f-mono); }
+    .hdr-right { display: flex; align-items: center; gap: 7px; padding: 9px 14px;
+      border-left: 1px solid var(--bdr); flex-shrink: 0; }
+    .screen-id { font-size: 10px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge-hdr { font-size: 10px; font-family: var(--f-mono); color: var(--bl);
+      background: var(--bl-bg); border: 1px solid var(--bl-bd);
+      padding: 2px 7px; border-radius: var(--r); display: flex; align-items: center; gap: 4px; }
+    .env-bdot { width: 5px; height: 5px; border-radius: 50%; background: var(--bl); }
+
+    /* SUB HEADER — stats + actions */
+    .sub-hdr { display: flex; align-items: center; gap: 0; padding: 0;
+      border-bottom: 1px solid var(--bdr); background: var(--surface); flex-shrink: 0; }
+    .stat-row { display: flex; align-items: center; gap: 0; padding: 7px 16px;
+      flex: 1; border-right: 1px solid var(--bdr); overflow-x: auto; }
+    .stat-chip { display: flex; align-items: center; gap: 5px; padding: 4px 12px;
+      border-right: 1px solid var(--bdr); white-space: nowrap; }
+    .stat-chip:first-child { padding-left: 0; }
+    .stat-chip:last-child  { border-right: none; }
+    .stat-num  { font-size: 16px; font-weight: 600; font-family: var(--f-mono);
+      color: var(--t1); line-height: 1; letter-spacing: -0.02em; }
+    .stat-num.rd { color: var(--rd); }
+    .stat-num.am { color: var(--am); }
+    .stat-lbl  { font-size: 10px; color: var(--t3); text-transform: uppercase; letter-spacing: 0.06em; }
+    .action-bar { display: flex; align-items: center; gap: 6px; padding: 7px 14px; flex-shrink: 0; }
+
+    /* MAIN BODY */
+    .main-body { flex: 1; overflow-y: auto; padding: 14px 16px; background: var(--bg);
+      display: flex; flex-direction: column; gap: 12px; }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.06em;
+      font-family: var(--f-mono); border: 1px solid transparent; white-space: nowrap; }
+    .b-critical { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    .b-high     { background: var(--or-bg); color: var(--or); border-color: var(--or-bd); }
+    .b-medium   { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .b-low      { background: var(--hover); color: var(--t3); border-color: var(--bdr); }
+    .b-co       { background: var(--pu-bg); color: var(--pu); border-color: var(--pu-bd); }
+    .b-op       { background: #f0f9ff;     color: #0369a1;   border-color: #bae6fd; }
+    .b-sc       { background: #fff1f2;     color: #be123c;   border-color: #fecdd3; }
+    .b-oidc     { background: var(--bl-bg); color: var(--bl); border-color: var(--bl-bd); }
+    /* Deposit states */
+    .b-st-requested  { background: var(--hover); color: var(--t3); border-color: var(--bdr); }
+    .b-st-pending    { background: var(--bl-bg); color: var(--bl); border-color: var(--bl-bd); }
+    .b-st-sofReq     { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .b-st-sofRec     { background: var(--pu-bg); color: var(--pu); border-color: var(--pu-bd); }
+    .b-st-secondReview { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+    .b-st-approved   { background: var(--g-bg); color: var(--g); border-color: var(--g-bd); }
+    .b-st-completed  { background: var(--g-bg); color: var(--g); border-color: var(--g-bd); }
+    .b-st-rejected   { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    /* SoF status */
+    .b-sof-none      { background: var(--hover); color: var(--t4); border-color: var(--bdr); }
+    .b-sof-required  { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .b-sof-requested { background: var(--bl-bg); color: var(--bl); border-color: var(--bl-bd); }
+    .b-sof-received  { background: var(--pu-bg); color: var(--pu); border-color: var(--pu-bd); }
+    .b-sof-accepted  { background: var(--g-bg);  color: var(--g);  border-color: var(--g-bd); }
+    .b-sof-rejected  { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    /* Risk */
+    .b-risk-low    { background: var(--g-bg);   color: var(--g);   border-color: var(--g-bd); }
+    .b-risk-medium { background: var(--am-bg);  color: var(--am);  border-color: var(--am-bd); }
+    .b-risk-high   { background: var(--or-bg);  color: var(--or);  border-color: var(--or-bd); }
+    .b-risk-critical{ background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    /* Two-eyes */
+    .b-te-ok      { background: var(--g-bg);   color: var(--g);  border-color: var(--g-bd); }
+    .b-te-blocked { background: var(--rd-bg);  color: var(--rd); border-color: var(--rd-bd); }
+    .b-te-req     { background: var(--or-bg);  color: var(--or); border-color: var(--or-bd); }
+    .b-te-none    { background: var(--hover);  color: var(--t3); border-color: var(--bdr); }
+
+    /* STATE FLOW STRIP */
+    .state-flow-wrap { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; }
+    .state-flow-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 13px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .state-flow-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+    .state-flow-row  { display: flex; align-items: center; gap: 0; overflow-x: auto; }
+    .state-node { display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: 5px 10px; border-radius: var(--r); border: 1px solid var(--bdr);
+      background: var(--surf2); min-width: 90px; text-align: center; flex-shrink: 0; }
+    .state-node.active { background: var(--bl-bg); border-color: var(--bl); }
+    .state-node.terminal-ok   { background: var(--g-bg);  border-color: var(--g-bd); }
+    .state-node.terminal-bad  { background: var(--rd-bg); border-color: var(--rd-bd); }
+    .state-label { font-size: 9px; font-family: var(--f-mono); color: var(--t2);
+      font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+    .state-node.active .state-label  { color: var(--bl); }
+    .state-node.terminal-ok .state-label  { color: var(--g); }
+    .state-node.terminal-bad .state-label { color: var(--rd); }
+    .state-arrow { color: var(--t4); font-size: 12px; padding: 0 3px; flex-shrink: 0; }
+    .terminal-row { display: flex; align-items: center; gap: 6px; }
+
+    /* FILTER BAR */
+    .filter-bar  { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .filter-grp  { display: flex; align-items: center; gap: 3px; }
+    .filter-lbl  { font-size: 10px; color: var(--t3); text-transform: uppercase;
+      letter-spacing: 0.07em; white-space: nowrap; margin-right: 2px; }
+    .fchip { padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--bdr-mid); background: var(--surface);
+      color: var(--t3); transition: all 0.1s; font-family: var(--f-ui); white-space: nowrap; }
+    .fchip:hover { color: var(--t2); background: var(--hover); }
+    .fchip.on    { background: var(--cta); color: #fff; border-color: var(--cta); }
+    .fchip.rd.on { background: var(--rd); border-color: var(--rd); }
+    .fchip.am.on { background: var(--am); border-color: var(--am); }
+    .ftoggle     { padding: 3px 9px; border-radius: 99px; font-size: 11px; cursor: pointer;
+      border: 1px solid var(--bdr-mid); background: var(--surface); color: var(--t3);
+      font-family: var(--f-ui); transition: all 0.1s; }
+    .ftoggle.on  { background: var(--bl-bg); color: var(--bl); border-color: var(--bl-bd); }
+    .search-wrap { margin-left: auto; }
+    .search-input { background: var(--surface); border: 1px solid var(--bdr-mid);
+      border-radius: var(--r); padding: 4px 10px; font-size: 12px; color: var(--t1);
+      font-family: var(--f-ui); width: 220px; outline: none; }
+    .search-input::placeholder { color: var(--t4); }
+    .search-input:focus { border-color: var(--bdr-focus); }
+
+    /* TABLE */
+    .table-wrap { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; }
+    .table-top { display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 12px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .table-ttl { font-size: 11px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .dt { width: 100%; border-collapse: collapse; }
+    .dt th { font-size: 9.5px; font-weight: 600; color: var(--t3); text-transform: uppercase;
+      letter-spacing: 0.07em; padding: 5px 9px; border-bottom: 1px solid var(--bdr);
+      text-align: left; white-space: nowrap; background: var(--surf2); }
+    .dt td { padding: 6px 9px; border-bottom: 1px solid var(--hover); font-size: 11.5px;
+      color: var(--t1); vertical-align: middle; }
+    .dt tr:last-child td { border-bottom: none; }
+    .dt tr.sel td  { background: #f5f4ff; }
+    .dt tr:hover td { background: var(--hover); }
+    .dt tr.sel:hover td { background: #f0eeff; }
+    .dt tr { cursor: pointer; }
+    .dt-mono { font-family: var(--f-mono); font-size: 10.5px; color: var(--t2); }
+    .dt-sub  { font-size: 10px; color: var(--t3); margin-top: 1px; }
+    .dt-muted { color: var(--t4); }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+      padding: 5px 11px; border-radius: var(--r); font-size: 11.5px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover { background: var(--cta-hov); }
+    .btn-ghost  { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover { background: var(--hover); }
+    .btn-success { background: var(--g); color: #fff; }
+    .btn-success:hover { background: #15803d; }
+    .btn-danger { background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+    .btn-danger:hover { background: var(--rd-bd); }
+    .btn-warn   { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+    .btn-disabled { background: var(--surface); color: var(--t4); border: 1px solid var(--bdr); cursor: not-allowed; }
+    .btn-sm { padding: 3px 9px; font-size: 10.5px; }
+    .btn-xs { padding: 2px 7px; font-size: 10px; }
+
+    /* ALERTS */
+    .alert { display: flex; gap: 9px; padding: 8px 11px 8px 12px; font-size: 11.5px;
+      line-height: 1.5; border-radius: 0 var(--r) var(--r) 0;
+      border-left-width: 3px; border-left-style: solid; }
+    .alert-icon { flex-shrink: 0; font-style: normal; font-size: 11px; margin-top: 1px; font-weight: 600; }
+    .alert-err  { background: var(--rd-bg); border-left-color: var(--rd); color: #7f1d1d; }
+    .alert-warn { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-info { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-ok   { background: var(--g-bg);  border-left-color: var(--g);  color: #14532d; }
+    .alert-blue { background: var(--bl-bg); border-left-color: var(--bl); color: #1e3a8a; }
+    .alert-pu   { background: var(--pu-bg); border-left-color: var(--pu); color: #4c1d95; }
+
+    /* KV TABLE */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 10.5px; color: var(--t3); min-width: 130px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 11.5px; color: var(--t1); flex: 1; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11px; }
+
+    /* DETAIL PANE */
+    .detail-pane { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg); overflow: hidden; }
+    .detail-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 13px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .detail-title { font-size: 12px; font-weight: 600; color: var(--t1); display: flex; align-items: center; gap: 8px; }
+    .detail-body  { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .detail-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .detail-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+    /* TWO-EYES BOX */
+    .two-eyes-box { border: 1px solid var(--bdr); border-radius: var(--r); overflow: hidden; }
+    .te-hdr { display: flex; align-items: center; gap: 7px; padding: 7px 11px;
+      border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .te-title { font-size: 11px; font-weight: 600; color: var(--t1); text-transform: uppercase; letter-spacing: 0.04em; }
+    .te-body  { padding: 10px 12px; display: flex; flex-direction: column; gap: 0; }
+
+    /* SOF PANEL */
+    .sof-box { border: 1px solid var(--bdr); border-radius: var(--r); overflow: hidden; }
+    .sof-hdr { display: flex; align-items: center; gap: 7px; padding: 7px 11px;
+      border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .sof-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+
+    /* DOC PREVIEW */
+    .doc-preview-box { background: var(--pu-bg); border: 1px solid var(--pu-bd);
+      border-radius: var(--r); padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+    .doc-file { font-family: var(--f-mono); font-size: 11px; color: var(--pu); }
+
+    /* ACTIONS SECTION */
+    .actions-section { display: flex; flex-direction: column; gap: 8px; }
+    .action-row { display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 10px; border-radius: var(--r); border: 1px solid var(--bdr); }
+    .action-row.allowed { border-color: var(--g-bd); background: var(--g-bg); }
+    .action-row.blocked { background: var(--hover); opacity: 0.65; }
+    .action-row.blocked-te { border-color: var(--rd-bd); background: var(--rd-bg); opacity: 0.85; }
+    .action-name   { font-size: 11.5px; color: var(--t1); font-weight: 500; }
+    .action-name.dim { color: var(--t3); font-weight: 400; }
+    .action-reason { font-size: 10.5px; color: var(--t3); }
+
+    /* TIMELINE */
+    .tl-row { display: flex; gap: 9px; padding: 4.5px 0; border-bottom: 1px solid var(--hover); align-items: flex-start; }
+    .tl-row:last-child { border-bottom: none; }
+    .tl-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+    .tl-dot.ok  { background: var(--g); }
+    .tl-dot.am  { background: var(--am); }
+    .tl-dot.bl  { background: var(--bl); }
+    .tl-dot.bad { background: var(--rd); }
+    .tl-dot.pu  { background: var(--pu); }
+    .tl-ts  { font-size: 10px; color: var(--t3); font-family: var(--f-mono); min-width: 58px; flex-shrink: 0; }
+    .tl-txt { font-size: 11.5px; color: var(--t2); }
+    .tl-actor { font-size: 10px; color: var(--t3); font-family: var(--f-mono); margin-top: 1px; }
+
+    /* PANEL */
+    .panel { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg); overflow: hidden; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 12px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .panel-title { font-size: 11px; font-weight: 600; color: var(--t1); text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body { padding: 11px 13px; }
+
+    /* SLA */
+    .sla-ok     { font-size: 9px; padding: 1.5px 5px; border-radius: 2px; font-family: var(--f-mono);
+      font-weight: 600; letter-spacing: 0.05em; background: var(--g-bg); color: var(--g); border: 1px solid var(--g-bd); }
+    .sla-warn   { font-size: 9px; padding: 1.5px 5px; border-radius: 2px; font-family: var(--f-mono);
+      font-weight: 600; letter-spacing: 0.05em; background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+    .sla-breach { font-size: 9px; padding: 1.5px 5px; border-radius: 2px; font-family: var(--f-mono);
+      font-weight: 600; letter-spacing: 0.05em; background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+
+    /* AUDIT RAIL */
+    .audit-rail { width: var(--w-au); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .audit-hdr  { padding: 9px 12px; border-bottom: 1px solid var(--bdr);
+      font-size: 9.5px; font-weight: 600; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.1em; }
+    .audit-body { flex: 1; overflow-y: auto; padding: 11px 12px; display: flex; flex-direction: column; gap: 0; }
+    .audit-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--t3); margin-bottom: 6px; margin-top: 2px; }
+    .audit-evt  { display: flex; gap: 8px; padding: 4.5px 0; border-bottom: 1px solid var(--hover); }
+    .audit-evt:last-child { border-bottom: none; }
+    .audit-dot  { width: 6px; height: 6px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+    .audit-dot.ok  { background: var(--g); }
+    .audit-dot.bad { background: var(--rd); }
+    .audit-dot.am  { background: var(--am); }
+    .audit-dot.bl  { background: var(--bl); }
+    .audit-dot.pu  { background: var(--pu); }
+    .audit-dot.dim { background: var(--t4); }
+    .audit-name { font-size: 10.5px; font-family: var(--f-mono); color: var(--t1); }
+    .audit-meta { font-size: 9.5px; color: var(--t3); margin-top: 1px; }
+    .sec-fact { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--hover); }
+    .sec-fact:last-child { border-bottom: none; }
+    .sec-mark { font-size: 10px; color: var(--t3); flex-shrink: 0; margin-top: 2px; font-family: var(--f-mono); }
+    .sec-text { font-size: 10.5px; color: var(--t2); line-height: 1.45; }
+    .hr { height: 1px; background: var(--bdr); margin: 8px 0; }
+
+    @media (max-width: 1100px) { :root { --w-au: 220px; } }
+    @media (max-width: 950px)  { .audit-rail { display: none; } }
+    @media (max-width: 720px)  { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+/* ── DATA ── */
+const MAYA = {
+  name: 'Maya Ivanova', email: 'maya.ivanova@minifin.local',
+  id: 'maya.ivanova@minifin.local', role: 'compliance_officer', tokenExp: '18:30',
+};
+
+const DEPOSITS_DATA = [
+  {
+    id: 'DEP-5192', user: 'Acme Manufacturing GmbH', userId: 'usr_AcMe9kX3',
+    userType: 'business', amount: 18500, currency: 'EUR',
+    ref: 'WIRE-2026-05-14-089',
+    state: 'READY_FOR_SECOND_REVIEW', sof: 'received',
+    sofFile: 'source_of_funds_statement.pdf', sofUploadedAt: '2026-05-16T10:42:00Z',
+    assignedTo: 'Oliver S.', firstReviewer: 'Oliver Schmidt', firstReviewerId: 'op_oliver@minifin.local',
+    age: '3h 20m', sla: 'warn', priority: 'high', risk: 'medium',
+    requestedAt: '2026-05-16T09:55:00Z', slaDeadline: '2026-05-16T17:55:00Z',
+    requires2nd: true, sameActor: false,
+    timeline: [
+      { ts: '09:55', txt: 'Deposit requested via SEPA wire', actor: 'usr_AcMe9kX3', dot: 'bl' },
+      { ts: '10:08', txt: 'Routed to operator review — SoF required', actor: 'system', dot: 'am' },
+      { ts: '10:42', txt: 'Source of funds document uploaded', actor: 'usr_AcMe9kX3', dot: 'pu' },
+      { ts: '11:14', txt: 'First review approved — Oliver Schmidt', actor: 'op_oliver@minifin.local', dot: 'ok' },
+      { ts: '11:14', txt: 'Second review required (≥ €10,000)', actor: 'system', dot: 'am' },
+    ],
+  },
+  {
+    id: 'DEP-5220', user: 'Elena Fischer', userId: 'usr_Ef3nX8k',
+    userType: 'individual', amount: 9840, currency: 'EUR',
+    ref: 'SEPA-2026-05-16-002',
+    state: 'PENDING_OPERATOR_REVIEW', sof: 'not_required',
+    assignedTo: null, firstReviewer: null, firstReviewerId: null,
+    age: '1h 45m', sla: 'ok', priority: 'medium', risk: 'high',
+    requestedAt: '2026-05-16T11:30:00Z', slaDeadline: '2026-05-16T19:30:00Z',
+    requires2nd: false, sameActor: false,
+    timeline: [
+      { ts: '11:30', txt: 'Deposit requested via SEPA', actor: 'usr_Ef3nX8k', dot: 'bl' },
+      { ts: '11:30', txt: 'Flagged: user has open AML alert AML-8831', actor: 'system', dot: 'bad' },
+      { ts: '11:31', txt: 'Routed to operator review queue', actor: 'system', dot: 'am' },
+    ],
+  },
+  {
+    id: 'DEP-5228', user: 'Sofia Laurent', userId: 'usr_Sl7mPx4',
+    userType: 'individual', amount: 2300, currency: 'EUR',
+    ref: 'SEPA-2026-05-16-007',
+    state: 'SOURCE_OF_FUNDS_REQUESTED', sof: 'requested',
+    assignedTo: 'Maya I.', firstReviewer: null, firstReviewerId: null,
+    age: '5h 10m', sla: 'ok', priority: 'low', risk: 'medium',
+    requestedAt: '2026-05-16T08:05:00Z', slaDeadline: '2026-05-17T08:05:00Z',
+    requires2nd: false, sameActor: false,
+    timeline: [
+      { ts: '08:05', txt: 'Deposit requested via SEPA', actor: 'usr_Sl7mPx4', dot: 'bl' },
+      { ts: '08:22', txt: 'Source of funds document requested', actor: 'maya.ivanova@minifin.local', dot: 'am' },
+    ],
+  },
+  {
+    id: 'DEP-5231', user: 'Jonas Keller', userId: 'usr_Jk2qMv5',
+    userType: 'individual', amount: 12400, currency: 'EUR',
+    ref: 'WIRE-2026-05-16-011',
+    state: 'PENDING_OPERATOR_REVIEW', sof: 'required',
+    assignedTo: null, firstReviewer: null, firstReviewerId: null,
+    age: '6h 41m', sla: 'breach', priority: 'high', risk: 'medium',
+    requestedAt: '2026-05-16T06:34:00Z', slaDeadline: '2026-05-16T14:34:00Z',
+    requires2nd: true, sameActor: false,
+    timeline: [
+      { ts: '06:34', txt: 'Deposit requested via wire', actor: 'usr_Jk2qMv5', dot: 'bl' },
+      { ts: '06:34', txt: 'SoF required (≥ €10,000)', actor: 'system', dot: 'am' },
+      { ts: '06:34', txt: 'SLA deadline set: 14:34 today', actor: 'system', dot: 'am' },
+    ],
+  },
+  {
+    id: 'DEP-5236', user: 'Orbit Market Ltd.', userId: 'usr_Om8vNk3',
+    userType: 'business', amount: 48000, currency: 'EUR',
+    ref: 'WIRE-2026-05-15-044',
+    state: 'READY_FOR_SECOND_REVIEW', sof: 'accepted',
+    sofFile: 'orbit_market_aml_compliance_cert.pdf', sofUploadedAt: '2026-05-15T13:10:00Z',
+    assignedTo: 'Maya I.', firstReviewer: 'Maya Ivanova', firstReviewerId: 'maya.ivanova@minifin.local',
+    age: '22h 10m', sla: 'warn', priority: 'critical', risk: 'high',
+    requestedAt: '2026-05-15T11:05:00Z', slaDeadline: '2026-05-16T17:05:00Z',
+    requires2nd: true, sameActor: true, // Maya was 1st reviewer!
+    timeline: [
+      { ts: '05/15 11:05', txt: 'Business deposit requested — wire transfer', actor: 'usr_Om8vNk3', dot: 'bl' },
+      { ts: '05/15 13:10', txt: 'SoF document uploaded and accepted', actor: 'op_oliver@minifin.local', dot: 'ok' },
+      { ts: '05/15 14:30', txt: 'First review completed — Maya Ivanova', actor: 'maya.ivanova@minifin.local', dot: 'ok' },
+      { ts: '05/15 14:30', txt: 'Second review required — different reviewer needed', actor: 'system', dot: 'bad' },
+    ],
+  },
+  {
+    id: 'DEP-5244', user: 'Mark Weber', userId: 'usr_Mw9kQr3',
+    userType: 'individual', amount: 750, currency: 'EUR',
+    ref: 'SEPA-2026-05-16-019',
+    state: 'REQUESTED', sof: 'not_required',
+    assignedTo: null, firstReviewer: null, firstReviewerId: null,
+    age: '14m', sla: 'ok', priority: 'low', risk: 'low',
+    requestedAt: '2026-05-16T12:59:00Z', slaDeadline: '2026-05-17T12:59:00Z',
+    requires2nd: false, sameActor: false,
+    timeline: [
+      { ts: '12:59', txt: 'Deposit requested via SEPA', actor: 'usr_Mw9kQr3', dot: 'bl' },
+    ],
+  },
+  {
+    id: 'DEP-5249', user: 'Lara Novak', userId: 'usr_Ln4xBq7',
+    userType: 'individual', amount: 10200, currency: 'EUR',
+    ref: 'SEPA-2026-05-16-022',
+    state: 'SOURCE_OF_FUNDS_RECEIVED', sof: 'received',
+    sofFile: 'bank_statement_may2026.pdf', sofUploadedAt: '2026-05-16T11:58:00Z',
+    assignedTo: 'Maya I.', firstReviewer: null, firstReviewerId: null,
+    age: '2h 15m', sla: 'ok', priority: 'high', risk: 'low',
+    requestedAt: '2026-05-16T11:00:00Z', slaDeadline: '2026-05-16T19:00:00Z',
+    requires2nd: true, sameActor: false,
+    timeline: [
+      { ts: '11:00', txt: 'Deposit requested via SEPA', actor: 'usr_Ln4xBq7', dot: 'bl' },
+      { ts: '11:04', txt: 'SoF required (≥ €10,000)', actor: 'system', dot: 'am' },
+      { ts: '11:58', txt: 'Bank statement uploaded by user', actor: 'usr_Ln4xBq7', dot: 'pu' },
+    ],
+  },
+];
+
+const STATE_FLOW_MAIN = ['REQUESTED','PENDING_OPERATOR_REVIEW','SOURCE_OF_FUNDS_REQUESTED','SOURCE_OF_FUNDS_RECEIVED','READY_FOR_SECOND_REVIEW','APPROVED','COMPLETED'];
+const STATE_FLOW_TERM = ['REJECTED','CANCELLED','EXPIRED'];
+
+const STATE_LABEL = {
+  REQUESTED: 'Requested', PENDING_OPERATOR_REVIEW: 'Pending Review',
+  SOURCE_OF_FUNDS_REQUESTED: 'SoF Requested', SOURCE_OF_FUNDS_RECEIVED: 'SoF Received',
+  READY_FOR_SECOND_REVIEW: '2nd Review', APPROVED: 'Approved', COMPLETED: 'Completed',
+  REJECTED: 'Rejected', CANCELLED: 'Cancelled', EXPIRED: 'Expired',
+};
+const STATE_SHORT = {
+  REQUESTED: 'REQUESTED', PENDING_OPERATOR_REVIEW: 'PENDING', SOURCE_OF_FUNDS_REQUESTED: 'SOF_REQ',
+  SOURCE_OF_FUNDS_RECEIVED: 'SOF_REC', READY_FOR_SECOND_REVIEW: '2ND_REVIEW',
+  APPROVED: 'APPROVED', COMPLETED: 'COMPLETED', REJECTED: 'REJECTED', CANCELLED: 'CANCELLED', EXPIRED: 'EXPIRED',
+};
+
+const SOF_LABEL = {
+  not_required: 'Not required', required: 'Required', requested: 'Requested',
+  received: 'Received', accepted: 'Accepted', rejected: 'Rejected',
+};
+const SOF_BADGE = {
+  not_required: 'b-sof-none', required: 'b-sof-required', requested: 'b-sof-requested',
+  received: 'b-sof-received', accepted: 'b-sof-accepted', rejected: 'b-sof-rejected',
+};
+const STATE_BADGE = {
+  REQUESTED: 'b-st-requested', PENDING_OPERATOR_REVIEW: 'b-st-pending',
+  SOURCE_OF_FUNDS_REQUESTED: 'b-st-sofReq', SOURCE_OF_FUNDS_RECEIVED: 'b-st-sofRec',
+  READY_FOR_SECOND_REVIEW: 'b-st-secondReview', APPROVED: 'b-st-approved',
+  COMPLETED: 'b-st-completed', REJECTED: 'b-st-rejected',
+};
+
+/* ── ICONS ── */
+const IcoQueue    = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="2" width="11" height="2" rx="0.5" fill="currentColor" opacity="0.8"/><rect x="1.5" y="6" width="11" height="2" rx="0.5" fill="currentColor" opacity="0.6"/><rect x="1.5" y="10" width="7" height="2" rx="0.5" fill="currentColor" opacity="0.4"/></svg>;
+const IcoDeposit  = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoWithdraw = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 9V2M4 5l3-3 3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoKyc      = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoAml      = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="10.2" r="0.7" fill="currentColor"/></svg>;
+const IcoSanctions= () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2"/><line x1="3.1" y1="3.1" x2="10.9" y2="10.9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoChargeback=() => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M2 5h10M9 2.5L12 5l-3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 9H2M5 6.5L2 9l3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoAudit    = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x="2" y="1.5" width="10" height="11" rx="1" stroke="currentColor" strokeWidth="1.2"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="4.5" y1="10" x2="7" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const IcoAuth     = () => <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="5" cy="7" r="3" stroke="currentColor" strokeWidth="1.2"/><path d="M8 7h5M11 5.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoLockSm   = () => <svg width="10" height="11" viewBox="0 0 11 12" fill="none"><rect x="1.5" y="5" width="8" height="6.5" rx="0.75" stroke="currentColor" strokeWidth="1.1"/><path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const LogoMark    = () => <svg width="24" height="24" viewBox="0 0 26 26" fill="none"><rect width="26" height="26" rx="4" fill="#1e1e28"/><rect x="6" y="9" width="14" height="2" rx="1" fill="#ddddf0"/><rect x="6" y="13.5" width="9" height="2" rx="1" fill="#7070e0"/><rect x="6" y="18" width="5" height="2" rx="1" fill="#4040a0" opacity="0.8"/></svg>;
+
+/* ── MICRO COMPONENTS ── */
+const Bdg = ({ cls, label }) => <span className={`badge ${cls}`}>{label}</span>;
+
+const stateBadge  = (s) => <Bdg cls={STATE_BADGE[s] || 'b-st-requested'} label={STATE_SHORT[s] || s} />;
+const sofBadge    = (s) => <Bdg cls={SOF_BADGE[s] || 'b-sof-none'} label={SOF_LABEL[s] || s} />;
+const priorityBdg = (p) => <Bdg cls={`b-${p}`} label={p.toUpperCase()} />;
+const riskBdg     = (r) => <Bdg cls={`b-risk-${r}`} label={r.toUpperCase()} />;
+const roleBdg     = (r) => <Bdg cls={r === 'CO' ? 'b-co' : r === 'OP' ? 'b-op' : 'b-sc'} label={r} />;
+
+const KV = ({ k, v, mono, children }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className={`kv-v${mono ? ' mono' : ''}`}>{v}{children}</div>
+  </div>
+);
+const Alrt = ({ type, icon, children }) => (
+  <div className={`alert alert-${type}`}><em className="alert-icon">{icon}</em><div>{children}</div></div>
+);
+
+/* ── SIDEBAR ── */
+const NAV = [
+  { ico: <IcoQueue />,     label: 'Work Queue',         state: 'nav-on' },
+  { ico: <IcoDeposit />,   label: 'Manual Deposits',    state: 'current', id: 'BOF-UI-03' },
+  { ico: <IcoWithdraw />,  label: 'Manual Withdrawals', state: 'limited', tag: 'ro' },
+  { ico: <IcoKyc />,       label: 'KYC Cases',          state: 'nav-on' },
+  { ico: <IcoAml />,       label: 'AML Alerts',         state: 'nav-on' },
+  { ico: <IcoSanctions />, label: 'Sanctions Hits',     state: 'nav-on' },
+  { ico: <IcoChargeback />,label: 'Chargebacks',        state: 'locked', tag: 'lock' },
+  { ico: <IcoAudit />,     label: 'Audit Log',          state: 'nav-on' },
+  null,
+  { ico: <IcoAuth />,      label: 'Authentication',     state: 'nav-on', id: 'BOF-UI-01' },
+];
+const Sidebar = () => (
+  <aside className="sidebar">
+    <div className="sb-brand">
+      <div className="sb-mark"><LogoMark /><div className="sb-name">MiniFin</div></div>
+      <div className="sb-sub">Backoffice</div>
+    </div>
+    <nav className="sb-nav">
+      <div className="nav-sec">Workflow</div>
+      {NAV.map((item, i) => {
+        if (!item) return <div key={i} className="sb-div" />;
+        return (
+          <div key={i} className={`nav-item ${item.state}`}
+            title={item.state === 'locked' ? 'senior_compliance required' : item.tag === 'ro' ? 'Read-only for compliance_officer' : ''}>
+            <span style={{ width: 13, height: 13, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{item.ico}</span>
+            <span>{item.label}</span>
+            {item.tag === 'ro'   && <span className="nav-badge-ro">RO</span>}
+            {item.tag === 'lock' && <span className="nav-lock"><IcoLockSm /></span>}
+            {item.id             && <span className="nav-id">{item.id}</span>}
+          </div>
+        );
+      })}
+    </nav>
+    <div className="sb-footer">
+      <div className="env-chip"><div className="env-dot" /><span>Local Sandbox</span></div>
+      <div className="env-host">backoffice.miniefin.local</div>
+    </div>
+  </aside>
+);
+
+/* ── STATE FLOW STRIP ── */
+const StateFlowStrip = ({ activeState, show, onToggle }) => (
+  <div className="state-flow-wrap">
+    <div className="state-flow-hdr">
+      <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--t1)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+        Deposit State Flow
+      </span>
+      <button className="btn btn-ghost btn-sm" style={{ fontSize: '10.5px' }} onClick={onToggle}>
+        {show ? 'Collapse' : 'Expand'}
+      </button>
+    </div>
+    {show && (
+      <div className="state-flow-body">
+        <div className="state-flow-row">
+          {STATE_FLOW_MAIN.map((s, i) => {
+            const isActive = s === activeState;
+            const isTermOk = s === 'APPROVED' || s === 'COMPLETED';
+            return (
+              <React.Fragment key={s}>
+                <div className={`state-node${isActive ? ' active' : isTermOk ? ' terminal-ok' : ''}`}>
+                  <span className="state-label">{STATE_SHORT[s]}</span>
+                  <span style={{ fontSize: '9px', color: isActive ? 'var(--bl)' : 'var(--t4)', marginTop: 1 }}>
+                    {STATE_LABEL[s]}
+                  </span>
+                </div>
+                {i < STATE_FLOW_MAIN.length - 1 && <span className="state-arrow">→</span>}
+              </React.Fragment>
+            );
+          })}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: '9.5px', color: 'var(--t3)', marginRight: 4 }}>Terminal / error:</span>
+          <div className="terminal-row">
+            {STATE_FLOW_TERM.map(s => (
+              <div key={s} className={`state-node terminal-bad${s === activeState ? ' active' : ''}`}
+                style={{ minWidth: 70 }}>
+                <span className="state-label" style={{ color: 'var(--rd)' }}>{s}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ fontSize: '10px', color: 'var(--t3)' }}>
+          Two-eyes rule: deposits ≥ €10,000 require two distinct reviewers (server-side enforced).
+          First and second reviewer must have different actor IDs.
+        </div>
+      </div>
+    )}
+  </div>
+);
+
+/* ── FILTER BAR ── */
+const FilterBar = ({ filterState, setFilterState, filterPriority, setFilterPriority,
+  filterSla, setFilterSla, assignedMe, setAssignedMe, search, setSearch }) => (
+  <div className="filter-bar">
+    <div className="filter-grp">
+      <span className="filter-lbl">State</span>
+      {[['all','All'],['PENDING_OPERATOR_REVIEW','Pending'],['SOURCE_OF_FUNDS_REQUESTED','SoF Req'],
+        ['SOURCE_OF_FUNDS_RECEIVED','SoF Rec'],['READY_FOR_SECOND_REVIEW','2nd Review'],['REQUESTED','New']].map(([v,l]) => (
+        <button key={v} className={`fchip${filterState === v ? ' on' : ''}`} onClick={() => setFilterState(v)}>{l}</button>
+      ))}
+    </div>
+    <div className="filter-grp" style={{ marginLeft: 4 }}>
+      {[['all','All'],['critical','Critical'],['high','High'],['medium','Med']].map(([v,l]) => (
+        <button key={v} className={`fchip${v === 'critical' || v === 'high' ? ' rd' : ''}${filterPriority === v ? ' on' : ''}`}
+          onClick={() => setFilterPriority(v)}>{l}</button>
+      ))}
+    </div>
+    <div className="filter-grp" style={{ marginLeft: 4 }}>
+      <button className={`fchip rd${filterSla === 'breach' ? ' on' : ''}`} onClick={() => setFilterSla(filterSla === 'breach' ? 'all' : 'breach')}>SLA Breach</button>
+    </div>
+    <button className={`ftoggle${assignedMe ? ' on' : ''}`} onClick={() => setAssignedMe(p => !p)}>Assigned to me</button>
+    <div className="search-wrap">
+      <input className="search-input" placeholder="Search ID, user, reference…" value={search} onChange={e => setSearch(e.target.value)} />
+    </div>
+  </div>
+);
+
+/* ── DEPOSITS TABLE ── */
+const DepositsTable = ({ items, selectedId, onSelect }) => (
+  <div className="table-wrap">
+    <div className="table-top">
+      <span className="table-ttl">Manual Deposits — {items.length} shown</span>
+      <span style={{ fontSize: '10.5px', color: 'var(--t3)' }}>Click row for detail</span>
+    </div>
+    <div style={{ overflowX: 'auto' }}>
+      <table className="dt">
+        <thead>
+          <tr>
+            <th style={{ width: 60 }}>Priority</th>
+            <th style={{ width: 80 }}>Request ID</th>
+            <th style={{ width: 160 }}>User / Account</th>
+            <th style={{ width: 80 }}>Amount</th>
+            <th style={{ width: 40 }}>CCY</th>
+            <th style={{ width: 140 }}>Reference</th>
+            <th style={{ width: 110 }}>State</th>
+            <th style={{ width: 85 }}>SoF</th>
+            <th style={{ width: 80 }}>Assigned</th>
+            <th style={{ width: 90 }}>Age / SLA</th>
+            <th style={{ width: 80 }}>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map(d => {
+            const isSel = d.id === selectedId;
+            const isActionable = d.state === 'PENDING_OPERATOR_REVIEW' || d.state === 'READY_FOR_SECOND_REVIEW' || d.state === 'SOURCE_OF_FUNDS_RECEIVED';
+            const isBlocked = d.sameActor;
+            return (
+              <tr key={d.id} className={isSel ? 'sel' : ''} onClick={() => onSelect(isSel ? null : d.id)}>
+                <td>{priorityBdg(d.priority)}</td>
+                <td className="dt-mono">{d.id}</td>
+                <td>
+                  <div style={{ fontWeight: 500, fontSize: '12px' }}>{d.user}</div>
+                  <div className="dt-sub dt-mono">{d.userId}</div>
+                </td>
+                <td style={{ fontFamily: 'var(--f-mono)', fontSize: '12px', fontWeight: 600,
+                  color: d.amount >= 10000 ? 'var(--or)' : 'var(--t1)' }}>
+                  {d.amount >= 10000 ? '⚑ ' : ''}{d.currency} {d.amount.toLocaleString()}
+                </td>
+                <td className="dt-mono">{d.currency}</td>
+                <td className="dt-mono" style={{ fontSize: '10px' }}>{d.ref}</td>
+                <td>{stateBadge(d.state)}</td>
+                <td>{sofBadge(d.sof)}</td>
+                <td style={{ fontSize: '11px', color: d.assignedTo ? 'var(--t1)' : 'var(--t4)' }}>
+                  {d.assignedTo || 'Unassigned'}
+                </td>
+                <td>
+                  <div style={{ fontSize: '11px', fontFamily: 'var(--f-mono)', color: 'var(--t2)' }}>{d.age}</div>
+                  <span className={`sla-${d.sla}`}>{d.sla === 'breach' ? 'BREACH' : d.sla === 'warn' ? 'WARN' : 'OK'}</span>
+                </td>
+                <td>
+                  {isBlocked
+                    ? <button className="btn btn-disabled btn-xs" title="Two-eyes: same actor as first reviewer">Blocked</button>
+                    : isActionable
+                    ? <button className="btn btn-primary btn-xs" onClick={e => { e.stopPropagation(); onSelect(d.id); }}>Review</button>
+                    : <button className="btn btn-ghost btn-xs">View</button>
+                  }
+                </td>
+              </tr>
+            );
+          })}
+          {items.length === 0 && (
+            <tr><td colSpan="11" style={{ textAlign: 'center', color: 'var(--t3)', padding: '20px', fontSize: '12px' }}>
+              No deposits match current filters.
+            </td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+/* ── DETAIL PANEL ── */
+const DetailPanel = ({ deposit, localApproved, onApprove, onReject, onClose }) => {
+  const [showDocPreview, setShowDocPreview] = useState(false);
+  const [docAuditConfirmed, setDocAuditConfirmed] = useState(false);
+
+  const isSameActor = deposit.sameActor;
+  const canApprove = !isSameActor &&
+    (deposit.state === 'PENDING_OPERATOR_REVIEW' || deposit.state === 'READY_FOR_SECOND_REVIEW' || deposit.state === 'SOURCE_OF_FUNDS_RECEIVED');
+  const canRequestSof = deposit.state === 'PENDING_OPERATOR_REVIEW';
+  const canSend2nd = deposit.state === 'SOURCE_OF_FUNDS_RECEIVED';
+  const hasSofDoc = deposit.sofFile;
+
+  const twEyesStatus = deposit.requires2nd
+    ? (isSameActor ? 'blocked' : deposit.state === 'READY_FOR_SECOND_REVIEW' ? 'required' : 'required')
+    : 'none';
+  const twEyesBadge = { blocked: 'b-te-blocked', required: 'b-te-req', none: 'b-te-none' };
+  const twEyesLabel = { blocked: 'BLOCKED — SAME ACTOR', required: '2ND REVIEW REQUIRED', none: 'NOT REQUIRED' };
+
+  const displayState = localApproved ? 'APPROVED' : deposit.state;
+
+  return (
+    <div className="detail-pane">
+      <div className="detail-hdr">
+        <div className="detail-title">
+          <span style={{ fontFamily: 'var(--f-mono)', fontSize: '11.5px' }}>{deposit.id}</span>
+          {stateBadge(displayState)}
+          {priorityBdg(deposit.priority)}
+          {riskBdg(deposit.risk)}
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+        </div>
+      </div>
+
+      {localApproved && (
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--bdr)' }}>
+          <Alrt type="ok" icon="✓">
+            <strong>Approved successfully.</strong> deposit.second_review_approved recorded · {deposit.id} → APPROVED.
+            Audit events written: both actor IDs logged.
+          </Alrt>
+        </div>
+      )}
+
+      {isSameActor && !localApproved && (
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--bdr)' }}>
+          <Alrt type="err" icon="×">
+            <strong>Two-eyes violation:</strong> You performed the first review on this deposit.
+            A <strong>different reviewer</strong> must perform the second approval.
+            This is enforced server-side and cannot be bypassed (except senior_compliance override).
+          </Alrt>
+        </div>
+      )}
+
+      {deposit.state === 'PENDING_OPERATOR_REVIEW' && deposit.userId === 'usr_Ef3nX8k' && !localApproved && (
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--bdr)' }}>
+          <Alrt type="warn" icon="!">
+            User has open AML alert <strong>AML-8831</strong> (Critical velocity pattern). Review against AML case before approving.
+          </Alrt>
+        </div>
+      )}
+
+      <div className="detail-body">
+        <div className="detail-grid">
+          {/* Request summary */}
+          <div>
+            <div style={{ fontSize: '10px', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Request summary</div>
+            <div className="kv-table">
+              <KV k="Request ID"  v={deposit.id} mono />
+              <KV k="User"        v={deposit.user} />
+              <KV k="User ID"     v={deposit.userId} mono />
+              <KV k="User type"   v={deposit.userType} />
+              <KV k="Amount"     ><span style={{ fontFamily: 'var(--f-mono)', fontWeight: 600, color: deposit.amount >= 10000 ? 'var(--or)' : 'var(--t1)' }}>
+                {deposit.currency} {deposit.amount.toLocaleString()}
+              </span>{deposit.amount >= 10000 && <Bdg cls="b-high" label="≥ €10K" />}</KV>
+              <KV k="Reference"   v={deposit.ref} mono />
+              <KV k="Requested"   v={deposit.requestedAt} mono />
+              <KV k="SLA deadline" v={deposit.slaDeadline} mono />
+              <KV k="Assigned"    v={deposit.assignedTo || 'Unassigned'} />
+              <KV k="User risk"><>{riskBdg(deposit.risk)}</></KV>
+            </div>
+          </div>
+
+          {/* Two-eyes + SoF */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* Two-eyes */}
+            <div className="two-eyes-box">
+              <div className="te-hdr">
+                <span className="te-title">Two-Eyes Rule</span>
+                <Bdg cls={twEyesBadge[twEyesStatus]} label={twEyesLabel[twEyesStatus]} />
+              </div>
+              <div className="te-body">
+                <div className="kv-table">
+                  <KV k="Threshold"       v="≥ €10,000" mono />
+                  <KV k="Applies to"      v="Manual deposits and withdrawals" />
+                  <KV k="Enforcement"     v="Server-side · cannot be bypassed" />
+                  <KV k="Requires 2nd"    v={deposit.requires2nd ? 'Yes' : 'No'} />
+                  <KV k="First reviewer"  v={deposit.firstReviewer || '—'} />
+                  <KV k="Second reviewer" v={deposit.state === 'APPROVED' || localApproved ? 'Maya Ivanova ✓' : isSameActor ? 'BLOCKED — must differ' : 'Available'} />
+                  <KV k="Audit"           v="Both actor IDs recorded on approval" />
+                </div>
+              </div>
+            </div>
+
+            {/* SoF */}
+            <div className="sof-box">
+              <div className="sof-hdr">
+                <span className="te-title">Source of Funds</span>
+                {sofBadge(deposit.sof)}
+              </div>
+              <div className="sof-body">
+                <div className="kv-table" style={{ marginBottom: hasSofDoc ? 8 : 0 }}>
+                  <KV k="SoF status" v={SOF_LABEL[deposit.sof]} />
+                  {hasSofDoc && <KV k="Document"    v={deposit.sofFile} mono />}
+                  {hasSofDoc && <KV k="Uploaded at" v={deposit.sofUploadedAt} mono />}
+                </div>
+                {hasSofDoc && (
+                  <div className="doc-preview-box">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: '10px', color: 'var(--pu)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>Document</span>
+                      <Bdg cls="b-pu" label="READ AUDIT" />
+                    </div>
+                    <div className="doc-file">{deposit.sofFile}</div>
+                    {!showDocPreview && (
+                      <button className="btn btn-warn btn-sm" onClick={() => setShowDocPreview(true)}>
+                        Preview document (read-audit required)
+                      </button>
+                    )}
+                    {showDocPreview && !docAuditConfirmed && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <Alrt type="pu" icon="!">
+                          Previewing this document will record a <strong>read_audit.document_previewed</strong> event with your actor ID, case ID, and timestamp.
+                        </Alrt>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button className="btn btn-primary btn-sm" onClick={() => setDocAuditConfirmed(true)}>Confirm — proceed with audit record</button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setShowDocPreview(false)}>Cancel</button>
+                        </div>
+                      </div>
+                    )}
+                    {docAuditConfirmed && (
+                      <Alrt type="pu" icon="✓">
+                        <strong>Audit recorded.</strong> read_audit.document_previewed · {deposit.id} · maya.ivanova@minifin.local
+                        <br /><span style={{ fontSize: '10.5px', opacity: 0.8 }}>Document preview would render here in production.</span>
+                      </Alrt>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <div>
+          <div style={{ fontSize: '10px', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7 }}>Timeline</div>
+          <div>
+            {deposit.timeline.map((t, i) => (
+              <div key={i} className="tl-row">
+                <div className={`tl-dot ${t.dot}`} />
+                <span className="tl-ts">{t.ts}</span>
+                <div><div className="tl-txt">{t.txt}</div><div className="tl-actor">{t.actor}</div></div>
+              </div>
+            ))}
+            {localApproved && (
+              <div className="tl-row">
+                <div className="tl-dot ok" />
+                <span className="tl-ts">now</span>
+                <div>
+                  <div className="tl-txt">Second review approved — Maya Ivanova</div>
+                  <div className="tl-actor">maya.ivanova@minifin.local</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        {!localApproved && (
+          <div>
+            <div style={{ fontSize: '10px', color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+              Actions for Maya — compliance_officer
+            </div>
+            <div className="actions-section">
+              {deposit.requires2nd && deposit.state === 'READY_FOR_SECOND_REVIEW' && !isSameActor && (
+                <div className="action-row allowed">
+                  <span className="action-name">✓ Approve (2nd review) — two-eyes satisfied</span>
+                  <button className="btn btn-success btn-sm" onClick={onApprove}>Approve</button>
+                </div>
+              )}
+              {deposit.state === 'PENDING_OPERATOR_REVIEW' && !deposit.requires2nd && (
+                <div className="action-row allowed">
+                  <span className="action-name">✓ Approve (single review — below €10K threshold)</span>
+                  <button className="btn btn-success btn-sm" onClick={onApprove}>Approve</button>
+                </div>
+              )}
+              {deposit.state === 'SOURCE_OF_FUNDS_RECEIVED' && (
+                <div className="action-row allowed">
+                  <span className="action-name">✓ Accept SoF — proceed to review</span>
+                  <button className="btn btn-primary btn-sm">Accept SoF</button>
+                </div>
+              )}
+              {isSameActor && (
+                <div className="action-row blocked-te">
+                  <div>
+                    <div className="action-name dim">× Approve (2nd review) — BLOCKED</div>
+                    <div className="action-reason">You were the first reviewer. Two-eyes rule requires a different actor.</div>
+                  </div>
+                  <button className="btn btn-disabled btn-xs" title="Same actor as first reviewer">Blocked</button>
+                </div>
+              )}
+              {canApprove && (
+                <div className="action-row allowed">
+                  <span className="action-name">✓ Reject request</span>
+                  <button className="btn btn-danger btn-sm" onClick={onReject}>Reject</button>
+                </div>
+              )}
+              {canRequestSof && (
+                <div className="action-row allowed">
+                  <span className="action-name">✓ Request source-of-funds document</span>
+                  <button className="btn btn-warn btn-sm">Request SoF</button>
+                </div>
+              )}
+              <div className="action-row blocked">
+                <div>
+                  <div className="action-name dim">— Senior override (bypass 2nd review)</div>
+                  <div className="action-reason">requires senior_compliance role</div>
+                </div>
+                <button className="btn btn-disabled btn-xs">Locked</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── AUDIT RAIL ── */
+const AuditRail = ({ selectedId }) => {
+  const events = [
+    { name: 'deposit.review_opened',          meta: '09:55 · DEP-5192',          dot: 'bl' },
+    { name: 'deposit.source_of_funds_requested', meta: '08:22 · DEP-5228',       dot: 'am' },
+    { name: 'deposit.source_of_funds_received', meta: '11:58 · DEP-5249',        dot: 'pu' },
+    { name: 'deposit.first_review_approved',  meta: '11:14 · DEP-5192 · Oliver', dot: 'ok' },
+    { name: 'deposit.second_review_required', meta: '11:14 · DEP-5192 (≥10K)',   dot: 'am' },
+    { name: 'deposit.access_denied',          meta: 'DEP-5236 · same actor',     dot: 'bad' },
+    selectedId ? { name: 'deposit.review_opened', meta: `now · ${selectedId}`, dot: 'bl' } : null,
+  ].filter(Boolean);
+
+  return (
+    <aside className="audit-rail">
+      <div className="audit-hdr">Audit &amp; Security</div>
+      <div className="audit-body">
+        <div className="audit-sec">Session identity</div>
+        <div className="kv-table" style={{ marginBottom: 8 }}>
+          <KV k="User"      v={MAYA.name} />
+          <KV k="Role"><Bdg cls="b-co" label="CO" /></KV>
+          <KV k="OIDC role" v="compliance_officer" mono />
+          <KV k="Token exp" v={`Today ${MAYA.tokenExp}`} mono />
+          <KV k="Session"   v="Bearer token — Keycloak OIDC" />
+        </div>
+        <div className="hr" />
+        <div className="audit-sec">Audit requirements</div>
+        {[
+          'All deposit approvals and rejections are audited.',
+          'Two-eyes approvals log both actor IDs with timestamps.',
+          'SoF document preview triggers read_audit event.',
+          'End-user / merchant sessions cannot access this screen.',
+        ].map((f, i) => (
+          <div key={i} className="sec-fact">
+            <span className="sec-mark">—</span>
+            <span className="sec-text">{f}</span>
+          </div>
+        ))}
+        <div className="hr" />
+        <div className="audit-sec">Two-eyes rule</div>
+        <div className="kv-table" style={{ marginBottom: 8 }}>
+          <KV k="Threshold"    v="≥ €10,000" mono />
+          <KV k="Applies to"   v="Deposits + withdrawals" />
+          <KV k="Enforcement"  v="Server-side" />
+          <KV k="Scope"        v="Distinct actor IDs required" />
+        </div>
+        <div className="hr" />
+        <div className="audit-sec">Event log (this session)</div>
+        {events.map((ev, i) => (
+          <div key={i} className="audit-evt">
+            <div className={`audit-dot ${ev.dot}`} />
+            <div>
+              <div className="audit-name">{ev.name}</div>
+              <div className="audit-meta">{ev.meta}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </aside>
+  );
+};
+
+/* ── APP ── */
+function App() {
+  const [selectedId,     setSelectedId]     = useState('DEP-5192');
+  const [filterState,    setFilterState]    = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
+  const [filterSla,      setFilterSla]      = useState('all');
+  const [assignedMe,     setAssignedMe]     = useState(false);
+  const [search,         setSearch]         = useState('');
+  const [showFlow,       setShowFlow]       = useState(true);
+  const [localApproved,  setLocalApproved]  = useState({});
+
+  const selected = DEPOSITS_DATA.find(d => d.id === selectedId);
+
+  // Primary action bar state
+  const canApproveSelected = selected && !selected.sameActor &&
+    (selected.state === 'PENDING_OPERATOR_REVIEW' || selected.state === 'READY_FOR_SECOND_REVIEW' || selected.state === 'SOURCE_OF_FUNDS_RECEIVED') &&
+    !localApproved[selected?.id];
+  const canRejectSelected = selected && !localApproved[selected?.id] &&
+    (selected.state === 'PENDING_OPERATOR_REVIEW' || selected.state === 'READY_FOR_SECOND_REVIEW');
+  const canAssign = selected && !selected.assignedTo;
+  const canRequestSofHeader = selected && selected.state === 'PENDING_OPERATOR_REVIEW';
+
+  const filteredDeposits = useMemo(() => {
+    return DEPOSITS_DATA.filter(d => {
+      if (filterState !== 'all' && d.state !== filterState) return false;
+      if (filterPriority !== 'all' && d.priority !== filterPriority) return false;
+      if (filterSla === 'breach' && d.sla !== 'breach') return false;
+      if (assignedMe && d.assignedTo !== 'Maya I.') return false;
+      if (search) {
+        const q = search.toLowerCase();
+        if (!d.id.toLowerCase().includes(q) && !d.user.toLowerCase().includes(q) && !d.ref.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [filterState, filterPriority, filterSla, assignedMe, search]);
+
+  const handleApprove = () => {
+    if (selected) setLocalApproved(p => ({ ...p, [selected.id]: true }));
+  };
+  const handleReject = () => {
+    if (selected) {
+      setLocalApproved(p => ({ ...p, [selected.id]: 'rejected' }));
+      setSelectedId(null);
+    }
+  };
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+        {/* PAGE HEADER */}
+        <div className="page-hdr">
+          <div className="hdr-bc">
+            <span>Backoffice</span>
+            <span className="hdr-sep">/</span>
+            <strong>Manual Deposits</strong>
+            {selected && <>
+              <span className="hdr-sep">·</span>
+              <span style={{ fontFamily: 'var(--f-mono)', fontSize: '11.5px', color: 'var(--t2)' }}>{selected.id}</span>
+            </>}
+          </div>
+          <div className="hdr-session">
+            <div>
+              <div className="session-user">{MAYA.name}</div>
+              <div className="session-meta">{MAYA.email}</div>
+            </div>
+            <Bdg cls="b-co" label="CO" />
+            <Bdg cls="b-oidc" label="OIDC" />
+            <span style={{ fontSize: '10px', color: 'var(--t3)', fontFamily: 'var(--f-mono)', whiteSpace: 'nowrap' }}>exp {MAYA.tokenExp}</span>
+          </div>
+          <div className="hdr-right">
+            <span className="screen-id">BOF-UI-03</span>
+            <span className="env-badge-hdr"><span className="env-bdot" />Local Sandbox</span>
+          </div>
+        </div>
+
+        {/* SUB HEADER — stats + action bar */}
+        <div className="sub-hdr">
+          <div className="stat-row">
+            <div className="stat-chip">
+              <div><div className="stat-num">18</div><div className="stat-lbl">Open</div></div>
+            </div>
+            <div className="stat-chip">
+              <div><div className="stat-num am">3</div><div className="stat-lbl">High priority</div></div>
+            </div>
+            <div className="stat-chip">
+              <div><div className="stat-num rd">2</div><div className="stat-lbl">SLA breached</div></div>
+            </div>
+            <div className="stat-chip">
+              <div><div className="stat-num am">5</div><div className="stat-lbl">Waiting SoF</div></div>
+            </div>
+            <div className="stat-chip">
+              <div><div className="stat-num am">4</div><div className="stat-lbl">2nd review req.</div></div>
+            </div>
+          </div>
+          <div className="action-bar">
+            <button className={`btn btn-ghost btn-sm${!canAssign ? ' btn-disabled' : ''}`}
+              disabled={!canAssign} title={!selected ? 'Select a row' : ''}>Assign to me</button>
+            <button className={`btn btn-success btn-sm${!canApproveSelected ? ' btn-disabled' : ''}`}
+              disabled={!canApproveSelected} onClick={handleApprove}
+              title={selected?.sameActor ? 'Two-eyes: same actor blocked' : !selected ? 'Select a row' : ''}>
+              Approve
+            </button>
+            <button className={`btn btn-danger btn-sm${!canRejectSelected ? ' btn-disabled' : ''}`}
+              disabled={!canRejectSelected} onClick={handleReject}
+              title={!selected ? 'Select a row' : ''}>Reject</button>
+            <button className={`btn btn-warn btn-sm${!canRequestSofHeader ? ' btn-disabled' : ''}`}
+              disabled={!canRequestSofHeader} title={!canRequestSofHeader ? 'Not in pending review state' : ''}>
+              Request SoF
+            </button>
+            <button className="btn btn-ghost btn-sm" style={{ opacity: 0.45, cursor: 'not-allowed' }}
+              title="senior_compliance required">Senior Override</button>
+          </div>
+        </div>
+
+        {/* MAIN BODY */}
+        <div className="main-body">
+          <StateFlowStrip activeState={selected ? (localApproved[selected.id] ? 'APPROVED' : selected.state) : null} show={showFlow} onToggle={() => setShowFlow(p => !p)} />
+          <FilterBar filterState={filterState} setFilterState={setFilterState}
+            filterPriority={filterPriority} setFilterPriority={setFilterPriority}
+            filterSla={filterSla} setFilterSla={setFilterSla}
+            assignedMe={assignedMe} setAssignedMe={setAssignedMe}
+            search={search} setSearch={setSearch} />
+          <DepositsTable items={filteredDeposits} selectedId={selectedId} onSelect={setSelectedId} />
+          {selected && (
+            <DetailPanel
+              deposit={selected}
+              localApproved={!!localApproved[selected.id]}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              onClose={() => setSelectedId(null)}
+            />
+          )}
+        </div>
+      </div>
+      <AuditRail selectedId={selectedId} />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
