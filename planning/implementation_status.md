@@ -552,3 +552,29 @@ Result tag notes:
 
 Next planned step:
 - Provide real Stripe Connect sandbox credentials to implement `MRC-01`, or choose the next approved backend/runtime slice toward Phase 05 card path; the API key, public idempotency and inbound webhook primitives are now available as foundations.
+
+---
+
+## Phase 04 Slice 03 — Merchant Dashboard Payments Read Shell and Webhook Configuration
+
+Status: **DRAFT PLANNING NOTE CREATED — not implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_04_slice_03_merchant_dashboard_payments_planning.md` — DRAFT v0.1.
+
+Planned backend/runtime scope:
+- Merchant-authenticated dashboard read APIs for existing `merchant.payment_intents` shell rows.
+- Merchant webhook endpoint configuration CRUD model under `/api/v1/merchant/**`.
+- API key list/read refinements only if needed; Slice 01 API key lifecycle remains the source of truth.
+- Conservative proposed runtime checks:
+  - `MRC-04` — merchant dashboard payment-intent read scoping.
+  - `MRC-05` — merchant webhook endpoint configuration CRUD/scoping.
+
+Explicitly not implemented:
+- No Kotlin, SQL, runtime scripts or frontend code in this planning-only task.
+- No Stripe Connect onboarding (`MRC-01`).
+- No card authorization, capture, refund, settlement or outbound webhook delivery.
+- No `WBH-01..WBH-03` claims.
+
+Next planned step:
+- Orchestrator/owner review of the Slice 03 planning note before any implementation pass.
