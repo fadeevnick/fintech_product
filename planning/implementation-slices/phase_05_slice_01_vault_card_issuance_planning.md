@@ -1,6 +1,6 @@
 # Phase 05 Slice 01 — Vault Tokenization and Card Issuance Foundation — Planning Note
 
-Status: **DRAFT v0.1 — planning-only; no product code implemented**.
+Status: **APPROVED v0.1 — planning-only; no product code implemented**.
 
 This document fixes the first implementation slice inside `Phase 05 — Vault, Card Issuance and Authorization`.
 
@@ -540,7 +540,7 @@ scripts/runtime/reg_phase01_runtime_health.sh
 scripts/runtime/reg_phase03_ledger_reconciliation.sh
 ```
 
-In executor branches, run these only with the runtime isolation variables assigned in that branch's `AGENT_TASK.md`.
+In executor branches, run these only with the runtime isolation variables assigned by the orchestrator for that branch.
 
 The log-masking script must:
 

@@ -552,3 +552,57 @@ Result tag notes:
 
 Next planned step:
 - Provide real Stripe Connect sandbox credentials to implement `MRC-01`, or choose the next approved backend/runtime slice toward Phase 05 card path; the API key, public idempotency and inbound webhook primitives are now available as foundations.
+
+---
+
+## Phase 04 Slice 03 — Merchant Dashboard Payments Read Shell and Webhook Configuration
+
+Status: **PLANNING APPROVED — not implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_04_slice_03_merchant_dashboard_payments_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Merchant-authenticated dashboard read APIs for existing `merchant.payment_intents` shell rows.
+- Merchant webhook endpoint configuration CRUD model under `/api/v1/merchant/**`.
+- API key list/read refinements only if needed; Slice 01 API key lifecycle remains the source of truth.
+- Conservative proposed runtime checks:
+  - `MRC-04` — merchant dashboard payment-intent read scoping.
+  - `MRC-05` — merchant webhook endpoint configuration CRUD/scoping.
+
+Explicitly not implemented:
+- No Kotlin, SQL, runtime scripts or frontend code in this planning-only task.
+- No Stripe Connect onboarding (`MRC-01`).
+- No card authorization, capture, refund, settlement or outbound webhook delivery.
+- No `WBH-01..WBH-03` claims.
+
+Next planned step:
+- Implement the approved Slice 03 backend/runtime sub-scope when selected.
+
+---
+
+## Phase 05 Slice 01 — Vault Tokenization and Card Issuance Foundation
+
+Status: **PLANNING APPROVED — not implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_05_slice_01_vault_card_issuance_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Vault tokenization foundation where full PAN is persisted only in `vault`.
+- Minimal issuer card record path storing token/last4/expiration/BIN metadata only.
+- End-user `POST /api/v1/cards` entrypoint through Platform, delegated to Issuer and Vault through narrow service-authenticated paths.
+- Restricted Vault detokenize path for `service:issuer` only, with audit logging.
+- PAN masking verification in service logs.
+- Target checks:
+  - `VLT-01` — PAN stored only in Vault.
+  - `VLT-02` — detokenize restriction.
+  - `VLT-03` — PAN log masking.
+
+Explicitly not implemented:
+- No Kotlin, SQL, runtime scripts or frontend code in this planning-only task.
+- No authorization, capture, settlement, refunds, chargebacks or outbound webhook delivery.
+- No `PAY-04` / `PAY-05` claims; they remain for the later authorization slice.
+
+Next planned step:
+- Implement the approved Slice 01 backend/runtime sub-scope when selected.
