@@ -1,6 +1,6 @@
 # Phase 04 Slice 01 — Merchant API Keys and Public API Idempotency — Planning Note
 
-Status: **BACKEND/RUNTIME SUB-SCOPE EXECUTED v0.2; frontend not in scope**.
+Status: **BACKEND/RUNTIME SUB-SCOPE EXECUTED v0.3; frontend not in scope**.
 
 This document fixes the first implementation slice inside `Phase 04 — Merchant Onboarding and Public API Foundation`.
 
@@ -42,7 +42,7 @@ If card authorization/capture or Stripe Connect were implemented before this sli
 
 In this slice:
 
-1. Add Platform Flyway migration `V9__merchant_api_keys_and_idempotency.sql` for `merchant.api_keys`, `merchant.payment_intents` shell and `idempotency.idempotency_keys`.
+1. Add Platform Flyway migration `V11__merchant_api_keys_and_idempotency.sql` for `merchant.api_keys`, `merchant.payment_intents` shell and `idempotency.idempotency_keys`.
 2. Add backend code in `com.minifin.platform.merchant.apikeys` for API key generation, listing and revocation on the merchant dashboard.
 3. Add backend code in `com.minifin.platform.publicapi` for:
    - API key authentication filter / resolver;
@@ -58,7 +58,7 @@ In this slice:
 
 ### Code Changes
 
-- Platform migration `V9__merchant_api_keys_and_idempotency.sql`.
+- Platform migration `V11__merchant_api_keys_and_idempotency.sql`.
 - New Kotlin package `com.minifin.platform.merchant.apikeys` containing models, repository, service and merchant dashboard controller for API keys.
 - New Kotlin package `com.minifin.platform.publicapi` containing:
   - public API response/error models and exception type;
@@ -70,7 +70,7 @@ In this slice:
 
 ### Behavioral Outcomes
 
-- `POST /api/v1/merchant/api-keys` (merchant_admin only) generates a key, returns it once in the response body together with the prefix, fingerprint and id; the raw key is never persisted; `key_hash` and `fingerprint` are stored alongside `status='ACTIVE'`.
+- `POST /api/v1/merchant/api-keys` (merchant_admin only) generates a key, returns it once in the response body together with the prefix, fingerprint and id; the raw key is never persisted; `key_hash` and `fingerprint` are stored alongside `status='ACTIVE'`. Optional `Idempotency-Key` makes create replay return the same metadata with no raw secret replayed.
 - `GET /api/v1/merchant/api-keys` returns the merchant's keys with prefix/fingerprint/status only.
 - `POST /api/v1/merchant/api-keys/{id}/revoke` (merchant_admin only) transitions the key to `REVOKED` and is idempotent on the same key.
 - Public requests missing `Authorization`, with malformed key, with non-existent key, or with revoked key are rejected with `{data:null, errors:[{code:"unauthenticated"|"invalid_api_key"|"revoked_api_key", message:...}]}` and an appropriate HTTP status.
@@ -78,15 +78,15 @@ In this slice:
 - `POST /v1/payment_intents` with a fresh `Idempotency-Key` creates a row in `merchant.payment_intents` and returns a `payment_intent` object inside `{data:..., errors:[]}` with state `REQUIRES_PAYMENT_METHOD`.
 - Replaying the same `Idempotency-Key` with the same merchant and the same normalized request body returns the cached HTTP status and body verbatim.
 - Reusing the same `Idempotency-Key` with the same merchant and a different normalized request body returns HTTP 409 `idempotency_conflict` and does not create a second `payment_intents` row.
-- Cross-merchant key reuse is treated as separate scopes: `(merchant_id, idempotency_key)` is the unique scope; the same string used by two merchants is independently valid.
+- Cross-merchant and cross-route key reuse is treated as separate scopes: `(merchant_id, route, idempotency_key)` is the unique scope; the same string used by two merchants or by one merchant on two different endpoints is independently valid.
 - Audit events are written for key creation, revocation and rejected public auth.
 
 ### Verification Outcomes
 
 - `MRC-03` — pass for API key one-time visibility, hashed/fingerprinted storage and revoked-key rejection.
 - `PAY-01` — pass for public API response shape `{data, errors}` on success and on errors.
-- `PAY-02` — pass for same key/body replay returning cached response.
-- `PAY-03` — pass for same key/different body returning 409.
+- `PAY-02` — pass for same key/body replay returning cached response, including concurrent callers and per-route/per-merchant scope.
+- `PAY-03` — pass for same route/key/different body returning 409; same key on another route remains independent.
 
 ## 5. Explicitly Out Of Scope
 
@@ -132,10 +132,10 @@ Specifically:
 ### 6.3 Idempotency Primitive
 
 - Required for `POST /v1/payment_intents`. Future Phase 04 / Phase 05 routes will reuse `IdempotencyService.runWriteOnce(...)`.
-- Storage: `idempotency.idempotency_keys` with `(merchant_id, idempotency_key)` as primary key. Stored columns: `request_fingerprint`, `route`, `method`, `response_status`, `response_body`, `created_at`.
+- Storage: `idempotency.idempotency_keys` with `(merchant_id, route, idempotency_key)` as primary key. Stored columns: `request_fingerprint`, `route`, `method`, `response_status`, `response_body`, `created_at`.
 - TTL is enforced by `created_at` plus `IDEMPOTENCY_TTL` (24 hours, matching `06_implementation_guide` reference). TTL cleanup is out of scope here; this slice only stores rows.
 - Request fingerprint is `SHA-256( method + "|" + route + "|" + normalized_body )`. Normalization is "the raw request body bytes that the controller received"; clients are responsible for canonical JSON. This is intentionally simple for this slice and can be replaced with a deeper canonicalization later without changing the public contract.
-- On replay with the same fingerprint: respond with the cached `response_status` and the cached `response_body`.
+- On replay with the same fingerprint: respond with the cached `response_status` and the cached `response_body`. The business write and cache finalization are performed in one transaction by reserving a placeholder row first and finalizing it after the business write succeeds.
 - On replay with a different fingerprint: respond with HTTP 409 and `errors:[{code:"idempotency_conflict", ...}]`.
 - Missing `Idempotency-Key` on a required-idempotency route: respond with HTTP 400 and `errors:[{code:"idempotency_key_required", ...}]`.
 
@@ -252,7 +252,7 @@ Authorization: Bearer mfp_live_...
 
 ### 8.2 Create
 
-- `product/apps/platform/src/main/resources/db/migration/V9__merchant_api_keys_and_idempotency.sql`
+- `product/apps/platform/src/main/resources/db/migration/V11__merchant_api_keys_and_idempotency.sql`
 - `product/apps/platform/src/main/kotlin/com/minifin/platform/merchant/apikeys/ApiKeyModels.kt`
 - `product/apps/platform/src/main/kotlin/com/minifin/platform/merchant/apikeys/ApiKeyRepository.kt`
 - `product/apps/platform/src/main/kotlin/com/minifin/platform/merchant/apikeys/ApiKeyService.kt`
@@ -282,7 +282,7 @@ Authorization: Bearer mfp_live_...
 
 ## 9. Recommended Change Order
 
-1. Add migration `V9__merchant_api_keys_and_idempotency.sql`.
+1. Add migration `V11__merchant_api_keys_and_idempotency.sql`.
 2. Add API key models / repository / service / merchant controller.
 3. Add public API exception/response support and key auth filter.
 4. Wire the filter into `SecurityConfig` for `/v1/**`.

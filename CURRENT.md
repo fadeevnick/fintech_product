@@ -28,17 +28,17 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md` — backend/runtime sub-scope executed v0.2.
 - `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — backend/runtime sub-scope executed v0.2.
 - `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
-- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.2.
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3.
 
 Completed workstream — latest:
-- Phase 04 Slice 01 merchant API keys, public API authentication and public write idempotency primitive implemented in `platform`;
-- `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` passed; `AUD-01` extended to API key lifecycle; `LDG-05` regression passed;
+- Phase 04 Slice 01 merchant API keys, public API authentication and hardened public/dashboard write idempotency primitive implemented in `platform`;
+- `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` passed, including dashboard create idempotency, concurrent public idempotency, per-route scope and append-only idempotency guards; `AUD-01` extended to API key lifecycle; `LDG-05` regression passed;
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
 
 Latest executed slice:
-- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.2.
-- Scope: merchant dashboard API key lifecycle (create / list / revoke) with one-time visibility and hashed/fingerprinted storage; public API authentication via `Authorization: Bearer mfp_live_*`; public write idempotency primitive backed by `idempotency.idempotency_keys`; minimal `POST /v1/payment_intents` shell in state `REQUIRES_PAYMENT_METHOD`.
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3.
+- Scope: merchant dashboard API key lifecycle (create / list / revoke) with one-time visibility and hashed/fingerprinted storage; public API authentication via `Authorization: Bearer mfp_live_*`; public/dashboard write idempotency primitive backed by `idempotency.idempotency_keys` scoped per merchant/route/key; minimal `POST /v1/payment_intents` shell in state `REQUIRES_PAYMENT_METHOD`.
 - Target checks: `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03`.
 
 ## Next
@@ -191,7 +191,7 @@ docker compose -f deploy/docker-compose.yml down
 ```
 
 Current Phase 04 Slice 01:
-- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.2.
+- `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3.
 - Implemented: `merchant.api_keys`, `merchant.payment_intents` shell, `idempotency.idempotency_keys` (append-only on update); merchant dashboard API key lifecycle (`POST/GET /api/v1/merchant/api-keys`, `POST /api/v1/merchant/api-keys/{id}/revoke`) with one-time visibility and SHA-256 hashed/fingerprinted storage; public API key auth via `Authorization: Bearer mfp_live_*` through a dedicated Spring Security chain for `/v1/**`; public write idempotency primitive with deterministic request fingerprint; minimal `POST /v1/payment_intents` shell in state `REQUIRES_PAYMENT_METHOD` and `GET /v1/payment_intents/{id}`.
 - Runtime evidence recorded in `planning/runtime_evidence_log.md`.
 - `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` are passed; `AUD-01` extended to API key create/revoke audit rows; `LDG-05` regression passed.

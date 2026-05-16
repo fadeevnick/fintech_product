@@ -881,7 +881,7 @@ Build/runtime evidence:
 - `docker compose -f deploy/docker-compose.yml build platform` passed.
 - `docker compose -f deploy/docker-compose.yml up -d platform` passed.
 - `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
-- Flyway applied `V9__merchant_api_keys_and_idempotency.sql` cleanly.
+- Flyway applied `V11__merchant_api_keys_and_idempotency.sql` cleanly. The migration is intentionally numbered V11 because a sibling Stripe webhook branch owns V10.
 
 New Phase 04 script evidence:
 - `product/scripts/runtime/reg_phase04_api_key_lifecycle.sh`:
@@ -927,17 +927,21 @@ Final Phase 04 Slice 01 script output:
 
 ```text
 MRC-03 api key lifecycle pass
+MRC-03 dashboard api key idempotency pass
 PAY-01 public API response shape pass
 PAY-02 public API idempotency replay pass
 PAY-03 public API idempotency conflict pass
+PAY-02 atomic concurrent idempotency pass
+PAY-02 PAY-03 idempotency per-merchant per-route scope pass
+Idempotency append-only (no-update on finalized + no-delete) pass
 LDG-05 ledger reconciliation pass
 ```
 
 Result tag notes:
 - `MRC-03` is passed for API key one-time visibility, hashed/fingerprinted storage and revoked-key rejection.
 - `PAY-01` is passed for public API `{data, errors}` shape on success and on errors.
-- `PAY-02` is passed for same key/body replay returning the cached response.
-- `PAY-03` is passed for same key/different body returning HTTP 409.
+- `PAY-02` is passed for same key/body replay returning the cached response, including concurrent callers and per-route/per-merchant scope.
+- `PAY-03` is passed for same route/key/different body returning HTTP 409, while same-key reuse on a different route is independent.
 - `MRC-01`, `MRC-02` remain unclaimed because Stripe Connect onboarding and webhook receiver are owned by a separate branch.
 
 Next planned step:

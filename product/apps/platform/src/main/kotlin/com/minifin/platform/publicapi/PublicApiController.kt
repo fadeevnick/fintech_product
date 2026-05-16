@@ -32,32 +32,20 @@ class PublicApiController(
         val method = "POST"
         val fingerprint = idempotencyService.fingerprint(method, route, rawBody)
 
-        idempotencyService.lookupCached(
+        val cached = idempotencyService.runWriteOnce(
             merchantId = principal.merchantId,
             idempotencyKey = key,
             method = method,
             route = route,
             requestFingerprint = fingerprint,
-        )?.let { cached ->
-            return jsonResponse(cached.httpStatus, cached.body)
+        ) {
+            val parsedRequest = parseBody(rawBody)
+            val dto = paymentIntentService.create(principal, parsedRequest)
+            IdempotentOutcome.of(
+                httpStatus = HttpStatus.CREATED.value(),
+                body = idempotencyService.writeJson(PublicApiResponse(data = dto)),
+            )
         }
-
-        val parsedRequest = parseBody(rawBody)
-        val dto = paymentIntentService.create(principal, parsedRequest)
-        val responseStatus = HttpStatus.CREATED.value()
-        val responseBody = idempotencyService.writeJson(
-            PublicApiResponse(data = dto),
-        )
-
-        val cached = idempotencyService.persist(
-            merchantId = principal.merchantId,
-            idempotencyKey = key,
-            method = method,
-            route = route,
-            requestFingerprint = fingerprint,
-            responseStatus = responseStatus,
-            responseBody = responseBody,
-        )
         return jsonResponse(cached.httpStatus, cached.body)
     }
 

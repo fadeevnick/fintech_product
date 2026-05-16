@@ -19,7 +19,7 @@ Implemented runtime behavior so far:
 - Phase 03 Slice 02 wallet account + manual deposit backend/runtime sub-scope in `platform`: `wallet.wallet_accounts`, `wallet.deposit_requests` (under EUR 10k), end-user `POST /api/v1/deposits` and `GET /api/v1/wallet`, backoffice `GET/POST /api/v1/backoffice/manual-ops/deposits[/{id}/decision]`, balanced approve through `ledger.post_journal(...)`, actor-control wallet-write block (`FROZEN` ∪ `BLOCKED`).
 - Phase 03 Slice 03 wallet manual withdraw backend/runtime sub-scope in `platform`: `wallet.withdraw_requests` (under EUR 10k), end-user `POST /api/v1/withdrawals`, backoffice `GET/POST /api/v1/backoffice/manual-ops/withdrawals[/{id}/decision]`, ledger hold/final-debit/release postings, insufficient-funds guard and actor-control wallet-write block.
 - Phase 03 Slice 04 wallet internal transfer backend/runtime sub-scope in `platform`: `wallet.internal_transfers` (under EUR 10k), end-user `POST /api/v1/transfers`, sender debit / receiver credit through `ledger.post_journal(...)`, sufficient-funds guard, `Idempotency-Key` duplicate protection and actor-control wallet-write block for sender and receiver.
-- Phase 04 Slice 01 merchant API keys and public API idempotency backend/runtime sub-scope in `platform`: `merchant.api_keys` (one-time-visible key, SHA-256 `key_hash`, 16-hex `fingerprint`), `merchant.payment_intents` shell (`REQUIRES_PAYMENT_METHOD` only), `idempotency.idempotency_keys` append-only on update; merchant dashboard `POST/GET /api/v1/merchant/api-keys`, `POST /api/v1/merchant/api-keys/{id}/revoke` (`merchant_admin`); public `POST /v1/payment_intents` and `GET /v1/payment_intents/{id}` behind `Authorization: Bearer mfp_live_*`; deterministic public idempotency replay/conflict primitive. Public API endpoints currently hosted in `platform`; moving them into `acquirer` is a deferred later Phase 04 slice gated on a real service-to-service auth primitive.
+- Phase 04 Slice 01 merchant API keys and public API idempotency backend/runtime sub-scope in `platform`: `merchant.api_keys` (one-time-visible key, SHA-256 `key_hash`, 16-hex `fingerprint`), `merchant.payment_intents` shell (`REQUIRES_PAYMENT_METHOD` only), `idempotency.idempotency_keys` append-only on update; merchant dashboard `POST/GET /api/v1/merchant/api-keys`, `POST /api/v1/merchant/api-keys/{id}/revoke` (`merchant_admin`); public `POST /v1/payment_intents` and `GET /v1/payment_intents/{id}` behind `Authorization: Bearer mfp_live_*`; deterministic public idempotency replay/conflict primitive with atomic concurrent replay, per-merchant/per-route scope and append-only finalized rows. Public API endpoints currently hosted in `platform`; moving them into `acquirer` is a deferred later Phase 04 slice gated on a real service-to-service auth primitive.
 
 ## Local Commands
 
@@ -89,4 +89,8 @@ scripts/runtime/reg_phase04_api_key_lifecycle.sh
 scripts/runtime/reg_phase04_public_api_response_shape.sh
 scripts/runtime/reg_phase04_public_api_idempotency_replay.sh
 scripts/runtime/reg_phase04_public_api_idempotency_conflict.sh
+scripts/runtime/reg_phase04_public_api_concurrent_idempotency.sh
+scripts/runtime/reg_phase04_public_api_idempotency_per_route.sh
+scripts/runtime/reg_phase04_idempotency_append_only.sh
+scripts/runtime/reg_phase04_dashboard_api_key_idempotency.sh
 ```
