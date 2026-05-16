@@ -156,4 +156,33 @@ Runtime evidence:
 - `AUD-02` — pass for audit append-only protection.
 
 Next planned step:
-- Draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.
+- Review/approve `planning/implementation-slices/phase_02_slice_03_backoffice_oidc_rbac_planning.md`, then implement its non-frontend backend/runtime scope if accepted.
+
+---
+
+## Phase 02 Slice 03 — Backoffice OIDC and RBAC Foundation
+
+Status: **PLANNING DRAFT — not approved, no product code started**.
+
+Planning contract:
+- `planning/implementation-slices/phase_02_slice_03_backoffice_oidc_rbac_planning.md` — DRAFT v0.1.
+
+Proposed scope:
+- local Keycloak OIDC token validation in Platform;
+- Keycloak role mapping into Platform roles:
+  - `backoffice_operator`
+  - `compliance_officer`
+  - `senior_compliance`
+- minimal `GET /api/v1/backoffice/me`;
+- wrong-role denial across end-user, merchant and backoffice paths;
+- backoffice auth audit evidence;
+- retained runtime scripts for `AUTH-03`, `AUTH-05`, `AUD-01`, `AUD-02`, `RUN-04` regression.
+
+Explicitly not started:
+- product code for this slice;
+- backoffice SPA login UI;
+- KYC/AML/sanctions/manual ops queues;
+- sensitive read-audit workflows.
+
+Next planned step:
+- Review/approve the Slice 03 draft and open questions before writing product code.
