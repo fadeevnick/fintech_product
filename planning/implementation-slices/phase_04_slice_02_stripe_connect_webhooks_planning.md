@@ -21,7 +21,7 @@ This means:
 - New schema slot `merchant.stripe_account_links` is added but is **populated only**:
   - in production by a real Stripe Connect onboarding-start that calls Stripe API (not implemented in this slice — blocker);
   - in this slice, by an explicit DB seed step inside runtime scripts that documents what onboarding-start would have inserted.
-- New schema slot `merchant.stripe_webhook_events` enforces idempotency by Stripe event id at the unique-index level and records every accepted/rejected event for traceability.
+- New schema slot `merchant.stripe_webhook_events` enforces idempotency by Stripe event id at the unique-index level and records every verified event for traceability. Signature/timestamp/payload rejections are audit-only so they cannot poison later valid retries for the same Stripe event id.
 - The new endpoint `POST /webhooks/stripe/v1` reads raw body bytes, verifies the `Stripe-Signature` header against `STRIPE_WEBHOOK_SIGNING_SECRET` using Stripe's standard `t=<unix_ts>,v1=<hex_hmac_sha256>` scheme, applies a configurable timestamp tolerance window, and rejects any payload whose signature or timestamp does not validate.
 - Valid `account.updated` events update the linked merchant's `kyb_status` based on `charges_enabled`/`payouts_enabled`/`details_submitted`. Unknown account ids and unhandled event types are persisted with explicit ignore outcomes; they do not error and do not move state.
 - A duplicate Stripe event id is processed exactly once: the second delivery returns a successful idempotent response, does not re-execute side effects, and writes a `stripe.webhook_duplicate` audit row.
