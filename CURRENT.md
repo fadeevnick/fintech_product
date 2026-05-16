@@ -1,12 +1,12 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-16 (Phase 03 Slice 04 backend/runtime sub-scope executed).
+Last updated: 2026-05-16 (Phase 04 Slice 02 webhook backend/runtime sub-scope executed; MRC-01 blocked on Stripe sandbox credentials).
 
 ---
 
 ## Focus
 
-UI prototype baseline is in progress in parallel with eligible non-frontend Phase 03 work.
+UI prototype baseline is in progress in parallel with eligible non-frontend backend/runtime work.
 
 ## Status
 
@@ -28,25 +28,29 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md` — backend/runtime sub-scope executed v0.2.
 - `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — backend/runtime sub-scope executed v0.2.
 - `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
+- `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocked on Stripe sandbox credentials.
 
 Completed workstream — latest:
-- Phase 03 Slice 04 wallet internal transfer implemented in `platform`;
-- `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05` passed for the internal transfer path;
-- regression subset passed: ledger reconciliation after transfer flows;
+- Phase 04 Slice 02 Stripe webhook backend/runtime sub-scope implemented in `platform`;
+- `MRC-02` passed for Stripe-format HMAC-SHA256 signature verification, timestamp tolerance and duplicate event id idempotency;
+- `AUD-01` extended for webhook-driven KYB state change, signature/timestamp failure and duplicate-delivery audit rows;
+- `MRC-01` Stripe Connect onboarding start remains blocked on missing real Stripe sandbox credentials and is not claimed;
+- regression subset passed: ledger reconciliation after webhook checks;
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
 
 Latest executed slice:
-- `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
-- Scope: end-user internal transfer under EUR 10k with sender debit, receiver credit, sufficient-funds guard, idempotency and actor-control write block for sender and receiver.
-- Target checks: `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05`, `LDG-99`.
+- `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocked on Stripe sandbox credentials.
+- Scope: `POST /webhooks/stripe/v1`, Stripe-format HMAC-SHA256 signature verification, timestamp tolerance, event-id idempotency, `account.updated` KYB mapping and audit rows.
+- Target checks: `MRC-02`, webhook branch of `AUD-01`, `LDG-05` regression.
+- Blocker: `MRC-01` requires real Stripe Connect sandbox credentials; no fake onboarding API path exists.
 
 ## Next
 
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`.**
 
 Next planned product step:
-- Review the parallel high-value controls planning branch, then decide whether to continue Phase 03 placeholders or move to the next approved implementation slice.
+- Either provide real Stripe Connect sandbox credentials to implement `MRC-01`, or continue the separate merchant API key / public API idempotency workstream. Keep API key/public API idempotency out of this webhook slice.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
@@ -106,9 +110,9 @@ First slice planning note approved:
 - Linked checks: `RUN-01`..`RUN-08`, `UI-01`.
 
 Latest executed slice planning note:
-- `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
-- Scope: internal end-user transfer < EUR 10k with atomic sender debit / receiver credit and runtime checks for `WLT-01`.
-- Linked checks: `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05`, `LDG-99`.
+- `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocked on Stripe sandbox credentials.
+- Scope: inbound Stripe webhook handling with real local Stripe-format signature verification and idempotent event processing.
+- Linked checks: `MRC-02`, webhook branch of `AUD-01`, `LDG-05` regression.
 
 ## Read-first order (новая AI-сессия)
 
@@ -190,12 +194,12 @@ docker compose -f deploy/docker-compose.yml ps
 docker compose -f deploy/docker-compose.yml down
 ```
 
-Current Phase 03 Slice 04:
-- `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
-- Implemented: `wallet.internal_transfers`, end-user `POST /api/v1/transfers`, `GET /api/v1/wallet` transfer history, balanced sender debit / receiver credit posting through `ledger.post_journal(...)`, insufficient-funds guard, `Idempotency-Key` duplicate protection and actor-control hook for sender and receiver.
+Current Phase 04 Slice 02:
+- `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocked on Stripe sandbox credentials.
+- Implemented: `merchant.stripe_account_links`, `merchant.stripe_webhook_events`, `POST /webhooks/stripe/v1`, real Stripe-format HMAC-SHA256 signature verification, timestamp tolerance, duplicate Stripe event id idempotency, `account.updated` KYB mapping and audit rows.
 - Runtime evidence recorded in `planning/runtime_evidence_log.md`.
-- `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05` are passed for transfer; `LDG-99` foundation regression passed.
-- `WLT-03`, `WLT-04` are not claimed because SoF and two-eyes workflows do not exist yet.
+- `MRC-02` and webhook branch of `AUD-01` pass; `LDG-05`/`LDG-99` regression passed.
+- `MRC-01`, `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` are not claimed.
 - No frontend work in this slice.
 
-Next planned step: review the parallel high-value controls planning branch. Frontend implementation for backoffice manual deposits, manual withdrawals and end-user wallet remains gated by their respective accepted standalone HTML prototypes.
+Next planned step: provide Stripe Connect sandbox credentials for `MRC-01`, or continue separate merchant API key / public API idempotency work. Frontend implementation remains gated by accepted standalone HTML prototypes.

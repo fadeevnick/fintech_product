@@ -867,3 +867,86 @@ Result tag notes:
 
 Next planned step:
 - Review the parallel high-value controls planning branch, then decide whether to continue Phase 03 placeholders or move to the next approved implementation slice.
+
+---
+
+## 2026-05-16 — Phase 04 Slice 02 Stripe Webhook Runtime Verification
+
+Scope:
+- Phase 04 Slice 02 backend/runtime webhook-only sub-scope.
+- Real local Stripe-format webhook signature verification using `Stripe-Signature: t=<unix_ts>,v1=<hmac_sha256>`.
+- Idempotent event processing by Stripe `event.id`.
+- `account.updated` webhook-driven merchant KYB state changes.
+- Audit rows for webhook-driven state changes, invalid signatures, timestamp rejections and duplicate deliveries.
+
+Explicit blocker:
+- `MRC-01` — Stripe Connect onboarding start is not claimed. Real Stripe sandbox credentials (`STRIPE_SECRET_KEY` / Connect account access) were unavailable; no fake Stripe API call or fake onboarding response was introduced.
+
+Build/runtime evidence:
+- `docker build --progress=plain -t mini-fintech-platform-platform --build-arg APP_MODULE=platform -f backend/Dockerfile .` from `product/` passed after fixing duplicate-event transaction handling.
+- `docker compose -f deploy/docker-compose.yml up -d platform` passed.
+- `curl -fsS http://localhost:8081/internal/health` returned `{"service":"platform","status":"UP"}`.
+- Flyway applied `V10__merchant_stripe_webhooks.sql`; `flyway_schema_history` now lists `10:merchant stripe webhooks` after V1..V8.
+
+Local DB hygiene note:
+- The local `platform-db` had a previously-applied, branch-external ghost Flyway row `9:merchant api keys and idempotency` from a sibling branch run.
+- With owner confirmation, the local-only ghost artifacts were removed before verification:
+  - dropped `merchant.api_keys`, `merchant.payment_intents`, `idempotency.idempotency_keys` if present;
+  - deleted `public.flyway_schema_history` row `version='9'`.
+- This was local dev DB cleanup only; no repository migration or committed state was removed.
+
+New webhook script evidence:
+- `product/scripts/runtime/reg_phase04_stripe_webhook_signature_valid.sh`:
+  - `MRC-02` — pass for valid Stripe-format HMAC-SHA256 signature.
+  - `AUD-01` — pass for `stripe.account_updated` audit row.
+  - Concrete observations:
+    - Script registered a merchant and seeded `merchant.stripe_account_links` with a local `acct_*` id because real onboarding-start is blocked.
+    - Signed a raw JSON `account.updated` payload with local `STRIPE_WEBHOOK_SIGNING_SECRET=whsec_local_test_secret`.
+    - `POST /webhooks/stripe/v1` returned outcome `PROCESSED`.
+    - Merchant `kyb_status` transitioned to `VERIFIED` when `charges_enabled=true` and `payouts_enabled=true`.
+    - Exactly one `merchant.stripe_webhook_events` row exists for the event id with outcome `PROCESSED`.
+- `product/scripts/runtime/reg_phase04_stripe_webhook_signature_invalid.sh`:
+  - `MRC-02` — pass for invalid signature rejection.
+  - `AUD-01` — pass for signature-failure audit row.
+  - Concrete observations:
+    - Payload signed with `whsec_wrong_secret` returned HTTP 400 with `stripe_webhook_signature_invalid`.
+    - Merchant `kyb_status` remained `NOT_STARTED`.
+    - No `PROCESSED` row exists for that event id; one `REJECTED_SIGNATURE` row exists.
+    - `audit.audit_log` contains `stripe.webhook_signature_invalid` with outcome `FAILURE`.
+- `product/scripts/runtime/reg_phase04_stripe_webhook_timestamp_tolerance.sh`:
+  - `MRC-02` — pass for Stripe timestamp tolerance rejection.
+  - `AUD-01` — pass for timestamp-failure audit row.
+  - Concrete observations:
+    - Payload signed correctly but with `t=` two hours in the past returned HTTP 400 with `stripe_webhook_timestamp_outside_tolerance`.
+    - Merchant `kyb_status` remained `NOT_STARTED`.
+    - One `REJECTED_TIMESTAMP` event row and `stripe.webhook_timestamp_outside_tolerance` failure audit row exist.
+- `product/scripts/runtime/reg_phase04_stripe_webhook_idempotency.sh`:
+  - `MRC-02` — pass for duplicate Stripe event id idempotency.
+  - `AUD-01` — pass for first state-change audit and duplicate-delivery audit.
+  - Concrete observations:
+    - First delivery returned outcome `PROCESSED` and moved merchant `kyb_status` to `PENDING` for `details_submitted=true` with `charges_enabled=false`, `payouts_enabled=false`.
+    - Second delivery of the exact same signed payload/event id returned outcome `DUPLICATE`.
+    - DB cross-check found exactly one `merchant.stripe_webhook_events` row for that event id.
+    - DB cross-check found exactly one `stripe.account_updated` audit row and one `stripe.webhook_duplicate` audit row for the event id.
+
+Regression evidence:
+- `product/scripts/runtime/reg_phase03_ledger_reconciliation.sh` — `LDG-05` pass (`LDG-99` foundation regression); webhook slice does not touch ledger postings.
+
+Final script output:
+
+```text
+MRC-02 Stripe webhook valid signature pass
+MRC-02 Stripe webhook invalid signature rejection pass
+MRC-02 Stripe webhook timestamp tolerance rejection pass
+MRC-02 Stripe webhook event idempotency pass
+LDG-05 ledger reconciliation pass
+```
+
+Result tag notes:
+- `MRC-02` — pass.
+- `AUD-01` — pass extension for webhook-driven KYB state-change, signature-failure, timestamp-failure and duplicate-delivery audit rows.
+- `MRC-01` — blocked; not claimed.
+- `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03` — not in scope.
+
+Next planned step:
+- Either provide real Stripe Connect sandbox credentials and implement `MRC-01`, or continue with the separate merchant API key / public API idempotency branch without changing this webhook proof.

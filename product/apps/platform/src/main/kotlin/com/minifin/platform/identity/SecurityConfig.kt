@@ -27,6 +27,7 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
                 it.requestMatchers("/api/v1/backoffice/**").authenticated()
+                it.requestMatchers("/webhooks/**").permitAll()
                 it.anyRequest().permitAll()
             }
             .oauth2ResourceServer {
