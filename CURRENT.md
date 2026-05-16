@@ -1,6 +1,6 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-16.
+Last updated: 2026-05-16 (Phase 03 Slice 02 draft created).
 
 ---
 
@@ -39,7 +39,7 @@ Completed workstream — latest:
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`.**
 
 Next planned product step:
-- Draft the next Phase 03 wallet/manual-operation slice before writing more product code.
+- Review/approve `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md` (DRAFT v0.1), then implement its non-frontend backend/runtime sub-scope if accepted.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
@@ -184,4 +184,4 @@ Current Phase 03 Slice 01:
 - `LDG-02`, `LDG-03`, `WLT-01` and `WLT-02` are not claimed because wallet/deposit/withdraw/transfer workflows do not exist yet.
 - No frontend work in this slice.
 
-Next planned step: draft the next Phase 03 wallet/manual-operation slice before writing more product code.
+Next planned step: review/approve `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md` (DRAFT v0.1, wallet account + manual deposit < EUR 10k, targets `LDG-02` and `WLT-02`). After approval — implement backend/runtime sub-scope; frontend implementation остаётся отдельным future slice.
