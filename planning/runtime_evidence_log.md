@@ -280,3 +280,87 @@ Implementation note:
 
 Next planned step:
 - Draft the next non-frontend Phase 02 slice while frontend implementation remains gated by accepted standalone HTML prototypes.
+
+---
+
+## 2026-05-16 — Phase 02 Slice 03 Backoffice OIDC/RBAC Runtime Verification
+
+Scope:
+- Backoffice OIDC token authentication against local Keycloak.
+- Platform role mapping for backoffice RBAC roles.
+- Minimal protected backoffice identity endpoint.
+- No backoffice SPA/frontend implementation was added in this verification; frontend work remains gated by accepted standalone HTML prototypes.
+
+Preconditions:
+- Phase 01 local compose stack was already running.
+- Docker commands run with Codex escalation because normal sandboxed Docker CLI cannot access the daemon.
+- `planning/implementation-slices/phase_02_slice_03_backoffice_oidc_rbac_planning.md` was approved by owner with `го`.
+- `prototypes/ui/04_backoffice_oidc_login.html` exists as the standalone `BOF-UI-01` visual prototype artifact.
+
+Build evidence:
+- `docker compose -f deploy/docker-compose.yml config --quiet` passed.
+- `docker compose -f deploy/docker-compose.yml build platform` passed.
+- `docker compose -f deploy/docker-compose.yml up -d platform` passed.
+- `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+
+Implementation evidence:
+- Platform now validates bearer JWTs for `/api/v1/backoffice/**` through Keycloak JWKS.
+- Existing end-user and merchant cookie endpoints remain app-handled and are not converted to Spring Security sessions.
+- Runtime helper `product/scripts/runtime/lib_phase02_backoffice_keycloak.sh` upserts local Keycloak realm/client/users/roles through Keycloak admin API.
+
+Phase 01 regression evidence:
+- `product/scripts/runtime/reg_phase01_keycloak.sh`:
+  - `RUN-04` — pass.
+- `product/scripts/runtime/reg_phase01_runtime_health.sh`:
+  - `RUN-01` — pass.
+
+Phase 02 regression and slice script evidence:
+- `product/scripts/runtime/reg_phase02_backoffice_oidc.sh`:
+  - `AUTH-03` — pass.
+  - Local Keycloak realm/client/users/roles were upserted, a backoffice token was acquired, and `GET /api/v1/backoffice/me` returned `backoffice_operator`.
+- `product/scripts/runtime/reg_phase02_backoffice_role_denial.sh`:
+  - `AUTH-05` — pass.
+  - Missing bearer token returned 401 with `unauthenticated`.
+  - Valid token without an approved backoffice role returned 403 with `forbidden_role`.
+  - End-user and merchant cookie sessions were rejected by `GET /api/v1/backoffice/me` with 401 `unauthenticated`.
+- `product/scripts/runtime/reg_phase02_backoffice_auth_audit.sh`:
+  - `AUD-01` — pass.
+  - Backoffice auth success and role-denial failure audit rows exist.
+- `product/scripts/runtime/reg_phase02_enduser_auth.sh`:
+  - `AUTH-01` — pass regression.
+- `product/scripts/runtime/reg_phase02_merchant_auth.sh`:
+  - `AUTH-02` — pass regression.
+- `product/scripts/runtime/reg_phase02_cross_role_denial.sh`:
+  - `AUTH-05` — pass regression for end-user/merchant wrong-role denial.
+- `product/scripts/runtime/reg_phase02_auth_audit.sh`:
+  - `AUD-01` — pass regression.
+  - `AUD-02` — pass regression.
+- `product/scripts/runtime/reg_phase02_merchant_auth_audit.sh`:
+  - `AUD-01` — pass regression.
+
+Final Phase 02 script output:
+
+```text
+AUTH-03 backoffice OIDC role mapping pass
+AUTH-05 backoffice unauthenticated and wrong-role denial pass
+AUD-01 backoffice auth audit events pass
+RUN-04 keycloak connectivity pass
+RUN-01 network health pass
+RUN-01 issuer health pass
+RUN-01 acquirer health pass
+RUN-01 platform health pass
+RUN-01 vault health pass
+AUTH-01 end-user register verify login me pass
+AUTH-02 merchant register verify login me pass
+AUTH-05 end-user merchant wrong-role denial partial
+AUD-01 auth audit events pass
+AUD-02 audit append-only protection pass
+AUD-01 merchant auth audit events pass
+```
+
+Implementation note:
+- Initial Keycloak direct-grant token request failed with `Account is not fully set up`.
+- Fixed the retained seed helper to explicitly set `firstName`, `lastName`, `emailVerified`, empty `requiredActions`, and reset a non-temporary password for each smoke user.
+
+Next planned step:
+- Draft the next non-frontend Phase 02 slice for the remaining identity/audit foundation work, while frontend implementation remains gated by accepted standalone HTML prototypes.

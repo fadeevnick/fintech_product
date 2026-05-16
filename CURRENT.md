@@ -231,10 +231,10 @@ Current Phase 02 Slice 02 draft:
 - Backend/domain/runtime work may proceed even if unrelated UI prototypes are still being prepared.
 - Frontend implementation for a screen/workflow requires its accepted standalone HTML prototype first.
 
-Current Phase 02 Slice 03 draft:
-- `planning/implementation-slices/phase_02_slice_03_backoffice_oidc_rbac_planning.md` — DRAFT v0.1.
-- Proposed scope: backoffice OIDC token validation against local Keycloak, Keycloak role mapping to Platform RBAC roles, `GET /api/v1/backoffice/me`, all-pool wrong-role denial, and backoffice auth audit evidence.
+Current Phase 02 Slice 03:
+- `planning/implementation-slices/phase_02_slice_03_backoffice_oidc_rbac_planning.md` — backend/runtime sub-scope executed v0.2; frontend checkpoint pending.
+- Implemented: backoffice OIDC token validation against local Keycloak, Keycloak role mapping to Platform RBAC roles, `GET /api/v1/backoffice/me`, all-pool wrong-role denial, and backoffice auth audit evidence.
 - No backoffice SPA/frontend work in this slice.
-- Open questions: local Keycloak realm setup, endpoint scope, role source, audit event semantics.
+- Runtime evidence recorded in `planning/runtime_evidence_log.md`.
 
-Next planned step: review/approve Phase 02 Slice 03 planning note, then implement its non-frontend backend/runtime scope if accepted.
+Next planned step: draft the next non-frontend Phase 02 slice for the remaining identity/audit foundation work while frontend implementation remains gated by accepted standalone HTML prototypes.

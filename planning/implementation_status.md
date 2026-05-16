@@ -163,27 +163,39 @@ Next planned step:
 
 ## Phase 02 Slice 03 — Backoffice OIDC and RBAC Foundation
 
-Status: **PLANNING DRAFT — not approved, no product code started**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — frontend checkpoint not started**.
 
 Planning contract:
-- `planning/implementation-slices/phase_02_slice_03_backoffice_oidc_rbac_planning.md` — DRAFT v0.1.
+- `planning/implementation-slices/phase_02_slice_03_backoffice_oidc_rbac_planning.md` — backend/runtime sub-scope executed v0.2; frontend checkpoint pending.
 
-Proposed scope:
-- local Keycloak OIDC token validation in Platform;
+Implemented backend/runtime scope:
+- local Keycloak OIDC token validation in Platform for `/api/v1/backoffice/**`;
+- Keycloak realm/client/user/role upsert helper for reproducible local runtime checks;
 - Keycloak role mapping into Platform roles:
   - `backoffice_operator`
   - `compliance_officer`
   - `senior_compliance`
 - minimal `GET /api/v1/backoffice/me`;
-- wrong-role denial across end-user, merchant and backoffice paths;
-- backoffice auth audit evidence;
-- retained runtime scripts for `AUTH-03`, `AUTH-05`, `AUD-01`, `AUD-02`, `RUN-04` regression.
+- denial for missing bearer token, valid token without approved role, and end-user/merchant cookie sessions on backoffice endpoint;
+- backoffice auth success/failure audit writes;
+- retained runtime scripts:
+  - `product/scripts/runtime/lib_phase02_backoffice_keycloak.sh`
+  - `product/scripts/runtime/reg_phase02_backoffice_oidc.sh`
+  - `product/scripts/runtime/reg_phase02_backoffice_role_denial.sh`
+  - `product/scripts/runtime/reg_phase02_backoffice_auth_audit.sh`
 
 Explicitly not started:
-- product code for this slice;
 - backoffice SPA login UI;
 - KYC/AML/sanctions/manual ops queues;
 - sensitive read-audit workflows.
 
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-16 — Phase 02 Slice 03 Backoffice OIDC/RBAC Runtime Verification`.
+- `AUTH-03` — pass for Keycloak OIDC token acquisition and Platform role mapping.
+- `AUTH-05` — pass for unauthenticated and wrong-role denial across end-user, merchant and backoffice protected paths.
+- `AUD-01` — pass for end-user, merchant and backoffice auth audit events.
+- `AUD-02` — pass for audit append-only protection.
+- `RUN-04` — pass for Keycloak connectivity.
+
 Next planned step:
-- Review/approve the Slice 03 draft and open questions before writing product code.
+- Draft the next non-frontend Phase 02 slice for the remaining identity/audit foundation work while frontend implementation remains gated by accepted standalone HTML prototypes.

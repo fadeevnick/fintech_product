@@ -1,10 +1,14 @@
 # Phase 02 Slice 03 — Backoffice OIDC and RBAC Foundation — Planning Note
 
-Status: **DRAFT v0.1**.
+Status: **BACKEND/RUNTIME SUB-SCOPE EXECUTED v0.2; frontend checkpoint pending**.
 
 This document fixes the third implementation slice inside `Phase 02 — Identity, RBAC, Sessions and Audit`.
 
 It is a pre-code scope contract. It is not implementation status and not runtime evidence.
+
+Execution note:
+- The backend/domain/runtime portion was approved with `го`, implemented and verified on 2026-05-16.
+- The backoffice SPA/frontend login implementation remains pending.
 
 ---
 
@@ -249,9 +253,9 @@ Expected result tags:
 
 No product frontend implementation is in scope.
 
-Potential future UI prototype:
+Available UI prototype artifact:
 
-- Backoffice OIDC landing/session state screen.
+- `prototypes/ui/04_backoffice_oidc_login.html` — standalone `BOF-UI-01` backoffice OIDC login/session state screen.
 
 Terminology note:
 
@@ -290,28 +294,30 @@ planning/runtime_evidence_log.md
 
 1. **Keycloak realm setup**
 
-   Recommendation: runtime script should upsert the local `minifin-backoffice` realm, public test client and smoke users through Keycloak admin API.
+   Decision: runtime script upserts the local `minifin-backoffice` realm, public test client and smoke users through Keycloak admin API.
 
    Reason: Phase 01 only proves Keycloak is reachable. A retained script makes local OIDC verification reproducible without committing generated realm state or secrets.
 
 2. **Backoffice endpoint scope**
 
-   Recommendation: implement only `GET /api/v1/backoffice/me` plus minimal RBAC smoke endpoints if needed.
+   Decision: implement only `GET /api/v1/backoffice/me`; no extra RBAC smoke endpoints were needed.
 
    Reason: this proves auth/RBAC without starting compliance queues before their phases.
 
 3. **Role source**
 
-   Recommendation: read roles from realm/client access roles and map only exact approved role strings.
+   Decision: read roles from realm/client access roles and map only exact approved role strings.
 
    Reason: local Keycloak setup stays simple, while Platform keeps a strict allow-list.
 
 4. **Audit event semantics**
 
-   Recommendation: audit successful `backoffice.me` as `identity.backoffice_authenticated` for Phase 02, and leave sensitive read-audit (`AUD-03`) for the later compliance/read-audit slice.
+   Decision: audit successful `backoffice.me` as `identity.backoffice_authenticated`, audit role-denial as `identity.backoffice_auth_failed`, and leave sensitive read-audit (`AUD-03`) for the later compliance/read-audit slice.
 
    Reason: this keeps `AUD-01` focused on auth/session events and avoids pretending that compliance read-audit is complete.
 
 ## 13. Next Planned Step
 
-Owner reviews this draft and approves or changes the open questions. Only after approval should product code for Phase 02 Slice 03 start.
+Backend/runtime implementation is verified and recorded in `planning/runtime_evidence_log.md`.
+
+Next planned step: draft the next non-frontend Phase 02 slice for the remaining identity/audit foundation work while frontend implementation remains gated by accepted standalone HTML prototypes.

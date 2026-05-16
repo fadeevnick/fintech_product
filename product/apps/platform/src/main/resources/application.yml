@@ -13,6 +13,11 @@ minifin:
   identity:
     expose-verification-token: ${IDENTITY_EXPOSE_VERIFICATION_TOKEN:true}
     session-ttl-hours: ${IDENTITY_SESSION_TTL_HOURS:12}
+  backoffice:
+    oidc:
+      jwk-set-uri: ${BACKOFFICE_OIDC_JWK_SET_URI:http://localhost:18080/realms/minifin-backoffice/protocol/openid-connect/certs}
+      client-id: ${BACKOFFICE_OIDC_CLIENT_ID:minifin-backoffice-local}
+      issuer-display: ${BACKOFFICE_OIDC_ISSUER_DISPLAY:http://localhost:18080/realms/minifin-backoffice}
 server:
   port: ${PLATFORM_HTTP_PORT:8081}
 management:

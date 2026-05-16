@@ -95,10 +95,14 @@ services:
       PLATFORM_DB_USER: platform
       PLATFORM_DB_PASSWORD: platform
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      BACKOFFICE_OIDC_JWK_SET_URI: http://keycloak:8080/realms/minifin-backoffice/protocol/openid-connect/certs
+      BACKOFFICE_OIDC_ISSUER_DISPLAY: http://localhost:18080/realms/minifin-backoffice
     depends_on:
       platform-db:
         condition: service_healthy
       kafka:
+        condition: service_started
+      keycloak:
         condition: service_started
     ports:
       - "8081:8080"

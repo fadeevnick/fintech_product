@@ -13,6 +13,7 @@ Implemented runtime behavior so far:
 - Phase 01 runtime skeleton for five backend services, three SPA shells and local infra.
 - Phase 02 Slice 01 end-user register/email verify/login/logout/me in `platform`.
 - Phase 02 Slice 02 merchant identity backend/runtime sub-scope in `platform`: merchant register/email verify/login/logout/me, first employee as `merchant_admin`, cross-pool email uniqueness and end-user/merchant wrong-role denial.
+- Phase 02 Slice 03 backoffice OIDC/RBAC backend/runtime sub-scope in `platform`: Keycloak bearer token validation, approved backoffice role mapping, `GET /api/v1/backoffice/me` and all-pool protected endpoint denial.
 
 ## Local Commands
 
@@ -51,6 +52,9 @@ scripts/runtime/reg_phase02_enduser_auth.sh
 scripts/runtime/reg_phase02_merchant_auth.sh
 scripts/runtime/reg_phase02_cross_pool_email_uniqueness.sh
 scripts/runtime/reg_phase02_cross_role_denial.sh
+scripts/runtime/reg_phase02_backoffice_oidc.sh
+scripts/runtime/reg_phase02_backoffice_role_denial.sh
 scripts/runtime/reg_phase02_auth_audit.sh
 scripts/runtime/reg_phase02_merchant_auth_audit.sh
+scripts/runtime/reg_phase02_backoffice_auth_audit.sh
 ```
