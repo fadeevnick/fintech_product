@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MiniFin — AML Alerts — BOF-UI-06</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #eceae5; --surface: #ffffff; --surf2: #f7f6f3; --hover: #f0efe9;
+      --sb: #0e0e12; --sb-bdr: #1e1e22; --sb-muted: #545460; --sb-active: #1e1e28;
+      --bdr: #dddad2; --bdr-mid: #c5c2ba; --bdr-focus: #1c1c1f;
+      --t1: #1c1c1f; --t2: #575763; --t3: #9898a6; --t4: #d0d0da;
+      --g: #166534; --g-bg: #f0fdf4; --g-bd: #bbf7d0;
+      --am: #854d0e; --am-bg: #fffbeb; --am-bd: #fde68a;
+      --rd: #9b1c1c; --rd-bg: #fef2f2; --rd-bd: #fecaca;
+      --pu: #5b21b6; --pu-bg: #f5f3ff; --pu-bd: #ddd6fe;
+      --bl: #1e40af; --bl-bg: #eff6ff; --bl-bd: #bfdbfe;
+      --or: #9a3412; --or-bg: #fff7ed; --or-bd: #fed7aa;
+      --frz: #86198f; --frz-bg: #fdf2f8; --frz-bd: #f0abfc;
+      --f-ui: 'IBM Plex Sans', sans-serif; --f-mono: 'IBM Plex Mono', monospace;
+      --w-sb: 210px; --w-au: 258px; --r: 4px;
+    }
+    html, body, #root { height: 100%; font-family: var(--f-ui); font-size: 13px; background: var(--bg); color: var(--t1); }
+    .app-shell { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb); border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 14px 16px 10px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-product { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+    .sb-surface { font-size: 10px; font-weight: 500; color: var(--sb-muted); text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+    .sb-env { margin: 8px 14px; padding: 3px 8px; background: #1e3a5f; border: 1px solid #2d4f7a; border-radius: var(--r); font-size: 9px; font-weight: 600; color: #7cb9f4; text-transform: uppercase; letter-spacing: .6px; text-align: center; }
+    .sb-sec { font-size: 9px; font-weight: 600; color: var(--sb-muted); text-transform: uppercase; letter-spacing: .6px; padding: 10px 16px 4px; }
+    .sb-nav { flex: 1; overflow-y: auto; padding: 4px 0; }
+    .sb-item { display: flex; align-items: center; gap: 8px; padding: 7px 16px; color: #9898a6; font-size: 12.5px; cursor: pointer; transition: background .12s, color .12s; position: relative; }
+    .sb-item:hover { background: rgba(255,255,255,.04); color: #ccc; }
+    .sb-item.active { background: var(--sb-active); color: #fff; }
+    .sb-item.active::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: #7cb9f4; }
+    .sb-icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+    .sb-bdg { margin-left: auto; font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 10px; }
+    .sb-bdg.ro { background: #2d3748; color: #90cdf4; }
+    .sb-bdg.sr { background: #2d1a4a; color: #c4b5fd; }
+    .sb-bdg.cnt { background: #1a2e1a; color: #86efac; }
+    .sb-bdg.alrt { background: #4a1a1a; color: #f87171; }
+    .sb-user { padding: 10px 16px; border-top: 1px solid var(--sb-bdr); }
+    .sb-user-name { font-size: 12px; font-weight: 500; color: #e2e8f0; }
+    .sb-user-role { font-size: 10px; color: var(--sb-muted); margin-top: 1px; }
+    .sb-user-session { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+    .sess-dot { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+    .sess-txt { font-size: 9px; color: #3d6b3d; font-family: var(--f-mono); }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 0 20px; height: 44px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .topbar-screen { font-size: 10px; font-weight: 600; color: var(--t3); font-family: var(--f-mono); }
+    .topbar-host { font-size: 11px; color: var(--t2); font-family: var(--f-mono); }
+    .topbar-sep { color: var(--t4); }
+    .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+    /* ── Badges ── */
+    .badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 10px; border: 1px solid; white-space: nowrap; }
+    .badge.green  { color: var(--g);   background: var(--g-bg);   border-color: var(--g-bd); }
+    .badge.amber  { color: var(--am);  background: var(--am-bg);  border-color: var(--am-bd); }
+    .badge.red    { color: var(--rd);  background: var(--rd-bg);  border-color: var(--rd-bd); }
+    .badge.purple { color: var(--pu);  background: var(--pu-bg);  border-color: var(--pu-bd); }
+    .badge.blue   { color: var(--bl);  background: var(--bl-bg);  border-color: var(--bl-bd); }
+    .badge.orange { color: var(--or);  background: var(--or-bg);  border-color: var(--or-bd); }
+    .badge.freeze { color: var(--frz); background: var(--frz-bg); border-color: var(--frz-bd); }
+    .badge.neutral{ color: var(--t2);  background: var(--surf2);  border-color: var(--bdr); }
+
+    /* ── Page header ── */
+    .page-hdr { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 14px 20px 0; flex-shrink: 0; }
+    .page-title-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+    .page-title { font-size: 17px; font-weight: 700; color: var(--t1); letter-spacing: -.3px; }
+    .page-sub { font-size: 12px; color: var(--t3); }
+    .stats-strip { display: flex; border-top: 1px solid var(--bdr); margin: 0 -20px; }
+    .stat-cell { padding: 8px 14px; border-right: 1px solid var(--bdr); display: flex; flex-direction: column; gap: 2px; cursor: pointer; }
+    .stat-cell:last-child { border-right: none; }
+    .stat-val { font-size: 18px; font-weight: 700; font-family: var(--f-mono); }
+    .stat-val.rd { color: var(--rd); }
+    .stat-val.am { color: var(--am); }
+    .stat-val.bl { color: var(--bl); }
+    .stat-val.pu { color: var(--frz); }
+    .stat-lbl { font-size: 10px; color: var(--t3); font-weight: 500; text-transform: uppercase; letter-spacing: .3px; white-space: nowrap; }
+
+    /* ── Action bar ── */
+    .action-bar { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 8px 20px; display: flex; align-items: center; gap: 5px; flex-shrink: 0; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: var(--r); font-size: 12px; font-weight: 500; font-family: var(--f-ui); border: 1px solid; cursor: pointer; transition: all .12s; white-space: nowrap; }
+    .btn-primary { background: var(--t1); color: #fff; border-color: var(--t1); }
+    .btn-primary:hover { background: #2d2d31; }
+    .btn-default { background: var(--surface); color: var(--t1); border-color: var(--bdr-mid); }
+    .btn-default:hover { background: var(--hover); }
+    .btn-danger { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-warn { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .btn-warn:hover { background: #fef3c7; }
+    .btn-freeze { background: var(--frz-bg); color: var(--frz); border-color: var(--frz-bd); }
+    .btn-freeze:hover { background: #fce7f3; }
+    .btn-disabled { background: var(--surf2) !important; color: var(--t4) !important; border-color: var(--bdr) !important; cursor: not-allowed !important; }
+    .btn-sep { width: 1px; height: 20px; background: var(--bdr); margin: 0 2px; flex-shrink: 0; }
+
+    /* ── Filter bar ── */
+    .filter-bar { background: var(--surf2); border-bottom: 1px solid var(--bdr); padding: 7px 20px; display: flex; align-items: center; gap: 7px; flex-shrink: 0; flex-wrap: wrap; }
+    .filter-lbl { font-size: 11px; color: var(--t3); font-weight: 500; flex-shrink: 0; }
+    .filter-select { font-size: 11.5px; font-family: var(--f-ui); padding: 3px 7px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); cursor: pointer; }
+    .filter-search { max-width: 200px; font-size: 11.5px; font-family: var(--f-ui); padding: 3px 8px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); }
+    .filter-chip { display: inline-flex; align-items: center; padding: 3px 9px; border: 1px solid var(--bdr-mid); border-radius: 10px; font-size: 11px; font-weight: 500; background: var(--surface); color: var(--t2); cursor: pointer; transition: all .12s; }
+    .filter-chip.active { background: var(--t1); color: #fff; border-color: var(--t1); }
+    .filter-count { margin-left: auto; font-size: 10px; color: var(--t3); font-family: var(--f-mono); }
+
+    /* ── State flow strip ── */
+    .state-strip { background: var(--surface); border-bottom: 1px solid var(--bdr); padding: 7px 20px; flex-shrink: 0; }
+    .state-strip-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .state-strip-title { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; }
+    .sf-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .sf-row-lbl { font-size: 9px; font-weight: 600; color: var(--t4); text-transform: uppercase; letter-spacing: .5px; min-width: 40px; flex-shrink: 0; }
+    .sf-flow { display: flex; align-items: center; overflow-x: auto; gap: 0; }
+    .sf-node { display: flex; align-items: center; flex-shrink: 0; }
+    .sf-s { padding: 2px 7px; border-radius: 10px; font-size: 9px; font-weight: 600; font-family: var(--f-mono); background: var(--surf2); color: var(--t3); border: 1px solid var(--bdr); white-space: nowrap; }
+    .sf-s.cur  { background: var(--bl-bg);  color: var(--bl);  border-color: var(--bl-bd); }
+    .sf-s.good { background: var(--g-bg);   color: var(--g);   border-color: var(--g-bd); }
+    .sf-s.bad  { background: var(--rd-bg);  color: var(--rd);  border-color: var(--rd-bd); }
+    .sf-s.side { background: var(--am-bg);  color: var(--am);  border-color: var(--am-bd); }
+    .sf-s.esc  { background: var(--pu-bg);  color: var(--pu);  border-color: var(--pu-bd); }
+    .sf-s.frz  { background: var(--frz-bg); color: var(--frz); border-color: var(--frz-bd); }
+    .sf-arr { color: var(--t4); font-size: 11px; padding: 0 3px; }
+
+    /* ── Content area ── */
+    .content-area { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+    .table-area { flex: 0 0 58%; overflow-y: auto; border-right: 1px solid var(--bdr); }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    thead th { background: var(--surf2); padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--bdr); white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+    thead th:first-child { padding-left: 12px; }
+    tbody tr { border-bottom: 1px solid var(--bdr); cursor: pointer; transition: background .1s; }
+    tbody tr:hover { background: var(--hover); }
+    tbody tr.sel { background: #eef3ff; }
+    tbody td { padding: 7px 8px; vertical-align: middle; }
+    tbody td:first-child { padding-left: 12px; }
+    .mono { font-family: var(--f-mono); }
+
+    /* severity */
+    .sev-cell { display: flex; align-items: center; gap: 5px; }
+    .sev-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .sev-dot.CRITICAL { background: #dc2626; box-shadow: 0 0 0 2px rgba(220,38,38,.18); }
+    .sev-dot.HIGH { background: #ea580c; }
+    .sev-dot.MEDIUM { background: #ca8a04; }
+    .sev-dot.LOW { background: #16a34a; }
+    .sev-lbl { font-size: 10px; font-weight: 700; font-family: var(--f-mono); }
+    .sev-lbl.CRITICAL { color: var(--rd); }
+    .sev-lbl.HIGH { color: var(--or); }
+    .sev-lbl.MEDIUM { color: var(--am); }
+    .sev-lbl.LOW { color: var(--g); }
+
+    /* risk score */
+    .risk-val { font-family: var(--f-mono); font-size: 11px; font-weight: 700; }
+    .rk-crit { color: var(--rd); }
+    .rk-high { color: var(--or); }
+    .rk-med  { color: var(--am); }
+    .rk-low  { color: var(--g); }
+
+    /* state chips */
+    .rchip { display: inline-flex; font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px; white-space: nowrap; font-family: var(--f-mono); border: 1px solid; }
+    .rchip.blue   { background: var(--bl-bg);  color: var(--bl);  border-color: var(--bl-bd); }
+    .rchip.amber  { background: var(--am-bg);  color: var(--am);  border-color: var(--am-bd); }
+    .rchip.orange { background: var(--or-bg);  color: var(--or);  border-color: var(--or-bd); }
+    .rchip.red    { background: var(--rd-bg);  color: var(--rd);  border-color: var(--rd-bd); }
+    .rchip.green  { background: var(--g-bg);   color: var(--g);   border-color: var(--g-bd); }
+    .rchip.purple { background: var(--pu-bg);  color: var(--pu);  border-color: var(--pu-bd); }
+    .rchip.freeze { background: var(--frz-bg); color: var(--frz); border-color: var(--frz-bd); }
+    .rchip.neutral{ background: var(--surf2);  color: var(--t2);  border-color: var(--bdr); }
+
+    /* account status */
+    .acct-active { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--t2); }
+    .acct-active::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+    .acct-frozen { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--frz); font-weight: 600; }
+    .acct-frozen::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--frz); flex-shrink: 0; }
+
+    /* SLA */
+    .sla-ok     { color: var(--t3); font-family: var(--f-mono); font-size: 10px; font-weight: 600; }
+    .sla-warn   { color: var(--am); font-family: var(--f-mono); font-size: 10px; font-weight: 600; }
+    .sla-breach { color: var(--rd); font-family: var(--f-mono); font-size: 10px; font-weight: 600; }
+
+    /* ── Detail panel ── */
+    .detail-panel { flex: 1; overflow-y: auto; background: var(--surface); }
+    .detail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--t3); gap: 8px; }
+    .detail-empty-icon { font-size: 28px; opacity: .35; }
+
+    .detail-hdr { padding: 11px 14px; border-bottom: 1px solid var(--bdr); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; background: var(--surf2); position: sticky; top: 0; z-index: 2; }
+    .detail-id { font-family: var(--f-mono); font-weight: 600; font-size: 11px; color: var(--t3); margin-bottom: 2px; }
+    .detail-name { font-size: 15px; font-weight: 700; color: var(--t1); letter-spacing: -.2px; }
+    .detail-hdr-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+    .detail-sec { padding: 10px 14px; border-bottom: 1px solid var(--bdr); }
+    .detail-sec-title { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+    .kv { width: 100%; border-collapse: collapse; }
+    .kv tr { border-bottom: 1px solid var(--bdr); }
+    .kv tr:last-child { border-bottom: none; }
+    .kv td { padding: 4px 0; vertical-align: top; }
+    .kv td:first-child { font-size: 11px; color: var(--t3); font-weight: 500; width: 46%; padding-right: 8px; }
+    .kv td:last-child { font-size: 11.5px; color: var(--t1); font-weight: 500; }
+
+    /* read-audit notice */
+    .read-audit-notice { display: flex; gap: 8px; align-items: flex-start; background: var(--am-bg); border: 1px solid var(--am-bd); border-radius: var(--r); padding: 7px 10px; margin: 8px 14px; font-size: 11px; color: var(--am); line-height: 1.5; }
+
+    /* rule box */
+    .rule-box { background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); padding: 10px 12px; }
+    .rule-id { font-size: 10px; font-weight: 600; font-family: var(--f-mono); color: var(--bl); margin-bottom: 3px; }
+    .rule-trigger { font-size: 12px; font-weight: 600; color: var(--t1); margin-bottom: 8px; }
+    .rule-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 8px; }
+    .rule-meta-item { display: flex; flex-direction: column; gap: 1px; }
+    .rule-meta-lbl { font-size: 10px; color: var(--t3); font-weight: 500; text-transform: uppercase; letter-spacing: .4px; }
+    .rule-meta-val { font-size: 11.5px; color: var(--t1); font-weight: 600; font-family: var(--f-mono); }
+    .signals-row { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px; }
+    .sig-chip { font-size: 9px; font-weight: 600; font-family: var(--f-mono); padding: 2px 6px; border-radius: 3px; background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+    .rec-box { background: var(--am-bg); border: 1px solid var(--am-bd); border-radius: var(--r); padding: 5px 8px; font-size: 11px; color: var(--am); font-weight: 500; }
+
+    /* transaction table */
+    .txn-tbl { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+    .txn-tbl th { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .4px; padding: 4px 7px; text-align: left; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .txn-tbl td { padding: 6px 7px; border-bottom: 1px solid var(--bdr); vertical-align: middle; }
+    .txn-tbl tr:last-child td { border-bottom: none; }
+    .txn-amount { font-family: var(--f-mono); font-weight: 700; color: var(--t1); }
+    .txn-type { font-size: 9px; font-family: var(--f-mono); font-weight: 600; padding: 1px 5px; border-radius: 3px; display: inline-block; }
+    .tt-TRANSFER  { background: var(--bl-bg);  color: var(--bl); }
+    .tt-CARD_AUTH { background: var(--pu-bg);  color: var(--pu); }
+    .tt-WITHDRAWAL{ background: var(--am-bg);  color: var(--am); }
+    .tt-DEPOSIT   { background: var(--g-bg);   color: var(--g); }
+    .txn-ts { font-size: 10px; color: var(--t3); font-family: var(--f-mono); }
+    .sig-alert { font-size: 9px; font-family: var(--f-mono); padding: 1px 5px; border-radius: 3px; background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+    .sensitive-gate { display: flex; gap: 8px; align-items: flex-start; background: var(--am-bg); border: 1px solid var(--am-bd); border-radius: var(--r); padding: 7px 10px; margin-bottom: 8px; font-size: 11px; color: var(--am); }
+
+    /* freeze panel */
+    .freeze-panel { background: var(--frz-bg); border: 1px solid var(--frz-bd); border-radius: var(--r); padding: 10px 12px; margin-top: 8px; }
+    .freeze-title { font-size: 11px; font-weight: 700; color: var(--frz); margin-bottom: 6px; }
+    .freeze-effect { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #701a75; padding: 2px 0; }
+    .freeze-effect::before { content: '✕'; font-size: 9px; color: var(--rd); font-weight: 700; }
+
+    /* timeline */
+    .tl { display: flex; flex-direction: column; }
+    .tl-item { display: flex; gap: 9px; padding: 5px 0; border-bottom: 1px solid var(--bdr); }
+    .tl-item:last-child { border-bottom: none; }
+    .tl-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--t4); margin-top: 4px; flex-shrink: 0; }
+    .tl-dot.danger  { background: var(--rd); }
+    .tl-dot.warn    { background: var(--am); }
+    .tl-dot.success { background: var(--g); }
+    .tl-dot.purple  { background: var(--pu); }
+    .tl-dot.live    { background: var(--bl); }
+    .tl-dot.muted   { background: var(--t4); }
+    .tl-ev { font-size: 10.5px; font-weight: 600; font-family: var(--f-mono); color: var(--t1); }
+    .tl-meta { font-size: 10px; color: var(--t3); margin-top: 1px; }
+
+    /* decision panel */
+    .decision-panel { background: var(--surface); border-top: 2px solid var(--bdr); }
+    .decision-hdr { background: var(--surf2); padding: 8px 14px; border-bottom: 1px solid var(--bdr); display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+    .decision-hdr-title { font-size: 10px; font-weight: 700; color: var(--t2); text-transform: uppercase; letter-spacing: .5px; }
+    .decision-body { padding: 12px 14px; }
+    .decision-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; }
+    .dec-btn { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 7px 10px; border-radius: var(--r); font-size: 11.5px; font-weight: 500; font-family: var(--f-ui); border: 1px solid; cursor: pointer; transition: all .12s; text-align: center; flex-wrap: wrap; }
+    .dec-btn.primary { background: var(--t1);      color: #fff;       border-color: var(--t1); }
+    .dec-btn.primary:hover { background: #2d2d31; }
+    .dec-btn.default { background: var(--surface);  color: var(--t1);  border-color: var(--bdr-mid); }
+    .dec-btn.default:hover { background: var(--hover); }
+    .dec-btn.danger  { background: var(--rd-bg);   color: var(--rd);  border-color: var(--rd-bd); }
+    .dec-btn.warn    { background: var(--am-bg);   color: var(--am);  border-color: var(--am-bd); }
+    .dec-btn.frz-btn { background: var(--frz-bg);  color: var(--frz); border-color: var(--frz-bd); }
+    .dec-btn.purple  { background: var(--pu-bg);   color: var(--pu);  border-color: var(--pu-bd); }
+    .dec-btn.blocked { background: var(--surf2);   color: var(--t4);  border-color: var(--bdr); cursor: not-allowed; }
+    .dec-btn.blocked:hover { background: var(--surf2); }
+    .blocked-ind { font-size: 9px; font-weight: 600; font-family: var(--f-mono); padding: 1px 4px; background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); border-radius: 3px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+    .form-lbl { font-size: 11px; font-weight: 600; color: var(--t2); }
+    .form-sel, .form-ta { font-size: 12px; font-family: var(--f-ui); padding: 6px 8px; border: 1px solid var(--bdr-mid); border-radius: var(--r); background: var(--surface); color: var(--t1); width: 100%; }
+    .form-sel:focus, .form-ta:focus { outline: none; border-color: var(--bdr-focus); }
+    .form-ta { resize: vertical; min-height: 64px; }
+    .form-chk { display: flex; align-items: flex-start; gap: 7px; font-size: 11px; color: var(--t2); cursor: pointer; line-height: 1.4; margin-bottom: 6px; }
+    .form-chk input { margin-top: 1px; cursor: pointer; accent-color: var(--t1); }
+    .dec-btn-row { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+    .blocked-box { background: var(--rd-bg); border: 1px solid var(--rd-bd); border-radius: var(--r); padding: 7px 10px; margin-bottom: 8px; }
+    .blocked-title { font-size: 11px; font-weight: 700; color: var(--rd); margin-bottom: 2px; }
+    .blocked-text { font-size: 10.5px; color: var(--rd); line-height: 1.4; }
+    .success-box { background: var(--g-bg); border: 1px solid var(--g-bd); border-radius: var(--r); padding: 8px 10px; margin-bottom: 8px; }
+    .success-title { font-size: 11.5px; font-weight: 700; color: var(--g); margin-bottom: 2px; }
+    .success-body  { font-size: 11px; color: var(--g); }
+    .alert-box { padding: 7px 10px; border-radius: var(--r); font-size: 11px; line-height: 1.5; border: 1px solid; margin-bottom: 6px; }
+    .alert-box.amber { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .alert-box.red   { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    .alert-box.green { background: var(--g-bg);  color: var(--g);  border-color: var(--g-bd); }
+
+    /* ── Audit rail ── */
+    .audit-rail { width: var(--w-au); flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .au-hdr { padding: 10px 14px 8px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
+    .au-title { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; }
+    .au-sub { font-size: 10px; color: var(--t3); margin-top: 2px; }
+    .au-body { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 12px; }
+    .au-sec-title { font-size: 9px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 5px; }
+    .au-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; margin-bottom: 3px; }
+    .au-k { font-size: 10px; color: var(--t3); }
+    .au-v { font-size: 10px; font-weight: 500; color: var(--t1); text-align: right; font-family: var(--f-mono); }
+    .au-v.ok { color: var(--g); }
+    .au-v.warn { color: var(--am); }
+    .au-v.danger { color: var(--rd); }
+    .au-ev-log { background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); overflow: hidden; }
+    .au-ev { padding: 5px 8px; border-bottom: 1px solid var(--bdr); }
+    .au-ev:last-child { border-bottom: none; }
+    .au-ev-code { font-size: 10px; font-weight: 600; font-family: var(--f-mono); color: var(--bl); }
+    .au-ev-code.new { color: var(--rd); animation: flash .45s ease; }
+    .au-ev-meta { font-size: 9px; color: var(--t3); margin-top: 1px; }
+    @keyframes flash { from { opacity: 0; } to { opacity: 1; } }
+    .au-rbac-row { display: flex; align-items: flex-start; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--bdr); font-size: 10px; line-height: 1.4; }
+    .au-rbac-row:last-child { border-bottom: none; }
+    .au-rbac-ico { flex-shrink: 0; margin-top: 1px; }
+    .au-rbac-ico.ok { color: var(--g); }
+    .au-rbac-ico.no { color: var(--rd); }
+    .au-rbac-txt { color: var(--t2); }
+    .au-rbac-txt.blocked { color: var(--rd); }
+    .au-rbac-txt strong { color: var(--t1); font-weight: 600; }
+    .au-inv { font-size: 10px; color: var(--t2); padding: 3px 0; border-bottom: 1px solid var(--bdr); display: flex; gap: 5px; line-height: 1.4; }
+    .au-inv::before { content: '—'; color: var(--t4); flex-shrink: 0; }
+    .au-inv:last-child { border-bottom: none; }
+    .divider { height: 1px; background: var(--bdr); margin: 2px 0; }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--t4); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ════════════════════ DATA ════════════════════ */
+
+const USER = {
+  name: 'Maya Ivanova', initials: 'MI',
+  role: 'compliance_officer', roleLabel: 'Compliance Officer',
+  authSource: 'Keycloak OIDC',
+};
+
+const INITIAL_ALERTS = [
+  {
+    id: 'AML-8831', severity: 'CRITICAL',
+    userId: 'USR-3821', userName: 'Elena Fischer', userType: 'end_user',
+    rule: 'AML-RULE-VELOCITY-01', ruleName: 'Critical velocity pattern',
+    exposure: 9840, state: 'OPEN', riskScore: 94,
+    accountStatus: 'ACTIVE', assignedTo: 'Maya Ivanova',
+    ageHours: 2, slaHours: 24, slaBreached: false,
+    requiredRole: 'compliance_officer', kycStatus: 'APPROVED', userRisk: 'HIGH', txnCount: 8,
+    ruleDetails: {
+      trigger: '8 wallet/card transactions in 12 minutes',
+      threshold: '>6 tx / 15 min window', riskScore: 94,
+      firstSeen: '2026-05-16 08:14', lastSeen: '2026-05-16 08:26',
+      signals: ['rapid_transaction_velocity','new_device_after_login','high_value_near_threshold','repeated_counterparty'],
+      recommendation: 'Start review and consider temporary freeze',
+    },
+    transactions: [
+      { id:'TX-55110', type:'TRANSFER',   amount:2400, ts:'08:26', counterparty:'Marcus H. (repeated)',    signal:'repeated_counterparty',      status:'COMPLETED' },
+      { id:'TX-55109', type:'CARD_AUTH',  amount:1980, ts:'08:24', counterparty:'Orbit Market',            signal:'high_value_near_threshold',  status:'CAPTURED'  },
+      { id:'TX-55108', type:'WITHDRAWAL', amount:3100, ts:'08:22', counterparty:'DE89…3402',               signal:null,                         status:'PENDING'   },
+      { id:'TX-55107', type:'TRANSFER',   amount:1200, ts:'08:20', counterparty:'K. Weber (new contact)',  signal:null,                         status:'COMPLETED' },
+      { id:'TX-55106', type:'DEPOSIT',    amount:1160, ts:'08:14', counterparty:'Suspense inflow',         signal:null,                         status:'COMPLETED' },
+    ],
+    timeline: [
+      { ts:'08:26:14', event:'aml.alert_opened',                 detail:'Rule AML-RULE-VELOCITY-01 triggered — 8 tx in 12 min', dotClass:'danger' },
+      { ts:'09:14:32', event:'read_audit.aml_alert_detail_viewed', detail:'Maya Ivanova · compliance_officer · 192.168.1.4',     dotClass:'warn'   },
+    ],
+    slaDue: '2026-05-17 08:26',
+  },
+  {
+    id: 'AML-8840', severity: 'HIGH',
+    userId: 'USR-4402', userName: 'Jonas Keller', userType: 'end_user',
+    rule: 'AML-RULE-STRUCT-01', ruleName: 'Structuring suspicion',
+    exposure: 12400, state: 'IN_REVIEW', riskScore: 81,
+    accountStatus: 'ACTIVE', assignedTo: 'Maya Ivanova',
+    ageHours: 18, slaHours: 24, slaBreached: false,
+    requiredRole: 'compliance_officer', kycStatus: 'APPROVED', userRisk: 'MEDIUM', txnCount: 5,
+    ruleDetails: {
+      trigger: '4 transfers in 90–99% of €10k threshold within 24h',
+      threshold: '>3 tx in 90–99% band / 24h', riskScore: 81,
+      firstSeen: '2026-05-15 14:20', lastSeen: '2026-05-15 22:05',
+      signals: ['sub_threshold_structuring','repeated_amounts','multiple_counterparties'],
+      recommendation: 'Request source of funds documentation',
+    },
+    transactions: [
+      { id:'TX-54820', type:'TRANSFER', amount:9800, ts:'22:05', counterparty:'K. Fischer',   signal:'sub_threshold_structuring', status:'COMPLETED' },
+      { id:'TX-54819', type:'TRANSFER', amount:9600, ts:'18:30', counterparty:'M. Braun',     signal:'sub_threshold_structuring', status:'COMPLETED' },
+      { id:'TX-54817', type:'TRANSFER', amount:9500, ts:'14:20', counterparty:'L. Richter',   signal:'repeated_amounts',          status:'COMPLETED' },
+    ],
+    timeline: [
+      { ts:'May 15 14:20', event:'aml.alert_opened',   detail:'Rule AML-RULE-STRUCT-01 triggered', dotClass:'danger' },
+      { ts:'May 15 15:30', event:'aml.review_started', detail:'Maya Ivanova · compliance_officer',  dotClass:'warn'   },
+    ],
+    slaDue: '2026-05-16 14:20',
+  },
+  {
+    id: 'AML-8848', severity: 'HIGH',
+    userId: 'USR-5581', userName: 'Mark Weber', userType: 'end_user',
+    rule: 'AML-RULE-SANC-ADJ-01', ruleName: 'Sanctions-adjacent counterparty',
+    exposure: 18500, state: 'ESCALATED', riskScore: 88,
+    accountStatus: 'ACTIVE', assignedTo: 'Senior queue',
+    ageHours: 36, slaHours: 24, slaBreached: true,
+    requiredRole: 'compliance_officer', kycStatus: 'APPROVED', userRisk: 'HIGH', txnCount: 3,
+    ruleDetails: {
+      trigger: 'Transfer to counterparty flagged in sanctions screening queue',
+      threshold: 'ANY match score >0.70 on counterparty', riskScore: 88,
+      firstSeen: '2026-05-14 18:10', lastSeen: '2026-05-14 18:10',
+      signals: ['sanctions_adjacent_counterparty','high_value_single_tx'],
+      recommendation: 'Escalate to senior compliance for sanctions review',
+    },
+    transactions: [
+      { id:'TX-54200', type:'TRANSFER', amount:18500, ts:'18:10', counterparty:'A. Hoffman (sanctions-flagged)', signal:'sanctions_adjacent_counterparty', status:'COMPLETED' },
+    ],
+    timeline: [
+      { ts:'May 14 18:10', event:'aml.alert_opened', detail:'Rule AML-RULE-SANC-ADJ-01 triggered',          dotClass:'danger' },
+      { ts:'May 14 20:00', event:'aml.escalated',    detail:'M. Ivanova escalated to Senior Compliance',    dotClass:'purple' },
+    ],
+    slaDue: '2026-05-15 18:10',
+  },
+  {
+    id: 'AML-8852', severity: 'MEDIUM',
+    userId: 'USR-6611', userName: 'Sofia Laurent', userType: 'end_user',
+    rule: 'AML-RULE-NEW-HV-01', ruleName: 'New user high-value transfer',
+    exposure: 7200, state: 'OPEN', riskScore: 67,
+    accountStatus: 'ACTIVE', assignedTo: null,
+    ageHours: 5, slaHours: 48, slaBreached: false,
+    requiredRole: 'backoffice_operator', kycStatus: 'APPROVED', userRisk: 'MEDIUM', txnCount: 2,
+    ruleDetails: {
+      trigger: 'High-value transfer within 7 days of account activation',
+      threshold: '>€5 000 within 7d of registration', riskScore: 67,
+      firstSeen: '2026-05-16 03:40', lastSeen: '2026-05-16 03:40',
+      signals: ['new_account_high_value','first_large_transfer'],
+      recommendation: 'Review account history and KYC documents',
+    },
+    transactions: [
+      { id:'TX-55050', type:'TRANSFER', amount:7200, ts:'03:40', counterparty:'P. Laurent (family claim)', signal:'new_account_high_value', status:'COMPLETED' },
+    ],
+    timeline: [
+      { ts:'2026-05-16 03:40', event:'aml.alert_opened', detail:'Rule AML-RULE-NEW-HV-01 triggered', dotClass:'danger' },
+    ],
+    slaDue: '2026-05-18 03:40',
+  },
+  {
+    id: 'AML-8861', severity: 'CRITICAL',
+    userId: 'MRC-0821', userName: 'Orbit Market', userType: 'merchant',
+    rule: 'AML-RULE-MRC-REFUND-01', ruleName: 'Merchant refund anomaly',
+    exposure: 48000, state: 'ACCOUNT_FROZEN', riskScore: 96,
+    accountStatus: 'FROZEN', assignedTo: 'Senior Compliance',
+    ageHours: 48, slaHours: 24, slaBreached: true,
+    requiredRole: 'compliance_officer', kycStatus: 'APPROVED', userRisk: 'CRITICAL', txnCount: 12,
+    ruleDetails: {
+      trigger: 'Refund volume exceeds 40% of gross settlement in 48h window',
+      threshold: 'refund_rate >35% / 48h period', riskScore: 96,
+      firstSeen: '2026-05-14 10:00', lastSeen: '2026-05-16 10:00',
+      signals: ['excessive_refund_rate','high_volume_merchant','settlement_pattern_deviation'],
+      recommendation: 'Account frozen. Investigate refund pattern and potential fraud.',
+    },
+    transactions: [],
+    timeline: [
+      { ts:'May 14 10:00', event:'aml.alert_opened',   detail:'Rule AML-RULE-MRC-REFUND-01 triggered',          dotClass:'danger' },
+      { ts:'May 14 11:20', event:'aml.review_started', detail:'K. Hoffmann · compliance_officer',               dotClass:'warn'   },
+      { ts:'May 15 09:00', event:'aml.account_frozen', detail:'Account frozen by K. Hoffmann · compliance_officer', dotClass:'danger' },
+    ],
+    slaDue: '2026-05-15 10:00',
+  },
+  {
+    id: 'AML-8869', severity: 'LOW',
+    userId: 'USR-7722', userName: 'Lara Novak', userType: 'end_user',
+    rule: 'AML-RULE-DORMANCY-01', ruleName: 'Repeated failed withdrawals',
+    exposure: 3100, state: 'FALSE_POSITIVE_REVIEW', riskScore: 38,
+    accountStatus: 'ACTIVE', assignedTo: 'C. Bauer',
+    ageHours: 72, slaHours: 96, slaBreached: false,
+    requiredRole: 'backoffice_operator', kycStatus: 'APPROVED', userRisk: 'LOW', txnCount: 4,
+    ruleDetails: {
+      trigger: '3 failed withdrawal attempts within 4 hours',
+      threshold: '>2 failed withdrawals / 6h', riskScore: 38,
+      firstSeen: '2026-05-13 16:00', lastSeen: '2026-05-13 19:45',
+      signals: ['repeated_failed_withdrawals'],
+      recommendation: 'Review account access logs — likely user error',
+    },
+    transactions: [],
+    timeline: [
+      { ts:'May 13 16:00', event:'aml.alert_opened',   detail:'Rule AML-RULE-DORMANCY-01 triggered', dotClass:'danger' },
+      { ts:'May 14 10:00', event:'aml.review_started', detail:'C. Bauer · backoffice_operator',      dotClass:'warn'   },
+    ],
+    slaDue: '2026-05-17 16:00',
+  },
+  {
+    id: 'AML-8874', severity: 'MEDIUM',
+    userId: 'USR-8833', userName: 'Anton Meyer', userType: 'end_user',
+    rule: 'AML-RULE-VELOCITY-02', ruleName: 'Rapid card authorization pattern',
+    exposure: 5850, state: 'PENDING_SOF', riskScore: 72,
+    accountStatus: 'ACTIVE', assignedTo: 'Maya Ivanova',
+    ageHours: 14, slaHours: 48, slaBreached: false,
+    requiredRole: 'backoffice_operator', kycStatus: 'APPROVED', userRisk: 'MEDIUM', txnCount: 6,
+    ruleDetails: {
+      trigger: '6 card authorizations across 4 merchants in 30 minutes',
+      threshold: '>4 card auth / 30 min across >2 merchants', riskScore: 72,
+      firstSeen: '2026-05-15 21:10', lastSeen: '2026-05-15 21:40',
+      signals: ['rapid_card_auth','multi_merchant_pattern','card_testing_suspected'],
+      recommendation: 'Source of funds requested. Await user response.',
+    },
+    transactions: [],
+    timeline: [
+      { ts:'May 15 21:10', event:'aml.alert_opened',              detail:'Rule AML-RULE-VELOCITY-02 triggered',          dotClass:'danger' },
+      { ts:'May 16 07:00', event:'aml.source_of_funds_requested', detail:'Maya Ivanova · compliance_officer',            dotClass:'warn'   },
+    ],
+    slaDue: '2026-05-17 21:10',
+  },
+];
+
+/* ════════════════════ HELPERS ════════════════════ */
+
+const fmtEur = n => '€' + n.toLocaleString('en-DE');
+const nowTs  = () => new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
+function sevClass(s) { return { CRITICAL:'CRITICAL', HIGH:'HIGH', MEDIUM:'MEDIUM', LOW:'LOW' }[s] || 'LOW'; }
+
+function stateChip(s) {
+  const M = {
+    OPEN:                 { cls:'blue',   label:'OPEN' },
+    IN_REVIEW:            { cls:'amber',  label:'IN_REVIEW' },
+    ESCALATED:            { cls:'orange', label:'ESCALATED' },
+    ACCOUNT_FROZEN:       { cls:'freeze', label:'FROZEN' },
+    FALSE_POSITIVE_REVIEW:{ cls:'green',  label:'FP_REVIEW' },
+    PENDING_SOF:          { cls:'purple', label:'PENDING_SOF' },
+    CLOSED_FALSE_POSITIVE:{ cls:'green',  label:'CLOSED_FP' },
+    CLOSED:               { cls:'green',  label:'CLOSED' },
+    SAR_RECOMMENDED:      { cls:'purple', label:'SAR_REC' },
+    BLOCKED_BY_SANCTIONS: { cls:'red',    label:'SANCTIONED' },
+  };
+  return M[s] || { cls:'neutral', label: s };
+}
+
+function riskCls(n) {
+  if (n >= 90) return 'rk-crit';
+  if (n >= 70) return 'rk-high';
+  if (n >= 50) return 'rk-med';
+  return 'rk-low';
+}
+
+function slaInfo(a) {
+  if (a.slaBreached) return { cls:'sla-breach', txt:'BREACHED' };
+  const rem = a.slaHours - a.ageHours;
+  if (rem <= 4) return { cls:'sla-warn', txt: rem + 'h left' };
+  return { cls:'sla-ok', txt: a.ageHours + 'h ago' };
+}
+
+function sfCls(s, selState) {
+  if (selState === s) return 'cur';
+  if (['CLOSED','CLOSED_FALSE_POSITIVE','FALSE_POSITIVE_REVIEW'].includes(s)) return 'good';
+  if (['BLOCKED_BY_SANCTIONS'].includes(s)) return 'bad';
+  if (s === 'ACCOUNT_FROZEN') return 'frz';
+  if (s === 'ESCALATED') return 'esc';
+  if (['PENDING_SOF','SAR_RECOMMENDED'].includes(s)) return 'side';
+  return '';
+}
+
+/* ════════════════════ APP ════════════════════ */
+
+function App() {
+  const [alerts, setAlerts] = useState(INITIAL_ALERTS);
+  const [selId, setSelId]   = useState('AML-8831');
+  const [fSev, setFSev]     = useState('');
+  const [fState, setFState] = useState('');
+  const [fMe, setFMe]       = useState(false);
+  const [fQ, setFQ]         = useState('');
+  const [decOpen, setDecOpen] = useState(true);
+  const [decAction, setDecAction] = useState(null);
+  const [rationale, setRationale] = useState('');
+  const [reasonCode, setReasonCode] = useState('');
+  const [freezeTmp, setFreezeTmp] = useState(false);
+  const [sofNotify, setSofNotify] = useState(false);
+  const [showSens, setShowSens] = useState(false);
+  const [lastResult, setLastResult] = useState(null);
+  const [blockedMsg, setBlockedMsg] = useState(null);
+  const [auditLog, setAuditLog] = useState([
+    { code:'aml.alert_opened',                  ts:'08:26:14', isNew:false },
+    { code:'read_audit.aml_alert_detail_viewed', ts:'09:14:32', isNew:false },
+  ]);
+
+  const sel = alerts.find(a => a.id === selId);
+
+  const filtered = alerts.filter(a => {
+    if (fSev   && a.severity !== fSev)   return false;
+    if (fState && a.state !== fState)    return false;
+    if (fMe    && a.assignedTo !== USER.name) return false;
+    if (fQ) {
+      const q = fQ.toLowerCase();
+      if (![a.id, a.userName, a.ruleName, a.rule].some(x => x.toLowerCase().includes(q))) return false;
+    }
+    return true;
+  });
+
+  function pushAudit(code) {
+    setAuditLog(prev => [{ code, ts: nowTs(), isNew: true }, ...prev.slice(0, 13)]);
+  }
+
+  function mutAlert(id, patch) {
+    setAlerts(prev => prev.map(a => a.id === id ? { ...a, ...patch } : a));
+  }
+
+  function pushTimeline(id, item) {
+    setAlerts(prev => prev.map(a =>
+      a.id === id ? { ...a, timeline: [item, ...a.timeline] } : a
+    ));
+  }
+
+  function selectRow(id) {
+    setSelId(id);
+    setDecAction(null); setRationale(''); setReasonCode('');
+    setShowSens(false); setLastResult(null); setBlockedMsg(null);
+    const a = alerts.find(x => x.id === id);
+    if (a && ['CRITICAL','HIGH'].includes(a.severity)) pushAudit('read_audit.aml_alert_detail_viewed');
+  }
+
+  function startAction(action) {
+    setDecAction(action); setBlockedMsg(null); setLastResult(null);
+  }
+
+  function showBlocked(msg) {
+    setBlockedMsg(msg); setDecAction(null); setLastResult(null);
+    pushAudit('aml.unfreeze_denied');
+  }
+
+  function submit() {
+    if (!sel || !decAction) return;
+    const id = sel.id; const ts = nowTs();
+
+    if (decAction === 'start_review') {
+      if (!['OPEN'].includes(sel.state)) { setLastResult({ ok:false, msg:'Cannot start review from state: ' + sel.state }); return; }
+      mutAlert(id, { state:'IN_REVIEW', assignedTo: USER.name });
+      pushTimeline(id, { ts, event:'aml.review_started', detail: USER.name + ' · ' + USER.role, dotClass:'warn' });
+      pushAudit('aml.review_started');
+      setLastResult({ ok:true, msg: id + ' moved to IN_REVIEW and assigned to Maya Ivanova.' });
+
+    } else if (decAction === 'close_fp') {
+      if (!rationale || rationale.trim().length < 20) {
+        setLastResult({ ok:false, msg:'Rationale required — minimum 20 characters.' }); return;
+      }
+      mutAlert(id, { state:'CLOSED_FALSE_POSITIVE' });
+      pushTimeline(id, { ts, event:'aml.false_positive_closed', detail: USER.name + ': ' + rationale.trim().slice(0, 50) + '…', dotClass:'success' });
+      pushAudit('aml.false_positive_closed');
+      setLastResult({ ok:true, msg: id + ' closed as FALSE POSITIVE. Rationale recorded.' });
+
+    } else if (decAction === 'escalate') {
+      mutAlert(id, { state:'ESCALATED', assignedTo:'Senior Compliance' });
+      pushTimeline(id, { ts, event:'aml.escalated', detail: USER.name + ' escalated to Senior Compliance', dotClass:'purple' });
+      pushAudit('aml.escalated');
+      setLastResult({ ok:true, msg: id + ' escalated to Senior Compliance queue.' });
+
+    } else if (decAction === 'freeze') {
+      mutAlert(id, { state:'ACCOUNT_FROZEN', accountStatus:'FROZEN' });
+      pushTimeline(id, { ts, event:'aml.account_frozen', detail:'Account frozen by ' + USER.name + ' · ' + USER.role, dotClass:'danger' });
+      pushAudit('aml.account_frozen');
+      setLastResult({ ok:true, msg:'Account frozen. All write operations are now blocked.' });
+
+    } else if (decAction === 'request_sof') {
+      mutAlert(id, { state:'PENDING_SOF' });
+      pushTimeline(id, { ts, event:'aml.source_of_funds_requested', detail: USER.name + ' — awaiting user response', dotClass:'warn' });
+      pushAudit('aml.source_of_funds_requested');
+      setLastResult({ ok:true, msg:'Source of Funds request sent. Alert moved to PENDING_SOF.' });
+
+    } else if (decAction === 'add_note') {
+      if (!rationale || rationale.trim().length < 5) {
+        setLastResult({ ok:false, msg:'Note must be at least 5 characters.' }); return;
+      }
+      pushTimeline(id, { ts, event:'aml.case_note_added', detail: USER.name + ': ' + rationale.trim(), dotClass:'live' });
+      pushAudit('aml.case_note_added');
+      setLastResult({ ok:true, msg:'Case note added to timeline.' });
+    }
+
+    setDecAction(null); setRationale(''); setReasonCode(''); setFreezeTmp(false); setSofNotify(false);
+  }
+
+  /* ── Nav items ── */
+  const navSections = [
+    { label:'Operations', items:[
+      { label:'Work Queue',          icon:'⊞', badge:null,  badgeCls:'' },
+      { label:'Manual Deposits',     icon:'↓', badge:'3',   badgeCls:'cnt' },
+      { label:'Manual Withdrawals',  icon:'↑', badge:'2',   badgeCls:'cnt' },
+      { label:'KYC Queue',           icon:'⎗', badge:'8',   badgeCls:'ro' },
+      { label:'AML Alerts',          icon:'⚠', badge:'14',  badgeCls:'alrt', active:true },
+    ]},
+    { label:'Compliance', items:[
+      { label:'Sanctions Hits',      icon:'⊗', badge:'2',   badgeCls:'sr' },
+      { label:'Chargebacks',         icon:'↺', badge:'5',   badgeCls:'cnt' },
+      { label:'Audit Log',           icon:'⊜', badge:null,  badgeCls:'' },
+    ]},
+    { label:'Directory', items:[
+      { label:'Users',               icon:'◎', badge:null,  badgeCls:'' },
+      { label:'Merchants',           icon:'▣', badge:null,  badgeCls:'' },
+    ]},
+  ];
+
+  /* ── State flow ── */
+  const mainFlow = ['OPEN','IN_REVIEW','ESCALATED','ACCOUNT_FROZEN','CLOSED'];
+  const altFlow  = ['CLOSED_FALSE_POSITIVE','PENDING_SOF','BLOCKED_BY_SANCTIONS','SAR_RECOMMENDED'];
+
+  return (
+    <div className="app-shell">
+
+      {/* ─── Sidebar ─── */}
+      <aside className="sidebar">
+        <div className="sb-brand">
+          <div className="sb-product">MiniFin</div>
+          <div className="sb-surface">Backoffice</div>
+        </div>
+        <div className="sb-env">⚙ Local Sandbox</div>
+        <nav className="sb-nav">
+          {navSections.map(sec => (
+            <div key={sec.label}>
+              <div className="sb-sec">{sec.label}</div>
+              {sec.items.map(item => (
+                <div key={item.label} className={`sb-item ${item.active ? 'active' : ''}`}>
+                  <span className="sb-icon">{item.icon}</span>
+                  {item.label}
+                  {item.badge && <span className={`sb-bdg ${item.badgeCls}`}>{item.badge}</span>}
+                </div>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <div className="sb-user">
+          <div className="sb-user-name">{USER.name}</div>
+          <div className="sb-user-role">{USER.roleLabel}</div>
+          <div className="sb-user-session">
+            <span className="sess-dot"></span>
+            <span className="sess-txt">OIDC · active</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* ─── Main ─── */}
+      <div className="main">
+
+        {/* Topbar */}
+        <div className="topbar">
+          <span className="topbar-screen">BOF-UI-06</span>
+          <span className="topbar-sep">·</span>
+          <span className="topbar-host">back.miniefin.local</span>
+          <div className="topbar-right">
+            <span className="badge neutral">{USER.role}</span>
+            <span className="badge red">3 CRITICAL</span>
+            <span className="badge amber">4 SLA BREACHED</span>
+          </div>
+        </div>
+
+        {/* Page header */}
+        <div className="page-hdr">
+          <div className="page-title-row">
+            <span className="page-title">AML Alerts</span>
+            <span className="page-sub">Review transaction monitoring alerts and risk escalation</span>
+          </div>
+          <div className="stats-strip">
+            <div className="stat-cell"><span className="stat-val">14</span><span className="stat-lbl">Open</span></div>
+            <div className="stat-cell"><span className="stat-val am">5</span><span className="stat-lbl">High priority</span></div>
+            <div className="stat-cell"><span className="stat-val rd">3</span><span className="stat-lbl">Critical</span></div>
+            <div className="stat-cell"><span className="stat-val rd">4</span><span className="stat-lbl">SLA breached</span></div>
+            <div className="stat-cell"><span className="stat-val pu">2</span><span className="stat-lbl">Frozen accounts</span></div>
+            <div className="stat-cell"><span className="stat-val bl">6</span><span className="stat-lbl">Assigned to me</span></div>
+          </div>
+        </div>
+
+        {/* Action bar */}
+        <div className="action-bar">
+          <button className={`btn ${sel ? 'btn-default' : 'btn-disabled'}`}>⊕ Assign to me</button>
+          <button
+            className={`btn ${sel && sel.state === 'OPEN' ? 'btn-primary' : 'btn-disabled'}`}
+            onClick={() => sel && sel.state === 'OPEN' && startAction('start_review')}>
+            ▶ Start Review
+          </button>
+          <button
+            className={`btn ${sel && !['CLOSED_FALSE_POSITIVE','CLOSED'].includes(sel.state) ? 'btn-default' : 'btn-disabled'}`}
+            onClick={() => sel && startAction('close_fp')}>
+            ✓ Close False Positive
+          </button>
+          <button
+            className={`btn ${sel && !['ESCALATED','CLOSED_FALSE_POSITIVE','CLOSED'].includes(sel.state) ? 'btn-warn' : 'btn-disabled'}`}
+            onClick={() => sel && startAction('escalate')}>
+            ↑ Escalate
+          </button>
+          <div className="btn-sep"></div>
+          <button
+            className={`btn ${sel && sel.accountStatus !== 'FROZEN' ? 'btn-freeze' : 'btn-disabled'}`}
+            onClick={() => sel && sel.accountStatus !== 'FROZEN' && startAction('freeze')}>
+            ⊘ Freeze Account
+          </button>
+          <button
+            className="btn btn-disabled"
+            onClick={() => showBlocked('Unfreeze Account requires senior_compliance role. Your current role is compliance_officer. Escalate this alert to senior_compliance to initiate unfreeze.')}>
+            ↑ Unfreeze Account
+          </button>
+          <button
+            className={`btn ${sel ? 'btn-warn' : 'btn-disabled'}`}
+            onClick={() => sel && startAction('request_sof')}>
+            ⌗ Request SoF
+          </button>
+          <button
+            className={`btn ${sel ? 'btn-default' : 'btn-disabled'}`}
+            onClick={() => sel && startAction('add_note')}>
+            ✎ Add Case Note
+          </button>
+        </div>
+
+        {/* Filter bar */}
+        <div className="filter-bar">
+          <span className="filter-lbl">Filter:</span>
+          <input className="filter-search" placeholder="Search alert ID, user, rule…"
+            value={fQ} onChange={e => setFQ(e.target.value)} />
+          <select className="filter-select" value={fSev} onChange={e => setFSev(e.target.value)}>
+            <option value="">All severity</option>
+            <option value="CRITICAL">Critical</option>
+            <option value="HIGH">High</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="LOW">Low</option>
+          </select>
+          <select className="filter-select" value={fState} onChange={e => setFState(e.target.value)}>
+            <option value="">All states</option>
+            <option value="OPEN">OPEN</option>
+            <option value="IN_REVIEW">IN_REVIEW</option>
+            <option value="ESCALATED">ESCALATED</option>
+            <option value="ACCOUNT_FROZEN">ACCOUNT_FROZEN</option>
+            <option value="PENDING_SOF">PENDING_SOF</option>
+            <option value="FALSE_POSITIVE_REVIEW">FALSE_POSITIVE_REVIEW</option>
+            <option value="CLOSED_FALSE_POSITIVE">CLOSED_FALSE_POSITIVE</option>
+          </select>
+          <select className="filter-select">
+            <option value="">All rules</option>
+            <option>AML-RULE-VELOCITY-01</option>
+            <option>AML-RULE-VELOCITY-02</option>
+            <option>AML-RULE-STRUCT-01</option>
+            <option>AML-RULE-DORMANCY-01</option>
+            <option>AML-RULE-SANC-ADJ-01</option>
+            <option>AML-RULE-MRC-REFUND-01</option>
+          </select>
+          <select className="filter-select">
+            <option value="">All accounts</option>
+            <option value="ACTIVE">Active</option>
+            <option value="FROZEN">Frozen</option>
+          </select>
+          <div className={`filter-chip ${fMe ? 'active' : ''}`} onClick={() => setFMe(v => !v)}>
+            Assigned to me
+          </div>
+          <span className="filter-count">{filtered.length} / {alerts.length} alerts</span>
+        </div>
+
+        {/* State flow strip */}
+        <div className="state-strip">
+          <div className="state-strip-hdr">
+            <span className="state-strip-title">AML State Flow</span>
+            {sel && <span className="badge neutral" style={{fontSize:'9px'}}>{sel.id} — current: {sel.state}</span>}
+          </div>
+          <div className="sf-row">
+            <span className="sf-row-lbl">Main</span>
+            <div className="sf-flow">
+              {mainFlow.map((s, i) => (
+                <div className="sf-node" key={s}>
+                  <span className={`sf-s ${sfCls(s, sel?.state)}`}>{s}</span>
+                  {i < mainFlow.length - 1 && <span className="sf-arr">→</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="sf-row">
+            <span className="sf-row-lbl">Alt</span>
+            <div className="sf-flow">
+              {altFlow.map((s, i) => (
+                <div className="sf-node" key={s}>
+                  <span className={`sf-s ${sfCls(s, sel?.state)}`}>{s}</span>
+                  {i < altFlow.length - 1 && <span className="sf-arr"> · </span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="content-area">
+
+          {/* Table */}
+          <div className="table-area">
+            <table>
+              <thead>
+                <tr>
+                  <th style={{width:70}}>Severity</th>
+                  <th style={{width:75}}>Alert ID</th>
+                  <th style={{width:112}}>User / Account</th>
+                  <th>Trigger Rule</th>
+                  <th style={{width:74}}>Exposure</th>
+                  <th style={{width:88}}>State</th>
+                  <th style={{width:42}}>Risk</th>
+                  <th style={{width:66}}>Account</th>
+                  <th style={{width:64}}>Age / SLA</th>
+                  <th style={{width:76}}>Role req.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(a => {
+                  const sc  = sevClass(a.severity);
+                  const st  = stateChip(a.state);
+                  const sla = slaInfo(a);
+                  return (
+                    <tr key={a.id} className={selId === a.id ? 'sel' : ''} onClick={() => selectRow(a.id)}>
+                      <td>
+                        <div className="sev-cell">
+                          <span className={`sev-dot ${sc}`}></span>
+                          <span className={`sev-lbl ${sc}`}>{a.severity}</span>
+                        </div>
+                      </td>
+                      <td><span className="mono" style={{fontSize:'11px',fontWeight:700}}>{a.id}</span></td>
+                      <td>
+                        <div style={{fontWeight:500,fontSize:'12px',lineHeight:'1.3'}}>{a.userName}</div>
+                        <div style={{fontSize:'10px',color:'var(--t3)',fontFamily:'var(--f-mono)'}}>{a.userId}</div>
+                      </td>
+                      <td>
+                        <div style={{fontSize:'11.5px',lineHeight:'1.3'}}>{a.ruleName}</div>
+                        <div style={{fontSize:'9px',color:'var(--t3)',fontFamily:'var(--f-mono)'}}>{a.rule}</div>
+                      </td>
+                      <td><span className="mono" style={{fontWeight:700,fontSize:'12px'}}>{fmtEur(a.exposure)}</span></td>
+                      <td><span className={`rchip ${st.cls}`}>{st.label}</span></td>
+                      <td><span className={`risk-val ${riskCls(a.riskScore)}`}>{a.riskScore}</span></td>
+                      <td>
+                        {a.accountStatus === 'FROZEN'
+                          ? <span className="acct-frozen">Frozen</span>
+                          : <span className="acct-active">Active</span>}
+                      </td>
+                      <td><span className={sla.cls}>{sla.txt}</span></td>
+                      <td>
+                        {a.requiredRole === 'compliance_officer'
+                          ? <span className="rchip purple">compliance</span>
+                          : <span className="rchip neutral">operator</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Detail panel */}
+          <div className="detail-panel">
+            {!sel
+              ? (
+                <div className="detail-empty">
+                  <div className="detail-empty-icon">⚠</div>
+                  <div style={{fontSize:'12px'}}>Select an alert to inspect</div>
+                </div>
+              )
+              : <DetailView
+                  alert={sel}
+                  decOpen={decOpen} setDecOpen={setDecOpen}
+                  decAction={decAction} setDecAction={setDecAction}
+                  rationale={rationale} setRationale={setRationale}
+                  reasonCode={reasonCode} setReasonCode={setReasonCode}
+                  freezeTmp={freezeTmp} setFreezeTmp={setFreezeTmp}
+                  sofNotify={sofNotify} setSofNotify={setSofNotify}
+                  showSens={showSens} setShowSens={setShowSens}
+                  lastResult={lastResult}
+                  blockedMsg={blockedMsg}
+                  onStart={startAction}
+                  onBlocked={showBlocked}
+                  onSubmit={submit}
+                />
+            }
+          </div>
+        </div>
+      </div>
+
+      {/* Audit rail */}
+      <AuditRail auditLog={auditLog} />
+    </div>
+  );
+}
+
+/* ════════════════════ DETAIL VIEW ════════════════════ */
+
+function DetailView({
+  alert: a, decOpen, setDecOpen,
+  decAction, setDecAction,
+  rationale, setRationale, reasonCode, setReasonCode,
+  freezeTmp, setFreezeTmp, sofNotify, setSofNotify,
+  showSens, setShowSens, lastResult, blockedMsg,
+  onStart, onBlocked, onSubmit,
+}) {
+  const rd = a.ruleDetails;
+  const isHC     = ['CRITICAL','HIGH'].includes(a.severity);
+  const isFrozen = a.accountStatus === 'FROZEN';
+
+  const ttCls = t => 'txn-type tt-' + t;
+
+  const sevBadgeCls = { CRITICAL:'red', HIGH:'orange', MEDIUM:'amber', LOW:'green' }[a.severity] || 'neutral';
+
+  const canStartReview = a.state === 'OPEN';
+  const canCloseFP     = !['CLOSED_FALSE_POSITIVE','CLOSED'].includes(a.state);
+  const canEscalate    = !['ESCALATED','CLOSED_FALSE_POSITIVE','CLOSED'].includes(a.state);
+  const canFreeze      = !isFrozen;
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="detail-hdr">
+        <div style={{flex:1}}>
+          <div className="detail-id">{a.id} · {a.userId}</div>
+          <div className="detail-name">{a.userName}</div>
+          <div className="detail-hdr-badges">
+            <span className={`badge ${sevBadgeCls}`}>{a.severity}</span>
+            <span className={`rchip ${stateChip(a.state).cls}`}>{stateChip(a.state).label}</span>
+            {isFrozen && <span className="badge freeze">⊘ ACCOUNT FROZEN</span>}
+            <span className="badge neutral">Risk {a.riskScore}/100</span>
+            <span className="badge neutral">KYC: {a.kycStatus}</span>
+            <span className="badge neutral">{a.userType}</span>
+          </div>
+        </div>
+        <div style={{textAlign:'right',flexShrink:0}}>
+          <div style={{fontSize:'10px',color:'var(--t3)',marginBottom:'2px'}}>SLA Deadline</div>
+          <div style={{fontSize:'11px',fontFamily:'var(--f-mono)',fontWeight:700,color: a.slaBreached ? 'var(--rd)':'var(--t1)'}}>{a.slaDue}</div>
+          <div style={{fontSize:'10px',color:'var(--t3)',marginTop:'4px'}}>
+            Assigned: <strong>{a.assignedTo || '—'}</strong>
+          </div>
+          {a.slaBreached && <span className="rchip red" style={{marginTop:'3px',display:'inline-flex'}}>SLA BREACHED</span>}
+        </div>
+      </div>
+
+      {/* Read-audit notice */}
+      {isHC && (
+        <div className="read-audit-notice">
+          <span style={{flexShrink:0}}>⚠</span>
+          <div>
+            <strong>Synchronous read-audit required.</strong>{' '}
+            Accessing {a.severity} alert detail is logged immediately.
+            Event <code style={{fontFamily:'var(--f-mono)',fontSize:'10px',fontWeight:700}}>read_audit.aml_alert_detail_viewed</code> has been recorded for this session with actor, timestamp, and IP.
+          </div>
+        </div>
+      )}
+
+      {/* Alert meta */}
+      <div className="detail-sec">
+        <div className="detail-sec-title">Alert Details</div>
+        <table className="kv">
+          <tbody>
+            <tr><td>Alert state</td><td><span className={`rchip ${stateChip(a.state).cls}`}>{a.state}</span></td></tr>
+            <tr><td>Severity</td><td><span className={`sev-lbl ${sevClass(a.severity)}`} style={{fontSize:'12px'}}>{a.severity}</span></td></tr>
+            <tr><td>Risk score</td><td>
+              <span className={`risk-val ${riskCls(a.riskScore)}`} style={{fontSize:'14px'}}>{a.riskScore}</span>
+              <span style={{fontSize:'10px',color:'var(--t3)'}}> / 100</span>
+            </td></tr>
+            <tr><td>Account status</td><td>
+              {isFrozen
+                ? <span className="acct-frozen">Frozen — all write operations blocked</span>
+                : <span className="acct-active">Active</span>}
+            </td></tr>
+            <tr><td>User type</td><td>{a.userType}</td></tr>
+            <tr><td>KYC status</td><td><span className="badge green" style={{fontSize:'10px'}}>{a.kycStatus}</span></td></tr>
+            <tr><td>User risk level</td><td><span className={`sev-lbl ${sevClass(a.userRisk)}`}>{a.userRisk}</span></td></tr>
+            <tr><td>Exposure (total)</td><td><span className="mono" style={{fontWeight:700,fontSize:'13px'}}>{fmtEur(a.exposure)}</span></td></tr>
+            <tr><td>Related transactions</td><td><span className="mono">{a.txnCount}</span></td></tr>
+            <tr><td>Trigger rule</td><td><span className="mono" style={{color:'var(--bl)',fontWeight:700,fontSize:'11px'}}>{a.rule}</span></td></tr>
+            <tr><td>Required role</td><td>
+              <span className={`rchip ${a.requiredRole === 'compliance_officer' ? 'purple' : 'neutral'}`}>{a.requiredRole}</span>
+            </td></tr>
+            <tr><td>Assigned to</td><td>{a.assignedTo || <em style={{color:'var(--t3)'}}>Unassigned</em>}</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Rule panel */}
+      <div className="detail-sec">
+        <div className="detail-sec-title">Rule &amp; Risk Model</div>
+        <div className="rule-box">
+          <div className="rule-id">{a.rule}</div>
+          <div className="rule-trigger">{rd.trigger}</div>
+          <div className="rule-meta-grid">
+            <div className="rule-meta-item">
+              <div className="rule-meta-lbl">Risk Score</div>
+              <div className="rule-meta-val" style={{color:'var(--rd)'}}>{rd.riskScore}/100</div>
+            </div>
+            <div className="rule-meta-item">
+              <div className="rule-meta-lbl">Threshold</div>
+              <div className="rule-meta-val">{rd.threshold}</div>
+            </div>
+            <div className="rule-meta-item">
+              <div className="rule-meta-lbl">First Seen</div>
+              <div className="rule-meta-val">{rd.firstSeen}</div>
+            </div>
+            <div className="rule-meta-item">
+              <div className="rule-meta-lbl">Last Seen</div>
+              <div className="rule-meta-val">{rd.lastSeen}</div>
+            </div>
+          </div>
+          <div style={{fontSize:'10px',color:'var(--t3)',textTransform:'uppercase',letterSpacing:'.4px',fontWeight:600,marginBottom:'4px'}}>Matched Signals</div>
+          <div className="signals-row">
+            {rd.signals.map(s => <span key={s} className="sig-chip">{s}</span>)}
+          </div>
+          <div className="rec-box">⚡ {rd.recommendation}</div>
+        </div>
+      </div>
+
+      {/* Transactions */}
+      <div className="detail-sec">
+        <div className="detail-sec-title">Transaction Context</div>
+        {isHC && !showSens && (
+          <div className="sensitive-gate">
+            <span style={{flexShrink:0}}>🔒</span>
+            <div>
+              <strong>Sensitive data gate</strong> — Full counterparty detail for {a.severity} alerts requires read-audit confirmation.{' '}
+              <button className="btn btn-warn" style={{padding:'2px 8px',fontSize:'10px',marginLeft:'4px'}}
+                onClick={() => setShowSens(true)}>
+                View Full Detail (audit-logged)
+              </button>
+            </div>
+          </div>
+        )}
+        {a.transactions.length === 0
+          ? <div style={{fontSize:'11px',color:'var(--t3)',padding:'4px 0'}}>No related transactions stored in alert scope.</div>
+          : (
+            <table className="txn-tbl">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Counterparty</th>
+                  <th>Time</th>
+                  <th>Signal</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {a.transactions.map(tx => (
+                  <tr key={tx.id}>
+                    <td><span className={`txn-type ${ttCls(tx.type)}`}>{tx.type.replace('_',' ')}</span></td>
+                    <td><span className="txn-amount">{fmtEur(tx.amount)}</span></td>
+                    <td style={{fontSize:'11px'}}>
+                      {(!isHC || showSens)
+                        ? tx.counterparty
+                        : <span style={{color:'var(--t4)',fontStyle:'italic',fontSize:'10px'}}>•••••• (read-audit required)</span>}
+                    </td>
+                    <td><span className="txn-ts">{tx.ts}</span></td>
+                    <td>{tx.signal ? <span className="sig-alert">{tx.signal}</span> : <span style={{color:'var(--t4)',fontSize:'10px'}}>—</span>}</td>
+                    <td style={{fontSize:'10px',color:'var(--t3)'}}>{tx.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )
+        }
+      </div>
+
+      {/* Freeze status (if frozen) */}
+      {isFrozen && (
+        <div className="detail-sec">
+          <div className="detail-sec-title">Account Freeze</div>
+          <div className="freeze-panel">
+            <div className="freeze-title">⊘ Account Frozen — Write Operations Blocked</div>
+            <div className="freeze-effect">Withdrawals blocked</div>
+            <div className="freeze-effect">Transfers blocked</div>
+            <div className="freeze-effect">Card issuance blocked</div>
+            <div className="freeze-effect">High-risk payments blocked</div>
+            <div style={{fontSize:'11px',color:'#701a75',marginTop:'7px',paddingTop:'6px',borderTop:'1px solid var(--frz-bd)'}}>
+              Existing holds remain visible in ledger.{' '}
+              <strong>Unfreeze requires senior_compliance role.</strong>{' '}
+              Maya Ivanova (compliance_officer) — unfreeze action is blocked. Escalate to Senior Compliance to initiate unfreeze workflow.
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Timeline */}
+      <div className="detail-sec">
+        <div className="detail-sec-title">Case Timeline</div>
+        <div className="tl">
+          {a.timeline.map((item, i) => (
+            <div key={i} className="tl-item">
+              <div className={`tl-dot ${item.dotClass || 'muted'}`}></div>
+              <div>
+                <div className="tl-ev">{item.event}</div>
+                <div className="tl-meta">{item.ts} — {item.detail}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Decision panel */}
+      <div className="decision-panel">
+        <div className="decision-hdr" onClick={() => setDecOpen(v => !v)}>
+          <span className="decision-hdr-title">Decision Controls</span>
+          <span style={{fontSize:'10px',color:'var(--t3)',marginLeft:'6px'}}>
+            Acting as <strong>{USER.role}</strong>
+          </span>
+          <span style={{marginLeft:'auto',fontSize:'11px',color:'var(--t3)'}}>{decOpen ? '▲' : '▼'}</span>
+        </div>
+
+        {decOpen && (
+          <div className="decision-body">
+
+            {/* Blocked RBAC notice */}
+            {blockedMsg && (
+              <div className="blocked-box" style={{marginBottom:'10px'}}>
+                <div className="blocked-title">⊘ Action Blocked — Insufficient Role</div>
+                <div className="blocked-text">{blockedMsg}</div>
+              </div>
+            )}
+
+            {/* Success / error feedback */}
+            {lastResult && (
+              <div className={`alert-box ${lastResult.ok ? 'green' : 'red'}`} style={{marginBottom:'10px'}}>
+                {lastResult.ok ? '✓ ' : '✕ '}{lastResult.msg}
+              </div>
+            )}
+
+            {/* Action grid (no active action) */}
+            {!decAction && (
+              <>
+                <div style={{fontSize:'10px',color:'var(--t3)',marginBottom:'8px',fontWeight:600,textTransform:'uppercase',letterSpacing:'.4px'}}>
+                  Actions available to Maya Ivanova (compliance_officer)
+                </div>
+                <div className="decision-grid">
+                  <button
+                    className={`dec-btn ${canStartReview ? 'primary' : 'blocked'}`}
+                    onClick={() => canStartReview && onStart('start_review')}>
+                    ▶ Start Review
+                    {!canStartReview && <span className="blocked-ind" style={{marginLeft:'4px'}}>wrong state</span>}
+                  </button>
+                  <button
+                    className={`dec-btn ${canCloseFP ? 'default' : 'blocked'}`}
+                    onClick={() => canCloseFP && onStart('close_fp')}>
+                    ✓ Close False Positive
+                  </button>
+                  <button
+                    className={`dec-btn ${canEscalate ? 'warn' : 'blocked'}`}
+                    onClick={() => canEscalate && onStart('escalate')}>
+                    ↑ Escalate to Senior
+                  </button>
+                  <button
+                    className={`dec-btn ${canFreeze ? 'frz-btn' : 'blocked'}`}
+                    onClick={() => canFreeze && onStart('freeze')}>
+                    ⊘ Freeze Account
+                    {!canFreeze && <span className="blocked-ind" style={{marginLeft:'4px'}}>already frozen</span>}
+                  </button>
+                  <button
+                    className="dec-btn blocked"
+                    onClick={() => onBlocked('Unfreeze Account requires senior_compliance role. Your current role is compliance_officer. Use Escalate to route this to Senior Compliance for unfreeze authorization.')}>
+                    ↑ Unfreeze Account
+                    <span className="blocked-ind" style={{marginLeft:'4px'}}>senior only</span>
+                  </button>
+                  <button className="dec-btn warn" onClick={() => onStart('request_sof')}>
+                    ⌗ Request Source of Funds
+                  </button>
+                  <button className="dec-btn default" style={{gridColumn:'span 2'}}
+                    onClick={() => onStart('add_note')}>
+                    ✎ Add Case Note
+                  </button>
+                </div>
+
+                <div style={{fontSize:'10px',color:'var(--t2)',padding:'7px 9px',background:'var(--surf2)',borderRadius:'var(--r)',border:'1px solid var(--bdr)',lineHeight:'1.6'}}>
+                  <strong style={{color:'var(--t1)'}}>RBAC summary:</strong>{' '}
+                  compliance_officer may review HIGH/CRITICAL alerts, freeze accounts, close false positives (with rationale ≥20 chars), escalate, and request source of funds.
+                  {' '}<span className="rchip red" style={{fontSize:'9px'}}>Unfreeze</span> and{' '}
+                  <span className="rchip red" style={{fontSize:'9px'}}>Senior override</span> require{' '}
+                  <span className="rchip purple" style={{fontSize:'9px'}}>senior_compliance</span>.
+                  backoffice_operator cannot access HIGH/CRITICAL alerts or freeze accounts.
+                </div>
+              </>
+            )}
+
+            {/* Active decision form */}
+            {decAction && (
+              <div>
+                <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}}>
+                  <span style={{fontSize:'11px',fontWeight:600,color:'var(--t2)'}}>Action:</span>
+                  <span className="rchip purple" style={{fontSize:'10px',padding:'2px 7px'}}>
+                    {decAction.replace(/_/g,' ').toUpperCase()}
+                  </span>
+                  <button className="btn btn-default" style={{fontSize:'10px',padding:'2px 7px',marginLeft:'auto'}}
+                    onClick={() => setDecAction(null)}>
+                    Cancel
+                  </button>
+                </div>
+
+                {/* Reason code */}
+                <div className="form-group">
+                  <label className="form-lbl">Reason Code</label>
+                  <select className="form-sel" value={reasonCode} onChange={e => setReasonCode(e.target.value)}>
+                    <option value="">— select reason code —</option>
+                    <option value="VELOCITY_FALSE_POSITIVE">VELOCITY_FALSE_POSITIVE</option>
+                    <option value="STRUCTURING_SUSPECTED">STRUCTURING_SUSPECTED</option>
+                    <option value="HIGH_RISK_COUNTERPARTY">HIGH_RISK_COUNTERPARTY</option>
+                    <option value="NEW_USER_HIGH_VALUE">NEW_USER_HIGH_VALUE</option>
+                    <option value="MERCHANT_ANOMALY">MERCHANT_ANOMALY</option>
+                    <option value="SOURCE_OF_FUNDS_REQUIRED">SOURCE_OF_FUNDS_REQUIRED</option>
+                    <option value="ESCALATE_TO_SENIOR">ESCALATE_TO_SENIOR</option>
+                  </select>
+                </div>
+
+                {/* Rationale */}
+                <div className="form-group">
+                  <label className="form-lbl">
+                    Rationale
+                    {['close_fp','add_note'].includes(decAction)
+                      && <span style={{color:'var(--rd)'}}> *</span>}
+                    {decAction === 'close_fp'
+                      && <span style={{color:'var(--t3)',fontWeight:400}}> (min. 20 chars)</span>}
+                  </label>
+                  <textarea className="form-ta" rows={3}
+                    placeholder={
+                      decAction === 'close_fp'   ? 'Explain why this is a false positive…' :
+                      decAction === 'add_note'   ? 'Add investigation note…' :
+                      decAction === 'escalate'   ? 'Reason for escalation to Senior Compliance…' :
+                      decAction === 'freeze'     ? 'Reason for account freeze (audit-recorded)…' :
+                      'Optional rationale…'
+                    }
+                    value={rationale}
+                    onChange={e => setRationale(e.target.value)}
+                  />
+                </div>
+
+                {/* Freeze-specific */}
+                {decAction === 'freeze' && (
+                  <>
+                    <label className="form-chk">
+                      <input type="checkbox" checked={freezeTmp} onChange={e => setFreezeTmp(e.target.checked)} />
+                      Mark as temporary freeze (request unfreeze review from Senior Compliance after investigation)
+                    </label>
+                    <div className="freeze-panel" style={{marginBottom:'10px'}}>
+                      <div className="freeze-title">⊘ Freeze will immediately block</div>
+                      <div className="freeze-effect">Withdrawals</div>
+                      <div className="freeze-effect">Transfers (send and receive)</div>
+                      <div className="freeze-effect">Card issuance</div>
+                      <div className="freeze-effect">High-risk payment authorizations</div>
+                      <div style={{fontSize:'10px',color:'#701a75',marginTop:'6px',paddingTop:'5px',borderTop:'1px solid var(--frz-bd)'}}>
+                        Existing holds remain visible. This action is audit-logged with actor, timestamp, and case reference. Unfreeze requires senior_compliance.
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* SoF-specific */}
+                {decAction === 'request_sof' && (
+                  <label className="form-chk">
+                    <input type="checkbox" checked={sofNotify} onChange={e => setSofNotify(e.target.checked)} />
+                    Notify user by email with link to Source of Funds form in end-user web
+                  </label>
+                )}
+
+                {/* Error feedback */}
+                {lastResult && !lastResult.ok && (
+                  <div className="alert-box red" style={{marginBottom:'8px'}}>{lastResult.msg}</div>
+                )}
+
+                <div className="dec-btn-row">
+                  <button className="btn btn-primary" onClick={onSubmit}>
+                    Confirm — {decAction.replace(/_/g,' ')}
+                  </button>
+                  <button className="btn btn-default" onClick={() => setDecAction(null)}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════ AUDIT RAIL ════════════════════ */
+
+function AuditRail({ auditLog }) {
+  return (
+    <aside className="audit-rail">
+      <div className="au-hdr">
+        <div className="au-title">Security &amp; Audit Context</div>
+        <div className="au-sub">BOF-UI-06 · AML Alerts</div>
+      </div>
+      <div className="au-body">
+
+        {/* Session */}
+        <div>
+          <div className="au-sec-title">Session</div>
+          <div className="au-row"><span className="au-k">User</span><span className="au-v">{USER.name}</span></div>
+          <div className="au-row"><span className="au-k">Auth source</span><span className="au-v">{USER.authSource}</span></div>
+          <div className="au-row"><span className="au-k">OIDC role</span><span className="au-v">{USER.role}</span></div>
+          <div className="au-row"><span className="au-k">Platform role</span><span className="au-v ok">{USER.role}</span></div>
+          <div className="au-row"><span className="au-k">Token status</span><span className="au-v ok">active</span></div>
+          <div className="au-row"><span className="au-k">Screen access</span><span className="au-v ok">granted</span></div>
+        </div>
+
+        {/* RBAC */}
+        <div>
+          <div className="au-sec-title">RBAC — Maya Ivanova</div>
+          <div>
+            {[
+              { ok:true,  txt:'Review HIGH/CRITICAL alerts' },
+              { ok:true,  txt:'Freeze account' },
+              { ok:true,  txt:'Close false positive (rationale req.)' },
+              { ok:true,  txt:'Escalate to senior_compliance' },
+              { ok:true,  txt:'Request source of funds' },
+              { ok:true,  txt:'Add case note' },
+              { ok:false, txt:'Unfreeze account — senior_compliance only', blocked:true },
+              { ok:false, txt:'Senior override — senior_compliance only', blocked:true },
+            ].map((r, i) => (
+              <div key={i} className="au-rbac-row">
+                <span className={`au-rbac-ico ${r.ok ? 'ok' : 'no'}`}>{r.ok ? '✓' : '✕'}</span>
+                <span className={`au-rbac-txt ${r.blocked ? 'blocked' : ''}`}>{r.txt}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Audit requirements */}
+        <div>
+          <div className="au-sec-title">Audit Requirements</div>
+          <div>
+            <div className="au-inv">HIGH/CRITICAL alert detail → synchronous read-audit before returning data</div>
+            <div className="au-inv">Account freeze → audit-logged with actor + case ref</div>
+            <div className="au-inv">Source of funds request → audit-logged</div>
+            <div className="au-inv">False positive closure → rationale stored in case (≥20 chars)</div>
+            <div className="au-inv">Unfreeze → blocked for compliance_officer, audit-logged as denied</div>
+            <div className="au-inv">end_user / merchant sessions → access denied to this screen</div>
+          </div>
+        </div>
+
+        {/* Role boundaries */}
+        <div>
+          <div className="au-sec-title">Role Boundaries</div>
+          <div style={{fontSize:'10px',color:'var(--t2)',lineHeight:1.6}}>
+            <p style={{marginBottom:'5px'}}><strong style={{color:'var(--t1)'}}>backoffice_operator:</strong> LOW/MEDIUM alerts only. Cannot freeze accounts or view HIGH/CRITICAL detail without escalation.</p>
+            <p style={{marginBottom:'5px'}}><strong style={{color:'var(--t1)'}}>compliance_officer (Maya):</strong> Full AML triage including HIGH/CRITICAL. Cannot unfreeze.</p>
+            <p><strong style={{color:'var(--t1)'}}>senior_compliance:</strong> All of above + unfreeze, SAR marker, senior override. Two-eyes override for high-value manual ops.</p>
+          </div>
+        </div>
+
+        {/* Event log */}
+        <div>
+          <div className="au-sec-title">Session Event Log</div>
+          <div className="au-ev-log">
+            {auditLog.map((ev, i) => (
+              <div key={i} className="au-ev">
+                <div className={`au-ev-code ${ev.isNew ? 'new' : ''}`}>{ev.code}</div>
+                <div className="au-ev-meta">{ev.ts} · {USER.role}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </aside>
+  );
+}
+
+/* ════════════════════ MOUNT ════════════════════ */
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
