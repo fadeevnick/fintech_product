@@ -142,6 +142,7 @@ Created:
 - `prototypes/ui/04_backoffice_oidc_login.html` — standalone `BOF-UI-01` backoffice OIDC login HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 - `prototypes/ui/05_backoffice_work_queue_home.html` — standalone `BOF-UI-02` backoffice work queue home HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 - `prototypes/ui/06_backoffice_manual_deposits.html` — standalone `BOF-UI-03` backoffice manual deposits HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
+- `prototypes/ui/07_backoffice_manual_withdrawals.html` — standalone `BOF-UI-04` backoffice manual withdrawals HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;
