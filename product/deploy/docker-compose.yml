@@ -99,9 +99,13 @@ services:
       BACKOFFICE_OIDC_ISSUER_DISPLAY: http://localhost:${KEYCLOAK_HOST_PORT:-18080}/realms/minifin-backoffice
       STRIPE_WEBHOOK_SIGNING_SECRET: ${STRIPE_WEBHOOK_SIGNING_SECRET:-whsec_local_test_secret}
       STRIPE_WEBHOOK_TOLERANCE_SECONDS: ${STRIPE_WEBHOOK_TOLERANCE_SECONDS:-300}
+      ISSUER_BASE_URL: http://issuer:8080
+      SERVICE_AUTH_SECRET: ${SERVICE_AUTH_SECRET:-local-service-secret}
     depends_on:
       platform-db:
         condition: service_healthy
+      issuer:
+        condition: service_started
       kafka:
         condition: service_started
       keycloak:
@@ -162,9 +166,13 @@ services:
       ISSUER_DB_URL: jdbc:postgresql://issuer-db:5432/issuer
       ISSUER_DB_USER: issuer
       ISSUER_DB_PASSWORD: issuer
+      VAULT_BASE_URL: http://vault:8080
+      SERVICE_AUTH_SECRET: ${SERVICE_AUTH_SECRET:-local-service-secret}
     depends_on:
       issuer-db:
         condition: service_healthy
+      vault:
+        condition: service_started
     ports:
       - "${ISSUER_HTTP_HOST_PORT:-8084}:8080"
 
@@ -179,6 +187,9 @@ services:
       VAULT_DB_URL: jdbc:postgresql://vault-db:5432/vault
       VAULT_DB_USER: vault
       VAULT_DB_PASSWORD: vault
+      SERVICE_AUTH_SECRET: ${SERVICE_AUTH_SECRET:-local-service-secret}
+      VAULT_PAN_ENCRYPTION_KEY: ${VAULT_PAN_ENCRYPTION_KEY:-local-vault-pan-key-change-me}
+      VAULT_TEST_BIN: ${VAULT_TEST_BIN:-400000}
     depends_on:
       vault-db:
         condition: service_healthy

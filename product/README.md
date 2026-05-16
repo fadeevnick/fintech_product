@@ -21,6 +21,7 @@ Implemented runtime behavior so far:
 - Phase 03 Slice 04 wallet internal transfer backend/runtime sub-scope in `platform`: `wallet.internal_transfers` (under EUR 10k), end-user `POST /api/v1/transfers`, sender debit / receiver credit through `ledger.post_journal(...)`, sufficient-funds guard, `Idempotency-Key` duplicate protection and actor-control wallet-write block for sender and receiver.
 - Phase 04 Slice 01 merchant API keys and public API idempotency backend/runtime sub-scope in `platform`: `merchant.api_keys` (one-time-visible key, SHA-256 `key_hash`, 16-hex `fingerprint`), `merchant.payment_intents` shell (`REQUIRES_PAYMENT_METHOD` only), `idempotency.idempotency_keys` append-only on update; merchant dashboard `POST/GET /api/v1/merchant/api-keys`, `POST /api/v1/merchant/api-keys/{id}/revoke` (`merchant_admin`); public `POST /v1/payment_intents` and `GET /v1/payment_intents/{id}` behind `Authorization: Bearer mfp_live_*`; deterministic public idempotency replay/conflict primitive with atomic concurrent replay, per-merchant/per-route scope and append-only finalized rows. Public API endpoints currently hosted in `platform`; moving them into `acquirer` is a deferred later Phase 04 slice gated on a real service-to-service auth primitive.
 - Phase 04 Slice 02 Stripe webhook backend/runtime sub-scope in `platform`: `merchant.stripe_account_links`, `merchant.stripe_webhook_events`, `POST /webhooks/stripe/v1`, real Stripe-format HMAC-SHA256 signature verification, timestamp tolerance, duplicate Stripe event id idempotency, `account.updated` KYB state mapping and audit rows. Stripe Connect onboarding-start remains blocked on real sandbox credentials; no fake Stripe API path exists.
+- Phase 05 Slice 01 Vault/Card issuance backend/runtime sub-scope across `platform`, `issuer` and `vault`: end-user `POST /api/v1/cards`, Platform→Issuer and Issuer→Vault service-auth calls, Issuer token/last4 card records, Vault encrypted PAN tokenization, restricted detokenize for `service:issuer` and detokenize audit rows. `VLT-01`, `VLT-02` and `VLT-03` have runtime evidence; `PAY-04`/`PAY-05` remain out of scope for the later authorization slice.
 
 ## Local Commands
 
@@ -112,6 +113,9 @@ scripts/runtime/reg_phase04_stripe_webhook_signature_invalid.sh
 scripts/runtime/reg_phase04_stripe_webhook_timestamp_tolerance.sh
 scripts/runtime/reg_phase04_stripe_webhook_idempotency.sh
 scripts/runtime/reg_phase04_stripe_webhook_bad_then_valid_retry.sh
+scripts/runtime/reg_phase05_card_issue_pan_isolation.sh
+scripts/runtime/reg_phase05_vault_detokenize_restriction.sh
+scripts/runtime/reg_phase05_pan_log_masking.sh
 ```
 
 ## Stripe Webhook Local Runtime
@@ -124,3 +128,32 @@ STRIPE_WEBHOOK_TOLERANCE_SECONDS=300
 ```
 
 Retained scripts under `product/scripts/runtime/reg_phase04_stripe_webhook_*.sh` sign local Stripe-format payloads with this secret and verify valid signature, invalid signature rejection, timestamp tolerance and duplicate event id idempotency. Real Stripe Connect onboarding start (`MRC-01`) is blocked until sandbox credentials are provided.
+
+
+## Phase 05 Vault/Card Local Runtime
+
+Phase 05 Slice 01 adds the first real Vault/Issuer card path:
+
+- Platform exposes end-user `POST /api/v1/cards`.
+- Issuer stores `card_token`, `last4`, expiration, BIN and state only.
+- Vault stores encrypted PAN and restricts detokenize to `service:issuer`.
+
+Local runtime defaults:
+
+```bash
+SERVICE_AUTH_SECRET=local-service-secret
+VAULT_PAN_ENCRYPTION_KEY=local-vault-pan-key-change-me
+VAULT_TEST_BIN=400000
+ISSUER_BASE_URL=http://issuer:8080
+VAULT_BASE_URL=http://vault:8080
+```
+
+Retained scripts:
+
+```bash
+scripts/runtime/reg_phase05_card_issue_pan_isolation.sh
+scripts/runtime/reg_phase05_vault_detokenize_restriction.sh
+scripts/runtime/reg_phase05_pan_log_masking.sh
+```
+
+These scripts target `VLT-01`, `VLT-02` and `VLT-03`. `PAY-04` and `PAY-05` remain out of scope for the later authorization slice.

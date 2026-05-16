@@ -7,6 +7,11 @@ spring:
     password: ${VAULT_DB_PASSWORD:vault}
   flyway:
     enabled: true
+minifin:
+  vault:
+    pan-encryption-key: ${VAULT_PAN_ENCRYPTION_KEY:local-vault-pan-key-change-me}
+    service-auth-secret: ${SERVICE_AUTH_SECRET:local-service-secret}
+    bin: ${VAULT_TEST_BIN:400000}
 server:
   port: ${VAULT_HTTP_PORT:8085}
 management:

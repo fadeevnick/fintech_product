@@ -25,6 +25,9 @@ minifin:
       # In production this must be set to the per-environment Stripe webhook signing secret.
       webhook-signing-secret: ${STRIPE_WEBHOOK_SIGNING_SECRET:whsec_local_test_secret}
       webhook-tolerance-seconds: ${STRIPE_WEBHOOK_TOLERANCE_SECONDS:300}
+  cards:
+    issuer-base-url: ${ISSUER_BASE_URL:http://localhost:8084}
+    service-auth-secret: ${SERVICE_AUTH_SECRET:local-service-secret}
 server:
   port: ${PLATFORM_HTTP_PORT:8081}
 management:

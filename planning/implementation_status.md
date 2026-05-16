@@ -583,26 +583,48 @@ Next planned step:
 
 ## Phase 05 Slice 01 — Vault Tokenization and Card Issuance Foundation
 
-Status: **PLANNING APPROVED — not implemented**.
+Status: **COMPLETE — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_05_slice_01_vault_card_issuance_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Vault tokenization foundation where full PAN is persisted only in `vault`.
-- Minimal issuer card record path storing token/last4/expiration/BIN metadata only.
-- End-user `POST /api/v1/cards` entrypoint through Platform, delegated to Issuer and Vault through narrow service-authenticated paths.
-- Restricted Vault detokenize path for `service:issuer` only, with audit logging.
-- PAN masking verification in service logs.
-- Target checks:
-  - `VLT-01` — PAN stored only in Vault.
-  - `VLT-02` — detokenize restriction.
-  - `VLT-03` — PAN log masking.
+Implemented backend/runtime scope:
+- Vault DB migration `V2__vault_card_tokenization.sql` for `vault.key_versions`, `vault.card_tokens` and `vault.detokenize_audit_log`.
+- Vault tokenization API:
+  - `POST /internal/vault/tokenize` accepts only `service:issuer` and returns token/last4/expiration/BIN.
+  - Full PAN is generated inside Vault and persisted encrypted via `pgcrypto`.
+- Vault restricted detokenize API:
+  - `POST /internal/vault/detokenize` returns PAN only to `service:issuer`.
+  - Non-issuer service callers are denied and written to `vault.detokenize_audit_log`.
+- Issuer DB migration `V2__issuer_cards.sql` for `issuer.cards`.
+- Issuer card issuance API:
+  - `POST /internal/issuer/cards` accepts only `service:platform`.
+  - Issuer calls Vault tokenize and stores only token/last4/expiration/BIN/user/wallet metadata.
+- Platform end-user API:
+  - `POST /api/v1/cards` requires end-user session, applies actor-control write guard, provisions/resolves wallet, delegates to Issuer and returns safe card metadata only.
+- Compose/env wiring for narrow service-auth secret, Platform→Issuer and Issuer→Vault URLs, Vault encryption key and test BIN.
+- Retained runtime scripts:
+  - `product/scripts/runtime/lib_phase05_vault_card.sh`
+  - `product/scripts/runtime/reg_phase05_card_issue_pan_isolation.sh`
+  - `product/scripts/runtime/reg_phase05_vault_detokenize_restriction.sh`
+  - `product/scripts/runtime/reg_phase05_pan_log_masking.sh`
 
 Explicitly not implemented:
-- No Kotlin, SQL, runtime scripts or frontend code in this planning-only task.
-- No authorization, capture, settlement, refunds, chargebacks or outbound webhook delivery.
-- No `PAY-04` / `PAY-05` claims; they remain for the later authorization slice.
+- Authorization, capture, settlement, refunds, chargebacks or outbound webhook delivery.
+- `PAY-04` / `PAY-05`; they remain for the later authorization slice.
+- Card block/unblock/lost/replacement flows.
+- Full PAN reveal to end users.
+- Frontend SPA implementation.
+
+Runtime evidence:
+- Isolated compile checks passed for affected services:
+  - `:apps:vault:compileKotlin`
+  - `:apps:issuer:compileKotlin`
+  - `:apps:platform:compileKotlin`
+- Isolated Compose project `mini-fintech-platform-a1` started `platform`, `issuer`, `vault` and required dependencies with fresh DB migrations.
+- `VLT-01` — pass for PAN isolation: Platform returns safe card metadata, Issuer stores token/last4/state only, Vault stores encrypted PAN, and Platform/Issuer schemas have no PAN/CVV columns.
+- `VLT-02` — pass for restricted detokenize: Issuer detokenize succeeds, Platform detokenize is denied with `service_auth_denied`, and both outcomes are audit logged.
+- `VLT-03` — pass for PAN log masking: raw detokenized PAN was absent from Platform/Issuer/Vault general logs.
 
 Next planned step:
-- Implement the approved Slice 01 backend/runtime sub-scope when selected.
+- Choose the next approved backend/runtime slice. `PAY-04` / `PAY-05` remain deferred to the later card authorization slice.

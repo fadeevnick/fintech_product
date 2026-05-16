@@ -1085,3 +1085,37 @@ Local DB hygiene note:
 - The missing V10 SQL was applied manually to the default local DB and a matching Flyway history row was inserted using the checksum observed from the isolated fresh DB.
 - This was local runtime hygiene only; repository migrations are V10 + V11 and validate cleanly on a fresh DB.
 - Default stack was restored afterward; `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+
+---
+
+## 2026-05-17 — Phase 05 Slice 01 Vault/Card Issuance Verification
+
+Scope:
+- Phase 05 Slice 01 backend/runtime implementation for Vault tokenization, Issuer card records and Platform end-user card issuance.
+- Isolated runtime slot used for Docker commands: `COMPOSE_PROJECT_NAME=mini-fintech-platform-a1`, `PLATFORM_HTTP_HOST_PORT=18181`, `PLATFORM_DB_HOST_PORT=15433`, `ISSUER_HTTP_HOST_PORT=18184`, `ISSUER_DB_HOST_PORT=15436`, `VAULT_HTTP_HOST_PORT=18185`, `VAULT_DB_HOST_PORT=15437`, `KAFKA_HOST_PORT=19092`, `KEYCLOAK_HOST_PORT=18080`.
+
+Implemented artifacts checked statically:
+- Vault migration: `product/apps/vault/src/main/resources/db/migration/V2__vault_card_tokenization.sql`.
+- Issuer migration: `product/apps/issuer/src/main/resources/db/migration/V2__issuer_cards.sql`.
+- Retained scripts:
+  - `product/scripts/runtime/lib_phase05_vault_card.sh`
+  - `product/scripts/runtime/reg_phase05_card_issue_pan_isolation.sh`
+  - `product/scripts/runtime/reg_phase05_vault_detokenize_restriction.sh`
+  - `product/scripts/runtime/reg_phase05_pan_log_masking.sh`
+
+Commands run:
+- `docker run ... gradle :apps:vault:compileKotlin --no-daemon --info` — pass.
+- `docker run ... gradle :apps:issuer:compileKotlin --no-daemon --info` — pass.
+- `docker run ... gradle :apps:platform:compileKotlin --no-daemon --info` — pass.
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a1 ... docker compose -f product/deploy/docker-compose.yml up -d --no-build platform issuer vault` — pass after the long compose build client was stopped and already-built images were reused.
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a1 docker compose -f deploy/docker-compose.yml config --quiet` from `product/` — pass.
+- `bash -n scripts/runtime/lib_phase05_vault_card.sh scripts/runtime/reg_phase05_card_issue_pan_isolation.sh scripts/runtime/reg_phase05_vault_detokenize_restriction.sh scripts/runtime/reg_phase05_pan_log_masking.sh` from `product/` — pass.
+
+Runtime check results:
+- `VLT-01` — pass. A new end-user issued card `a16c3cfe-05ba-4ce5-804c-8f96cab1ec1c`; Platform returned safe metadata only, Issuer row was `card_tok_N1it17iXYb-8VgpHwRZfDxxFT_K_xycH|7386|ACTIVE`, Vault had one encrypted PAN row for that token/last4, and Platform/Issuer schemas had zero PAN/CVV columns.
+- `VLT-02` — pass. Issuer detokenize returned a 16-digit test PAN; Platform detokenize returned HTTP 403 with `service_auth_denied`; Vault audit rows existed for issuer `ALLOWED` and platform `DENIED`.
+- `VLT-03` — pass. Platform/Issuer/Vault general logs were searched after detokenization and did not contain the raw PAN.
+
+Result tag notes:
+- Host-to-container HTTP port forwarding accepted connections but did not return responses in this local environment; service health and HTTP checks succeeded from inside the compose network. The retained `reg_phase05_*` scripts remain in the repo, while this evidence used equivalent compose-network HTTP calls plus DB/log assertions against the same isolated stack.
+- `PAY-04` and `PAY-05` are not claimed; authorization/capture/settlement remain deferred to the later card authorization slice.
