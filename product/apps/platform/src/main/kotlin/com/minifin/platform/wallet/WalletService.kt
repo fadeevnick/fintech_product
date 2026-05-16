@@ -4,12 +4,14 @@ import com.minifin.platform.controls.ActorControlException
 import com.minifin.platform.controls.ActorControlService
 import com.minifin.platform.identity.AuditRepository
 import com.minifin.platform.identity.EndUserRecord
+import com.minifin.platform.identity.IdentityRepository
 import com.minifin.platform.ledger.LedgerJournalRequest
 import com.minifin.platform.ledger.LedgerPostingRequest
 import com.minifin.platform.ledger.LedgerAccountRequest
 import com.minifin.platform.ledger.LedgerService
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.security.MessageDigest
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class WalletService(
     private val walletRepository: WalletRepository,
+    private val identityRepository: IdentityRepository,
     private val ledgerService: LedgerService,
     private val actorControlService: ActorControlService,
     private val auditRepository: AuditRepository,
@@ -62,6 +65,8 @@ class WalletService(
             .map { it.toResponse() }
         val withdrawals = walletRepository.listWithdrawalsForUser(user.id, limit = 50)
             .map { it.toResponse() }
+        val transfers = walletRepository.listInternalTransfersForUser(user.id, limit = 50)
+            .map { it.toResponse() }
         return WalletSummaryResponse(
             walletId = wallet.id.toString(),
             ledgerAccountId = wallet.ledgerAccountId.toString(),
@@ -69,6 +74,7 @@ class WalletService(
             balance = balance,
             deposits = deposits,
             withdrawals = withdrawals,
+            transfers = transfers,
         )
     }
 
@@ -148,6 +154,133 @@ class WalletService(
         return walletRepository.findWithdrawalRequest(withdrawalId)!!.toResponse()
     }
 
+    @Transactional(noRollbackFor = [ActorControlException::class])
+    fun createInternalTransfer(
+        sender: EndUserRecord,
+        request: InternalTransferCreate,
+        idempotencyKey: String?,
+    ): InternalTransferResponse {
+        val amount = validateAmount(request.amount, "transfer")
+        validateCurrency(request.currency)
+        val receiverId = requireUuid(request.receiverUserId, "receiverUserId")
+        if (receiverId == sender.id) {
+            throw WalletException(
+                code = "self_transfer_not_allowed",
+                message = "Sender and receiver must be different users.",
+                status = HttpStatus.BAD_REQUEST,
+                field = "receiverUserId",
+            )
+        }
+        val receiver = identityRepository.findEndUserById(receiverId)
+            ?: throw WalletException(
+                code = "receiver_not_found",
+                message = "Receiver user was not found.",
+                status = HttpStatus.NOT_FOUND,
+                field = "receiverUserId",
+            )
+        if (receiver.status != "ACTIVE") {
+            throw WalletException(
+                code = "receiver_not_active",
+                message = "Receiver user is not active.",
+                status = HttpStatus.CONFLICT,
+                field = "receiverUserId",
+            )
+        }
+
+        val normalizedIdempotencyKey = validateIdempotencyKey(idempotencyKey)
+        val requestFingerprint = transferFingerprint(receiverId, amount)
+        if (normalizedIdempotencyKey != null) {
+            walletRepository.findInternalTransferByIdempotencyKey(sender.id, normalizedIdempotencyKey)
+                ?.let { return idempotentTransferResponse(it, requestFingerprint) }
+        }
+
+        actorControlService.requireWriteAllowed("END_USER", sender.id)
+        actorControlService.requireWriteAllowed("END_USER", receiverId)
+
+        val senderWallet = provisionWallet(sender)
+        val receiverWallet = provisionWallet(receiver)
+        val senderBalance = BigDecimal(ledgerService.balance(senderWallet.ledgerAccountId.toString()).balance)
+            .setScale(4, RoundingMode.UNNECESSARY)
+        if (senderBalance < amount) {
+            throw WalletException(
+                code = "insufficient_funds",
+                message = "Wallet balance is insufficient for transfer.",
+                status = HttpStatus.CONFLICT,
+                field = "amount",
+            )
+        }
+
+        val transferId = UUID.randomUUID()
+        val inserted = walletRepository.insertInternalTransferPending(
+            id = transferId,
+            senderUserId = sender.id,
+            receiverUserId = receiverId,
+            senderWalletAccountId = senderWallet.id,
+            receiverWalletAccountId = receiverWallet.id,
+            amount = amount,
+            idempotencyKey = normalizedIdempotencyKey,
+            requestFingerprint = requestFingerprint,
+        )
+        if (inserted == 0) {
+            val existing = walletRepository.findInternalTransferByIdempotencyKey(
+                sender.id,
+                normalizedIdempotencyKey ?: error("Idempotency key missing after conflict"),
+            ) ?: throw WalletException(
+                code = "transfer_state_conflict",
+                message = "Transfer request state changed concurrently.",
+                status = HttpStatus.CONFLICT,
+            )
+            return idempotentTransferResponse(existing, requestFingerprint)
+        }
+
+        val amountText = amount.toPlainString()
+        val journal = ledgerService.postJournal(
+            LedgerJournalRequest(
+                journalType = "WALLET_INTERNAL_TRANSFER",
+                referenceType = "WALLET_INTERNAL_TRANSFER",
+                referenceId = transferId.toString(),
+                currency = "EUR",
+                description = "End-user internal wallet transfer",
+                postings = listOf(
+                    LedgerPostingRequest(
+                        accountId = senderWallet.ledgerAccountId.toString(),
+                        side = "DEBIT",
+                        amount = amountText,
+                    ),
+                    LedgerPostingRequest(
+                        accountId = receiverWallet.ledgerAccountId.toString(),
+                        side = "CREDIT",
+                        amount = amountText,
+                    ),
+                ),
+            ),
+        )
+
+        val updated = walletRepository.markInternalTransferCompleted(
+            id = transferId,
+            journalEntryId = UUID.fromString(journal.journalId),
+        )
+        if (updated == 0) {
+            throw WalletException(
+                code = "transfer_state_conflict",
+                message = "Transfer request state changed concurrently.",
+                status = HttpStatus.CONFLICT,
+            )
+        }
+
+        auditRepository.write(
+            eventType = "wallet.internal_transfer_completed",
+            actorType = "END_USER",
+            actorId = sender.id,
+            subjectType = "WALLET_INTERNAL_TRANSFER",
+            subjectId = transferId,
+            outcome = "SUCCESS",
+            metadataJson = """{"journalEntryId":"${journal.journalId}","receiverUserId":"$receiverId","amount":"$amountText"}""",
+        )
+
+        return walletRepository.findInternalTransfer(transferId)!!.toResponse()
+    }
+
     fun provisionWallet(user: EndUserRecord): WalletAccountRecord {
         walletRepository.findWalletByUserId(user.id)?.let { return it }
         val ledgerAccount = ledgerService.upsertAccount(
@@ -221,6 +354,56 @@ class WalletService(
         }
     }
 
+    private fun validateIdempotencyKey(value: String?): String? {
+        val trimmed = value?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        if (trimmed.length > 120) {
+            throw WalletException(
+                code = "invalid_idempotency_key",
+                message = "Idempotency key is invalid.",
+                status = HttpStatus.BAD_REQUEST,
+            )
+        }
+        return trimmed
+    }
+
+    private fun requireUuid(value: String, field: String): UUID =
+        runCatching { UUID.fromString(value.trim()) }
+            .getOrElse {
+                throw WalletException(
+                    code = "invalid_uuid",
+                    message = "Invalid UUID.",
+                    status = HttpStatus.BAD_REQUEST,
+                    field = field,
+                )
+            }
+
+    private fun transferFingerprint(receiverUserId: UUID, amount: BigDecimal): String {
+        val normalized = "$receiverUserId|${amount.toPlainString()}|EUR"
+        val bytes = MessageDigest.getInstance("SHA-256").digest(normalized.toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun idempotentTransferResponse(
+        existing: InternalTransferRecord,
+        requestFingerprint: String,
+    ): InternalTransferResponse {
+        if (existing.requestFingerprint != requestFingerprint) {
+            throw WalletException(
+                code = "transfer_idempotency_conflict",
+                message = "Idempotency key was already used with a different transfer request.",
+                status = HttpStatus.CONFLICT,
+            )
+        }
+        if (existing.state != "COMPLETED" || existing.journalEntryId == null) {
+            throw WalletException(
+                code = "transfer_in_progress",
+                message = "Transfer request is still being processed.",
+                status = HttpStatus.CONFLICT,
+            )
+        }
+        return existing.toResponse()
+    }
+
     companion object {
         private val HIGH_VALUE_THRESHOLD = BigDecimal("10000.0000")
     }
@@ -253,4 +436,17 @@ internal fun WithdrawalRequestRecord.toResponse(): WithdrawalRequestResponse =
         createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         heldAt = heldAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         decidedAt = decidedAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+    )
+
+internal fun InternalTransferRecord.toResponse(): InternalTransferResponse =
+    InternalTransferResponse(
+        transferId = id.toString(),
+        senderUserId = senderUserId.toString(),
+        receiverUserId = receiverUserId.toString(),
+        amount = amount.setScale(4, RoundingMode.UNNECESSARY).toPlainString(),
+        currency = currency,
+        state = state,
+        journalEntryId = journalEntryId?.toString(),
+        createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        completedAt = completedAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
     )

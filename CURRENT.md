@@ -1,6 +1,6 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-16 (Phase 03 Slice 03 backend/runtime sub-scope executed).
+Last updated: 2026-05-16 (Phase 03 Slice 04 backend/runtime sub-scope executed).
 
 ---
 
@@ -27,25 +27,26 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_03_slice_01_ledger_foundation_planning.md` — backend/runtime sub-scope executed v0.2.
 - `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md` — backend/runtime sub-scope executed v0.2.
 - `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — backend/runtime sub-scope executed v0.2.
+- `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
 
 Completed workstream — latest:
-- Phase 03 Slice 03 wallet manual withdraw implemented in `platform`;
-- `LDG-03`, `WLT-02`, `AUD-01`, `AUD-03`, `LDG-05` passed for the withdrawal hold/final-debit path;
-- regression subset passed: wallet deposit happy path, wallet deposit double-decision and ledger reconciliation;
+- Phase 03 Slice 04 wallet internal transfer implemented in `platform`;
+- `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05` passed for the internal transfer path;
+- regression subset passed: ledger reconciliation after transfer flows;
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
 
 Latest executed slice:
-- `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — backend/runtime sub-scope executed v0.2.
-- Scope: manual withdrawal under EUR 10k with ledger hold, backoffice completion/final debit, rejection release, actor-control write block and retained runtime scripts.
-- Target checks: `LDG-03`, `WLT-02`, `AUD-01`, `AUD-03`, `LDG-05`, `LDG-99`.
+- `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
+- Scope: end-user internal transfer under EUR 10k with sender debit, receiver credit, sufficient-funds guard, idempotency and actor-control write block for sender and receiver.
+- Target checks: `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05`, `LDG-99`.
 
 ## Next
 
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`.**
 
 Next planned product step:
-- Draft the next Phase 03 wallet/manual-operation slice, likely internal end-user transfer targeting `WLT-01`.
+- Review the parallel high-value controls planning branch, then decide whether to continue Phase 03 placeholders or move to the next approved implementation slice.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
@@ -105,9 +106,9 @@ First slice planning note approved:
 - Linked checks: `RUN-01`..`RUN-08`, `UI-01`.
 
 Latest executed slice planning note:
-- `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — backend/runtime sub-scope executed v0.2.
-- Scope: manual withdrawal < EUR 10k with hold/final debit, rejection release, actor-control write block and runtime checks for `LDG-03`.
-- Linked checks: `LDG-03`, `WLT-02`, `AUD-01`, `AUD-03`, `LDG-05`, `LDG-99`.
+- `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
+- Scope: internal end-user transfer < EUR 10k with atomic sender debit / receiver credit and runtime checks for `WLT-01`.
+- Linked checks: `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05`, `LDG-99`.
 
 ## Read-first order (новая AI-сессия)
 
@@ -123,11 +124,11 @@ Latest executed slice planning note:
 10. `planning/runtime_checklists.md` — approved runtime check registry.
 11. `planning/implementation_status.md` and `planning/runtime_evidence_log.md` — factual implementation/evidence state.
 12. Previous executed slice note:
-    `planning/implementation-slices/phase_03_slice_02_wallet_manual_deposit_planning.md`.
-13. Latest executed slice note:
     `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md`.
+13. Latest executed slice note:
+    `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md`.
 
-После прочтения — draft the next Phase 03 wallet/manual-operation slice, likely internal end-user transfer targeting `WLT-01`.
+После прочтения — review the parallel high-value controls planning branch, then decide the next approved implementation slice.
 
 ## Do-not-do-yet rules
 
@@ -189,12 +190,12 @@ docker compose -f deploy/docker-compose.yml ps
 docker compose -f deploy/docker-compose.yml down
 ```
 
-Current Phase 03 Slice 03:
-- `planning/implementation-slices/phase_03_slice_03_wallet_manual_withdraw_planning.md` — backend/runtime sub-scope executed v0.2.
-- Implemented: `wallet.withdraw_requests`, idempotent `EXTERNAL_WITHDRAWAL_CLEARING` seed, per-user `WALLET_WITHDRAW_HOLD:<userId>`, end-user `POST /api/v1/withdrawals`, `GET /api/v1/wallet` withdrawal history, backoffice `GET/POST /api/v1/backoffice/manual-ops/withdrawals[/{id}/decision]`, balanced hold / final debit / release postings through `ledger.post_journal(...)`, actor-control hook on create and completion.
+Current Phase 03 Slice 04:
+- `planning/implementation-slices/phase_03_slice_04_wallet_internal_transfer_planning.md` — backend/runtime sub-scope executed v0.2.
+- Implemented: `wallet.internal_transfers`, end-user `POST /api/v1/transfers`, `GET /api/v1/wallet` transfer history, balanced sender debit / receiver credit posting through `ledger.post_journal(...)`, insufficient-funds guard, `Idempotency-Key` duplicate protection and actor-control hook for sender and receiver.
 - Runtime evidence recorded in `planning/runtime_evidence_log.md`.
-- `LDG-03`, `WLT-02`, `AUD-01`, `AUD-03`, `LDG-05` are passed for withdrawal; `LDG-99` foundation regression passed.
-- `WLT-01`, `WLT-03`, `WLT-04` are not claimed because transfer, SoF and two-eyes workflows do not exist yet.
+- `WLT-01`, `WLT-02`, `AUD-01`, `LDG-05` are passed for transfer; `LDG-99` foundation regression passed.
+- `WLT-03`, `WLT-04` are not claimed because SoF and two-eyes workflows do not exist yet.
 - No frontend work in this slice.
 
-Next planned step: draft the next Phase 03 wallet/manual-operation slice, likely internal end-user transfer targeting `WLT-01`. Frontend implementation for backoffice manual deposits, manual withdrawals and end-user wallet remains gated by their respective accepted standalone HTML prototypes.
+Next planned step: review the parallel high-value controls planning branch. Frontend implementation for backoffice manual deposits, manual withdrawals and end-user wallet remains gated by their respective accepted standalone HTML prototypes.

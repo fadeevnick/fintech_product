@@ -43,6 +43,22 @@ data class WithdrawalRequestRecord(
     val decidedAt: OffsetDateTime?,
 )
 
+data class InternalTransferRecord(
+    val id: UUID,
+    val senderUserId: UUID,
+    val receiverUserId: UUID,
+    val senderWalletAccountId: UUID,
+    val receiverWalletAccountId: UUID,
+    val amount: BigDecimal,
+    val currency: String,
+    val state: String,
+    val journalEntryId: UUID?,
+    val idempotencyKey: String?,
+    val requestFingerprint: String?,
+    val createdAt: OffsetDateTime,
+    val completedAt: OffsetDateTime?,
+)
+
 @Repository
 class WalletRepository(
     private val jdbcTemplate: JdbcTemplate,
@@ -348,6 +364,111 @@ class WalletRepository(
             id,
         )
 
+    fun insertInternalTransferPending(
+        id: UUID,
+        senderUserId: UUID,
+        receiverUserId: UUID,
+        senderWalletAccountId: UUID,
+        receiverWalletAccountId: UUID,
+        amount: BigDecimal,
+        idempotencyKey: String?,
+        requestFingerprint: String?,
+    ): Int =
+        jdbcTemplate.update(
+            """
+            insert into wallet.internal_transfers (
+                id,
+                sender_user_id,
+                receiver_user_id,
+                sender_wallet_account_id,
+                receiver_wallet_account_id,
+                amount,
+                currency,
+                state,
+                idempotency_key,
+                request_fingerprint
+            )
+            values (?, ?, ?, ?, ?, ?, 'EUR', 'PENDING', ?, ?)
+            on conflict (sender_user_id, idempotency_key)
+            where idempotency_key is not null
+            do nothing
+            """.trimIndent(),
+            id,
+            senderUserId,
+            receiverUserId,
+            senderWalletAccountId,
+            receiverWalletAccountId,
+            amount,
+            idempotencyKey,
+            requestFingerprint,
+        )
+
+    fun markInternalTransferCompleted(
+        id: UUID,
+        journalEntryId: UUID,
+    ): Int =
+        jdbcTemplate.update(
+            """
+            update wallet.internal_transfers
+               set state = 'COMPLETED',
+                   journal_entry_id = ?,
+                   completed_at = now()
+             where id = ?
+               and state = 'PENDING'
+            """.trimIndent(),
+            journalEntryId,
+            id,
+        )
+
+    fun findInternalTransfer(id: UUID): InternalTransferRecord? =
+        jdbcTemplate.query(
+            """
+            select id, sender_user_id, receiver_user_id, sender_wallet_account_id,
+                   receiver_wallet_account_id, amount, currency, state, journal_entry_id,
+                   idempotency_key, request_fingerprint, created_at, completed_at
+            from wallet.internal_transfers
+            where id = ?
+            """.trimIndent(),
+            { rs, _ -> rs.toInternalTransferRecord() },
+            id,
+        ).firstOrNull()
+
+    fun findInternalTransferByIdempotencyKey(
+        senderUserId: UUID,
+        idempotencyKey: String,
+    ): InternalTransferRecord? =
+        jdbcTemplate.query(
+            """
+            select id, sender_user_id, receiver_user_id, sender_wallet_account_id,
+                   receiver_wallet_account_id, amount, currency, state, journal_entry_id,
+                   idempotency_key, request_fingerprint, created_at, completed_at
+            from wallet.internal_transfers
+            where sender_user_id = ?
+              and idempotency_key = ?
+            """.trimIndent(),
+            { rs, _ -> rs.toInternalTransferRecord() },
+            senderUserId,
+            idempotencyKey,
+        ).firstOrNull()
+
+    fun listInternalTransfersForUser(userId: UUID, limit: Int): List<InternalTransferRecord> =
+        jdbcTemplate.query(
+            """
+            select id, sender_user_id, receiver_user_id, sender_wallet_account_id,
+                   receiver_wallet_account_id, amount, currency, state, journal_entry_id,
+                   idempotency_key, request_fingerprint, created_at, completed_at
+            from wallet.internal_transfers
+            where sender_user_id = ?
+               or receiver_user_id = ?
+            order by created_at desc
+            limit ?
+            """.trimIndent(),
+            { rs, _ -> rs.toInternalTransferRecord() },
+            userId,
+            userId,
+            limit,
+        )
+
     private fun ResultSet.toWalletAccountRecord(): WalletAccountRecord =
         WalletAccountRecord(
             id = getObject("id", UUID::class.java),
@@ -385,5 +506,22 @@ class WalletRepository(
             createdAt = getObject("created_at", OffsetDateTime::class.java),
             heldAt = getObject("held_at", OffsetDateTime::class.java),
             decidedAt = getObject("decided_at", OffsetDateTime::class.java),
+        )
+
+    private fun ResultSet.toInternalTransferRecord(): InternalTransferRecord =
+        InternalTransferRecord(
+            id = getObject("id", UUID::class.java),
+            senderUserId = getObject("sender_user_id", UUID::class.java),
+            receiverUserId = getObject("receiver_user_id", UUID::class.java),
+            senderWalletAccountId = getObject("sender_wallet_account_id", UUID::class.java),
+            receiverWalletAccountId = getObject("receiver_wallet_account_id", UUID::class.java),
+            amount = getBigDecimal("amount"),
+            currency = getString("currency"),
+            state = getString("state"),
+            journalEntryId = getObject("journal_entry_id", UUID::class.java),
+            idempotencyKey = getString("idempotency_key"),
+            requestFingerprint = getString("request_fingerprint"),
+            createdAt = getObject("created_at", OffsetDateTime::class.java),
+            completedAt = getObject("completed_at", OffsetDateTime::class.java),
         )
 }

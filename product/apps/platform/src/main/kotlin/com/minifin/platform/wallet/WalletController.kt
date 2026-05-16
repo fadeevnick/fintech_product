@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
 private const val SESSION_COOKIE = "MFP_SESSION"
@@ -47,6 +48,17 @@ class WalletController(
         val user = identityService.currentUser(sessionToken)
         val withdrawal = walletService.createWithdrawal(user, request)
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse(data = withdrawal))
+    }
+
+    @PostMapping("/api/v1/transfers")
+    fun createInternalTransfer(
+        @CookieValue(name = SESSION_COOKIE, required = false) sessionToken: String?,
+        @RequestHeader(name = "Idempotency-Key", required = false) idempotencyKey: String?,
+        @RequestBody request: InternalTransferCreate,
+    ): ResponseEntity<ApiResponse<InternalTransferResponse>> {
+        val user = identityService.currentUser(sessionToken)
+        val transfer = walletService.createInternalTransfer(user, request, idempotencyKey)
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse(data = transfer))
     }
 
     @GetMapping("/api/v1/wallet")

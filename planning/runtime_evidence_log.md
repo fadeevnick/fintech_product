@@ -795,7 +795,75 @@ Result tag notes:
 - `AUD-01` is passed for withdrawal hold / complete / reject and actor-control denial audit rows.
 - `AUD-03` is passed for backoffice manual withdrawals queue read producing synchronous read-audit row.
 - `LDG-05` / `LDG-99` remain passed after withdrawal flows.
-- `WLT-01`, `WLT-03`, `WLT-04` are not claimed; transfer, SoF and two-eyes workflows do not exist yet.
+- At this point in history, `WLT-01`, `WLT-03`, `WLT-04` were not claimed; transfer was implemented in the following slice.
 
 Next planned step:
-- Draft the next Phase 03 wallet/manual-operation slice, likely internal end-user transfer targeting `WLT-01`.
+- Completed by Phase 03 Slice 04 below.
+
+---
+
+## 2026-05-16 — Phase 03 Slice 04 Wallet Internal Transfer Runtime Verification
+
+Scope:
+- Phase 03 Slice 04 backend/runtime sub-scope.
+- End-user internal wallet transfer under EUR 10k with atomic sender debit / receiver credit.
+- Includes sufficient-funds guard, sender/receiver actor-control block and optional `Idempotency-Key` duplicate protection.
+- No Source of Funds, two-eyes, AML rules, transfer reversal or frontend implementation.
+
+Build/runtime evidence:
+- `docker compose -f deploy/docker-compose.yml build platform` passed.
+- `docker compose -f deploy/docker-compose.yml up -d platform` passed.
+- `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+
+New transfer script evidence:
+- `product/scripts/runtime/reg_phase03_wallet_transfer_happy_path.sh`:
+  - `WLT-01` — pass.
+  - `AUD-01` — pass for transfer success audit row.
+  - Concrete observations:
+    - Sender wallet funded with `40.0000`.
+    - `POST /api/v1/transfers` returned state `COMPLETED`, amount `15.0000` and `journalEntryId`.
+    - Transfer journal had two balanced postings: DEBIT `WALLET_USER:<senderId>`, CREDIT `WALLET_USER:<receiverId>`.
+    - Sender balance became `25.0000`; receiver balance became `15.0000`.
+    - Sender and receiver `GET /api/v1/wallet` responses both included the transfer.
+- `product/scripts/runtime/reg_phase03_wallet_transfer_insufficient_funds.sh`:
+  - Insufficient-funds guard — pass.
+  - Concrete observations:
+    - Unfunded sender transfer for `10.0000` returned HTTP 409 with `insufficient_funds`.
+    - No `wallet.internal_transfers` row and no transfer journal were persisted for the probing sender.
+- `product/scripts/runtime/reg_phase03_wallet_transfer_actor_control_block.sh`:
+  - `WLT-02` — pass for sender and receiver write blocks.
+  - Sub-branches:
+    - sender + `FROZEN`: `POST /api/v1/transfers` returned HTTP 403 `actor_control_blocked`; zero transfer rows persisted.
+    - sender + `BLOCKED`: same observations as sender `FROZEN`.
+    - receiver + `FROZEN`: `POST /api/v1/transfers` returned HTTP 403 `actor_control_blocked`; zero transfer rows persisted.
+    - receiver + `BLOCKED`: same observations as receiver `FROZEN`.
+- `product/scripts/runtime/reg_phase03_wallet_transfer_idempotency.sh`:
+  - Idempotency guard — pass.
+  - Concrete observations:
+    - First request with `Idempotency-Key` returned a completed transfer and journal.
+    - Replaying the same sender/key/body returned the same transfer id and journal id.
+    - Reusing the same sender/key with different amount returned HTTP 409 `transfer_idempotency_conflict`.
+    - DB cross-check found exactly one `wallet.internal_transfers` row and exactly one `WALLET_INTERNAL_TRANSFER` journal for the key.
+
+Regression evidence:
+- `product/scripts/runtime/reg_phase03_ledger_reconciliation.sh` — `LDG-05` pass (`LDG-99` foundation regression).
+
+Final Phase 03 Slice 04 script output:
+
+```text
+WLT internal transfer happy path pass
+WLT internal transfer insufficient funds pass
+WLT internal transfer actor-control block pass
+WLT internal transfer idempotency pass
+LDG-05 ledger reconciliation pass
+```
+
+Result tag notes:
+- `WLT-01` is passed for atomic internal transfer debit/credit.
+- `WLT-02` is extended to transfer sender and receiver blocks.
+- `AUD-01` is passed for transfer success and actor-control denial audit rows.
+- `LDG-05` / `LDG-99` remain passed after transfer flows.
+- `WLT-03`, `WLT-04` are not claimed; SoF and two-eyes workflows do not exist yet.
+
+Next planned step:
+- Review the parallel high-value controls planning branch, then decide whether to continue Phase 03 placeholders or move to the next approved implementation slice.

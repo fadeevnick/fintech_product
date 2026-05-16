@@ -18,6 +18,7 @@ Implemented runtime behavior so far:
 - Phase 03 Slice 01 ledger foundation backend/runtime sub-scope in `platform`: ledger accounts, journal entries, postings, balanced journal SQL function, append-only ledger protection, derived balances and reconciliation proof.
 - Phase 03 Slice 02 wallet account + manual deposit backend/runtime sub-scope in `platform`: `wallet.wallet_accounts`, `wallet.deposit_requests` (under EUR 10k), end-user `POST /api/v1/deposits` and `GET /api/v1/wallet`, backoffice `GET/POST /api/v1/backoffice/manual-ops/deposits[/{id}/decision]`, balanced approve through `ledger.post_journal(...)`, actor-control wallet-write block (`FROZEN` ∪ `BLOCKED`).
 - Phase 03 Slice 03 wallet manual withdraw backend/runtime sub-scope in `platform`: `wallet.withdraw_requests` (under EUR 10k), end-user `POST /api/v1/withdrawals`, backoffice `GET/POST /api/v1/backoffice/manual-ops/withdrawals[/{id}/decision]`, ledger hold/final-debit/release postings, insufficient-funds guard and actor-control wallet-write block.
+- Phase 03 Slice 04 wallet internal transfer backend/runtime sub-scope in `platform`: `wallet.internal_transfers` (under EUR 10k), end-user `POST /api/v1/transfers`, sender debit / receiver credit through `ledger.post_journal(...)`, sufficient-funds guard, `Idempotency-Key` duplicate protection and actor-control wallet-write block for sender and receiver.
 
 ## Local Commands
 
@@ -79,4 +80,8 @@ scripts/runtime/reg_phase03_wallet_withdraw_reject_releases_hold.sh
 scripts/runtime/reg_phase03_wallet_withdraw_insufficient_funds.sh
 scripts/runtime/reg_phase03_wallet_withdraw_actor_control_block.sh
 scripts/runtime/reg_phase03_wallet_withdraw_double_decision.sh
+scripts/runtime/reg_phase03_wallet_transfer_happy_path.sh
+scripts/runtime/reg_phase03_wallet_transfer_insufficient_funds.sh
+scripts/runtime/reg_phase03_wallet_transfer_actor_control_block.sh
+scripts/runtime/reg_phase03_wallet_transfer_idempotency.sh
 ```
