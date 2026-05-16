@@ -1,10 +1,10 @@
 # Phase 03 Slice 01 — Ledger Foundation — Planning Note
 
-Status: **DRAFT v0.1**.
+Status: **EXECUTED v0.2**.
 
 This document fixes the first implementation slice inside `Phase 03 — Ledger and Wallet Manual Operations`.
 
-It is a pre-code scope contract. It is not implementation status and not runtime evidence.
+It started as a pre-code scope contract. Runtime evidence is recorded separately in `planning/runtime_evidence_log.md`.
 
 ---
 
@@ -276,32 +276,32 @@ Evidence must be appended to:
 planning/runtime_evidence_log.md
 ```
 
-## 12. Open Questions
+## 12. Resolution Notes
 
 1. **Stored procedure as only write path**
 
-   Recommendation: use a SQL function as the only supported app write path for journal/posting insertion and keep direct table writes out of Kotlin code.
+   Resolution: accepted. Kotlin application code posts journals through `ledger.post_journal(...)`; direct Kotlin inserts into `ledger.journal_entries` and `ledger.postings` were not added.
 
-   Reason: this follows the approved SQL-first persistence ADR and gives the DB a hard invariant boundary.
+   Note: DB append-only triggers protect update/delete. Direct insert bypass prevention can be tightened later with role separation and `SECURITY DEFINER` if needed.
 
 2. **Runtime proof endpoints**
 
-   Recommendation: expose narrow `/internal/ledger/runtime/*` endpoints only for local proof scripts until real internal service-token APIs are introduced.
+   Resolution: accepted. Added narrow `/internal/ledger/runtime/*` endpoints only for local proof scripts until real internal service-token APIs are introduced.
 
-   Reason: service-token auth for issuer/acquirer belongs to later slices. The ledger primitive still needs runtime evidence now.
+   Note: these are not public money movement APIs.
 
 3. **Account seed strategy**
 
-   Recommendation: create deterministic runtime seed accounts in scripts through an idempotent endpoint/function, not static migration data.
+   Resolution: accepted. Runtime scripts create isolated accounts per run through the internal runtime endpoint.
 
-   Reason: scripts can create isolated accounts per run and avoid test data coupling.
+   Note: no static ledger account seed data was added for wallet/payment workflows.
 
 4. **Result tags**
 
-   Recommendation: mark only `LDG-01`, `LDG-04` and `LDG-05` in this slice.
+   Resolution: accepted. This slice marks only `LDG-01`, `LDG-04` and `LDG-05`.
 
-   Reason: deposit/withdraw/transfer checks require wallet workflows that are explicitly out of scope.
+   Note: balanced posting evidence is recorded as ledger foundation evidence only; `LDG-02` remains unclaimed.
 
 ## 13. Next Planned Step
 
-Owner reviews this draft and approves or changes the open questions. Only after approval should product code for Phase 03 Slice 01 start.
+Draft the next Phase 03 wallet/manual-operation slice before writing more product code.

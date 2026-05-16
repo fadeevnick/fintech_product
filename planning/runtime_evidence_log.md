@@ -463,3 +463,100 @@ Result tag notes:
 
 Next planned step:
 - Draft the next non-frontend implementation slice.
+
+---
+
+## 2026-05-16 — Phase 03 Slice 01 Ledger Foundation Runtime Verification
+
+Scope:
+- Platform double-entry ledger foundation.
+- Ledger accounts, journal entries and postings.
+- Stored-procedure-only supported journal insertion path from application code.
+- Append-only protection for journal entries and postings.
+- Balance derivation and reconciliation proof.
+- No wallet, deposit, withdrawal, transfer, card/payment hold, merchant settlement or frontend implementation was added.
+
+Preconditions:
+- Phase 01 local compose stack was already running.
+- Docker/runtime commands run with Codex escalation where needed because normal sandboxed scripts cannot access the local Docker daemon or localhost runtime consistently.
+- `planning/implementation-slices/phase_03_slice_01_ledger_foundation_planning.md` was approved by owner with `го`.
+
+Build evidence:
+- `docker compose -f deploy/docker-compose.yml build platform` passed.
+- `docker compose -f deploy/docker-compose.yml up -d platform` passed.
+- Platform startup applied `V5__ledger_foundation.sql` through Flyway.
+- `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+
+Implementation evidence:
+- Added `ledger.accounts`.
+- Added `ledger.journal_entries`.
+- Added `ledger.postings`.
+- Added append-only DB triggers rejecting update/delete on ledger journal/posting tables.
+- Added SQL function `ledger.post_journal(...)` enforcing at least two postings, positive amounts, single currency, existing same-currency accounts and debit/credit equality.
+- Added `ledger.account_balances` view deriving balances from postings.
+- Added narrow local runtime proof endpoints:
+  - `POST /internal/ledger/runtime/accounts`
+  - `POST /internal/ledger/runtime/journals`
+  - `GET /internal/ledger/runtime/accounts/{accountId}/balance`
+  - `GET /internal/ledger/runtime/reconciliation`
+
+Phase 03 slice script evidence:
+- `product/scripts/runtime/reg_phase03_ledger_unbalanced_rejection.sh`:
+  - `LDG-01` — pass.
+  - Unbalanced journal was rejected with `ledger_journal_unbalanced`.
+  - No journal row persisted for the rejected reference id.
+- `product/scripts/runtime/reg_phase03_ledger_balanced_posting.sh`:
+  - ledger foundation balanced posting — pass.
+  - Balanced journal persisted atomically with two postings.
+  - Derived balances returned `10.0000` for both normal-side test accounts.
+  - This is foundation evidence only and does not claim `LDG-02`.
+- `product/scripts/runtime/reg_phase03_ledger_append_only.sh`:
+  - `LDG-04` — pass.
+  - Direct journal update and posting delete attempts were rejected with `ledger tables are append-only`.
+- `product/scripts/runtime/reg_phase03_ledger_reconciliation.sh`:
+  - `LDG-05` — pass.
+  - Runtime reconciliation returned balanced journals.
+  - DB cross-check found zero imbalanced journals.
+
+Regression evidence:
+- `product/scripts/runtime/reg_phase01_runtime_health.sh`:
+  - `RUN-01` — pass.
+- `product/scripts/runtime/reg_phase02_backoffice_oidc.sh`:
+  - `AUTH-03` — pass.
+- `product/scripts/runtime/reg_phase02_read_audit_probe.sh`:
+  - `AUD-03` — partial/foundation still passes.
+  - `AUD-99` — partial/foundation still passes.
+- `product/scripts/runtime/reg_phase02_actor_control_enduser.sh`:
+  - actor-control precursor — pass.
+- `product/scripts/runtime/reg_phase02_auth_audit.sh`:
+  - `AUD-01` — pass.
+  - `AUD-02` — pass.
+
+Final Phase 03 script output:
+
+```text
+LDG-01 unbalanced journal rejection pass
+LDG foundation balanced posting and derived balances pass
+LDG-04 ledger append-only protection pass
+LDG-05 ledger reconciliation pass
+RUN-01 network health pass
+RUN-01 issuer health pass
+RUN-01 acquirer health pass
+RUN-01 platform health pass
+RUN-01 vault health pass
+AUTH-03 backoffice OIDC role mapping pass
+AUD-03 read-audit primitive partial
+AUD-99 read-audit append-only foundation partial
+ACT-CTRL end-user blocked write-guard probe pass
+AUD-01 auth audit events pass
+AUD-02 audit append-only protection pass
+```
+
+Result tag notes:
+- `LDG-01` is passed.
+- `LDG-04` is passed.
+- `LDG-05` is passed.
+- `LDG-02`, `LDG-03`, `WLT-01` and `WLT-02` are not claimed; real wallet/deposit/withdraw/transfer workflows do not exist yet.
+
+Next planned step:
+- Draft the next Phase 03 wallet/manual-operation slice, likely wallet account creation and manual deposit request lifecycle, while product frontend implementation remains gated by accepted standalone HTML prototypes.

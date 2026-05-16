@@ -249,21 +249,22 @@ Next planned step:
 
 ## Phase 03 Slice 01 — Ledger Foundation
 
-Status: **PLANNING DRAFT — not approved, no product code started**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — frontend not in scope**.
 
 Planning contract:
-- `planning/implementation-slices/phase_03_slice_01_ledger_foundation_planning.md` — DRAFT v0.1.
+- `planning/implementation-slices/phase_03_slice_01_ledger_foundation_planning.md` — backend/runtime sub-scope executed v0.2; frontend not in scope.
 
-Proposed scope:
-- Platform double-entry ledger foundation;
-- ledger accounts, journal entries and postings;
-- stored-procedure-only balanced journal insertion;
-- append-only protections for ledger tables;
-- balance derivation from postings;
-- retained reconciliation/runtime scripts.
+Implemented backend/runtime scope:
+- Platform DB migration `V5__ledger_foundation.sql` for ledger accounts, journal entries, postings, append-only triggers, `ledger.post_journal(...)` and derived balance view;
+- narrow internal runtime proof endpoints for account creation, balanced journal posting, account balance lookup and reconciliation;
+- Kotlin ledger repository/service/controller in `platform`;
+- retained runtime scripts:
+  - `product/scripts/runtime/reg_phase03_ledger_unbalanced_rejection.sh`
+  - `product/scripts/runtime/reg_phase03_ledger_balanced_posting.sh`
+  - `product/scripts/runtime/reg_phase03_ledger_append_only.sh`
+  - `product/scripts/runtime/reg_phase03_ledger_reconciliation.sh`
 
 Explicitly not started:
-- product code for this slice;
 - wallet account creation;
 - manual deposit/withdraw workflows;
 - internal transfers;
@@ -271,5 +272,13 @@ Explicitly not started:
 - merchant settlement;
 - frontend implementation.
 
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-16 — Phase 03 Slice 01 Ledger Foundation Runtime Verification`.
+- `LDG-01` — pass for unbalanced journal rejection and no persistence.
+- Ledger foundation balanced posting — pass for atomic two-posting journal and derived balances; `LDG-02` is not claimed.
+- `LDG-04` — pass for journal/posting append-only protection.
+- `LDG-05` — pass for reconciliation over persisted ledger state.
+- `RUN-01`, `AUTH-03`, `AUD-01`, `AUD-02`, `AUD-03`, `AUD-99` and actor-control regressions passed.
+
 Next planned step:
-- Review/approve the Slice 01 draft and open questions before writing product code.
+- Draft the next Phase 03 wallet/manual-operation slice before writing more product code.

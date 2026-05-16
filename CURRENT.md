@@ -1,12 +1,12 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-15.
+Last updated: 2026-05-16.
 
 ---
 
 ## Focus
 
-UI prototype baseline is in progress in parallel with eligible non-frontend Phase 02 work.
+UI prototype baseline is in progress in parallel with eligible non-frontend Phase 03 work.
 
 ## Status
 
@@ -21,21 +21,25 @@ Baseline approved до 06 включительно:
 - `planning/runtime_checklists.md` — **APPROVED v0.1**.
 - `planning/implementation-slices/phase_01_slice_01_product_skeleton_planning.md` — **APPROVED v0.1**.
 - `planning/implementation-slices/phase_02_slice_01_identity_foundation_planning.md` — **APPROVED v0.1**.
-- `planning/implementation-slices/phase_02_slice_02_merchant_identity_planning.md` — **DRAFT v0.1**.
+- `planning/implementation-slices/phase_02_slice_02_merchant_identity_planning.md` — backend/runtime sub-scope executed v0.2.
+- `planning/implementation-slices/phase_02_slice_03_backoffice_oidc_rbac_planning.md` — backend/runtime sub-scope executed v0.2.
+- `planning/implementation-slices/phase_02_slice_04_read_audit_account_controls_planning.md` — backend/runtime sub-scope executed v0.2.
+- `planning/implementation-slices/phase_03_slice_01_ledger_foundation_planning.md` — backend/runtime sub-scope executed v0.2.
 
-Completed workstream — Phase 01 Slice 01:
-- `product/` skeleton created;
-- backend/frontend/runtime skeleton implemented only;
-- Docker build/runtime verification completed;
-- `RUN-01`..`RUN-07` passed;
-- `RUN-08` recorded as `pass-indirect`;
-- `UI-01` passed;
+Completed workstream — latest:
+- Phase 03 Slice 01 ledger foundation implemented in `platform`;
+- `LDG-01`, `LDG-04` and `LDG-05` passed;
+- balanced posting and derived balance foundation proof passed, but `LDG-02` is not claimed;
+- regression subset passed: `RUN-01`, `AUTH-03`, `AUD-01`, `AUD-02`, `AUD-03`, `AUD-99`, actor-control precursor;
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
 
 ## Next
 
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`.**
+
+Next planned product step:
+- Draft the next Phase 03 wallet/manual-operation slice before writing more product code.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.
@@ -106,60 +110,23 @@ First slice planning note approved:
 8. `planning/06_implementation_guide.md` — approved implementation guide.
 9. `planning/design-details/` — approved implementation-near planning pack.
 10. `planning/runtime_checklists.md` — approved runtime check registry.
-11. `planning/implementation-slices/phase_01_slice_01_product_skeleton_planning.md` — current first slice planning note.
+11. `planning/implementation_status.md` and `planning/runtime_evidence_log.md` — factual implementation/evidence state.
+12. Latest slice note:
+    `planning/implementation-slices/phase_03_slice_01_ledger_foundation_planning.md`.
 
-После прочтения — review Phase 02 Slice 02 draft. Не писать следующий identity/RBAC code до approval нового slice planning note.
+После прочтения — draft the next Phase 03 slice before writing more product code.
 
 ## Do-not-do-yet rules
 
 Запрещено:
 - редактировать approved baseline docs без отдельной причины и owner approval;
-- добавлять доменные endpoint'ы или hardcoded business success paths в Phase 01 Slice 01;
-- реализовывать auth/RBAC/ledger/wallet/cards/payments/vendor workflows в этом slice.
+- добавлять wallet/payment/card/vendor workflows без отдельного approved slice;
+- реализовывать frontend workflow без accepted standalone HTML prototype for that screen/workflow.
 
 Разрешено сейчас:
-- уточнять и approve/revise Phase 02 Slice 02 planning note;
-- обсуждать/уточнять merchant identity/backoffice OIDC/RBAC split;
-- не писать следующий product code до approval нового slice planning note.
-
-Current Phase 02 draft:
-- `planning/implementation-slices/phase_02_slice_01_identity_foundation_planning.md` — APPROVED v0.1.
-- Scope: end-user register/email verify/login, opaque session cookie, `GET /api/v1/enduser/me`, auth audit writes, global email uniqueness foundation, minimal `UEW-UI-01` prototype checkpoint.
-- Explicitly out: merchant login, backoffice OIDC, full RBAC, wallet/ledger/payment/KYC behavior.
-
-Completed Phase 02 Slice 01:
-- Platform V2 identity/audit migration added.
-- End-user registration, email verification, login, logout and `me` endpoint implemented.
-- BCrypt password hashing and opaque `MFP_SESSION` cookie implemented.
-- Audit append-only trigger implemented.
-- `UEW-UI-01` minimal prototype checkpoint added to `spa-enduser`.
-- Runtime scripts passed:
-  - `AUTH-01` pass.
-  - `AUTH-04` partial.
-  - `AUTH-05` partial.
-  - `AUD-01` pass.
-  - `AUD-02` pass.
-
-## Current Phase 01 Slice 01 Files
-
-Created:
-- `product/settings.gradle.kts`, `product/build.gradle.kts`, `product/gradle/wrapper/gradle-wrapper.properties`.
-- Five Spring Boot app shells under `product/apps/{platform,acquirer,network,issuer,vault}`.
-- Shared backend libs under `product/backend/libs/*`.
-- Three React/Vite SPA shells under `product/apps/spa-*`.
-- Local runtime config under `product/deploy/*`.
-- Retained smoke scripts under `product/scripts/runtime/reg_phase01_*.sh`.
-- `planning/implementation_status.md`.
-- `planning/runtime_evidence_log.md`.
-
-Verified:
-- `docker compose -f deploy/docker-compose.yml config --quiet` passed.
-- backend Docker images build.
-- SPA Docker images build.
-- `docker compose -f deploy/docker-compose.yml up -d` starts the full local stack.
-- `RUN-01`..`RUN-07` pass.
-- `RUN-08` passes as `pass-indirect`.
-- `UI-01` passes.
+- draft/review the next Phase 03 slice;
+- continue backend/domain/runtime work that is not blocked by missing UI prototypes;
+- continue standalone UI prototype intake in parallel.
 
 ## Open discussion thread
 
@@ -209,50 +176,12 @@ docker compose -f deploy/docker-compose.yml ps
 docker compose -f deploy/docker-compose.yml down
 ```
 
-Current Phase 02 Slice 02 draft:
-- `planning/implementation-slices/phase_02_slice_02_merchant_identity_planning.md` — DRAFT v0.1.
-- Proposed scope: merchant registration/login, first merchant employee as `merchant_admin`, merchant-scoped session, cross-pool email uniqueness, merchant auth audit writes, minimal `MDB-UI-01` product implementation checkpoint based on accepted standalone HTML prototype.
-- Open questions: merchant entity depth, first employee role, merchant email verification gate, `AUTH-05` result tag.
-- UI/UX prompt is temporary chat handoff and must not be committed.
-- Standalone prototype artifacts received:
-  - `prototypes/ui/01_app_shell_cross_surface.html`
-  - `prototypes/ui/02_merchant_auth.html`
-  - `prototypes/ui/03_enduser_auth.html`
-  - `prototypes/ui/04_backoffice_oidc_login.html`
-  - `prototypes/ui/05_backoffice_work_queue_home.html`
-  - `prototypes/ui/06_backoffice_manual_deposits.html`
-- Phase 02 Slice 02 backend/runtime sub-scope is implemented and verified:
-  - Platform migration `V3__merchant_identity_foundation.sql`.
-  - Merchant register/email verify/login/logout/me.
-  - `merchant_admin` first employee and `kyb_status = NOT_STARTED`.
-  - Cross-pool end-user vs merchant employee email uniqueness.
-  - End-user/merchant wrong-role denial.
-  - Merchant auth audit rows.
-  - Runtime evidence recorded in `planning/runtime_evidence_log.md`.
-- `spa-merchant` frontend implementation checkpoint for `MDB-UI-01` is not started.
-- Backend/domain/runtime work may proceed even if unrelated UI prototypes are still being prepared.
-- Frontend implementation for a screen/workflow requires its accepted standalone HTML prototype first.
-
-Current Phase 02 Slice 03:
-- `planning/implementation-slices/phase_02_slice_03_backoffice_oidc_rbac_planning.md` — backend/runtime sub-scope executed v0.2; frontend checkpoint pending.
-- Implemented: backoffice OIDC token validation against local Keycloak, Keycloak role mapping to Platform RBAC roles, `GET /api/v1/backoffice/me`, all-pool wrong-role denial, and backoffice auth audit evidence.
-- No backoffice SPA/frontend work in this slice.
+Current Phase 03 Slice 01:
+- `planning/implementation-slices/phase_03_slice_01_ledger_foundation_planning.md` — backend/runtime sub-scope executed v0.2.
+- Implemented: Platform ledger accounts, journal entries, postings, `ledger.post_journal(...)`, append-only protections, derived balances and reconciliation proof.
 - Runtime evidence recorded in `planning/runtime_evidence_log.md`.
+- `LDG-01`, `LDG-04` and `LDG-05` are passed.
+- `LDG-02`, `LDG-03`, `WLT-01` and `WLT-02` are not claimed because wallet/deposit/withdraw/transfer workflows do not exist yet.
+- No frontend work in this slice.
 
-Current Phase 02 Slice 04:
-- `planning/implementation-slices/phase_02_slice_04_read_audit_account_controls_planning.md` — backend/runtime sub-scope executed v0.2; frontend not in scope.
-- Implemented: append-only `audit.read_audit_log`, generic end-user/merchant actor controls, backoffice read-audit probe, backoffice actor-control mutation endpoint, and end-user/merchant write-guard probes.
-- Runtime evidence recorded in `planning/runtime_evidence_log.md`.
-- `AUD-03` and `AUD-99` are partial/foundation; `WLT-02` is not claimed because wallet writes do not exist yet.
-
-Processed UI prototype artifacts include:
-- `prototypes/ui/05_backoffice_work_queue_home.html`
-- `prototypes/ui/06_backoffice_manual_deposits.html`
-
-Current Phase 03 Slice 01 draft:
-- `planning/implementation-slices/phase_03_slice_01_ledger_foundation_planning.md` — DRAFT v0.1.
-- Proposed scope: Platform double-entry ledger foundation, accounts, journal entries, postings, stored-procedure-only balanced journal insertion, append-only protections, balance derivation and retained reconciliation/runtime checks.
-- No wallet deposit/withdraw/transfer, payment/card flows or frontend work in this slice.
-- Open questions: stored procedure as only write path, runtime proof endpoints, account seed strategy, result tags.
-
-Next planned step: review/approve Phase 03 Slice 01 planning note, then implement its non-frontend backend/runtime scope if accepted.
+Next planned step: draft the next Phase 03 wallet/manual-operation slice before writing more product code.

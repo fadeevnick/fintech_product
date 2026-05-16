@@ -15,6 +15,7 @@ Implemented runtime behavior so far:
 - Phase 02 Slice 02 merchant identity backend/runtime sub-scope in `platform`: merchant register/email verify/login/logout/me, first employee as `merchant_admin`, cross-pool email uniqueness and end-user/merchant wrong-role denial.
 - Phase 02 Slice 03 backoffice OIDC/RBAC backend/runtime sub-scope in `platform`: Keycloak bearer token validation, approved backoffice role mapping, `GET /api/v1/backoffice/me` and all-pool protected endpoint denial.
 - Phase 02 Slice 04 read-audit/account controls backend/runtime sub-scope in `platform`: append-only read-audit log, end-user/merchant actor controls and write-guard probes.
+- Phase 03 Slice 01 ledger foundation backend/runtime sub-scope in `platform`: ledger accounts, journal entries, postings, balanced journal SQL function, append-only ledger protection, derived balances and reconciliation proof.
 
 ## Local Commands
 
@@ -61,4 +62,8 @@ scripts/runtime/reg_phase02_backoffice_auth_audit.sh
 scripts/runtime/reg_phase02_read_audit_probe.sh
 scripts/runtime/reg_phase02_actor_control_enduser.sh
 scripts/runtime/reg_phase02_actor_control_merchant.sh
+scripts/runtime/reg_phase03_ledger_unbalanced_rejection.sh
+scripts/runtime/reg_phase03_ledger_balanced_posting.sh
+scripts/runtime/reg_phase03_ledger_append_only.sh
+scripts/runtime/reg_phase03_ledger_reconciliation.sh
 ```
