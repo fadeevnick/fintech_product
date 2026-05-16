@@ -42,7 +42,7 @@ class WalletRepository(
             userId,
         ).firstOrNull()
 
-    fun insertWallet(
+    fun upsertWallet(
         id: UUID,
         userId: UUID,
         ledgerAccountId: UUID,
@@ -51,12 +51,13 @@ class WalletRepository(
             """
             insert into wallet.wallet_accounts (id, user_id, ledger_account_id)
             values (?, ?, ?)
+            on conflict (user_id) do nothing
             """.trimIndent(),
             id,
             userId,
             ledgerAccountId,
         )
-        return findWalletByUserId(userId) ?: error("Wallet disappeared after insert")
+        return findWalletByUserId(userId) ?: error("Wallet disappeared after upsert")
     }
 
     fun insertDepositRequest(

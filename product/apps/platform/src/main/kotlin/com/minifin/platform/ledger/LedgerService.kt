@@ -142,7 +142,9 @@ class LedgerService(
     }
 
     private fun validateAmount(value: String): BigDecimal {
-        val amount = runCatching { BigDecimal(value.trim()) }
+        val amount = runCatching {
+            BigDecimal(value.trim()).setScale(4, RoundingMode.UNNECESSARY)
+        }
             .getOrElse {
                 throw LedgerException(
                     code = "invalid_amount",
@@ -150,7 +152,6 @@ class LedgerService(
                     status = HttpStatus.BAD_REQUEST,
                 )
             }
-            .setScale(4, RoundingMode.UNNECESSARY)
         if (amount <= BigDecimal.ZERO) {
             throw LedgerException(
                 code = "invalid_amount",

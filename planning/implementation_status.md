@@ -144,6 +144,7 @@ Created:
 - `prototypes/ui/06_backoffice_manual_deposits.html` — standalone `BOF-UI-03` backoffice manual deposits HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 - `prototypes/ui/07_backoffice_manual_withdrawals.html` — standalone `BOF-UI-04` backoffice manual withdrawals HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 - `prototypes/ui/08_backoffice_kyc_queue.html` — standalone `BOF-UI-05` backoffice KYC queue HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
+- `prototypes/ui/09_backoffice_aml_alerts.html` — standalone `BOF-UI-06` backoffice AML alerts HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-16.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;
@@ -309,6 +310,11 @@ Implemented backend/runtime scope:
   - `product/scripts/runtime/reg_phase03_wallet_deposit_reject.sh`
   - `product/scripts/runtime/reg_phase03_wallet_deposit_actor_control_block.sh`
   - `product/scripts/runtime/reg_phase03_wallet_deposit_double_decision.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_deposit_amount_validation.sh`
+  - `product/scripts/runtime/reg_phase03_wallet_provisioning_idempotency.sh`
+- Hardening follow-up:
+  - amount validation returns structured HTTP 400 errors for unsupported scale, non-numeric, zero and negative values instead of leaking internal exceptions;
+  - lazy wallet provisioning is idempotent for repeated/parallel first-time `GET /api/v1/wallet` calls.
 
 Explicitly not started:
 - manual withdraw workflow (`LDG-03`);
@@ -328,6 +334,7 @@ Runtime evidence:
 - `AUD-03` — pass for backoffice manual deposits queue read producing synchronous read-audit row.
 - `LDG-99` foundation — pass via `reg_phase03_ledger_reconciliation.sh` re-run after deposit cycle.
 - Phase 01/02/03 regression subset passed: `RUN-01`, `AUTH-03`, `AUD-01`, `AUD-02`, `AUD-03` (partial/foundation), `AUD-99` (partial/foundation), actor-control precursor, `LDG-01`, `LDG-04`, `LDG-05`.
+- Hardening verification passed: `reg_phase03_wallet_deposit_amount_validation.sh`, `reg_phase03_wallet_provisioning_idempotency.sh`, plus wallet happy-path, double-decision and ledger reconciliation regressions.
 
 Result tag notes:
 - `LDG-03`, `WLT-01`, `WLT-03`, `WLT-04` are not claimed; withdraw, transfer, SoF and two-eyes workflows do not exist yet.

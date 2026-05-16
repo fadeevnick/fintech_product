@@ -71,4 +71,6 @@ scripts/runtime/reg_phase03_wallet_deposit_happy_path.sh
 scripts/runtime/reg_phase03_wallet_deposit_reject.sh
 scripts/runtime/reg_phase03_wallet_deposit_actor_control_block.sh
 scripts/runtime/reg_phase03_wallet_deposit_double_decision.sh
+scripts/runtime/reg_phase03_wallet_deposit_amount_validation.sh
+scripts/runtime/reg_phase03_wallet_provisioning_idempotency.sh
 ```

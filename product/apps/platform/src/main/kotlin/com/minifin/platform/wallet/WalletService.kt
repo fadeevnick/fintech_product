@@ -79,7 +79,7 @@ class WalletService(
                 ownerId = user.id.toString(),
             ),
         )
-        return walletRepository.insertWallet(
+        return walletRepository.upsertWallet(
             id = UUID.randomUUID(),
             userId = user.id,
             ledgerAccountId = UUID.fromString(ledgerAccount.accountId),
@@ -87,7 +87,9 @@ class WalletService(
     }
 
     private fun validateAmount(value: String): BigDecimal {
-        val amount = runCatching { BigDecimal(value.trim()) }
+        val amount = runCatching {
+            BigDecimal(value.trim()).setScale(4, RoundingMode.UNNECESSARY)
+        }
             .getOrElse {
                 throw WalletException(
                     code = "invalid_amount",
@@ -96,7 +98,6 @@ class WalletService(
                     field = "amount",
                 )
             }
-            .setScale(4, RoundingMode.UNNECESSARY)
         if (amount <= BigDecimal.ZERO) {
             throw WalletException(
                 code = "invalid_amount",

@@ -664,3 +664,53 @@ Result tag notes:
 
 Next planned step:
 - Draft the next Phase 03 wallet/manual-operation slice (likely manual withdraw with hold/final-debit flow), continuing to gate frontend implementation by accepted standalone HTML prototypes.
+
+---
+
+## 2026-05-16 — Phase 03 Slice 02 Wallet Hardening Verification
+
+Scope:
+- Hardening follow-up for Phase 03 Slice 02.
+- No new product capability added.
+- Focused on structured money amount validation and idempotent lazy wallet provisioning.
+
+Build/runtime evidence:
+- `docker compose -f deploy/docker-compose.yml build platform` passed.
+- `docker compose -f deploy/docker-compose.yml up -d platform` passed.
+- `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+
+New hardening script evidence:
+- `product/scripts/runtime/reg_phase03_wallet_deposit_amount_validation.sh`:
+  - pass.
+  - `POST /api/v1/deposits` with `1.12345` returned HTTP 400 with `invalid_amount`, not an internal error.
+  - Non-numeric, zero and negative amounts returned HTTP 400 with `invalid_amount`.
+  - `10000.0000` returned HTTP 400 with `unsupported_high_value`.
+  - DB cross-check found zero `wallet.deposit_requests` rows for the probing user.
+- `product/scripts/runtime/reg_phase03_wallet_provisioning_idempotency.sh`:
+  - pass.
+  - Before the probe, the user had zero wallet rows and zero `WALLET_USER:<userId>` ledger rows.
+  - Eight parallel `GET /api/v1/wallet` calls all returned HTTP 200.
+  - DB cross-check found exactly one `wallet.wallet_accounts` row for the user and exactly one `ledger.accounts` row with code `WALLET_USER:<userId>`.
+  - Every response referenced the same ledger account id.
+
+Regression evidence:
+- `product/scripts/runtime/reg_phase03_wallet_deposit_happy_path.sh` — pass.
+- `product/scripts/runtime/reg_phase03_wallet_deposit_double_decision.sh` — pass.
+- `product/scripts/runtime/reg_phase03_ledger_reconciliation.sh` — `LDG-05` pass.
+
+Final hardening script output:
+
+```text
+WLT deposit amount validation pass
+WLT wallet provisioning idempotency pass
+WLT deposit happy path pass
+WLT deposit double decision pass
+LDG-05 ledger reconciliation pass
+```
+
+Result tag notes:
+- Existing `LDG-02`, `WLT-02`, `AUD-01`, `AUD-03` claims remain unchanged.
+- This entry records robustness evidence for invalid amount handling and lazy wallet provisioning idempotency.
+
+Next planned step:
+- Draft the next Phase 03 wallet/manual-operation slice, likely manual withdraw with hold/final-debit flow targeting `LDG-03`.
