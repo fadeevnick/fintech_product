@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Deposit Request — UEW-UI-04</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --inp:     #faf9f7;
+      --hover:   #f0efe9;
+
+      --sb:        #111114;
+      --sb-bdr:    #1e1e22;
+      --sb-t:      #c8c8d4;
+      --sb-muted:  #545460;
+      --sb-hover:  #191920;
+      --sb-active: #1e1e28;
+
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+
+      --t1: #1c1c1f;
+      --t2: #575763;
+      --t3: #9898a6;
+      --t4: #d0d0da;
+
+      --cta:     #1c1c1f;
+      --cta-hov: #2e2e35;
+      --cta-t:   #ffffff;
+
+      --g:    #166534;  --g-bg: #f0fdf4;  --g-bd: #bbf7d0;
+      --am:   #854d0e;  --am-bg:#fffbeb;  --am-bd:#fde68a;
+      --rd:   #9b1c1c;  --rd-bg:#fef2f2;  --rd-bd:#fecaca;
+      --or:   #b45309;  --or-bg:#fff7ed;  --or-bd:#fed7aa;
+      --pu:   #5b21b6;  --pu-bg:#f5f3ff;  --pu-bd:#ddd6fe;
+
+      --sb-env-bg:  #1a1030;
+      --sb-env-t:   #b39cf0;
+      --sb-env-bd:  #362566;
+
+      --f-ui:   'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+
+      --r:    3px;
+      --r-lg: 5px;
+      --w-sb: 220px;
+      --w-tl: 248px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+
+    #root { height: 100vh; display: flex; overflow: hidden; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 15px 15px 13px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-name  { font-size: 14.5px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase;
+      letter-spacing: 0.1em; margin-top: 4px; }
+    .sb-nav   { flex: 1; padding: 10px 7px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 9px 5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 12px;
+      cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.35; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; opacity: 1; }
+    .nav-lock { margin-left: auto; display: flex; align-items: center; opacity: 0.6; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono);
+      color: var(--sb-muted); opacity: 0.8; }
+    .sb-footer { padding: 10px 14px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 10px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 4px; }
+    .env-dot   { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host  { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); }
+
+    /* MAIN */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .page-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 22px; border-bottom: 1px solid var(--bdr);
+      background: var(--surface); flex-shrink: 0; }
+    .page-bc   { font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .page-bc strong { color: var(--t1); font-weight: 500; }
+    .page-bc .sep   { color: var(--t3); }
+    .page-bc .mode  { font-family: var(--f-mono); font-size: 11.5px; color: var(--t2); }
+    .page-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .screen-id { font-size: 10px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge { font-size: 10px; font-family: var(--f-mono); color: var(--am);
+      background: var(--am-bg); border: 1px solid var(--am-bd);
+      padding: 2px 8px; border-radius: var(--r); display: flex; align-items: center; gap: 5px; }
+    .env-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--am); }
+    .user-chip { display: flex; align-items: center; gap: 7px; padding: 3px 9px 3px 3px;
+      border: 1px solid var(--bdr); border-radius: 20px; background: var(--surf2); }
+    .user-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--cta);
+      color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center;
+      justify-content: center; letter-spacing: 0.03em; flex-shrink: 0; }
+    .user-name { font-size: 11.5px; color: var(--t2); font-weight: 500; }
+
+    /* CONTENT */
+    .content-area { flex: 1; display: flex; overflow: hidden; }
+    .left-scroll  { flex: 1; overflow-y: auto; padding: 16px 20px;
+      background: var(--bg); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+    /* PANELS */
+    .panel     { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); flex-shrink: 0; }
+    .panel-title { font-size: 11.5px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 13px 16px; }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em;
+      font-family: var(--f-mono); border: 1px solid transparent; white-space: nowrap; }
+    .b-active    { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-done      { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-pending   { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-limited   { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-action    { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-locked    { background: var(--hover); color: var(--t2);  border-color: var(--bdr); }
+    .b-dev       { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-inreview  { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-cancelled { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-rejected  { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-completed { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-draft     { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-sof       { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+
+    /* KV */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--t3); min-width: 148px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center;
+      gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--r); font-size: 12.5px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover:not(:disabled) { background: var(--cta-hov); }
+    .btn-ghost   { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover:not(:disabled) { background: var(--hover); color: var(--t1); }
+    .btn-danger  { background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+    .btn-warn    { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+    .btn-warn:hover { background: #fef3c7; }
+    .btn-sm      { padding: 4px 10px; font-size: 11px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    /* ALERTS */
+    .alert { display: flex; gap: 10px; padding: 9px 12px 9px 13px; font-size: 12px;
+      line-height: 1.55; border-left-width: 3px; border-left-style: solid; border-radius: var(--r); }
+    .alert-icon { flex-shrink: 0; font-style: normal; font-size: 11px;
+      margin-top: 1px; font-weight: 600; }
+    .alert-warn  { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-red   { background: var(--rd-bg); border-left-color: var(--rd); color: #7f1d1d; }
+    .alert-info  { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-green { background: var(--g-bg);  border-left-color: var(--g); color: #14532d; }
+
+    /* TABLES */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t3); padding: 6px 10px; text-align: left;
+      border-bottom: 1px solid var(--bdr); background: var(--surf2); font-weight: 600; }
+    .data-table td { padding: 6px 10px; font-size: 12px; border-bottom: 1px solid var(--hover);
+      vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover td { background: var(--hover); cursor: pointer; }
+    .mono-cell { font-family: var(--f-mono); font-size: 11px; }
+
+    /* FORM */
+    .inp-label { font-size: 11px; color: var(--t2); margin-bottom: 4px; font-weight: 500; display: block; }
+    .inp-hint  { font-size: 10.5px; color: var(--t3); margin-top: 3px; }
+    .inp-err   { font-size: 10.5px; color: var(--rd); margin-top: 3px; }
+    .inp-field { width: 100%; padding: 7px 10px; border: 1px solid var(--bdr-mid);
+      border-radius: var(--r); font-size: 12.5px; color: var(--t1);
+      background: var(--inp); outline: none; font-family: var(--f-ui);
+      transition: border-color 0.12s; }
+    .inp-field:focus { border-color: var(--bdr-focus); }
+    .inp-field.err   { border-color: var(--rd); }
+    select.inp-field { cursor: pointer; }
+    .form-group  { display: flex; flex-direction: column; }
+    .inp-prefix-wrap { display: flex; align-items: stretch; }
+    .inp-prefix  { padding: 7px 10px; background: var(--surf2); border: 1px solid var(--bdr-mid);
+      border-right: none; border-radius: var(--r) 0 0 var(--r); font-size: 12px;
+      color: var(--t3); font-family: var(--f-mono); display: flex; align-items: center; flex-shrink: 0; }
+    .inp-prefix + .inp-field { border-radius: 0 var(--r) var(--r) 0; }
+    .form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    /* PROGRESS BAR */
+    .prog-wrap  { height: 5px; background: var(--hover); border-radius: 3px; overflow: hidden; margin-top: 5px; }
+    .prog-fill  { height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .prog-green { background: var(--g); }
+    .prog-amber { background: var(--am); }
+    .prog-red   { background: var(--rd); }
+
+    /* STATE PATH */
+    .state-path { display: flex; align-items: center; gap: 0; flex-wrap: wrap; padding: 10px 14px; overflow-x: auto; }
+    .sp-node { display: flex; align-items: center; gap: 0; }
+    .sp-pill { padding: 3px 9px; border-radius: 2px; font-size: 10px; font-family: var(--f-mono);
+      font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; border: 1px solid transparent; }
+    .sp-pill.done    { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .sp-pill.current { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd);
+      box-shadow: 0 0 0 2px rgba(133,77,14,0.15); }
+    .sp-pill.next    { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .sp-pill.future  { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .sp-pill.bad     { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .sp-arrow { font-size: 10px; color: var(--t4); margin: 0 4px; flex-shrink: 0; }
+
+    /* SOF UPLOAD */
+    .upload-zone { border: 1px dashed var(--bdr-mid); border-radius: var(--r); padding: 12px 14px;
+      background: var(--surf2); display: flex; align-items: center; gap: 12px; }
+    .upload-icon { width: 32px; height: 32px; border-radius: var(--r); background: var(--hover);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--t3); }
+    .upload-file-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+      background: var(--g-bg); border: 1px solid var(--g-bd); border-radius: var(--r);
+      margin-top: 8px; }
+    .upload-file-name { font-size: 11.5px; font-family: var(--f-mono); color: var(--g); flex: 1; }
+    .upload-file-status { font-size: 10px; color: var(--g); font-weight: 600; }
+
+    /* REVIEW SUMMARY */
+    .review-row { display: flex; align-items: baseline; justify-content: space-between;
+      padding: 5px 0; border-bottom: 1px solid var(--hover); font-size: 12px; gap: 8px; }
+    .review-row:last-child { border-bottom: none; }
+    .review-k { color: var(--t3); font-size: 11px; }
+    .review-v { font-weight: 500; color: var(--t1); text-align: right; }
+    .review-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+    .review-v.warn { color: var(--am); }
+    .review-v.good { color: var(--g); }
+
+    /* BANK INSTRUCTIONS */
+    .bank-row { display: flex; align-items: center; gap: 8px; padding: 7px 0;
+      border-bottom: 1px solid var(--hover); }
+    .bank-row:last-child { border-bottom: none; }
+    .bank-k   { font-size: 11px; color: var(--t3); min-width: 140px; flex-shrink: 0; }
+    .bank-v   { font-size: 12px; font-family: var(--f-mono); color: var(--t1); flex: 1; }
+    .copy-btn { padding: 2px 8px; font-size: 10px; font-family: var(--f-mono); background: var(--surf2);
+      border: 1px solid var(--bdr-mid); border-radius: var(--r); cursor: pointer; color: var(--t2);
+      transition: all 0.1s; white-space: nowrap; flex-shrink: 0; }
+    .copy-btn.copied { background: var(--g-bg); border-color: var(--g-bd); color: var(--g); }
+    .copy-btn:hover:not(.copied) { background: var(--hover); }
+
+    /* TIMELINE RAIL */
+    .tl-rail  { width: var(--w-tl); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .tl-hdr   { padding: 10px 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+      font-size: 9.5px; font-weight: 600; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.1em; }
+    .tl-body  { flex: 1; overflow-y: auto; padding: 10px 14px; }
+    .tl-evt   { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hover); }
+    .tl-evt:last-child { border-bottom: none; }
+    .tl-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .tl-dot.ok   { background: var(--g); }
+    .tl-dot.pend { background: var(--am); }
+    .tl-dot.bad  { background: var(--rd); }
+    .tl-dot.pu   { background: var(--pu); }
+    .tl-dot.neu  { background: var(--t4); }
+    .tl-line  { width: 1px; flex: 1; background: var(--bdr); margin: 4px 0; min-height: 12px; }
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-ts    { font-size: 9.5px; font-family: var(--f-mono); color: var(--t3); margin-bottom: 1px; }
+    .tl-name  { font-size: 11px; font-weight: 600; color: var(--t1); margin-bottom: 1px;
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .tl-actor { font-size: 10px; color: var(--t3); margin-bottom: 2px; }
+    .tl-desc  { font-size: 10.5px; color: var(--t2); line-height: 1.4; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,20,0.52);
+      display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); width: 520px; max-width: 100%; max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08); }
+    .modal-hdr { display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 13px 16px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; background: var(--surf2); }
+    .modal-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .modal-sub   { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .modal-close { width: 24px; height: 24px; border-radius: var(--r); background: transparent;
+      border: none; color: var(--t3); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: background 0.1s, color 0.1s; flex-shrink: 0; margin-top: 1px; }
+    .modal-close:hover { background: var(--hover); color: var(--t1); }
+    .modal-body  { flex: 1; overflow-y: auto; padding: 16px; display: flex;
+      flex-direction: column; gap: 12px; }
+    .modal-footer { padding: 12px 16px; border-top: 1px solid var(--bdr); display: flex;
+      gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+    .modal-note  { font-size: 10.5px; color: var(--t3); margin-left: auto; font-style: italic; }
+
+    /* SUCCESS OVERLAY */
+    .success-panel { background: var(--g-bg); border: 1px solid var(--g-bd);
+      border-radius: var(--r-lg); padding: 20px 24px; display: flex; flex-direction: column;
+      gap: 12px; flex-shrink: 0; }
+    .success-id { font-family: var(--f-mono); font-size: 13px; color: var(--g); font-weight: 600; }
+
+    /* MISC */
+    .section-note { font-size: 10.5px; color: var(--t3); }
+    .sandbox-note { font-size: 10px; color: var(--t3); font-family: var(--f-mono);
+      padding: 4px 9px; background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); }
+    .link-btn { background: none; border: none; color: var(--am); font-size: 11px;
+      font-family: var(--f-ui); cursor: pointer; text-decoration: underline;
+      text-underline-offset: 2px; padding: 0; }
+    .divider { height: 1px; background: var(--bdr); margin: 4px 0; }
+
+    @media (max-width: 1100px) { :root { --w-tl: 210px; } }
+    @media (max-width: 960px)  { .tl-rail { display: none; } }
+    @media (max-width: 640px)  { .sidebar { display: none; } .form-grid2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef } = React;
+
+/* ── ICONS ─────────────────────────────────────────────────────────────── */
+const LogoMark = () => (
+  <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+    <rect width="26" height="26" rx="4" fill="#1e1e28"/>
+    <rect x="6" y="9"    width="14" height="2" rx="1" fill="#ddddf0"/>
+    <rect x="6" y="13.5" width="9"  height="2" rx="1" fill="#7070e0"/>
+    <rect x="6" y="18"   width="5"  height="2" rx="1" fill="#4040a0" opacity="0.8"/>
+  </svg>
+);
+const IcoWallet   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 6h12" stroke="currentColor" strokeWidth="1.2"/><circle cx="9.5" cy="8.5" r="1" fill="currentColor"/></svg>;
+const IcoVerify   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoCard     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3.5" width="12" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><line x1="1" y1="6.5" x2="13" y2="6.5" stroke="currentColor" strokeWidth="1.2"/><rect x="3" y="8.5" width="3" height="1.5" rx="0.5" fill="currentColor"/></svg>;
+const IcoTransfer = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5h10M9 2.5L12 5l-3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 9H2M5 6.5L2 9l3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoDeposit  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoWithdraw = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 9V2M4 5l3-3 3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoDispute  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="10.2" r="0.7" fill="currentColor"/></svg>;
+const IcoProfile  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M2 13c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoLockSm   = () => <svg width="11" height="12" viewBox="0 0 11 12" fill="none"><rect x="1.5" y="5" width="8" height="6.5" rx="0.75" stroke="currentColor" strokeWidth="1.1"/><path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const IcoX        = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;
+const IcoCheck    = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4.5 7l2 2 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoWarn     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5L12 11.5H1L6.5 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="6.5" y1="5.5" x2="6.5" y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="6.5" cy="9.5" r="0.6" fill="currentColor"/></svg>;
+const IcoDoc      = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="2" y="1" width="10" height="12" rx="1" stroke="currentColor" strokeWidth="1.2"/><line x1="4.5" y1="5" x2="9.5" y2="5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/><line x1="4.5" y1="10" x2="7.5" y2="10" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const IcoUpload   = () => <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 11V5M5.5 7.5L8 5l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 12h10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>;
+const IcoBank     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 5.5L7 2l6 3.5" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><rect x="2.5" y="5.5" width="2" height="5" stroke="currentColor" strokeWidth="1.1"/><rect x="6" y="5.5" width="2" height="5" stroke="currentColor" strokeWidth="1.1"/><rect x="9.5" y="5.5" width="2" height="5" stroke="currentColor" strokeWidth="1.1"/><path d="M1 10.5h12" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoArrow    = () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3.5L9.5 6 7 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+
+/* ── SIDEBAR ────────────────────────────────────────────────────────────── */
+const NAV = [
+  { ico: <IcoWallet />,   label: 'Wallet',             id: 'UEW-UI-03' },
+  { ico: <IcoVerify />,   label: 'Verification' },
+  { ico: <IcoCard />,     label: 'Cards',              locked: true },
+  { ico: <IcoTransfer />, label: 'Transfers' },
+  { ico: <IcoDeposit />,  label: 'Deposits',           current: true, id: 'UEW-UI-04' },
+  { ico: <IcoWithdraw />, label: 'Withdrawals',        locked: true },
+  { ico: <IcoDispute />,  label: 'Disputes',           locked: true },
+  { ico: <IcoProfile />,  label: 'Profile / Security' },
+];
+
+const Sidebar = () => (
+  <aside className="sidebar">
+    <div className="sb-brand">
+      <div className="sb-mark"><LogoMark /><div className="sb-name">MiniFin</div></div>
+      <div className="sb-sub">End-User Web</div>
+    </div>
+    <nav className="sb-nav">
+      <div className="nav-sec">Navigation</div>
+      {NAV.map((n, i) => (
+        <div key={i} className={`nav-item${n.locked ? ' locked' : ''}${n.current ? ' current' : ''}`}>
+          <span style={{ width: 14, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{n.ico}</span>
+          <span>{n.label}</span>
+          {n.locked && <span className="nav-lock"><IcoLockSm /></span>}
+          {n.id     && <span className="nav-id">{n.id}</span>}
+        </div>
+      ))}
+    </nav>
+    <div className="sb-footer">
+      <div className="env-chip"><div className="env-dot"/><span>Local Sandbox</span></div>
+      <div className="env-host">app.miniefin.local</div>
+    </div>
+  </aside>
+);
+
+/* ── PAGE HEADER ────────────────────────────────────────────────────────── */
+const PageHeader = () => (
+  <div className="page-hdr">
+    <div className="page-bc">
+      <span>End-User Web</span><span className="sep">/</span>
+      <strong>Deposits</strong><span className="sep">·</span>
+      <span className="mode">New Deposit Request</span>
+    </div>
+    <div className="page-meta">
+      <span className="screen-id">UEW-UI-04</span>
+      <span className="env-badge"><span className="env-badge-dot"/>Local Sandbox</span>
+      <div className="user-chip">
+        <div className="user-avatar">EM</div>
+        <span className="user-name">Elena Markovic</span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── KV ROW ─────────────────────────────────────────────────────────────── */
+const KV = ({ k, mono, children }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className={`kv-v${mono ? ' mono' : ''}`}>{children}</div>
+  </div>
+);
+
+/* ── BADGE ──────────────────────────────────────────────────────────────── */
+const Badge = ({ cls, label }) => <span className={`badge ${cls}`}>{label}</span>;
+
+/* ── COPY BUTTON ────────────────────────────────────────────────────────── */
+const CopyBtn = ({ value }) => {
+  const [copied, setCopied] = useState(false);
+  const handle = () => {
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+  return (
+    <button className={`copy-btn${copied ? ' copied' : ''}`} onClick={handle}>
+      {copied ? '✓ Copied' : 'Copy'}
+    </button>
+  );
+};
+
+/* ── EXISTING REQUESTS DATA ─────────────────────────────────────────────── */
+const EXISTING = [
+  {
+    id: 'DEP-48201',
+    created: '2026-05-17 09:14',
+    amount: 'EUR 650.00',
+    method: 'SEPA Transfer',
+    sof: 'Pending Review',
+    state: 'PENDING_OPERATOR_REVIEW',
+    badgeCls: 'b-pending',
+    badgeLabel: 'PENDING REVIEW',
+    nextOwner: 'Backoffice · Manual Deposits',
+    sender: 'Elena Markovic',
+    iban: 'DE89 3704 0044 0532 0130 00',
+    ref: 'MFP-EU10482-DEP',
+    expected: '2026-05-18',
+    notes: 'Salary savings transfer',
+    sofFile: 'salary_statement_may_2026.pdf',
+  },
+  {
+    id: 'DEP-44710',
+    created: '2026-04-29 14:38',
+    amount: 'EUR 1,000.00',
+    method: 'SEPA Transfer',
+    sof: 'Approved',
+    state: 'COMPLETED',
+    badgeCls: 'b-completed',
+    badgeLabel: 'COMPLETED',
+    nextOwner: 'Ledger posted — no action',
+    sender: 'Elena Markovic',
+    iban: 'DE89 3704 0044 0532 0130 00',
+    ref: 'MFP-EU10482-APR29',
+    expected: '2026-04-30',
+    notes: 'Monthly top-up',
+    sofFile: 'salary_statement_apr_2026.pdf',
+  },
+  {
+    id: 'DEP-41883',
+    created: '2026-04-03 11:22',
+    amount: 'EUR 250.00',
+    method: 'SEPA Transfer',
+    sof: 'Not Required',
+    state: 'REJECTED',
+    badgeCls: 'b-rejected',
+    badgeLabel: 'REJECTED',
+    nextOwner: 'User — reference mismatch',
+    sender: 'E. Markovic',
+    iban: 'DE89 3704 0044 0532 0130 00',
+    ref: 'WRONG-REF-001',
+    expected: '2026-04-04',
+    notes: 'Incorrect payment reference used',
+    sofFile: null,
+  },
+  {
+    id: 'DEP-39420',
+    created: '2026-03-18 16:05',
+    amount: 'EUR 100.00',
+    method: 'SEPA Transfer',
+    sof: 'Not Required',
+    state: 'CANCELLED',
+    badgeCls: 'b-cancelled',
+    badgeLabel: 'CANCELLED',
+    nextOwner: 'User cancelled draft',
+    sender: 'Elena Markovic',
+    iban: 'DE89 3704 0044 0532 0130 00',
+    ref: 'MFP-EU10482-MAR18',
+    expected: '2026-03-19',
+    notes: '',
+    sofFile: null,
+  },
+];
+
+/* ── REQUEST DETAIL MODAL ───────────────────────────────────────────────── */
+const RequestDetailModal = ({ req, onClose }) => (
+  <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal">
+      <div className="modal-hdr">
+        <div>
+          <div className="modal-title">Deposit Request — {req.id}</div>
+          <div className="modal-sub">Created {req.created} · Wallet WLT-EU-77820</div>
+        </div>
+        <button className="modal-close" onClick={onClose}><IcoX /></button>
+      </div>
+      <div className="modal-body">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <Badge cls={req.badgeCls} label={req.badgeLabel} />
+          <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>Next: {req.nextOwner}</span>
+        </div>
+        <div className="kv-table">
+          <KV k="Request ID" mono>{req.id}</KV>
+          <KV k="Amount">{req.amount}</KV>
+          <KV k="Funding Method">{req.method}</KV>
+          <KV k="Sender IBAN" mono>{req.iban}</KV>
+          <KV k="Sender Name">{req.sender}</KV>
+          <KV k="Payment Reference" mono>{req.ref}</KV>
+          <KV k="Expected Arrival">{req.expected}</KV>
+          <KV k="Source of Funds">{req.sof}</KV>
+          {req.sofFile && <KV k="SoF Document" mono>{req.sofFile}</KV>}
+          {req.notes && <KV k="Notes">{req.notes}</KV>}
+        </div>
+        {req.state === 'REJECTED' && (
+          <div className="alert alert-red">
+            <IcoWarn />
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>Request Rejected</div>
+              <div>The operator rejected this deposit request. A reference mismatch was detected — the payment reference on the incoming transfer did not match the expected reference. Please use the exact reference shown in Bank Transfer Instructions.</div>
+            </div>
+          </div>
+        )}
+        {req.state === 'COMPLETED' && (
+          <div className="alert alert-green">
+            <IcoCheck />
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>Completed</div>
+              <div>Funds were credited to wallet WLT-EU-77820 and ledger entry posted on {req.expected}.</div>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        <span className="modal-note">Read-only · Local prototype</span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── SUBMIT SUCCESS PANEL ───────────────────────────────────────────────── */
+const SuccessPanel = ({ amount, reqId, onReset }) => (
+  <div className="success-panel">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ color: 'var(--g)', flexShrink: 0 }}><IcoCheck /></div>
+      <div>
+        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--g)', marginBottom: 2 }}>
+          Deposit Request Submitted
+        </div>
+        <div style={{ fontSize: 11.5, color: '#166534' }}>
+          Amount: <strong>EUR {parseFloat(amount).toFixed(2)}</strong> · Status: PENDING OPERATOR REVIEW
+        </div>
+      </div>
+    </div>
+    <div className="kv-table" style={{ background: 'white', borderRadius: 'var(--r)', padding: '4px 12px', border: '1px solid var(--g-bd)' }}>
+      <KV k="Request ID" mono><span style={{ color: 'var(--g)' }}>{reqId}</span></KV>
+      <KV k="Next Step">Backoffice · Manual Deposits queue</KV>
+      <KV k="SoF Review">Required — document submitted</KV>
+      <KV k="Ledger Credit">Not posted until operator approval</KV>
+      <KV k="Estimated Review">1–2 business days</KV>
+    </div>
+    <div style={{ fontSize: 11, color: '#14532d' }}>
+      You will be notified by email when the operator processes this request. No ledger credit has been posted yet.
+    </div>
+    <div>
+      <button className="btn btn-ghost btn-sm" onClick={onReset}>Submit Another Request</button>
+    </div>
+  </div>
+);
+
+/* ── MAIN APP ───────────────────────────────────────────────────────────── */
+const DAILY_LIMIT = 1000;
+const USED_TODAY  = 250;
+const SOF_THRESHOLD = 500;
+
+function App() {
+  const [amount, setAmount]       = useState('650.00');
+  const [method, setMethod]       = useState('SEPA Transfer');
+  const [senderIban, setSenderIban] = useState('DE89 3704 0044 0532 0130 00');
+  const [senderName, setSenderName] = useState('Elena Markovic');
+  const [payRef, setPayRef]       = useState('MFP-EU10482-DEP');
+  const [arrivalDate, setArrivalDate] = useState('2026-05-18');
+  const [notes, setNotes]         = useState('Salary savings transfer');
+  const [fileAttached, setFileAttached] = useState(true);
+  const [submitted, setSubmitted] = useState(false);
+  const [submittedId, setSubmittedId] = useState('');
+  const [detailReq, setDetailReq] = useState(null);
+
+  const numAmount = parseFloat(amount) || 0;
+  const remaining = DAILY_LIMIT - USED_TODAY;
+  const usedAfter = USED_TODAY + numAmount;
+  const usedPct   = Math.min((usedAfter / DAILY_LIMIT) * 100, 100);
+  const sofRequired = numAmount > SOF_THRESHOLD;
+  const exceedsLimit = numAmount > remaining;
+  const amountErr = exceedsLimit
+    ? `Exceeds daily limit. Remaining: EUR ${remaining.toFixed(2)}`
+    : numAmount <= 0 && amount !== ''
+      ? 'Amount must be greater than 0'
+      : null;
+  const nameWarn = senderName.trim().toLowerCase() !== 'elena markovic';
+  const canSubmit = numAmount > 0 && !exceedsLimit && (!sofRequired || fileAttached);
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    const id = `DEP-${Math.floor(48300 + Math.random() * 200)}`;
+    setSubmittedId(id);
+    setSubmitted(true);
+  };
+
+  const handleReset = () => {
+    setSubmitted(false);
+    setAmount('');
+    setNotes('');
+    setFileAttached(false);
+  };
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+        <PageHeader />
+        <div className="content-area">
+          <div className="left-scroll">
+
+            {/* ── ACCOUNT CONTEXT HEADER ──────────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="panel-title">Account Context</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>
+                    WLT-EU-77820
+                  </span>
+                </div>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>
+                  Last ledger sync: 2026-05-17 11:08
+                </span>
+              </div>
+              <div className="panel-body" style={{ paddingBottom: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'var(--bdr)', borderRadius: 'var(--r)', overflow: 'hidden', marginBottom: 12 }}>
+                  {[
+                    { label: 'User',           val: 'Elena Markovic',  sub: 'EU-10482',       mono: false },
+                    { label: 'KYC State',      val: <Badge cls="b-inreview" label="IN REVIEW"/>, sub: 'Deposit allowed while in review', mono: false },
+                    { label: 'Account Control',val: <Badge cls="b-limited" label="ACTIVE · WITHDRAW LIMIT"/>, sub: 'Withdrawal limits apply', mono: false },
+                    { label: 'Currency',       val: 'EUR', sub: 'Single-currency wallet', mono: true },
+                  ].map((c, i) => (
+                    <div key={i} style={{ background: 'var(--surface)', padding: '10px 13px' }}>
+                      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 5 }}>{c.label}</div>
+                      <div style={{ fontSize: 12.5, fontWeight: 600, fontFamily: c.mono ? 'var(--f-mono)' : 'inherit', marginBottom: 2 }}>{c.val}</div>
+                      <div style={{ fontSize: 10.5, color: 'var(--t3)' }}>{c.sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Daily limit bar */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}>
+                  <div style={{ fontSize: 11, color: 'var(--t2)', minWidth: 160 }}>Daily Deposit Limit</div>
+                  <div style={{ flex: 1 }}>
+                    <div className="prog-wrap">
+                      <div
+                        className={`prog-fill ${usedPct < 75 ? 'prog-green' : usedPct < 95 ? 'prog-amber' : 'prog-red'}`}
+                        style={{ width: `${Math.min((USED_TODAY / DAILY_LIMIT) * 100, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 10.5, fontFamily: 'var(--f-mono)', color: 'var(--t3)', minWidth: 110, textAlign: 'right' }}>
+                    EUR {USED_TODAY.toLocaleString()} / EUR {DAILY_LIMIT.toLocaleString()}
+                  </div>
+                  <div style={{ fontSize: 10.5, fontFamily: 'var(--f-mono)', color: 'var(--g)', minWidth: 90, textAlign: 'right' }}>
+                    EUR {remaining.toLocaleString()} left
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── STATE PATH ──────────────────────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <span className="panel-title">Deposit Request State Path</span>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>New request will enter at SUBMITTED</span>
+              </div>
+              <div className="state-path">
+                {[
+                  { label: 'DRAFT',      cls: 'future' },
+                  { label: 'SUBMITTED',  cls: 'current' },
+                  { label: 'PENDING OPERATOR REVIEW', cls: 'next' },
+                  { label: 'SOF REVIEW', cls: 'next' },
+                  { label: 'APPROVED',   cls: 'future' },
+                  { label: 'LEDGER POSTED', cls: 'future' },
+                  { label: 'COMPLETED',  cls: 'future' },
+                ].map((s, i, arr) => (
+                  <div key={i} className="sp-node">
+                    <div className={`sp-pill ${s.cls}`}>{s.label}</div>
+                    {i < arr.length - 1 && <span className="sp-arrow">→</span>}
+                  </div>
+                ))}
+                <span className="sp-arrow" style={{ margin: '0 6px' }}>|</span>
+                <div className="sp-node">
+                  <div className="sp-pill bad">REJECTED</div>
+                  <span className="sp-arrow"> / </span>
+                  <div className="sp-pill future">CANCELLED</div>
+                </div>
+              </div>
+              <div style={{ padding: '0 14px 10px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                {[
+                  { cls: 'current', label: 'Form position (this request after submit)' },
+                  { cls: 'next',    label: 'Immediately follows — operator + SoF queues' },
+                  { cls: 'future',  label: 'Later states' },
+                  { cls: 'bad',     label: 'Terminal failure' },
+                ].map((l, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 10.5, color: 'var(--t3)' }}>
+                    <span className={`sp-pill ${l.cls}`} style={{ fontSize: 9, padding: '1px 5px' }}>●</span>
+                    {l.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {submitted ? (
+              <SuccessPanel amount={amount} reqId={submittedId} onReset={handleReset} />
+            ) : (
+              <>
+                {/* ── DEPOSIT FORM ───────────────────────────────────── */}
+                <div className="panel">
+                  <div className="panel-hdr">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="panel-title">Deposit Request Form</span>
+                      <Badge cls="b-inreview" label="KYC IN REVIEW" />
+                      <span style={{ fontSize: 10.5, color: 'var(--g)', fontFamily: 'var(--f-mono)' }}>
+                        ✓ Deposit allowed while KYC in review
+                      </span>
+                    </div>
+                    <span className="sandbox-note">[prototype] no real submission</span>
+                  </div>
+                  <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+
+                    <div className="alert alert-info">
+                      <div>
+                        <strong>Daily limit:</strong> EUR {DAILY_LIMIT.toLocaleString()}/day ·
+                        Used today: EUR {USED_TODAY.toLocaleString()} ·
+                        Remaining: <strong>EUR {remaining.toLocaleString()}</strong> ·
+                        Deposits above EUR {SOF_THRESHOLD.toLocaleString()} require source-of-funds evidence.
+                      </div>
+                    </div>
+
+                    {/* Amount + method row */}
+                    <div className="form-grid2">
+                      <div className="form-group">
+                        <label className="inp-label">Amount *</label>
+                        <div className="inp-prefix-wrap">
+                          <span className="inp-prefix">EUR</span>
+                          <input
+                            className={`inp-field${amountErr ? ' err' : ''}`}
+                            type="number" min="0.01" max={remaining} step="0.01"
+                            placeholder="0.00"
+                            value={amount}
+                            onChange={e => setAmount(e.target.value)}
+                          />
+                        </div>
+                        {amountErr
+                          ? <div className="inp-err">{amountErr}</div>
+                          : sofRequired
+                            ? <div className="inp-hint" style={{ color: 'var(--or)' }}>
+                                ⚠ Above EUR {SOF_THRESHOLD} — source-of-funds evidence required
+                              </div>
+                            : numAmount > 0
+                              ? <div className="inp-hint" style={{ color: 'var(--t3)' }}>Within threshold. No SoF required.</div>
+                              : null
+                        }
+                      </div>
+                      <div className="form-group">
+                        <label className="inp-label">Funding Method *</label>
+                        <select className="inp-field" value={method} onChange={e => setMethod(e.target.value)}>
+                          <option>SEPA Transfer</option>
+                          <option>SWIFT Transfer</option>
+                        </select>
+                        <div className="inp-hint">EUR only. Other currencies are rejected.</div>
+                      </div>
+                    </div>
+
+                    {/* IBAN + name */}
+                    <div className="form-grid2">
+                      <div className="form-group">
+                        <label className="inp-label">Sender Bank Account (IBAN) *</label>
+                        <input className="inp-field" style={{ fontFamily: 'var(--f-mono)', fontSize: 12 }}
+                          type="text" value={senderIban}
+                          onChange={e => setSenderIban(e.target.value)} />
+                        <div className="inp-hint">Must be a SEPA-reachable account in your name.</div>
+                      </div>
+                      <div className="form-group">
+                        <label className="inp-label">Sender Name *</label>
+                        <input className={`inp-field${nameWarn ? ' err' : ''}`}
+                          type="text" value={senderName}
+                          onChange={e => setSenderName(e.target.value)} />
+                        {nameWarn
+                          ? <div className="inp-err">Name does not match wallet holder (Elena Markovic) — manual review required.</div>
+                          : <div className="inp-hint">Must match wallet holder name for straight-through processing.</div>
+                        }
+                      </div>
+                    </div>
+
+                    {/* Reference + date */}
+                    <div className="form-grid2">
+                      <div className="form-group">
+                        <label className="inp-label">Payment Reference *</label>
+                        <input className="inp-field" style={{ fontFamily: 'var(--f-mono)', fontSize: 12 }}
+                          type="text" value={payRef}
+                          onChange={e => setPayRef(e.target.value)} />
+                        <div className="inp-hint" style={{ color: 'var(--rd)' }}>
+                          ⚠ Use this exact reference on your bank transfer. Incorrect reference will delay processing.
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label className="inp-label">Expected Arrival Date</label>
+                        <input className="inp-field" type="date" value={arrivalDate}
+                          onChange={e => setArrivalDate(e.target.value)} />
+                        <div className="inp-hint">SEPA Credit Transfer: typically next business day.</div>
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="form-group">
+                      <label className="inp-label">Notes (optional)</label>
+                      <textarea className="inp-field" rows={2} style={{ resize: 'vertical' }}
+                        placeholder="e.g. purpose of transfer…"
+                        value={notes}
+                        onChange={e => setNotes(e.target.value)}
+                      />
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* ── SOURCE OF FUNDS ────────────────────────────────── */}
+                {sofRequired && (
+                  <div className="panel">
+                    <div className="panel-hdr">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span className="panel-title">Source of Funds Evidence</span>
+                        <Badge cls="b-sof" label="REQUIRED" />
+                      </div>
+                      <span style={{ fontSize: 10.5, color: 'var(--am)' }}>
+                        Required for deposits above EUR {SOF_THRESHOLD.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div className="alert alert-warn">
+                        <IcoWarn />
+                        <div>
+                          The requested amount of <strong>EUR {parseFloat(amount || 0).toFixed(2)}</strong> exceeds
+                          the EUR {SOF_THRESHOLD.toLocaleString()} threshold. You must attach a source-of-funds
+                          document before submitting. Accepted evidence: salary slips, bank statement, employer
+                          letter, tax return, or investment statement.
+                        </div>
+                      </div>
+
+                      <div className="upload-zone">
+                        <div className="upload-icon"><IcoUpload /></div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 500, marginBottom: 3 }}>
+                            Attach Source of Funds Document
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--t3)' }}>
+                            Accepted: PDF, JPG, PNG · Max size: 10 MB · Files are stored in your case file.
+                          </div>
+                        </div>
+                        <button
+                          className={`btn btn-sm ${fileAttached ? 'btn-ghost' : 'btn-warn'}`}
+                          onClick={() => setFileAttached(v => !v)}
+                        >
+                          {fileAttached ? 'Remove' : '+ Attach Document'}
+                        </button>
+                      </div>
+
+                      {fileAttached && (
+                        <div className="upload-file-row">
+                          <IcoDoc />
+                          <div className="upload-file-name">salary_statement_may_2026.pdf</div>
+                          <div style={{ fontSize: 10.5, color: 'var(--t3)' }}>234 KB · PDF</div>
+                          <div className="upload-file-status">Attached · Pending review</div>
+                        </div>
+                      )}
+
+                      {!fileAttached && (
+                        <div className="alert alert-red">
+                          <IcoWarn />
+                          <div>
+                            No document attached. Submission is blocked until a source-of-funds document is attached.
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)', paddingTop: 2 }}>
+                        [prototype] No real file upload. Click "Attach Document" to toggle mock state.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── REVIEW & SUBMIT ────────────────────────────────── */}
+                <div className="panel">
+                  <div className="panel-hdr">
+                    <span className="panel-title">Review &amp; Submit</span>
+                    <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>
+                      Estimated ledger state after submission
+                    </span>
+                  </div>
+                  <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 12 }}>
+                      {/* Left: amount summary */}
+                      <div>
+                        <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 8 }}>Amount Impact</div>
+                        <div className="review-row">
+                          <span className="review-k">Request amount</span>
+                          <span className="review-v mono">EUR {numAmount > 0 ? numAmount.toFixed(2) : '—'}</span>
+                        </div>
+                        <div className="review-row">
+                          <span className="review-k">Pending balance after submit</span>
+                          <span className="review-v mono warn">EUR {numAmount > 0 ? (250 + numAmount).toFixed(2) : '—'}</span>
+                        </div>
+                        <div className="review-row">
+                          <span className="review-k">Daily usage after submit</span>
+                          <span className={`review-v mono ${usedPct > 90 ? 'warn' : ''}`}>
+                            EUR {numAmount > 0 ? usedAfter.toFixed(0) : USED_TODAY} / EUR {DAILY_LIMIT.toLocaleString()}
+                          </span>
+                        </div>
+                        {numAmount > 0 && (
+                          <div className="prog-wrap" style={{ marginTop: 8 }}>
+                            <div
+                              className={`prog-fill ${usedPct < 75 ? 'prog-green' : usedPct < 95 ? 'prog-amber' : 'prog-red'}`}
+                              style={{ width: `${usedPct}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Right: process flags */}
+                      <div>
+                        <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 8 }}>Process Flags</div>
+                        <div className="review-row">
+                          <span className="review-k">Ledger credit</span>
+                          <span className="review-v warn">Not posted until approval</span>
+                        </div>
+                        <div className="review-row">
+                          <span className="review-k">Backoffice queue</span>
+                          <span className="review-v">Manual Deposits</span>
+                        </div>
+                        <div className="review-row">
+                          <span className="review-k">Second review</span>
+                          <span className="review-v good">Not required (below EUR 10,000)</span>
+                        </div>
+                        <div className="review-row">
+                          <span className="review-k">Source-of-funds review</span>
+                          <span className={`review-v ${sofRequired ? 'warn' : 'good'}`}>
+                            {sofRequired ? 'Required' : 'Not required'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {nameWarn && (
+                      <div className="alert alert-warn" style={{ marginBottom: 10 }}>
+                        <IcoWarn />
+                        <div>
+                          Sender name does not match wallet holder name. Manual review will be required and processing may be delayed.
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 4, flexWrap: 'wrap' }}>
+                      <button
+                        className="btn btn-primary"
+                        disabled={!canSubmit}
+                        onClick={handleSubmit}
+                      >
+                        Submit Deposit Request
+                      </button>
+                      <button className="btn btn-ghost" onClick={handleReset}>Reset Form</button>
+                      <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>
+                        Funds are not credited immediately. Operator review required.
+                      </span>
+                    </div>
+
+                    {!canSubmit && numAmount > 0 && (
+                      <div style={{ marginTop: 8, fontSize: 11, color: 'var(--rd)' }}>
+                        {exceedsLimit && '✗ Amount exceeds remaining daily limit. '}
+                        {sofRequired && !fileAttached && '✗ Source-of-funds document required. '}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── BANK TRANSFER INSTRUCTIONS ───────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <IcoBank />
+                  <span className="panel-title">Bank Transfer Instructions</span>
+                </div>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>Use these details exactly when sending funds</span>
+              </div>
+              <div className="panel-body">
+                <div className="alert alert-warn" style={{ marginBottom: 12 }}>
+                  <IcoWarn />
+                  <div>
+                    <strong>Reference is mandatory.</strong> Incorrect or missing reference will delay processing and may result in rejection. Funds cannot be automatically matched without the exact reference.
+                  </div>
+                </div>
+                {[
+                  { k: 'Beneficiary Name', v: 'MiniFin Client Funds Sandbox' },
+                  { k: 'IBAN',             v: 'DE02 1203 0000 0000 2026 01' },
+                  { k: 'BIC / SWIFT',      v: 'MFINDEFFXXX' },
+                  { k: 'Reference',        v: payRef || 'MFP-EU10482-DEP' },
+                  { k: 'Currency',         v: 'EUR only' },
+                  { k: 'Payment type',     v: 'SEPA Credit Transfer' },
+                ].map((r, i) => (
+                  <div key={i} className="bank-row">
+                    <div className="bank-k">{r.k}</div>
+                    <div className="bank-v">{r.v}</div>
+                    {(r.k === 'IBAN' || r.k === 'BIC / SWIFT' || r.k === 'Reference') && (
+                      <CopyBtn value={r.v} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── EXISTING REQUESTS TABLE ──────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <span className="panel-title">Existing Deposit Requests</span>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>Click row for detail</span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Request ID</th>
+                      <th>Created</th>
+                      <th>Amount</th>
+                      <th>Method</th>
+                      <th>SoF Status</th>
+                      <th>State</th>
+                      <th>Next / Owner</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {EXISTING.map((r, i) => (
+                      <tr key={i} onClick={() => setDetailReq(r)}>
+                        <td><span className="mono-cell" style={{ color: 'var(--t1)' }}>{r.id}</span></td>
+                        <td><span className="mono-cell">{r.created}</span></td>
+                        <td><span style={{ fontFamily: 'var(--f-mono)', fontSize: 11.5, fontWeight: 500 }}>{r.amount}</span></td>
+                        <td>{r.method}</td>
+                        <td>
+                          <span style={{ fontSize: 11, color:
+                            r.sof === 'Approved' ? 'var(--g)' :
+                            r.sof === 'Pending Review' ? 'var(--am)' :
+                            'var(--t3)'
+                          }}>{r.sof}</span>
+                        </td>
+                        <td><Badge cls={r.badgeCls} label={r.badgeLabel} /></td>
+                        <td style={{ fontSize: 11, color: 'var(--t3)' }}>{r.nextOwner}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>{/* left-scroll end */}
+
+          {/* ── TIMELINE RAIL ──────────────────────────────────────────── */}
+          <div className="tl-rail">
+            <div className="tl-hdr">Activity &amp; Context</div>
+            <div className="tl-body">
+              {[
+                {
+                  dot: 'pend', ts: '2026-05-17 09:14', name: 'Request Submitted',
+                  actor: 'Elena Markovic · EU-10482',
+                  desc: 'DEP-48201 submitted — EUR 650.00 via SEPA. SoF attached. Pending operator review.'
+                },
+                {
+                  dot: 'ok', ts: '2026-05-17 09:14', name: 'SoF Document Attached',
+                  actor: 'System',
+                  desc: 'salary_statement_may_2026.pdf — 234 KB attached to case.'
+                },
+                {
+                  dot: 'pend', ts: '2026-05-17 09:14', name: 'Queue Assigned',
+                  actor: 'System',
+                  desc: 'Assigned to Backoffice Manual Deposits queue. Operator review pending.'
+                },
+                {
+                  dot: 'ok', ts: '2026-04-29 17:02', name: 'DEP-44710 Completed',
+                  actor: 'Operator: K. Mayer',
+                  desc: 'EUR 1,000.00 approved and ledger posted. Available balance updated.'
+                },
+                {
+                  dot: 'ok', ts: '2026-04-29 16:50', name: 'Second-Review Waived',
+                  actor: 'Operator: K. Mayer',
+                  desc: 'Amount below EUR 10,000 — second review not required.'
+                },
+                {
+                  dot: 'bad', ts: '2026-04-03 14:18', name: 'DEP-41883 Rejected',
+                  actor: 'Operator: V. Stahl',
+                  desc: 'Reference mismatch on incoming SEPA transfer. Funds returned to sender.'
+                },
+                {
+                  dot: 'neu', ts: '2026-03-18 16:05', name: 'DEP-39420 Cancelled',
+                  actor: 'Elena Markovic',
+                  desc: 'Draft cancelled by user before submission.'
+                },
+              ].map((e, i, arr) => (
+                <div key={i} className="tl-evt">
+                  <div className="tl-spine">
+                    <div className={`tl-dot ${e.dot}`} />
+                    {i < arr.length - 1 && <div className="tl-line" />}
+                  </div>
+                  <div className="tl-content">
+                    <div className="tl-ts">{e.ts}</div>
+                    <div className="tl-name">{e.name}</div>
+                    <div className="tl-actor">{e.actor}</div>
+                    <div className="tl-desc">{e.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>{/* content-area end */}
+      </div>
+
+      {detailReq && (
+        <RequestDetailModal req={detailReq} onClose={() => setDetailReq(null)} />
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
