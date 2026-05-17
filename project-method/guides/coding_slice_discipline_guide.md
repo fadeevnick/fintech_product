@@ -159,6 +159,16 @@ This slice exercises:
 10. Move on to next slice (back to step 1).
 ```
 
+### Multi-agent variant
+
+In a multi-agent workflow, step 1-2 remain orchestrator-owned by default.
+
+The orchestrator creates or approves the slice planning note first. Executor agents are assigned only after that, with a temporary `AGENT_TASK.md` that references the approved planning note and asks for implementation/verification. Executor agents should not be asked to create new planning notes, choose slice boundaries or approve scope unless the project owner explicitly requests planning delegation.
+
+The orchestrator reviews merged executor work before final acceptance. If the merge is good, the orchestrator updates status/evidence as needed and commits the accepted result. If the merge has substantive scope, runtime, migration or architecture problems, the orchestrator reports those findings instead of silently accepting the branch.
+
+Temporary task files such as `AGENT_TASK.md` must not remain in the final project tree.
+
 ---
 
 ## 7. Pacing Choice

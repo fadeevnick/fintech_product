@@ -182,6 +182,23 @@ Verification scripts живут в `product/scripts/runtime/`, когда поя
 
 Подробнее — в [`coding_slice_discipline_guide.md`](coding_slice_discipline_guide.md).
 
+### Multi-agent Implementation Workflow
+
+If work is parallelized across local branches/worktrees, use these roles:
+
+- **Orchestrator AI** owns planning and review.
+  - Creates/updates `planning/implementation-slices/*_planning.md`.
+  - Marks planning artifacts approved when routine approval has been delegated by the project owner.
+  - Creates a temporary `AGENT_TASK.md` for each executor only after the relevant planning note is approved.
+  - Reviews merged executor branches, resolves small integration issues, updates status/evidence, and commits accepted results.
+- **Executor AI** owns implementation.
+  - Starts from `AGENT_TASK.md`.
+  - Implements only the approved planning note scope referenced there.
+  - Runs the required runtime checks and records factual evidence/status.
+  - Does not create new planning notes or decide slice boundaries by default.
+
+`AGENT_TASK.md` is temporary local orchestration context. It must not be included in the final merge to the main orchestration branch. If a planning artifact mentions it, replace that with a generic phrase such as "temporary orchestration task files".
+
 ---
 
 ## 9. Keep The Project Resumable

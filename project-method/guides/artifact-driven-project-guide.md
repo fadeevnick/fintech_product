@@ -348,6 +348,24 @@ Prototype work is a frontend gate, not a project-wide stop sign. While a UI/UX a
 
 См. [`coding_slice_discipline_guide.md`](coding_slice_discipline_guide.md).
 
+#### Multi-agent orchestration
+
+When the project uses parallel implementation agents, the main AI acts as the orchestrator.
+
+The orchestrator owns planning:
+- creates and revises implementation slice planning notes;
+- approves planning artifacts when the project owner has delegated routine approval decisions;
+- updates `CURRENT.md`, `planning/implementation_status.md` and `planning/runtime_evidence_log.md` when relevant;
+- reviews merged agent work, fixes small integration issues and commits accepted results.
+
+Executor agents own implementation only:
+- they receive a temporary `AGENT_TASK.md` that references an already approved planning note;
+- they implement and verify the approved slice scope;
+- they update evidence/status files only for facts produced by their implementation and runtime checks;
+- they do not create new slice planning artifacts or decide slice boundaries unless the project owner explicitly requests planning delegation.
+
+`AGENT_TASK.md` is temporary orchestration context. It must not be merged into the final project state, and project planning/product files should not reference it.
+
 ### Step 6. Runtime verification
 
 Default runtime scope — узкий production-working path. Расширения scope добавляются явно как later scope, когда они становятся реальной задачей.
