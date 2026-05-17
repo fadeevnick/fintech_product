@@ -1,0 +1,21 @@
+# Build artifacts
+.gradle/
+build/
+**/build/
+
+# Frontend dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# IDE / OS noise
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
