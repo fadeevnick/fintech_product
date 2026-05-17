@@ -19,6 +19,8 @@ minifin:
       client-id: ${BACKOFFICE_OIDC_CLIENT_ID:minifin-backoffice-local}
       issuer-display: ${BACKOFFICE_OIDC_ISSUER_DISPLAY:http://localhost:18080/realms/minifin-backoffice}
   merchant:
+    webhooks:
+      signing-secret-encryption-key: ${WEBHOOK_SIGNING_SECRET_ENCRYPTION_KEY:local-webhook-signing-secret-key-change-me}
     stripe:
       # Local-test placeholder. Phase 04 Slice 02 implements only the webhook receiver.
       # The onboarding-start path is recorded as a blocker pending real Stripe sandbox credentials.

@@ -47,6 +47,12 @@ class MerchantWebhookEndpointController(
         @PathVariable id: String,
     ): ApiResponse<WebhookEndpointDto> = ApiResponse(data = service.delete(identityService.currentMerchant(sessionToken), parseUuid(id)))
 
+    @PostMapping("/api/v1/merchant/webhook-endpoints/{id}/rotate-secret")
+    fun rotateSecret(
+        @CookieValue(name = SESSION_COOKIE, required = false) sessionToken: String?,
+        @PathVariable id: String,
+    ): ApiResponse<WebhookEndpointDto> = ApiResponse(data = service.rotateSecret(identityService.currentMerchant(sessionToken), parseUuid(id)))
+
     @ExceptionHandler(MerchantDashboardException::class)
     fun handleDashboardException(exception: MerchantDashboardException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(exception.status).body(ApiResponse(errors = listOf(ApiError(exception.code, exception.message, exception.field))))

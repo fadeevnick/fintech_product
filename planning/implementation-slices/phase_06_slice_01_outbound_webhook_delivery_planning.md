@@ -44,7 +44,7 @@ The slice therefore advances a Phase 06 foundation without pretending that the b
 
 In the later implementation pass, this slice should:
 
-1. Extend Platform's existing merchant webhook endpoint model with one-time signing secret generation and hashed-at-rest storage if the current Phase 04 table does not already provide it.
+1. Extend Platform's existing merchant webhook endpoint model with one-time signing secret generation, encrypted-at-rest delivery secret material, and hash/prefix metadata if the current Phase 04 table does not already provide it.
 2. Add an outbound webhook event/delivery model for real persisted events and attempts.
 3. Produce a narrow `payment_intent.created` webhook event from the existing public `POST /v1/payment_intents` shell only after the payment intent is durably persisted.
 4. Deliver pending webhook events to active merchant webhook endpoints whose `enabledEvents` contains the event type.
@@ -62,7 +62,7 @@ The implementation may run delivery synchronously from a worker/script-triggered
 
 - Create or rotate a webhook signing secret for each merchant webhook endpoint.
 - Show the raw signing secret only once on endpoint creation or explicit rotation.
-- Store only a secret hash and non-secret prefix/fingerprint at rest.
+- Store encrypted delivery secret material plus a secret hash and non-secret prefix/fingerprint at rest.
 - Deliver real JSON payloads by HTTP POST to configured endpoint URLs.
 - Include signature headers on each delivery:
   - `MiniFin-Webhook-Id`;
@@ -194,7 +194,7 @@ Current observed migration state:
 Recommended reservation for the later implementation pass:
 
 ```text
-product/apps/platform/src/main/resources/db/migration/V13__merchant_outbound_webhook_delivery.sql
+product/apps/platform/src/main/resources/db/migration/V14__merchant_outbound_webhook_delivery.sql
 ```
 
 Do not add acquirer migrations in this slice unless the implementation owner deliberately moves the whole slice into `acquirer` and first plans the cross-service ownership boundary. The default is Platform-only.
@@ -205,6 +205,7 @@ If not already present, extend `merchant.webhook_endpoints` with:
 
 ```sql
 signing_secret_hash text not null,
+signing_secret_ciphertext bytea,
 secret_prefix text not null,
 secret_rotated_at timestamptz not null default now()
 ```
@@ -277,7 +278,7 @@ Rules:
 
 - generated server-side with cryptographically secure random bytes;
 - displayed only once on endpoint creation or explicit rotation;
-- stored only as a hash plus prefix/fingerprint;
+- stored as encrypted delivery secret material plus a hash and prefix/fingerprint;
 - never returned by list/detail routes after creation;
 - never written to logs;
 - rotation creates a new one-time secret and invalidates the previous secret for future deliveries.
@@ -505,7 +506,7 @@ For this planning-only branch, `planning/implementation_status.md` does not need
 
 Likely product files:
 
-- `product/apps/platform/src/main/resources/db/migration/V13__merchant_outbound_webhook_delivery.sql`
+- `product/apps/platform/src/main/resources/db/migration/V14__merchant_outbound_webhook_delivery.sql`
 - existing merchant payment-intent creation code from Phase 04 Slice 01.
 - existing merchant webhook endpoint configuration code from Phase 04 Slice 03.
 
@@ -535,7 +536,7 @@ Likely product files:
 ## 15. Recommended Change Order For The Later Coding Slice
 
 1. Confirm current Platform migration numbers and existing `merchant.webhook_endpoints` columns.
-2. Add `V13__merchant_outbound_webhook_delivery.sql` for secrets/events/attempts.
+2. Add `V14__merchant_outbound_webhook_delivery.sql` for secrets/events/attempts.
 3. Add one-time signing secret creation/rotation support to webhook endpoint configuration.
 4. Add outbound event persistence for `payment_intent.created`, preserving public idempotency semantics.
 5. Add signer and delivery service with bounded HTTP timeouts.
@@ -608,7 +609,7 @@ Recommendation: allow future event names in configuration only if already accept
 
 A later implementation of this slice is complete only when:
 
-- webhook endpoint creation/rotation returns a signing secret once and stores only hash/prefix at rest;
+- webhook endpoint creation/rotation returns a signing secret once and stores encrypted secret material plus hash/prefix metadata at rest;
 - creating a real payment-intent shell row creates exactly one `payment_intent.created` outbound event;
 - idempotent replay of payment-intent creation does not create duplicate outbound events;
 - a real local HTTP receiver receives a signed webhook payload;

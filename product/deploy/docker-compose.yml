@@ -99,6 +99,7 @@ services:
       BACKOFFICE_OIDC_ISSUER_DISPLAY: http://localhost:${KEYCLOAK_HOST_PORT:-18080}/realms/minifin-backoffice
       STRIPE_WEBHOOK_SIGNING_SECRET: ${STRIPE_WEBHOOK_SIGNING_SECRET:-whsec_local_test_secret}
       STRIPE_WEBHOOK_TOLERANCE_SECONDS: ${STRIPE_WEBHOOK_TOLERANCE_SECONDS:-300}
+      WEBHOOK_SIGNING_SECRET_ENCRYPTION_KEY: ${WEBHOOK_SIGNING_SECRET_ENCRYPTION_KEY:-local-webhook-signing-secret-key-change-me}
       ISSUER_BASE_URL: http://issuer:8080
       ACQUIRER_BASE_URL: http://acquirer:8080
       SERVICE_AUTH_SECRET: ${SERVICE_AUTH_SECRET:-local-service-secret}
@@ -113,6 +114,8 @@ services:
         condition: service_started
     ports:
       - "${PLATFORM_HTTP_HOST_PORT:-8081}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.platform.rule=Host(`platform.miniefin.local`)"
