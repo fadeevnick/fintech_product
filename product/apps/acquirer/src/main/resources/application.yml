@@ -7,6 +7,10 @@ spring:
     password: ${ACQUIRER_DB_PASSWORD:acquirer}
   flyway:
     enabled: true
+minifin:
+  acquirer:
+    network-base-url: ${NETWORK_BASE_URL:http://localhost:8083}
+    service-auth-secret: ${SERVICE_AUTH_SECRET:local-service-secret}
 server:
   port: ${ACQUIRER_HTTP_PORT:8082}
 management:

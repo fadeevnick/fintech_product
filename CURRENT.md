@@ -1,6 +1,6 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-17 (Phase 05 Slice 02 card authorization planning and Phase 06 Slice 01 outbound webhook delivery planning approved; MRC-01 blocked on Stripe sandbox credentials).
+Last updated: 2026-05-18 (Phase 05 Slice 02 card authorization backend/runtime implemented and PAY-04/PAY-05 verified; Phase 06 Slice 01 outbound webhook delivery planning approved; MRC-01 blocked on Stripe sandbox credentials).
 
 ---
 
@@ -41,7 +41,7 @@ Completed workstream — latest accepted state:
 - Phase 04 Slice 03 merchant dashboard payment reads and webhook endpoint configuration backend/runtime sub-scope implemented in `platform`;
 - `MRC-04` and `MRC-05` passed; `MRC-03` and `PAY-01..PAY-03` targeted regressions passed; no `WBH-01..WBH-03` or `MRC-01` claim made;
 - Phase 05 Slice 01 backend/runtime scope is complete: Vault tokenization/detokenize, Issuer card records, Platform `POST /api/v1/cards` and retained `VLT-01`..`VLT-03` scripts have been added; isolated compile/runtime verification passed for `VLT-01`, `VLT-02` and `VLT-03`;
-- Phase 05 Slice 02 planning approved at `planning/implementation-slices/phase_05_slice_02_card_authorization_planning.md`; it targets `PAY-04` approved authorization hold and `PAY-05` structured authorization declines, with no product implementation yet;
+- Phase 05 Slice 02 backend/runtime scope is complete: public payment-intent authorization flows through Platform → Acquirer → Network → Issuer, approved authorizations post Platform ledger holds, structured declines are returned for insufficient funds/blocked actor/inactive or unknown card, and `PAY-04`/`PAY-05` passed in isolated runtime;
 - Phase 06 Slice 01 planning approved at `planning/implementation-slices/phase_06_slice_01_outbound_webhook_delivery_planning.md`; it targets `WBH-01` outbound merchant webhook signing/delivery and may defer `WBH-02`, with no product implementation yet;
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
@@ -60,7 +60,7 @@ Latest accepted backend/runtime slices:
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`, `prototypes/ui/19_merchant_onboarding_status.html`.**
 
 Next planned product step:
-- Choose the next approved backend/runtime slice: Phase 05 Slice 02 card authorization, or Phase 06 Slice 01 outbound merchant webhook delivery. Alternatively provide real Stripe Connect sandbox credentials to implement blocked `MRC-01`.
+- Choose the next approved backend/runtime slice: Phase 06 Slice 01 outbound merchant webhook delivery, or provide real Stripe Connect sandbox credentials to implement blocked `MRC-01`.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.

@@ -10,6 +10,7 @@ spring:
 minifin:
   issuer:
     vault-base-url: ${VAULT_BASE_URL:http://localhost:8085}
+    platform-base-url: ${PLATFORM_BASE_URL:http://localhost:8081}
     service-auth-secret: ${SERVICE_AUTH_SECRET:local-service-secret}
 server:
   port: ${ISSUER_HTTP_PORT:8084}

@@ -18,6 +18,14 @@ class IssuerController(private val service: IssuerService, private val propertie
         return ApiResponse(data = service.issueCard(body))
     }
 
+    @PostMapping("/internal/issuer/authorize")
+    fun authorize(request: HttpServletRequest, @RequestBody body: AuthorizeCardRequest): ApiResponse<AuthorizeCardResponse> {
+        if (request.getHeader("X-Service-Secret") != properties.serviceAuthSecret || request.getHeader("X-Service-Name") != "network") {
+            throw IssuerException("service_auth_denied", "Service is not authorized.", HttpStatus.FORBIDDEN)
+        }
+        return ApiResponse(data = service.authorize(body))
+    }
+
     @ExceptionHandler(IssuerException::class)
     fun handle(ex: IssuerException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(ex.status).body(ApiResponse(errors = listOf(ApiError(ex.code, ex.message))))

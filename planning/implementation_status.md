@@ -655,27 +655,50 @@ Next planned step:
 
 ## Phase 05 Slice 02 — Card Authorization Path
 
-Status: **PLANNING APPROVED — no product code implemented**.
+Status: **COMPLETE — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_05_slice_02_card_authorization_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- synchronous public card authorization path through Acquirer → Network → Issuer;
-- approved authorization hold through Platform Ledger;
-- structured authorization declines for insufficient funds, blocked/frozen actor, inactive/unknown card token and service failures;
-- retained runtime scripts targeting `PAY-04` and `PAY-05`.
+Implemented backend/runtime scope:
+- Public merchant authorization route in Platform:
+  - `POST /v1/payment_intents/{id}/authorize` with existing API-key auth and idempotency primitive.
+  - Payment intent responses include safe authorization status, auth code, expiry or structured decline details.
+- Platform → Acquirer bridge for the current public API hosting topology.
+- Acquirer authorization persistence and internal `POST /internal/acquirer/authorize` service endpoint.
+- Network authorization route persistence, MVP BIN route registry for `400000`, network audit row and internal `POST /internal/network/authorize` service endpoint.
+- Issuer `POST /internal/issuer/authorize` decision path that checks card state/expiry, Platform actor controls, Platform wallet available balance and posts approved ledger holds.
+- Platform internal service endpoints used by Issuer for actor-control lookup, wallet available balance and ledger hold posting.
+- Flyway migrations:
+  - `product/apps/acquirer/src/main/resources/db/migration/V2__payment_authorization_foundation.sql`.
+  - `product/apps/network/src/main/resources/db/migration/V2__authorization_routing_foundation.sql`.
+  - `product/apps/issuer/src/main/resources/db/migration/V3__card_authorization_and_holds.sql`.
+  - `product/apps/platform/src/main/resources/db/migration/V13__card_authorization_hold_support.sql`.
+- Retained runtime scripts:
+  - `product/scripts/runtime/lib_phase05_card_authorization.sh`.
+  - `product/scripts/runtime/reg_phase05_authorization_approved_hold.sh`.
+  - `product/scripts/runtime/reg_phase05_authorization_structured_declines.sh`.
 
 Explicitly not implemented:
-- no Kotlin/SQL/runtime-script changes in this planning-only branch;
-- no capture, clearing, settlement, refunds, payouts, chargebacks or outbound merchant webhook delivery;
-- no `SET-*`, `WBH-*`, `CHB-*` or frontend checks claimed.
+- Capture, clearing, settlement, refunds, payouts, chargebacks or outbound merchant webhook delivery.
+- Card lifecycle operations beyond authorization-time inactive-card declines.
+- Frontend SPA implementation.
+- `SET-*`, `WBH-*`, `CHB-*` or frontend checks.
 
 Runtime evidence:
-- none; planning-only artifact.
+- Isolated compile checks passed for affected services:
+  - `:apps:issuer:compileKotlin`.
+  - `:apps:vault:compileKotlin`.
+  - `:apps:platform:compileKotlin`, `:apps:network:compileKotlin`, `:apps:acquirer:compileKotlin`.
+- Isolated Compose project `mini-fintech-platform-a1` built and started `platform`, `acquirer`, `network`, `issuer`, `vault` and required dependencies with fresh DB migrations.
+- `PAY-04` — pass for approved authorization hold: public authorization returned `AUTHORIZED`/`AUTH_APPROVED`, Issuer hold count increased by one, Platform ledger recorded a `CARD_AUTHORIZATION_HOLD` journal and LDG reconciliation passed.
+- `PAY-05` — pass for structured declines: insufficient funds, blocked actor, inactive card and unknown card token returned `FAILED`/`AUTH_DECLINED` with expected decline codes and no hold creation.
+
+Result tag notes:
+- Local host-to-container published HTTP ports accepted TCP connections but did not return response bytes in this environment; the verification therefore ran the retained scripts from a temporary container on `mini-fintech-platform-a1_default` with temporary DB helper rewiring to Postgres service DNS. The product scripts themselves remain retained in `product/scripts/runtime/`.
 
 Next planned step:
-- Implement this approved backend/runtime slice when selected.
+- Choose the next approved implementation slice, likely Phase 06 Slice 01 outbound merchant webhook delivery, or provide real Stripe Connect sandbox credentials for blocked `MRC-01`.
 
 ---
 

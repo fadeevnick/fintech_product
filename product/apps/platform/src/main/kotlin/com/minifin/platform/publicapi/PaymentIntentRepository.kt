@@ -16,6 +16,10 @@ data class PaymentIntentRecord(
     val description: String?,
     val state: String,
     val createdAt: OffsetDateTime,
+    val authorizationId: UUID?,
+    val authCode: String?,
+    val declineCode: String?,
+    val declineMessage: String?,
 )
 
 @Repository
@@ -52,10 +56,19 @@ class PaymentIntentRepository(
         )
     }
 
+    fun markAuthorizedResult(id: UUID, cardToken: String, authorizationId: UUID?, authCode: String?, declineCode: String?, declineMessage: String?, state: String) {
+        jdbcTemplate.update("""
+            update merchant.payment_intents
+               set state = ?, card_token = ?, authorization_id = ?, auth_code = ?, decline_code = ?, decline_message = ?, updated_at = now(), version = version + 1
+             where id = ?
+        """.trimIndent(), state, cardToken, authorizationId, authCode, declineCode, declineMessage, id)
+    }
+
     fun findById(id: UUID): PaymentIntentRecord? =
         jdbcTemplate.query(
             """
-            select id, merchant_id, api_key_id, amount, currency, description, state, created_at
+            select id, merchant_id, api_key_id, amount, currency, description, state, created_at,
+                   authorization_id, auth_code, decline_code, decline_message
             from merchant.payment_intents
             where id = ?
             """.trimIndent(),
@@ -73,5 +86,9 @@ class PaymentIntentRepository(
             description = getString("description"),
             state = getString("state"),
             createdAt = getObject("created_at", OffsetDateTime::class.java),
+            authorizationId = getObject("authorization_id", UUID::class.java),
+            authCode = getString("auth_code"),
+            declineCode = getString("decline_code"),
+            declineMessage = getString("decline_message"),
         )
 }

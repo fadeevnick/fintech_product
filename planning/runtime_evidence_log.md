@@ -1188,3 +1188,38 @@ Post-merge combined-tree verification:
 - After accepting Phase 04 Slice 03 and Phase 05 Slice 01 into `orchestration`, `COMPOSE_PROJECT_NAME=mfp-review-merged ... docker compose -f deploy/docker-compose.yml config --quiet` passed.
 - `bash -n` passed for the new Phase 04 and Phase 05 retained runtime scripts.
 - `COMPOSE_PROJECT_NAME=mfp-review-merged ... docker compose -f deploy/docker-compose.yml build platform issuer vault` passed for the combined tree, proving `platform` compiles with both the merchant dashboard API additions and the card issuance entrypoint.
+
+---
+
+## 2026-05-18 — Phase 05 Slice 02 Card Authorization Verification
+
+Scope:
+- Phase 05 Slice 02 backend/runtime implementation for public card authorization, Acquirer/Network/Issuer routing and approved ledger holds.
+- Isolated runtime slot used for Docker commands: `COMPOSE_PROJECT_NAME=mini-fintech-platform-a1`, Platform `18181`, Acquirer `18182`, Network `18183`, Issuer `18184`, Vault `18185`, DB ports `15433`–`15437`, Kafka `19092`, Keycloak `28080`.
+
+Implemented artifacts checked:
+- Platform migration `V13__card_authorization_hold_support.sql`.
+- Acquirer migration `V2__payment_authorization_foundation.sql`.
+- Network migration `V2__authorization_routing_foundation.sql`.
+- Issuer migration `V3__card_authorization_and_holds.sql`.
+- Retained scripts:
+  - `product/scripts/runtime/lib_phase05_card_authorization.sh`.
+  - `product/scripts/runtime/reg_phase05_authorization_approved_hold.sh`.
+  - `product/scripts/runtime/reg_phase05_authorization_structured_declines.sh`.
+
+Commands run:
+- `docker run ... gradle --no-daemon --max-workers=1 --project-cache-dir /tmp/project-cache-root :apps:issuer:compileKotlin` — pass.
+- `docker run ... gradle --no-daemon --max-workers=1 --project-cache-dir /tmp/project-cache-root :apps:vault:compileKotlin` — pass.
+- `docker run ... gradle --no-daemon --max-workers=1 --project-cache-dir /tmp/project-cache-root2 :apps:platform:compileKotlin :apps:network:compileKotlin :apps:acquirer:compileKotlin` — pass.
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a1 ... docker compose -f product/deploy/docker-compose.yml up -d --build platform acquirer network issuer vault` — pass.
+- `docker compose -f product/deploy/docker-compose.yml ps` showed Platform, Acquirer, Network, Issuer, Vault and DB dependencies running; service DBs were healthy.
+- `product/scripts/runtime/reg_phase05_authorization_approved_hold.sh` — pass when run from a temporary `node:22-bookworm` container on `mini-fintech-platform-a1_default` with temporary DB helper rewiring to Postgres service DNS.
+- `product/scripts/runtime/reg_phase05_authorization_structured_declines.sh` — pass with the same compose-network runner.
+
+Runtime check results:
+- `PAY-04` — pass. Approved public authorization returned `AUTHORIZED` and `AUTH_APPROVED`, Issuer hold count increased by one, Platform ledger had a `CARD_AUTHORIZATION_HOLD` journal and `LDG-05` reconciliation passed.
+- `PAY-05` — pass. Structured declines covered insufficient funds, blocked actor, inactive card and unknown card token; each returned `FAILED`/`AUTH_DECLINED` with the expected decline code and did not create a hold.
+
+Result tag notes:
+- Host-to-container published HTTP ports in this local environment accepted TCP connections but did not return response bytes, while HTTP inside the compose network returned normally. Runtime script verification therefore used an equivalent temporary compose-network runner against the same isolated stack.
+- Temporary runner-only changes were not copied into the repository except for product script fixes needed by direct script correctness: API key extraction accepts the current `key` response field, and the PAY-05 actor-control seed supplies required audit columns.

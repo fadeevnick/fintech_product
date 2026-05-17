@@ -6,4 +6,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class IssuerProperties(
     val serviceAuthSecret: String = "local-service-secret",
     val vaultBaseUrl: String = "http://localhost:8085",
+    val platformBaseUrl: String = "http://localhost:8081",
 )

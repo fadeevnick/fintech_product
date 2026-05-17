@@ -100,6 +100,7 @@ services:
       STRIPE_WEBHOOK_SIGNING_SECRET: ${STRIPE_WEBHOOK_SIGNING_SECRET:-whsec_local_test_secret}
       STRIPE_WEBHOOK_TOLERANCE_SECONDS: ${STRIPE_WEBHOOK_TOLERANCE_SECONDS:-300}
       ISSUER_BASE_URL: http://issuer:8080
+      ACQUIRER_BASE_URL: http://acquirer:8080
       SERVICE_AUTH_SECRET: ${SERVICE_AUTH_SECRET:-local-service-secret}
     depends_on:
       platform-db:
@@ -128,6 +129,8 @@ services:
       ACQUIRER_DB_URL: jdbc:postgresql://acquirer-db:5432/acquirer
       ACQUIRER_DB_USER: acquirer
       ACQUIRER_DB_PASSWORD: acquirer
+      NETWORK_BASE_URL: http://network:8080
+      SERVICE_AUTH_SECRET: ${SERVICE_AUTH_SECRET:-local-service-secret}
     depends_on:
       acquirer-db:
         condition: service_healthy
@@ -149,6 +152,8 @@ services:
       NETWORK_DB_URL: jdbc:postgresql://network-db:5432/network
       NETWORK_DB_USER: network
       NETWORK_DB_PASSWORD: network
+      ISSUER_BASE_URL: http://issuer:8080
+      SERVICE_AUTH_SECRET: ${SERVICE_AUTH_SECRET:-local-service-secret}
     depends_on:
       network-db:
         condition: service_healthy
@@ -167,6 +172,7 @@ services:
       ISSUER_DB_USER: issuer
       ISSUER_DB_PASSWORD: issuer
       VAULT_BASE_URL: http://vault:8080
+      PLATFORM_BASE_URL: http://platform:8080
       SERVICE_AUTH_SECRET: ${SERVICE_AUTH_SECRET:-local-service-secret}
     depends_on:
       issuer-db:
