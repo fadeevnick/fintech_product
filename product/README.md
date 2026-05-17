@@ -23,6 +23,7 @@ Implemented runtime behavior so far:
 - Phase 04 Slice 02 Stripe webhook backend/runtime sub-scope in `platform`: `merchant.stripe_account_links`, `merchant.stripe_webhook_events`, `POST /webhooks/stripe/v1`, real Stripe-format HMAC-SHA256 signature verification, timestamp tolerance, duplicate Stripe event id idempotency, `account.updated` KYB state mapping and audit rows. Stripe Connect onboarding-start remains blocked on real sandbox credentials; no fake Stripe API path exists.
 - Phase 04 Slice 03 merchant dashboard payments/webhook config backend/runtime sub-scope in `platform`: `merchant.webhook_endpoints`, merchant dashboard `GET /api/v1/merchant/payment-intents`, `GET /api/v1/merchant/payment-intents/{id}`, and `GET/POST/PUT/DELETE /api/v1/merchant/webhook-endpoints[/{id}]`; payment reads are merchant-scoped with cross-merchant 404 behavior, webhook config writes require `merchant_admin`, and `merchant_member` remains read-only. No payment authorization/capture/refund/settlement or outbound webhook delivery exists.
 - Phase 05 Slice 01 Vault/Card issuance backend/runtime sub-scope across `platform`, `issuer` and `vault`: end-user `POST /api/v1/cards`, Platform→Issuer and Issuer→Vault service-auth calls, Issuer token/last4 card records, Vault encrypted PAN tokenization, restricted detokenize for `service:issuer` and detokenize audit rows. `VLT-01`, `VLT-02` and `VLT-03` have runtime evidence; `PAY-04`/`PAY-05` remain out of scope for the later authorization slice.
+- Phase 06 Slice 01 outbound merchant webhook delivery foundation in `platform`: webhook endpoints now have one-time `mfp_whsec_*` signing secrets stored as hash/prefix, secret rotation endpoint, persisted `merchant.webhook_events` and `merchant.webhook_delivery_attempts`, real signed HTTP delivery of `payment_intent.created` after public payment-intent creation, and retained `WBH-01` runtime verification with a local signature-validating receiver. `WBH-02` retry/DLQ and `WBH-03` replay remain deferred.
 
 ## Local Commands
 
@@ -119,6 +120,7 @@ scripts/runtime/reg_phase04_merchant_webhook_config.sh
 scripts/runtime/reg_phase05_card_issue_pan_isolation.sh
 scripts/runtime/reg_phase05_vault_detokenize_restriction.sh
 scripts/runtime/reg_phase05_pan_log_masking.sh
+scripts/runtime/reg_phase06_webhook_signing_delivery.sh
 ```
 
 ## Stripe Webhook Local Runtime
@@ -160,3 +162,31 @@ scripts/runtime/reg_phase05_pan_log_masking.sh
 ```
 
 These scripts target `VLT-01`, `VLT-02` and `VLT-03`. `PAY-04` and `PAY-05` remain out of scope for the later authorization slice.
+
+## Phase 06 Outbound Webhook Local Runtime
+
+Phase 06 Slice 01 adds signed outbound merchant webhook delivery for the current payment-intent shell:
+
+- webhook endpoint creation returns `signingSecret` once;
+- `POST /api/v1/merchant/webhook-endpoints/{id}/rotate-secret` returns a new one-time secret;
+- `POST /v1/payment_intents` emits `payment_intent.created`;
+- Platform signs and POSTs the payload to active endpoints subscribed to that event;
+- delivery events and attempts are persisted in `merchant.webhook_events` and `merchant.webhook_delivery_attempts`.
+
+Retained script:
+
+```bash
+scripts/runtime/reg_phase06_webhook_signing_delivery.sh
+```
+
+For isolated compose-network verification, use:
+
+```bash
+COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 \
+COMPOSE_FILE=deploy/docker-compose.yml \
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default \
+scripts/runtime/reg_phase06_webhook_signing_delivery.sh
+```
+
+`WBH-01` is implemented and verified. `WBH-02` retry/DLQ and `WBH-03` replay are deferred.

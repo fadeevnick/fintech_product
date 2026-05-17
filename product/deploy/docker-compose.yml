@@ -112,6 +112,8 @@ services:
         condition: service_started
     ports:
       - "${PLATFORM_HTTP_HOST_PORT:-8081}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.platform.rule=Host(`platform.miniefin.local`)"

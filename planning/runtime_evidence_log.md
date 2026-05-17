@@ -1188,3 +1188,64 @@ Post-merge combined-tree verification:
 - After accepting Phase 04 Slice 03 and Phase 05 Slice 01 into `orchestration`, `COMPOSE_PROJECT_NAME=mfp-review-merged ... docker compose -f deploy/docker-compose.yml config --quiet` passed.
 - `bash -n` passed for the new Phase 04 and Phase 05 retained runtime scripts.
 - `COMPOSE_PROJECT_NAME=mfp-review-merged ... docker compose -f deploy/docker-compose.yml build platform issuer vault` passed for the combined tree, proving `platform` compiles with both the merchant dashboard API additions and the card issuance entrypoint.
+
+---
+
+## 2026-05-18 — Phase 06 Slice 01 Outbound Webhook Delivery Runtime Verification
+
+Scope:
+- Phase 06 Slice 01 backend/runtime implementation for outbound merchant webhook signing and delivery.
+- Isolated runtime slot: `COMPOSE_PROJECT_NAME=mini-fintech-platform-a2`, `PLATFORM_HTTP_HOST_PORT=28181`, `PLATFORM_DB_HOST_PORT=25433`, `ACQUIRER_HTTP_HOST_PORT=28182`, `ACQUIRER_DB_HOST_PORT=25434`, `NETWORK_HTTP_HOST_PORT=28183`, `NETWORK_DB_HOST_PORT=25435`, `ISSUER_HTTP_HOST_PORT=28184`, `ISSUER_DB_HOST_PORT=25436`, `VAULT_HTTP_HOST_PORT=28185`, `VAULT_DB_HOST_PORT=25437`, `KAFKA_HOST_PORT=29092`, `KEYCLOAK_HOST_PORT=38080`.
+
+Implemented artifacts checked:
+- Platform migration: `product/apps/platform/src/main/resources/db/migration/V13__merchant_outbound_webhook_delivery.sql`.
+- Outbound webhook implementation under `product/apps/platform/src/main/kotlin/com/minifin/platform/merchant/webhooks/`.
+- Payment-intent event producer in `product/apps/platform/src/main/kotlin/com/minifin/platform/publicapi/PaymentIntentService.kt`.
+- Retained scripts:
+  - `product/scripts/runtime/lib_phase06_webhooks.sh`;
+  - `product/scripts/runtime/phase06_webhook_receiver.js`;
+  - `product/scripts/runtime/reg_phase06_webhook_signing_delivery.sh`.
+
+Commands run:
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 ... docker compose -f product/deploy/docker-compose.yml build platform` — pass; Platform image built successfully.
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 ... docker compose -f product/deploy/docker-compose.yml up -d --no-build platform` — pass; Platform container was recreated and started with migration `V13`.
+- `bash -n product/scripts/runtime/lib_phase06_webhooks.sh product/scripts/runtime/reg_phase06_webhook_signing_delivery.sh` — pass.
+- `node --check product/scripts/runtime/phase06_webhook_receiver.js` — pass.
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 COMPOSE_FILE=deploy/docker-compose.yml PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default scripts/runtime/reg_phase06_webhook_signing_delivery.sh` — pass.
+- Targeted regressions:
+  - `scripts/runtime/reg_phase04_merchant_webhook_config.sh` — pass;
+  - `scripts/runtime/reg_phase04_public_api_response_shape.sh` — pass;
+  - `scripts/runtime/reg_phase04_public_api_idempotency_replay.sh` — pass;
+  - `scripts/runtime/reg_phase04_public_api_idempotency_conflict.sh` — pass.
+
+Runtime check results:
+- `WBH-01` — pass.
+- Actor used:
+  - authenticated `merchant_admin` created webhook endpoint config and rotated the endpoint signing secret;
+  - merchant API key caller created payment intents through `POST /v1/payment_intents`;
+  - local test receiver ran as a real HTTP process in the same Docker network and validated MiniFin HMAC signature headers.
+- Preconditions:
+  - Platform service running in isolated `mini-fintech-platform-a2` stack;
+  - merchant exists with active API key;
+  - active webhook endpoint subscribed to `payment_intent.created`;
+  - receiver had the one-time signing secret returned by endpoint creation/rotation.
+- Action taken:
+  - created webhook endpoint and verified list route did not return raw `signingSecret`;
+  - rotated signing secret and started local receiver with the rotated secret;
+  - created `payment_intent.created` event through real public API payment-intent creation;
+  - Platform delivered signed JSON payload to receiver;
+  - receiver validated `MiniFin-Webhook-Signature`;
+  - DB showed `merchant.webhook_events.status = 'DELIVERED'` and `merchant.webhook_delivery_attempts.status = 'SUCCEEDED'` with HTTP 200.
+- Idempotency proof:
+  - same-key/same-body public payment-intent replay returned cached response;
+  - DB count for webhook events for the replayed payment intent remained exactly one.
+
+Runtime-discovered fixes:
+- Initial `WBH-01` run exposed missing `status='PENDING'` in `merchant.webhook_events` insert; fixed before final pass.
+- Host-only receiver binding was not reachable from Platform container via `host.docker.internal` in this environment; retained script now runs the local receiver as a container on `mini-fintech-platform-a2_default` and configures the endpoint URL to its Docker DNS name for real HTTP delivery.
+- `/tmp` receiver artifact ownership differs when receiver runs in a container; cleanup now uses a containerized `rm` in compose-network mode.
+
+Result tag notes:
+- `WBH-02` is deferred. Retry/DLQ scheduling and terminal DLQ handling are not implemented or claimed.
+- `WBH-03` is not claimed.
+- `MRC-01`, `PAY-04`, `PAY-05`, `SET-*`, `CHB-*` and frontend checks are not claimed.

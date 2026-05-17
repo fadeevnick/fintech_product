@@ -10,11 +10,11 @@ import org.springframework.stereotype.Repository
 class MerchantWebhookEndpointRepository(
     private val jdbcTemplate: JdbcTemplate,
 ) {
-    fun insert(id: UUID, merchantId: UUID, url: String, enabledEventsJson: String, status: String, description: String?, createdBy: UUID) {
+    fun insert(id: UUID, merchantId: UUID, url: String, enabledEventsJson: String, status: String, description: String?, createdBy: UUID, signingSecretHash: String, secretPrefix: String) {
         jdbcTemplate.update(
             """
-            insert into merchant.webhook_endpoints (id, merchant_id, url, enabled_events, status, description, created_by_employee_id)
-            values (?, ?, ?, ?::jsonb, ?, ?, ?)
+            insert into merchant.webhook_endpoints (id, merchant_id, url, enabled_events, status, description, created_by_employee_id, signing_secret_hash, secret_prefix, secret_rotated_at)
+            values (?, ?, ?, ?::jsonb, ?, ?, ?, ?, ?, now())
             """.trimIndent(),
             id,
             merchantId,
@@ -23,13 +23,15 @@ class MerchantWebhookEndpointRepository(
             status,
             description,
             createdBy,
+            signingSecretHash,
+            secretPrefix,
         )
     }
 
     fun list(merchantId: UUID): List<WebhookEndpointRecord> =
         jdbcTemplate.query(
             """
-            select id, merchant_id, url, enabled_events::text as enabled_events_json, status, description, created_at, updated_at, deleted_at
+            select id, merchant_id, url, enabled_events::text as enabled_events_json, status, description, signing_secret_hash, secret_prefix, created_at, updated_at, deleted_at
             from merchant.webhook_endpoints
             where merchant_id = ? and status <> 'DELETED'
             order by created_at desc
@@ -41,7 +43,7 @@ class MerchantWebhookEndpointRepository(
     fun findByIdForMerchant(id: UUID, merchantId: UUID): WebhookEndpointRecord? =
         jdbcTemplate.query(
             """
-            select id, merchant_id, url, enabled_events::text as enabled_events_json, status, description, created_at, updated_at, deleted_at
+            select id, merchant_id, url, enabled_events::text as enabled_events_json, status, description, signing_secret_hash, secret_prefix, created_at, updated_at, deleted_at
             from merchant.webhook_endpoints
             where id = ? and merchant_id = ? and status <> 'DELETED'
             """.trimIndent(),
@@ -76,6 +78,19 @@ class MerchantWebhookEndpointRepository(
             merchantId,
         )
 
+    fun rotateSecret(id: UUID, merchantId: UUID, signingSecretHash: String, secretPrefix: String): Int =
+        jdbcTemplate.update(
+            """
+            update merchant.webhook_endpoints
+            set signing_secret_hash = ?, secret_prefix = ?, secret_rotated_at = now(), updated_at = now(), version = version + 1
+            where id = ? and merchant_id = ? and status <> 'DELETED'
+            """.trimIndent(),
+            signingSecretHash,
+            secretPrefix,
+            id,
+            merchantId,
+        )
+
     private fun ResultSet.toRecord(): WebhookEndpointRecord = WebhookEndpointRecord(
         id = getObject("id", UUID::class.java),
         merchantId = getObject("merchant_id", UUID::class.java),
@@ -83,6 +98,8 @@ class MerchantWebhookEndpointRepository(
         enabledEventsJson = getString("enabled_events_json"),
         status = getString("status"),
         description = getString("description"),
+        signingSecretHash = getString("signing_secret_hash"),
+        secretPrefix = getString("secret_prefix"),
         createdAt = getObject("created_at", OffsetDateTime::class.java),
         updatedAt = getObject("updated_at", OffsetDateTime::class.java),
         deletedAt = getObject("deleted_at", OffsetDateTime::class.java),

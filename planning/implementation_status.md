@@ -681,26 +681,50 @@ Next planned step:
 
 ## Phase 06 Slice 01 — Outbound Merchant Webhook Delivery Foundation
 
-Status: **PLANNING APPROVED — no product code implemented**.
+Status: **COMPLETE — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_06_slice_01_outbound_webhook_delivery_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Use existing merchant webhook endpoint configuration from Phase 04 Slice 03.
-- Add one-time webhook signing secret handling with hashed-at-rest storage.
-- Add persisted outbound webhook event and delivery-attempt model.
-- Deliver real signed `payment_intent.created` payloads to a local test receiver.
-- Target `WBH-01`; defer `WBH-02` unless narrow retry/DLQ can be implemented without fake payment lifecycle events.
+Implemented backend/runtime scope:
+- Platform DB migration `V13__merchant_outbound_webhook_delivery.sql`.
+- Extended `merchant.webhook_endpoints` with `signing_secret_hash`, `secret_prefix` and `secret_rotated_at`.
+- Merchant webhook endpoint creation now generates a `mfp_whsec_*` signing secret, returns it once and stores only SHA-256 hash plus prefix.
+- Added merchant dashboard secret rotation endpoint:
+  - `POST /api/v1/merchant/webhook-endpoints/{id}/rotate-secret`.
+- Added persisted outbound webhook events and delivery attempts:
+  - `merchant.webhook_events`;
+  - `merchant.webhook_delivery_attempts`.
+- Existing public `POST /v1/payment_intents` now emits one durable `payment_intent.created` webhook event for a newly persisted payment-intent shell.
+- Delivery sends a real HTTP POST to active subscribed merchant endpoints with MiniFin HMAC headers:
+  - `MiniFin-Webhook-Id`;
+  - `MiniFin-Webhook-Timestamp`;
+  - `MiniFin-Webhook-Signature`;
+  - `MiniFin-Webhook-Event`;
+  - `MiniFin-Webhook-Attempt`.
+- Delivery attempts persist success/failure status, HTTP status, bounded response snippet and error metadata.
+- Compose adds `host.docker.internal` host mapping for Platform; retained `WBH-01` script uses a containerized local receiver on the same compose network for deterministic local verification.
+- Retained runtime scripts:
+  - `product/scripts/runtime/lib_phase06_webhooks.sh`;
+  - `product/scripts/runtime/phase06_webhook_receiver.js`;
+  - `product/scripts/runtime/reg_phase06_webhook_signing_delivery.sh`.
 
 Explicitly not implemented:
-- No Kotlin, SQL, runtime scripts or frontend implementation in this planning task.
 - No Stripe Connect onboarding (`MRC-01`).
 - No card authorization, capture, clearing, settlement, refund, payout or chargeback implementation.
 - No `SET-*`, `PAY-*`, `MRC-01`, `CHB-*` or frontend claims.
+- No retry/DLQ (`WBH-02`) or DLQ replay (`WBH-03`); failed delivery is persisted as `FAILED` for this foundation slice.
 
 Runtime evidence:
-- None. This is a planning-only artifact.
+- `planning/runtime_evidence_log.md` — `2026-05-18 — Phase 06 Slice 01 Outbound Webhook Delivery Runtime Verification`.
+- Platform image build passed after implementation.
+- Isolated Compose project `mini-fintech-platform-a2` ran `platform` and dependencies on assigned ports.
+- `WBH-01` — pass: local receiver validated signed `payment_intent.created` payloads, webhook event rows became `DELIVERED`, delivery attempts became `SUCCEEDED` with HTTP 200, and same-key payment-intent idempotency replay did not create duplicate webhook events.
+- Targeted regressions passed:
+  - `MRC-05`;
+  - `PAY-01`;
+  - `PAY-02`;
+  - `PAY-03`.
 
 Next planned step:
-- Implement this approved backend/runtime slice when selected.
+- Choose the next approved backend/runtime slice: Phase 05 Slice 02 card authorization, or a later Phase 06 retry/DLQ slice for `WBH-02`.

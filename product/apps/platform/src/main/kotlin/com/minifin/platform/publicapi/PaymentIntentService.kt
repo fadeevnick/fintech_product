@@ -1,6 +1,7 @@
 package com.minifin.platform.publicapi
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.minifin.platform.merchant.webhooks.OutboundWebhookService
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.format.DateTimeFormatter
@@ -29,6 +30,7 @@ data class PaymentIntentDto(
 @Service
 class PaymentIntentService(
     private val repository: PaymentIntentRepository,
+    private val outboundWebhookService: OutboundWebhookService,
 ) {
     @Transactional
     fun create(principal: PublicApiPrincipal, request: CreatePaymentIntentRequest): PaymentIntentDto {
@@ -54,6 +56,7 @@ class PaymentIntentService(
             description = description,
         )
         val record = repository.findById(id) ?: error("Payment intent disappeared after insert")
+        outboundWebhookService.publishPaymentIntentCreated(record)
         return record.toDto()
     }
 
