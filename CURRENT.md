@@ -1,6 +1,6 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-17 (Phase 04 Slice 03 merchant dashboard payments/webhook config and Phase 05 Slice 01 vault/card issuance backend/runtime sub-scopes verified; UEW-UI-07 prototype accepted; MRC-01 blocked on Stripe sandbox credentials).
+Last updated: 2026-05-17 (Phase 04 Slice 03 merchant dashboard payments/webhook config and Phase 05 Slice 01 vault/card issuance backend/runtime sub-scopes verified; MDB-UI-02 prototype accepted; MRC-01 blocked on Stripe sandbox credentials).
 
 ---
 
@@ -55,7 +55,7 @@ Latest accepted backend/runtime slices:
 
 ## Next
 
-**Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`.**
+**Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`, `prototypes/ui/19_merchant_onboarding_status.html`.**
 
 Next planned product step:
 - Choose the next approved backend/runtime slice. Alternatively provide real Stripe Connect sandbox credentials to implement blocked `MRC-01`.

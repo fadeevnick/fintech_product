@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Merchant Onboarding — MDB-UI-02</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --inp:     #faf9f7;
+      --hover:   #f0efe9;
+
+      --sb:        #111114;
+      --sb-bdr:    #1e1e22;
+      --sb-muted:  #545460;
+      --sb-active: #1e1e28;
+
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+
+      --t1: #1c1c1f;
+      --t2: #575763;
+      --t3: #9898a6;
+      --t4: #d0d0da;
+
+      --cta:     #1c1c1f;
+      --cta-hov: #2e2e35;
+      --cta-t:   #ffffff;
+
+      --g:  #166534;  --g-bg:  #f0fdf4;  --g-bd:  #bbf7d0;
+      --am: #854d0e;  --am-bg: #fffbeb;  --am-bd: #fde68a;
+      --rd: #9b1c1c;  --rd-bg: #fef2f2;  --rd-bd: #fecaca;
+      --or: #b45309;  --or-bg: #fff7ed;  --or-bd: #fed7aa;
+      --pu: #5b21b6;  --pu-bg: #f5f3ff;  --pu-bd: #ddd6fe;
+
+      --sb-env-bg: #1a1030;
+      --sb-env-t:  #b39cf0;
+      --sb-env-bd: #362566;
+
+      --f-ui:   'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+
+      --r:    3px;
+      --r-lg: 5px;
+      --w-sb: 220px;
+      --w-tl: 252px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+    #root { height: 100vh; display: flex; overflow: hidden; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 14px 14px 12px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-name  { font-size: 14.5px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px; }
+    .sb-merchant { margin-top: 10px; padding: 7px 9px; background: rgba(255,255,255,0.04);
+      border-radius: var(--r); border: 1px solid var(--sb-bdr); }
+    .sb-m-label { font-size: 9px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 3px; }
+    .sb-m-name  { font-size: 12.5px; font-weight: 600; color: #eaeaf4; }
+    .sb-m-id    { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); margin-top: 1px; }
+    .sb-nav   { flex: 1; padding: 10px 7px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 9px 5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 12px;
+      cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.35; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; }
+    .nav-lock { margin-left: auto; font-size: 9px; opacity: 0.6; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono); color: var(--sb-muted); opacity: 0.8; }
+    .sb-footer { padding: 10px 14px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 10px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 4px; }
+    .env-dot   { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host  { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); }
+    .sb-user   { display: flex; align-items: center; gap: 7px; margin-top: 9px; }
+    .sb-avatar { width: 24px; height: 24px; border-radius: 50%; background: #5b21b6;
+      color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; }
+    .sb-uname  { font-size: 11px; font-weight: 500; color: #eaeaf4; }
+    .sb-urole  { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── MAIN ── */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .page-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 22px; border-bottom: 1px solid var(--bdr);
+      background: var(--surface); flex-shrink: 0; gap: 10px; flex-wrap: wrap; }
+    .page-bc   { font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .page-bc strong { color: var(--t1); font-weight: 500; }
+    .page-bc .sep   { color: var(--t3); }
+    .page-bc .mode  { font-family: var(--f-mono); font-size: 11.5px; color: var(--t2); }
+    .page-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+    .screen-id { font-size: 10px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge { font-size: 10px; font-family: var(--f-mono); color: var(--am);
+      background: var(--am-bg); border: 1px solid var(--am-bd);
+      padding: 2px 8px; border-radius: var(--r); display: flex; align-items: center; gap: 5px; }
+    .env-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--am); }
+    .user-chip { display: flex; align-items: center; gap: 7px; padding: 3px 9px 3px 3px;
+      border: 1px solid var(--bdr); border-radius: 20px; background: var(--surf2); }
+    .user-avatar { width: 22px; height: 22px; border-radius: 50%; background: #5b21b6;
+      color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; }
+    .user-name { font-size: 11.5px; color: var(--t2); font-weight: 500; }
+    .preview-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px;
+      border-radius: var(--r); font-size: 11px; cursor: pointer; border: none;
+      font-family: var(--f-ui); font-weight: 500; transition: all 0.12s; }
+    .preview-toggle.on  { background: var(--pu-bg); border: 1px solid var(--pu-bd); color: var(--pu); }
+    .preview-toggle.off { background: var(--surf2); border: 1px solid var(--bdr-mid); color: var(--t2); }
+    .preview-toggle.off:hover { background: var(--hover); color: var(--t1); }
+
+    /* ── CONTENT ── */
+    .content-area { flex: 1; display: flex; overflow: hidden; }
+    .left-scroll  { flex: 1; overflow-y: auto; padding: 14px 18px;
+      background: var(--bg); display: flex; flex-direction: column; gap: 11px; min-width: 0; }
+
+    /* ── PANELS ── */
+    .panel     { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); flex-shrink: 0; }
+    .panel-title { font-size: 11.5px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 13px 16px; }
+
+    /* ── BADGES ── */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em;
+      font-family: var(--f-mono); border: 1px solid transparent; white-space: nowrap; }
+    .b-active    { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-completed { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-pending   { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-held      { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-action    { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-rejected  { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-locked    { background: var(--hover); color: var(--t2);  border-color: var(--bdr); }
+    .b-inreview  { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-warn      { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-notstarted{ background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-partial   { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-sandbox   { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-blocked   { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-available { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+
+    /* ── STATUS STRIP ── */
+    .status-strip { display: flex; flex-wrap: wrap; background: var(--surface);
+      border: 1px solid var(--bdr); border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
+    .stat-cell { padding: 11px 14px; border-right: 1px solid var(--bdr); flex: 1 1 140px; min-width: 0; }
+    .stat-cell:last-child { border-right: none; }
+    .stat-k { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t3); margin-bottom: 4px; font-weight: 600; }
+    .stat-v { font-size: 12.5px; color: var(--t1); font-weight: 500;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .stat-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+
+    /* ── PREVIEW BANNER ── */
+    .preview-banner { padding: 8px 14px; background: var(--pu-bg); border: 1px solid var(--pu-bd);
+      border-radius: var(--r-lg); display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--pu); flex-shrink: 0; line-height: 1.5; }
+
+    /* ── KV ── */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--t3); min-width: 172px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+
+    /* ── BUTTONS ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--r); font-size: 12.5px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover { background: var(--cta-hov); }
+    .btn-ghost   { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover   { background: var(--hover); color: var(--t1); }
+    .btn-warn    { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+    .btn-warn:hover    { background: #fef3c7; }
+    .btn-sm      { padding: 4px 10px; font-size: 11px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+    .btn-faux-disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── ALERTS ── */
+    .alert { display: flex; gap: 10px; padding: 9px 12px 9px 13px; font-size: 12px;
+      line-height: 1.55; border-left-width: 3px; border-left-style: solid; border-radius: var(--r); }
+    .alert-warn  { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-red   { background: var(--rd-bg); border-left-color: var(--rd); color: #7f1d1d; }
+    .alert-info  { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-green { background: var(--g-bg);  border-left-color: var(--g);  color: #14532d; }
+    .alert-pu    { background: var(--pu-bg); border-left-color: var(--pu); color: #3b0764; }
+
+    /* ── STATE PATH ── */
+    .state-path { display: flex; align-items: flex-start; flex-wrap: wrap; padding: 10px 14px; gap: 0; }
+    .sp-node    { display: flex; align-items: flex-start; }
+    .sp-pill    { padding: 3px 9px; border-radius: 2px; font-size: 10px; font-family: var(--f-mono);
+      font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; border: 1px solid transparent; }
+    .sp-pill.past    { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .sp-pill.current { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); box-shadow: 0 0 0 2px rgba(180,83,9,0.14); }
+    .sp-pill.next    { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .sp-pill.future  { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .sp-pill.bad     { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .sp-arrow { font-size: 10px; color: var(--t4); margin: 0 4px; flex-shrink: 0; padding-top: 4px; }
+    .sp-sub   { font-size: 8.5px; font-family: var(--f-mono); text-align: center; margin-top: 2px; letter-spacing: 0.04em; }
+
+    .rework-branch { display: flex; align-items: center; gap: 6px; padding: 7px 14px;
+      background: var(--rd-bg); border-top: 1px solid var(--rd-bd); flex-wrap: wrap; }
+    .rework-label  { font-size: 9px; font-family: var(--f-mono); font-weight: 600; color: var(--rd);
+      text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; flex-shrink: 0; }
+
+    /* ── TABLES ── */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t3); padding: 6px 10px; text-align: left;
+      border-bottom: 1px solid var(--bdr); background: var(--surf2); font-weight: 600; }
+    .data-table td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid var(--hover); vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .mono-cell  { font-family: var(--f-mono); font-size: 11px; }
+    .row-issue  td { background: rgba(254,242,242,0.55); }
+    .row-pend   td { background: rgba(255,251,235,0.5); }
+    .matrix-sec-hdr td { background: var(--surf2); font-size: 9.5px; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--t3); font-weight: 600; padding: 5px 10px;
+      border-top: 1px solid var(--bdr); border-bottom: 1px solid var(--bdr); }
+    .cap-active-row td { background: rgba(240,253,244,0.45); }
+    .cap-locked-row    { opacity: 0.78; }
+    .tbl-link { font-size: 10.5px; color: var(--pu); cursor: pointer; text-decoration: underline;
+      font-family: var(--f-mono); background: none; border: none; padding: 0; }
+    .tbl-link:hover { color: #4c1d95; }
+
+    /* ── STRIPE ── */
+    .stripe-cap-list { display: flex; gap: 7px; flex-wrap: wrap; }
+    .stripe-cap { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px;
+      border: 1px solid var(--bdr); border-radius: var(--r); font-size: 10.5px;
+      font-family: var(--f-mono); background: var(--surf2); color: var(--t2); }
+    .stripe-cap.cap-pend { background: var(--am-bg); border-color: var(--am-bd); color: var(--am); }
+    .stripe-cap.cap-blk  { background: var(--rd-bg); border-color: var(--rd-bd); color: var(--rd); }
+    .stripe-msg { font-size: 11px; color: var(--rd); font-family: var(--f-mono);
+      padding: 6px 10px; background: var(--rd-bg); border: 1px solid var(--rd-bd);
+      border-radius: var(--r); margin-top: 8px; line-height: 1.5; }
+
+    /* ── FORM / UPLOAD ── */
+    .inp-label { font-size: 11px; color: var(--t2); margin-bottom: 4px; font-weight: 500; display: block; }
+    .inp-field { width: 100%; padding: 7px 10px; border: 1px solid var(--bdr-mid);
+      border-radius: var(--r); font-size: 12.5px; color: var(--t1);
+      background: var(--inp); outline: none; font-family: var(--f-ui); transition: border-color 0.12s; }
+    .inp-field:focus { border-color: var(--bdr-focus); }
+    select.inp-field { cursor: pointer; }
+    .upload-zone { border: 1.5px dashed var(--bdr-mid); border-radius: var(--r-lg);
+      padding: 22px; text-align: center; color: var(--t3); font-size: 12px;
+      background: var(--surf2); cursor: pointer; transition: border-color 0.1s, background 0.1s; }
+    .upload-zone:hover { border-color: var(--bdr-focus); background: var(--hover); color: var(--t2); }
+
+    /* ── MODAL ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,20,0.52);
+      display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg);
+      width: 500px; max-width: 100%; max-height: 88vh; display: flex; flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08); }
+    .modal-hdr   { display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 13px 16px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; background: var(--surf2); }
+    .modal-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .modal-sub   { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .modal-close { width: 24px; height: 24px; border-radius: var(--r); background: transparent;
+      border: none; color: var(--t3); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: background 0.1s, color 0.1s; flex-shrink: 0; margin-top: 1px; }
+    .modal-close:hover { background: var(--hover); color: var(--t1); }
+    .modal-body  { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-footer{ padding: 12px 16px; border-top: 1px solid var(--bdr); display: flex;
+      gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+    .modal-note  { font-size: 10.5px; color: var(--t3); margin-left: auto; font-style: italic; }
+
+    /* ── TIMELINE RAIL ── */
+    .tl-rail  { width: var(--w-tl); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .tl-hdr   { padding: 10px 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+      font-size: 9.5px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.1em; }
+    .tl-body  { flex: 1; overflow-y: auto; padding: 10px 14px; }
+    .tl-evt   { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hover); cursor: pointer; }
+    .tl-evt:last-child { border-bottom: none; }
+    .tl-evt:hover .tl-name { color: var(--cta); }
+    .tl-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .tl-dot.ok   { background: var(--g); }
+    .tl-dot.pend { background: var(--or); }
+    .tl-dot.bad  { background: var(--rd); }
+    .tl-dot.neu  { background: var(--t4); }
+    .tl-line  { width: 1px; flex: 1; background: var(--bdr); margin: 4px 0; min-height: 12px; }
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-ts    { font-size: 9.5px; font-family: var(--f-mono); color: var(--t3); margin-bottom: 1px; }
+    .tl-name  { font-size: 11px; font-weight: 600; color: var(--t1); margin-bottom: 1px;
+      text-transform: uppercase; letter-spacing: 0.04em; transition: color 0.1s; }
+    .tl-actor { font-size: 10px; color: var(--t3); margin-bottom: 2px; }
+    .tl-desc  { font-size: 10.5px; color: var(--t2); line-height: 1.4; }
+    .tl-audit { font-size: 9.5px; font-family: var(--f-mono); color: var(--pu); margin-top: 4px;
+      background: var(--pu-bg); border: 1px solid var(--pu-bd); border-radius: var(--r);
+      padding: 2px 6px; display: inline-block; }
+    .tl-expand-hint { font-size: 9px; color: var(--t4); margin-top: 2px; font-style: italic; }
+
+    /* ── SANDBOX NOTE ── */
+    .sandbox-note { font-size: 10px; color: var(--t3); font-family: var(--f-mono);
+      padding: 4px 9px; background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); }
+
+    @media (max-width: 1100px) { :root { --w-tl: 210px; } }
+    @media (max-width: 960px)  { .tl-rail { display: none; } }
+    @media (max-width: 640px)  { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ── LOGO ──────────────────────────────────────────────────────────────────── */
+function LogoMark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <rect width="26" height="26" rx="5" fill="#2a2a36"/>
+      <rect x="5" y="5" width="7" height="7" rx="1.5" fill="#7c6ff7"/>
+      <rect x="14" y="5" width="7" height="7" rx="1.5" fill="#4a4a5a"/>
+      <rect x="5" y="14" width="7" height="7" rx="1.5" fill="#4a4a5a"/>
+      <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#7c6ff7" opacity="0.5"/>
+    </svg>
+  );
+}
+
+function Badge({ cls, children }) {
+  return <span className={`badge ${cls}`}>{children}</span>;
+}
+
+function KV({ k, mono, children }) {
+  return (
+    <div className="kv-row">
+      <div className="kv-k">{k}</div>
+      <div className={`kv-v${mono ? ' mono' : ''}`}>{children}</div>
+    </div>
+  );
+}
+
+/* ── STATIC DATA ───────────────────────────────────────────────────────────── */
+const NAV_ITEMS = [
+  { sec: 'MERCHANT' },
+  { id: 'MDB-UI-01', label: 'Overview',       icon: '▤' },
+  { id: 'MDB-UI-02', label: 'Onboarding',     icon: '◎', current: true },
+  { id: 'MDB-UI-03', label: 'Payments',       icon: '⇅', locked: true },
+  { id: 'MDB-UI-04', label: 'API & Webhooks', icon: '⌁' },
+  { id: 'MDB-UI-05', label: 'Settlements',    icon: '⊟', locked: true },
+  { sec: 'ACCOUNT' },
+  { id: 'MDB-UI-06', label: 'Team',           icon: '⊙' },
+  { id: 'MDB-UI-07', label: 'Settings',       icon: '⊕' },
+];
+
+const REQUIREMENTS = [
+  { id: 'REQ-01', label: 'Business legal name',       status: 'verified',        submitted: '2026-05-14 09:10', source: 'Business Profile', blocking: false },
+  { id: 'REQ-02', label: 'Registration number',        status: 'verified',        submitted: '2026-05-14 09:11', source: 'Business Profile', blocking: false },
+  { id: 'REQ-03', label: 'VAT / Tax ID',               status: 'verified',        submitted: '2026-05-14 09:14', source: 'Business Profile', blocking: false },
+  { id: 'REQ-04', label: 'Registered address',         status: 'verified',        submitted: '2026-05-14 09:14', source: 'Business Profile', blocking: false },
+  { id: 'REQ-05', label: 'Website / marketplace URL',  status: 'verified',        submitted: '2026-05-14 09:15', source: 'Business Profile', blocking: false },
+  { id: 'REQ-06', label: 'Business description',       status: 'verified',        submitted: '2026-05-14 09:18', source: 'Business Profile', blocking: false },
+  { id: 'REQ-07', label: 'Beneficial owners',          status: 'action_required', submitted: '2026-05-14 10:22', source: 'KYB Upload',       blocking: true,  issue: 'Passport copy (Owner #1): image quality insufficient — resubmission required' },
+  { id: 'REQ-08', label: 'Representative identity',    status: 'verified',        submitted: '2026-05-14 10:30', source: 'KYB Upload',       blocking: false },
+  { id: 'REQ-09', label: 'Bank account (settlements)', status: 'pending',         submitted: '2026-05-15 11:05', source: 'Settings',         blocking: true,  issue: 'Micro-deposit verification in progress (1–2 business days)' },
+  { id: 'REQ-10', label: 'KYB document set',           status: 'partial',         submitted: '2026-05-14 10:22', source: 'KYB Upload',       blocking: true,  issue: 'Owner passport re-upload required before case can proceed' },
+  { id: 'REQ-11', label: 'Platform terms accepted',    status: 'verified',        submitted: '2026-05-13 14:42', source: 'Registration',    blocking: false },
+];
+
+const CAPABILITIES = [
+  { cap: 'Sandbox merchant account',       group: 'unlocked', state: 'ACTIVE',    blocker: null,                                         action: null },
+  { cap: 'Merchant login',                 group: 'unlocked', state: 'ACTIVE',    blocker: null,                                         action: null },
+  { cap: 'Sandbox API keys',               group: 'unlocked', state: 'ACTIVE',    blocker: null,                                         action: 'View in API & Webhooks' },
+  { cap: 'Payment intent (sandbox shell)', group: 'unlocked', state: 'ACTIVE',    blocker: null,                                         action: 'Test in sandbox' },
+  { cap: 'Webhook endpoint config',        group: 'unlocked', state: 'ACTIVE',    blocker: null,                                         action: 'Configure endpoints' },
+  { cap: 'Payment list reads',             group: 'unlocked', state: 'ACTIVE',    blocker: null,                                         action: null },
+  { cap: 'Stripe Connect onboarding',      group: 'locked',   state: 'LOCKED',    blocker: 'KYB not approved',                           action: 'Blocked until KYB complete' },
+  { cap: 'Live payments',                  group: 'locked',   state: 'LOCKED',    blocker: 'KYB approval + Stripe Connect required',     action: 'Pending KYB' },
+  { cap: 'Settlements / payouts',          group: 'locked',   state: 'LOCKED',    blocker: 'Stripe Connect + bank account verification', action: 'Blocked' },
+  { cap: 'Live API keys',                  group: 'locked',   state: 'LOCKED',    blocker: 'KYB approval required',                      action: 'Pending KYB' },
+  { cap: 'Production webhooks',            group: 'locked',   state: 'LOCKED',    blocker: 'Live mode not enabled',                      action: 'Blocked' },
+  { cap: 'Live payouts',                   group: 'locked',   state: 'LOCKED',    blocker: 'Settlements not enabled',                    action: 'Blocked' },
+];
+
+const CAPS_PREVIEW = [
+  { cap: 'Sandbox merchant account',       group: 'unlocked', state: 'ACTIVE',     blocker: null,                                  action: null },
+  { cap: 'Merchant login',                 group: 'unlocked', state: 'ACTIVE',     blocker: null,                                  action: null },
+  { cap: 'Sandbox API keys',               group: 'unlocked', state: 'ACTIVE',     blocker: null,                                  action: 'View in API & Webhooks' },
+  { cap: 'Payment intent (sandbox shell)', group: 'unlocked', state: 'ACTIVE',     blocker: null,                                  action: 'Test in sandbox' },
+  { cap: 'Webhook endpoint config',        group: 'unlocked', state: 'ACTIVE',     blocker: null,                                  action: 'Configure endpoints' },
+  { cap: 'Payment list reads',             group: 'unlocked', state: 'ACTIVE',     blocker: null,                                  action: null },
+  { cap: 'Stripe Connect onboarding',      group: 'unlocked', state: 'AVAILABLE',  blocker: null,                                  action: 'Start onboarding →' },
+  { cap: 'Live payments',                  group: 'locked',   state: 'LOCKED',     blocker: 'Stripe Connect onboarding required',  action: 'Pending Stripe' },
+  { cap: 'Settlements / payouts',          group: 'locked',   state: 'LOCKED',     blocker: 'Stripe Connect + bank verification',  action: 'Pending Stripe' },
+  { cap: 'Live API keys',                  group: 'locked',   state: 'LOCKED',     blocker: 'Stripe Connect required',             action: 'Pending Stripe' },
+  { cap: 'Production webhooks',            group: 'locked',   state: 'LOCKED',     blocker: 'Live mode not enabled',               action: 'Blocked' },
+  { cap: 'Live payouts',                   group: 'locked',   state: 'LOCKED',     blocker: 'Settlements not enabled',             action: 'Blocked' },
+];
+
+const TIMELINE = [
+  { ts: '2026-05-13 14:38', actor: 'System',       dot: 'ok',   name: 'ACCOUNT CREATED',       desc: 'Merchant account for Orbit Market GmbH created. Admin invite sent to nora@orbitmarket.de.',            audit: 'merchant.account.created' },
+  { ts: '2026-05-13 14:42', actor: 'Nora Klein',   dot: 'ok',   name: 'EMAIL VERIFIED',        desc: 'Admin email confirmed via verification link.',                                                           audit: 'merchant.admin.email_verified' },
+  { ts: '2026-05-14 09:18', actor: 'Nora Klein',   dot: 'ok',   name: 'PROFILE SUBMITTED',     desc: 'Business profile and legal entity details submitted for platform review.',                               audit: 'merchant.profile.submitted' },
+  { ts: '2026-05-14 10:30', actor: 'Nora Klein',   dot: 'ok',   name: 'KYB DOCS UPLOADED',     desc: '6 documents uploaded: company registration, VAT cert, 2 owner passports, bank statement, board resolution.', audit: 'kyb.documents.uploaded' },
+  { ts: '2026-05-15 09:02', actor: 'System — KYB', dot: 'pend', name: 'KYB REVIEW STARTED',    desc: 'Case KYB-77201 opened. Assigned to Merchant KYB Review queue. Initial risk classification: Medium.',   audit: 'kyb.review.started' },
+  { ts: '2026-05-15 11:05', actor: 'Nora Klein',   dot: 'pend', name: 'BANK ACCOUNT ADDED',    desc: 'EUR settlement IBAN DE89 3704 0044 0532 0130 00 submitted. Micro-deposit verification initiated.',      audit: 'merchant.bank_account.submitted' },
+  { ts: '2026-05-15 14:30', actor: 'KYB Reviewer', dot: 'bad',  name: 'DOCUMENT QUALITY ISSUE',desc: 'Owner passport (Beneficial Owner #1) rejected — image quality insufficient. Resubmission requested.',   audit: 'kyb.document.quality_rejected' },
+  { ts: '2026-05-17 08:55', actor: 'System',       dot: 'pend', name: 'REVIEW STATUS UPDATED', desc: 'Platform review active. Owner document resubmission pending before review can continue.',               audit: 'merchant.review.status_updated' },
+];
+
+/* ── SIDEBAR ───────────────────────────────────────────────────────────────── */
+function Sidebar() {
+  return (
+    <div className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-mark">
+          <LogoMark />
+          <div>
+            <div className="sb-name">MiniFin</div>
+            <div className="sb-sub">Merchant Dashboard</div>
+          </div>
+        </div>
+        <div className="sb-merchant">
+          <div className="sb-m-label">Merchant</div>
+          <div className="sb-m-name">Orbit Market</div>
+          <div className="sb-m-id">MRC-20491</div>
+        </div>
+      </div>
+      <nav className="sb-nav">
+        {NAV_ITEMS.map((item, i) => (
+          item.sec
+            ? <div key={i} className="nav-sec" style={{marginTop: i === 0 ? 0 : 8}}>{item.sec}</div>
+            : (
+              <div key={i} className={`nav-item${item.current ? ' current' : ''}${item.locked ? ' locked' : ''}`}>
+                <span style={{fontSize: 13}}>{item.icon}</span>
+                <span>{item.label}</span>
+                {item.locked && <span className="nav-lock">🔒</span>}
+                <span className="nav-id">{item.id}</span>
+              </div>
+            )
+        ))}
+      </nav>
+      <div className="sb-footer">
+        <div className="env-chip"><div className="env-dot"/>Local Sandbox</div>
+        <div className="env-host">api.minifin.local</div>
+        <div className="sb-user">
+          <div className="sb-avatar">NK</div>
+          <div>
+            <div className="sb-uname">Nora Klein</div>
+            <div className="sb-urole">Merchant Admin</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── STATUS STRIP ──────────────────────────────────────────────────────────── */
+function StatusHeader({ previewApproved }) {
+  return (
+    <div className="status-strip">
+      <div className="stat-cell">
+        <div className="stat-k">Merchant</div>
+        <div className="stat-v">Orbit Market</div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Merchant ID</div>
+        <div className="stat-v mono">MRC-20491</div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Legal Entity</div>
+        <div className="stat-v">Orbit Market GmbH</div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Country · Type</div>
+        <div className="stat-v">Germany · Online marketplace</div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">KYB Status</div>
+        <div className="stat-v">
+          {previewApproved
+            ? <Badge cls="b-active">APPROVED</Badge>
+            : <Badge cls="b-inreview">IN REVIEW</Badge>}
+        </div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Stripe Connect</div>
+        <div className="stat-v">
+          {previewApproved
+            ? <Badge cls="b-available">READY TO START</Badge>
+            : <Badge cls="b-notstarted">NOT STARTED</Badge>}
+        </div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Payments</div>
+        <div className="stat-v">
+          {previewApproved
+            ? <Badge cls="b-pending">PENDING STRIPE</Badge>
+            : <Badge cls="b-blocked">BLOCKED</Badge>}
+        </div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">API Access</div>
+        <div className="stat-v"><Badge cls="b-sandbox">SANDBOX ONLY</Badge></div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Last Updated</div>
+        <div className="stat-v mono" style={{fontSize: 11}}>2026-05-17 12:20</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PROGRESS PATH ─────────────────────────────────────────────────────────── */
+function ProgressPath({ previewApproved }) {
+  const steps = previewApproved
+    ? [
+        { label: 'ACCOUNT CREATED',     cls: 'past' },
+        { label: 'BUSINESS PROFILE',    cls: 'past' },
+        { label: 'KYB DOCUMENTS',       cls: 'past' },
+        { label: 'PLATFORM REVIEW',     cls: 'past' },
+        { label: 'STRIPE CONNECT',      cls: 'current', sub: '← next step' },
+        { label: 'PAYMENTS ENABLED',    cls: 'next' },
+        { label: 'SETTLEMENTS ENABLED', cls: 'future' },
+      ]
+    : [
+        { label: 'ACCOUNT CREATED',     cls: 'past' },
+        { label: 'BUSINESS PROFILE',    cls: 'past' },
+        { label: 'KYB DOCUMENTS',       cls: 'past', sub: '⚠ issue' },
+        { label: 'PLATFORM REVIEW',     cls: 'current', sub: '← active' },
+        { label: 'STRIPE CONNECT',      cls: 'next' },
+        { label: 'PAYMENTS ENABLED',    cls: 'future' },
+        { label: 'SETTLEMENTS ENABLED', cls: 'future' },
+      ];
+
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+          <span className="panel-title">Onboarding Progress</span>
+          {previewApproved
+            ? <Badge cls="b-active">STEP 5 OF 7 — POST-KYB STATE</Badge>
+            : <Badge cls="b-inreview">STEP 4 OF 7</Badge>}
+        </div>
+        <span style={{fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)'}}>
+          {previewApproved ? 'Preview: KYB approved' : 'Current owner: Platform KYB Review'}
+        </span>
+      </div>
+      <div className="state-path">
+        {steps.map((s, i) => (
+          <div key={i} className="sp-node">
+            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+              <span className={`sp-pill ${s.cls}`}>{s.label}</span>
+              {s.sub && (
+                <span className="sp-sub" style={{
+                  color: s.cls === 'current' ? 'var(--or)'
+                       : s.sub.startsWith('⚠') ? 'var(--rd)'
+                       : 'var(--t3)'
+                }}>{s.sub}</span>
+              )}
+            </div>
+            {i < steps.length - 1 && <span className="sp-arrow">›</span>}
+          </div>
+        ))}
+      </div>
+      {!previewApproved && (
+        <div className="rework-branch">
+          <span className="rework-label">⟲ Rework path:</span>
+          <div style={{display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap'}}>
+            <span className="sp-pill bad" style={{fontSize: 9}}>KYB DOCUMENTS</span>
+            <span className="sp-arrow">›</span>
+            <span className="sp-pill bad" style={{fontSize: 9}}>RESUBMISSION REQUIRED</span>
+            <span className="sp-arrow">›</span>
+            <span className="sp-pill current" style={{fontSize: 9, boxShadow: 'none'}}>AWAITING RESUBMIT</span>
+            <span style={{fontSize: 10.5, color: 'var(--rd)', marginLeft: 8}}>
+              Owner passport must be re-uploaded before review continues.
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── REQUIREMENTS CHECKLIST ────────────────────────────────────────────────── */
+function RequirementsPanel({ previewApproved, onResubmit, resubmitDone }) {
+  const reqs = previewApproved
+    ? REQUIREMENTS.map(r => ({
+        ...r,
+        status: (r.status === 'action_required' || r.status === 'partial') ? 'verified' : r.status,
+        issue: null,
+        blocking: false,
+      }))
+    : REQUIREMENTS.map(r =>
+        r.id === 'REQ-07' && resubmitDone
+          ? { ...r, status: 'pending', issue: 'Resubmitted — awaiting reviewer acceptance', blocking: true }
+          : r
+      );
+
+  const statusBadge = s => {
+    if (s === 'verified')        return <Badge cls="b-active">VERIFIED</Badge>;
+    if (s === 'pending')         return <Badge cls="b-pending">PENDING</Badge>;
+    if (s === 'action_required') return <Badge cls="b-action">ACTION REQUIRED</Badge>;
+    if (s === 'partial')         return <Badge cls="b-partial">PARTIAL</Badge>;
+    return <Badge cls="b-locked">{s.toUpperCase()}</Badge>;
+  };
+
+  const blockerCount = reqs.filter(r => r.blocking).length;
+
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+          <span className="panel-title">Requirements Checklist</span>
+          {blockerCount > 0
+            ? <Badge cls="b-action">{blockerCount} BLOCKING</Badge>
+            : <Badge cls="b-active">ALL SATISFIED</Badge>}
+        </div>
+        <span style={{fontSize: 10.5, color: 'var(--t3)'}}>
+          {reqs.filter(r => r.status === 'verified').length} / {reqs.length} verified
+        </span>
+      </div>
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th style={{width: 60}}>ID</th>
+            <th>Requirement</th>
+            <th style={{width: 130}}>Status</th>
+            <th style={{width: 130}}>Submitted</th>
+            <th style={{width: 120}}>Source</th>
+            <th style={{width: 70}}>Blocking</th>
+            <th style={{width: 150}}>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {reqs.map(r => (
+            <tr key={r.id}
+              className={r.status === 'action_required' ? 'row-issue' : (r.status === 'pending' && r.blocking) ? 'row-pend' : ''}>
+              <td className="mono-cell" style={{color: 'var(--t3)'}}>{r.id}</td>
+              <td>
+                <div style={{fontSize: 12, fontWeight: 500, color: 'var(--t1)'}}>{r.label}</div>
+                {r.issue && (
+                  <div style={{fontSize: 10.5, color: r.status === 'action_required' ? 'var(--rd)' : 'var(--or)', marginTop: 2}}>
+                    {r.issue}
+                  </div>
+                )}
+              </td>
+              <td>{statusBadge(r.status)}</td>
+              <td className="mono-cell" style={{fontSize: 10.5, color: 'var(--t3)'}}>{r.submitted}</td>
+              <td style={{fontSize: 11, color: 'var(--t2)'}}>{r.source}</td>
+              <td>
+                {r.blocking
+                  ? <Badge cls="b-action">YES</Badge>
+                  : <span style={{fontSize: 10.5, color: 'var(--t3)'}}>—</span>}
+              </td>
+              <td>
+                {r.id === 'REQ-07' && r.status === 'action_required' && (
+                  <button className="btn btn-warn btn-sm" onClick={onResubmit}>Resubmit</button>
+                )}
+                {r.id === 'REQ-07' && r.status === 'pending' && (
+                  <span style={{fontSize: 11, color: 'var(--am)'}}>Awaiting review…</span>
+                )}
+                {r.id === 'REQ-09' && r.status === 'pending' && (
+                  <span style={{fontSize: 11, color: 'var(--am)'}}>Auto ~1 business day</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ── KYB REVIEW PANEL ──────────────────────────────────────────────────────── */
+function KYBPanel({ previewApproved }) {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+          <span className="panel-title">KYB Review</span>
+          <span style={{fontSize: 10.5, fontFamily: 'var(--f-mono)', color: 'var(--t3)'}}>KYB-77201</span>
+          {previewApproved
+            ? <Badge cls="b-active">APPROVED</Badge>
+            : <Badge cls="b-inreview">IN REVIEW</Badge>}
+        </div>
+        <span style={{fontSize: 10.5, color: 'var(--t3)'}}>
+          Risk: <span style={{color: 'var(--am)', fontWeight: 600}}>Medium</span>
+        </span>
+      </div>
+      <div className="panel-body" style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px'}}>
+        <div className="kv-table">
+          <KV k="KYB Case ID" mono>KYB-77201</KV>
+          <KV k="Review Status">
+            {previewApproved
+              ? <Badge cls="b-active">APPROVED</Badge>
+              : <Badge cls="b-inreview">IN REVIEW</Badge>}
+          </KV>
+          <KV k="Assigned Queue">Merchant KYB Review</KV>
+          <KV k="Risk Classification"><Badge cls="b-warn">MEDIUM</Badge></KV>
+          <KV k="Manual Review Required">
+            <Badge cls="b-pending">YES</Badge>
+            <span style={{fontSize: 11, color: 'var(--t3)'}}>marketplace model</span>
+          </KV>
+          <KV k="Case Opened" mono>2026-05-15 09:02</KV>
+          <KV k="Last Event" mono>2026-05-17 08:55</KV>
+        </div>
+        <div className="kv-table">
+          <KV k="Requested Information">
+            {previewApproved
+              ? <span style={{color: 'var(--g)'}}>None — all documents accepted</span>
+              : 'Owner passport resubmission (Beneficial Owner #1)'}
+          </KV>
+          <KV k="Expected Review Time">
+            {previewApproved ? 'Completed' : '1–2 business days after resubmission received'}
+          </KV>
+          <KV k="Manual Review Note">
+            {previewApproved
+              ? 'Review complete. Marketplace risk model acceptable for current tier.'
+              : 'Marketplace model introduces elevated seller risk exposure. Manual review required before approval.'}
+          </KV>
+        </div>
+      </div>
+      <div style={{padding: '0 16px 13px'}}>
+        {!previewApproved
+          ? (
+            <div className="alert alert-warn">
+              <div>
+                <strong>Resubmission required:</strong> The passport copy for Beneficial Owner #1 was rejected due to image quality. Upload a clear, unobstructed scan of the bio page (min 300 DPI, max 10 MB). Review will resume after acceptance.
+              </div>
+            </div>
+          ) : (
+            <div className="alert alert-green">
+              KYB review complete. All submitted documents verified. Stripe Connect onboarding is now unblocked.
+            </div>
+          )
+        }
+      </div>
+    </div>
+  );
+}
+
+/* ── STRIPE CONNECT PANEL ──────────────────────────────────────────────────── */
+function StripePanel({ previewApproved, onStart, stripeMsg }) {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+          <span className="panel-title">Stripe Connect Integration</span>
+          {previewApproved
+            ? <Badge cls="b-available">ONBOARDING AVAILABLE</Badge>
+            : <Badge cls="b-notstarted">NOT STARTED</Badge>}
+        </div>
+        <span className="sandbox-note">Real Stripe sandbox credentials required — MRC-01 integration</span>
+      </div>
+      <div className="panel-body">
+        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px', marginBottom: 14}}>
+          <div className="kv-table">
+            <KV k="Stripe Account ID" mono>
+              {previewApproved ? 'Pending creation on start' : 'Not created'}
+            </KV>
+            <KV k="Onboarding Link">
+              {previewApproved
+                ? <Badge cls="b-available">GENERATED ON START</Badge>
+                : <Badge cls="b-notstarted">UNAVAILABLE</Badge>}
+            </KV>
+            <KV k="Last Webhook Received">
+              <span style={{color: 'var(--t3)'}}>None</span>
+            </KV>
+          </div>
+          <div className="kv-table">
+            <KV k="Prerequisite: KYB Approval">
+              {previewApproved
+                ? <Badge cls="b-active">SATISFIED</Badge>
+                : <Badge cls="b-action">NOT MET</Badge>}
+            </KV>
+            <KV k="Prerequisite: Bank Account">
+              <Badge cls="b-pending">VERIFICATION PENDING</Badge>
+            </KV>
+            <KV k="Account Mode">Sandbox / Test mode only</KV>
+          </div>
+        </div>
+        <div style={{marginBottom: 12}}>
+          <div style={{fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--t3)', fontWeight: 600, marginBottom: 6}}>Capabilities</div>
+          <div className="stripe-cap-list">
+            <span className="stripe-cap cap-pend">card_payments — PENDING</span>
+            <span className="stripe-cap cap-pend">transfers — PENDING</span>
+            <span className="stripe-cap cap-blk">payouts — BLOCKED</span>
+          </div>
+        </div>
+        {!previewApproved
+          ? (
+            <div className="alert alert-info" style={{marginBottom: 12}}>
+              Stripe Connect onboarding is blocked until KYB approval. Once approved, an onboarding link can be generated from this panel. The platform operator must have Stripe sandbox credentials configured for MRC-01.
+            </div>
+          ) : (
+            <div className="alert alert-pu" style={{marginBottom: 12}}>
+              <strong>Preview state:</strong> KYB approved — "Start Stripe Connect" is now enabled. In a real deployment, this generates a Stripe-hosted onboarding flow using configured sandbox credentials. No real Stripe account exists in local sandbox.
+            </div>
+          )
+        }
+        <div style={{display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap'}}>
+          <button
+            className="btn btn-primary"
+            style={!previewApproved ? {opacity: 0.38, cursor: 'not-allowed'} : {}}
+            onClick={onStart}
+          >
+            Start Stripe Connect Onboarding
+          </button>
+          {!previewApproved && (
+            <button className="btn btn-ghost btn-sm" onClick={onStart}>
+              Why is this disabled?
+            </button>
+          )}
+        </div>
+        {stripeMsg && <div className="stripe-msg">{stripeMsg}</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ── READINESS MATRIX ──────────────────────────────────────────────────────── */
+function ReadinessMatrix({ previewApproved, onCapClick }) {
+  const caps = previewApproved ? CAPS_PREVIEW : CAPABILITIES;
+  const unlocked = caps.filter(c => c.group === 'unlocked');
+  const locked   = caps.filter(c => c.group === 'locked');
+
+  const stateCell = c => {
+    if (c.state === 'ACTIVE')    return <Badge cls="b-active">ACTIVE</Badge>;
+    if (c.state === 'AVAILABLE') return <Badge cls="b-available">AVAILABLE</Badge>;
+    return <Badge cls="b-locked">LOCKED</Badge>;
+  };
+
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+          <span className="panel-title">Capability Readiness Matrix</span>
+          {previewApproved && <Badge cls="b-available">PREVIEW: POST-KYB STATE</Badge>}
+        </div>
+        <span style={{fontSize: 10.5, color: 'var(--t3)'}}>Click any row for detail</span>
+      </div>
+      <table className="data-table">
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th style={{width: 110}}>State</th>
+            <th>Blocker</th>
+            <th style={{width: 190}}>Next Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="matrix-sec-hdr">
+            <td colSpan={4}>UNLOCKED — Available now in local sandbox</td>
+          </tr>
+          {unlocked.map((c, i) => (
+            <tr key={i} className="cap-active-row" style={{cursor: 'pointer'}} onClick={() => onCapClick(c)}>
+              <td style={{fontWeight: 500}}>{c.cap}</td>
+              <td>{stateCell(c)}</td>
+              <td><span style={{color: 'var(--t3)', fontSize: 11}}>—</span></td>
+              <td>
+                {c.action
+                  ? <button className="tbl-link">{c.action}</button>
+                  : <span style={{color: 'var(--t3)', fontSize: 11}}>—</span>}
+              </td>
+            </tr>
+          ))}
+          <tr className="matrix-sec-hdr">
+            <td colSpan={4}>LOCKED — Further steps required</td>
+          </tr>
+          {locked.map((c, i) => (
+            <tr key={i} className="cap-locked-row" style={{cursor: 'pointer'}} onClick={() => onCapClick(c)}>
+              <td style={{fontWeight: 500, color: 'var(--t2)'}}>{c.cap}</td>
+              <td>{stateCell(c)}</td>
+              <td style={{fontSize: 11.5, color: 'var(--rd)'}}>{c.blocker}</td>
+              <td style={{fontSize: 11, color: 'var(--t3)'}}>{c.action || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ── BUSINESS PROFILE ──────────────────────────────────────────────────────── */
+function BusinessProfile() {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Business Profile</span>
+        <Badge cls="b-active">SUBMITTED</Badge>
+      </div>
+      <div className="panel-body" style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 32px'}}>
+        <div className="kv-table">
+          <KV k="Trading Name">Orbit Market</KV>
+          <KV k="Legal Entity">Orbit Market GmbH</KV>
+          <KV k="Business Category">Online marketplace — mixed retail</KV>
+          <KV k="Website">orbitmarket.de</KV>
+          <KV k="Support Email">support@orbitmarket.de</KV>
+          <KV k="Support Phone">+49 30 555 0187</KV>
+        </div>
+        <div className="kv-table">
+          <KV k="Country">Germany (DE)</KV>
+          <KV k="Settlement Currency">EUR</KV>
+          <KV k="MCC / Category Proposal">5999 — Marketplace / Mixed Retail</KV>
+          <KV k="Risk Classification"><Badge cls="b-warn">MEDIUM</Badge></KV>
+          <KV k="Marketplace Model"><Badge cls="b-inreview">YES — MULTI-SELLER</Badge></KV>
+          <KV k="Public API Mode"><Badge cls="b-sandbox">SANDBOX</Badge></KV>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── TIMELINE RAIL ─────────────────────────────────────────────────────────── */
+function TLRail({ expandedEvents, toggleEvent }) {
+  return (
+    <div className="tl-rail">
+      <div className="tl-hdr">Activity · Audit Log</div>
+      <div className="tl-body">
+        {TIMELINE.map((evt, i) => {
+          const expanded = expandedEvents.has(i);
+          const isLast = i === TIMELINE.length - 1;
+          return (
+            <div key={i} className="tl-evt" onClick={() => toggleEvent(i)}>
+              <div className="tl-spine">
+                <div className={`tl-dot ${evt.dot}`}/>
+                {!isLast && <div className="tl-line"/>}
+              </div>
+              <div className="tl-content">
+                <div className="tl-ts">{evt.ts}</div>
+                <div className="tl-name">{evt.name}</div>
+                <div className="tl-actor">{evt.actor}</div>
+                <div className="tl-desc">{evt.desc}</div>
+                {expanded
+                  ? <div className="tl-audit">{evt.audit}</div>
+                  : <div className="tl-expand-hint">click to expand</div>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── RESUBMIT MODAL ────────────────────────────────────────────────────────── */
+function ResubmitModal({ onClose, onDone }) {
+  const [uploaded, setUploaded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = () => {
+    if (!uploaded) return;
+    setSubmitting(true);
+    setTimeout(() => { onDone(); }, 1600);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-hdr">
+          <div>
+            <div className="modal-title">Resubmit Document — REQ-07</div>
+            <div className="modal-sub">Beneficial owners · Passport copy — Beneficial Owner #1</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="alert alert-red">
+            <div>
+              <strong>Rejection reason:</strong> Passport bio page image quality insufficient. Upload a clear, flat scan or high-resolution photo. No glare, no cutoff, no obstructions. Minimum 300 DPI, maximum 10 MB. Formats: JPG, PNG, PDF.
+            </div>
+          </div>
+          <div className="kv-table">
+            <KV k="Document type">Passport — bio page</KV>
+            <KV k="Beneficial owner">Owner #1 — recorded in KYB case</KV>
+            <KV k="KYB case" mono>KYB-77201</KV>
+            <KV k="Required format">JPG · PNG · PDF · min 300 DPI · max 10 MB</KV>
+          </div>
+          {!uploaded ? (
+            <div>
+              <label className="inp-label">Upload replacement document</label>
+              <div className="upload-zone" onClick={() => setUploaded(true)}>
+                <div style={{fontSize: 22, marginBottom: 6}}>↑</div>
+                <div style={{fontWeight: 500, marginBottom: 3}}>Click to select file</div>
+                <div style={{fontSize: 11}}>JPG · PNG · PDF — up to 10 MB</div>
+                <div style={{fontSize: 10, marginTop: 8, color: 'var(--t4)', fontFamily: 'var(--f-mono)'}}>
+                  [Local Sandbox — no real upload occurs]
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="alert alert-green">
+              <div>
+                <strong>passport_bio_owner1_v2.pdf</strong> — 4.2 MB — ready to submit.
+                {submitting && ' Submitting…'}
+              </div>
+            </div>
+          )}
+          <div className="sandbox-note">
+            Local Sandbox: document submission is simulated. In production, this sends the file to the KYB case for reviewer acceptance.
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button
+            className="btn btn-primary"
+            onClick={handleSubmit}
+            disabled={!uploaded || submitting}
+          >
+            {submitting ? 'Submitting…' : 'Submit Resubmission'}
+          </button>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <span className="modal-note">Review resumes after resubmission is accepted.</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── CAPABILITY DETAIL MODAL ───────────────────────────────────────────────── */
+function CapabilityModal({ cap, onClose }) {
+  const isUnlocked = cap.group === 'unlocked';
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{width: 440}} onClick={e => e.stopPropagation()}>
+        <div className="modal-hdr">
+          <div>
+            <div className="modal-title">{cap.cap}</div>
+            <div className="modal-sub">Capability readiness detail</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="kv-table">
+            <KV k="Capability">{cap.cap}</KV>
+            <KV k="Current state">
+              {cap.state === 'ACTIVE'
+                ? <Badge cls="b-active">ACTIVE</Badge>
+                : cap.state === 'AVAILABLE'
+                ? <Badge cls="b-available">AVAILABLE</Badge>
+                : <Badge cls="b-locked">LOCKED</Badge>}
+            </KV>
+            <KV k="Group">{isUnlocked ? 'Unlocked — available now' : 'Locked — further steps required'}</KV>
+            {cap.blocker && <KV k="Blocker">{cap.blocker}</KV>}
+            {cap.action && <KV k="Next action">{cap.action}</KV>}
+          </div>
+          {isUnlocked && (
+            <div className="alert alert-green">
+              This capability is active and available for Orbit Market (MRC-20491) in the local sandbox environment.
+            </div>
+          )}
+          {!isUnlocked && (
+            <div className="alert alert-warn">
+              This capability is locked. The stated blocker must be resolved before it becomes available. Some blockers (e.g. KYB approval) are resolved by the platform review team — no direct merchant action is required beyond providing required documents.
+            </div>
+          )}
+          <div className="sandbox-note">Local Sandbox — capability state is illustrative and does not reflect a live integration.</div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ───────────────────────────────────────────────────────────────────── */
+function App() {
+  const [previewApproved, setPreviewApproved] = useState(false);
+  const [showResubmit,    setShowResubmit]    = useState(false);
+  const [resubmitDone,    setResubmitDone]    = useState(false);
+  const [stripeMsg,       setStripeMsg]       = useState('');
+  const [detailCap,       setDetailCap]       = useState(null);
+  const [expandedEvents,  setExpandedEvents]  = useState(new Set([4, 6]));
+
+  const toggleEvent = idx => {
+    setExpandedEvents(prev => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  };
+
+  const handleStripeClick = () => {
+    const msg = previewApproved
+      ? 'Preview mode — in a real deployment with Stripe sandbox credentials configured, this would generate a Stripe-hosted onboarding link for MRC-20491.'
+      : 'Stripe Connect onboarding cannot be started until KYB is approved. Complete the beneficial owner document resubmission and await platform review.';
+    setStripeMsg(msg);
+    setTimeout(() => setStripeMsg(''), 7000);
+  };
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>MiniFin</span>
+            <span className="sep">/</span>
+            <span>Merchant Dashboard</span>
+            <span className="sep">·</span>
+            <strong>Onboarding Status</strong>
+            <span className="sep">/</span>
+            <span className="mode">MRC-20491 — Orbit Market GmbH</span>
+          </div>
+          <div className="page-meta">
+            <span className="screen-id">MDB-UI-02</span>
+            <span className="env-badge"><span className="env-badge-dot"/>Local Sandbox</span>
+            <button
+              className={`preview-toggle ${previewApproved ? 'on' : 'off'}`}
+              onClick={() => setPreviewApproved(p => !p)}
+            >
+              {previewApproved ? '◉ Post-KYB preview ON' : '○ Preview approved state'}
+            </button>
+            <div className="user-chip">
+              <div className="user-avatar">NK</div>
+              <span className="user-name">Nora Klein</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="content-area">
+          <div className="left-scroll">
+
+            {previewApproved && (
+              <div className="preview-banner">
+                <strong>◉ Preview mode active:</strong>&nbsp;
+                Showing post-KYB-approval state. Stripe Connect becomes available; live payments, live API keys, and settlements remain locked until Stripe Connect is complete. Toggle off to return to current state.
+              </div>
+            )}
+
+            <StatusHeader previewApproved={previewApproved} />
+
+            <ProgressPath previewApproved={previewApproved} />
+
+            <RequirementsPanel
+              previewApproved={previewApproved}
+              onResubmit={() => setShowResubmit(true)}
+              resubmitDone={resubmitDone}
+            />
+
+            <KYBPanel previewApproved={previewApproved} />
+
+            <StripePanel
+              previewApproved={previewApproved}
+              onStart={handleStripeClick}
+              stripeMsg={stripeMsg}
+            />
+
+            <ReadinessMatrix
+              previewApproved={previewApproved}
+              onCapClick={setDetailCap}
+            />
+
+            <BusinessProfile />
+
+          </div>
+          <TLRail expandedEvents={expandedEvents} toggleEvent={toggleEvent} />
+        </div>
+      </div>
+
+      {showResubmit && (
+        <ResubmitModal
+          onClose={() => setShowResubmit(false)}
+          onDone={() => { setResubmitDone(true); setShowResubmit(false); }}
+        />
+      )}
+      {detailCap && (
+        <CapabilityModal cap={detailCap} onClose={() => setDetailCap(null)} />
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
