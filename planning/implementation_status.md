@@ -151,6 +151,7 @@ Created:
 - `prototypes/ui/13_enduser_kyc_status.html` — standalone `UEW-UI-02` end-user KYC status HTML prototype from UI/UX prototype workflow; headless Chrome render check passed on 2026-05-17.
 - `prototypes/ui/14_enduser_wallet_home.html` — standalone `UEW-UI-03` end-user wallet home HTML prototype from UI/UX prototype workflow; minor JSX style syntax, flex layout clipping and wide viewport root sizing fixed locally; headless Chrome render check passed on 2026-05-17.
 - `prototypes/ui/15_enduser_deposit_request.html` — standalone `UEW-UI-04` end-user deposit request HTML prototype from UI/UX prototype workflow; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-17.
+- `prototypes/ui/16_enduser_transfer.html` — standalone `UEW-UI-05` end-user transfer HTML prototype from UI/UX prototype workflow; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-17.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;

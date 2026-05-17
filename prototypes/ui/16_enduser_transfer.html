@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Transfer — UEW-UI-05</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --inp:     #faf9f7;
+      --hover:   #f0efe9;
+
+      --sb:        #111114;
+      --sb-bdr:    #1e1e22;
+      --sb-muted:  #545460;
+      --sb-active: #1e1e28;
+
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+
+      --t1: #1c1c1f;
+      --t2: #575763;
+      --t3: #9898a6;
+      --t4: #d0d0da;
+
+      --cta:     #1c1c1f;
+      --cta-hov: #2e2e35;
+      --cta-t:   #ffffff;
+
+      --g:    #166534;  --g-bg: #f0fdf4;  --g-bd: #bbf7d0;
+      --am:   #854d0e;  --am-bg:#fffbeb;  --am-bd:#fde68a;
+      --rd:   #9b1c1c;  --rd-bg:#fef2f2;  --rd-bd:#fecaca;
+      --or:   #b45309;  --or-bg:#fff7ed;  --or-bd:#fed7aa;
+      --pu:   #5b21b6;  --pu-bg:#f5f3ff;  --pu-bd:#ddd6fe;
+
+      --sb-env-bg: #1a1030;
+      --sb-env-t:  #b39cf0;
+      --sb-env-bd: #362566;
+
+      --f-ui:   'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+
+      --r:    3px;
+      --r-lg: 5px;
+      --w-sb: 220px;
+      --w-tl: 248px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+    #root { height: 100vh; display: flex; overflow: hidden; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 15px 15px 13px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-name  { font-size: 14.5px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+    .sb-nav   { flex: 1; padding: 10px 7px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 9px 5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 12px;
+      cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.35; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; }
+    .nav-lock { margin-left: auto; display: flex; align-items: center; opacity: 0.6; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono); color: var(--sb-muted); opacity: 0.8; }
+    .sb-footer { padding: 10px 14px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 10px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 4px; }
+    .env-dot   { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host  { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); }
+
+    /* MAIN */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .page-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 22px; border-bottom: 1px solid var(--bdr);
+      background: var(--surface); flex-shrink: 0; }
+    .page-bc   { font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .page-bc strong { color: var(--t1); font-weight: 500; }
+    .page-bc .sep   { color: var(--t3); }
+    .page-bc .mode  { font-family: var(--f-mono); font-size: 11.5px; color: var(--t2); }
+    .page-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .screen-id { font-size: 10px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge { font-size: 10px; font-family: var(--f-mono); color: var(--am);
+      background: var(--am-bg); border: 1px solid var(--am-bd);
+      padding: 2px 8px; border-radius: var(--r); display: flex; align-items: center; gap: 5px; }
+    .env-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--am); }
+    .user-chip { display: flex; align-items: center; gap: 7px; padding: 3px 9px 3px 3px;
+      border: 1px solid var(--bdr); border-radius: 20px; background: var(--surf2); }
+    .user-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--cta);
+      color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center;
+      justify-content: center; letter-spacing: 0.03em; flex-shrink: 0; }
+    .user-name { font-size: 11.5px; color: var(--t2); font-weight: 500; }
+
+    /* CONTENT */
+    .content-area { flex: 1; display: flex; overflow: hidden; }
+    .left-scroll  { flex: 1; overflow-y: auto; padding: 16px 20px;
+      background: var(--bg); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+    /* PANELS */
+    .panel     { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); flex-shrink: 0; }
+    .panel-title { font-size: 11.5px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 13px 16px; }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em;
+      font-family: var(--f-mono); border: 1px solid transparent; white-space: nowrap; }
+    .b-active    { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-done      { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-completed { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-pending   { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-held      { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-limited   { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-action    { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-rejected  { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-failed    { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-locked    { background: var(--hover); color: var(--t2);  border-color: var(--bdr); }
+    .b-cancelled { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-inreview  { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-dev       { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-verified  { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-unverif   { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+
+    /* DIRECTION */
+    .dir-out { font-size: 10px; font-family: var(--f-mono); color: var(--rd); font-weight: 600; }
+    .dir-in  { font-size: 10px; font-family: var(--f-mono); color: var(--g);  font-weight: 600; }
+    .dir-neu { font-size: 10px; font-family: var(--f-mono); color: var(--t3); }
+
+    /* KV */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--t3); min-width: 148px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--r); font-size: 12.5px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover:not(:disabled) { background: var(--cta-hov); }
+    .btn-ghost   { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover:not(:disabled)  { background: var(--hover); color: var(--t1); }
+    .btn-warn    { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+    .btn-warn:hover { background: #fef3c7; }
+    .btn-sm      { padding: 4px 10px; font-size: 11px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    /* ALERTS */
+    .alert { display: flex; gap: 10px; padding: 9px 12px 9px 13px; font-size: 12px;
+      line-height: 1.55; border-left-width: 3px; border-left-style: solid; border-radius: var(--r); }
+    .alert-warn  { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-red   { background: var(--rd-bg); border-left-color: var(--rd); color: #7f1d1d; }
+    .alert-info  { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-green { background: var(--g-bg);  border-left-color: var(--g); color: #14532d; }
+    .alert-or    { background: var(--or-bg); border-left-color: var(--or); color: #7c2d12; }
+
+    /* TABLES */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t3); padding: 6px 10px; text-align: left;
+      border-bottom: 1px solid var(--bdr); background: var(--surf2); font-weight: 600; }
+    .data-table td { padding: 6px 10px; font-size: 12px; border-bottom: 1px solid var(--hover); vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover td { background: var(--hover); cursor: pointer; }
+    .mono-cell { font-family: var(--f-mono); font-size: 11px; }
+
+    /* LEDGER TABLE in modal */
+    .ledger-tbl { width: 100%; border-collapse: collapse; }
+    .ledger-tbl th { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--t3); padding: 5px 10px; border-bottom: 1px solid var(--bdr);
+      background: var(--surf2); font-weight: 600; text-align: left; }
+    .ledger-tbl td { padding: 5px 10px; font-size: 11px; font-family: var(--f-mono);
+      border-bottom: 1px solid var(--hover); vertical-align: middle; }
+    .ledger-tbl tr:last-child td { border-bottom: none; }
+    .le-dr { color: var(--rd); font-weight: 600; }
+    .le-cr { color: var(--g);  font-weight: 600; }
+
+    /* FORM */
+    .inp-label { font-size: 11px; color: var(--t2); margin-bottom: 4px; font-weight: 500; display: block; }
+    .inp-hint  { font-size: 10.5px; color: var(--t3); margin-top: 3px; }
+    .inp-err   { font-size: 10.5px; color: var(--rd); margin-top: 3px; }
+    .inp-ok    { font-size: 10.5px; color: var(--g);  margin-top: 3px; }
+    .inp-warn  { font-size: 10.5px; color: var(--or); margin-top: 3px; }
+    .inp-field { width: 100%; padding: 7px 10px; border: 1px solid var(--bdr-mid);
+      border-radius: var(--r); font-size: 12.5px; color: var(--t1);
+      background: var(--inp); outline: none; font-family: var(--f-ui); transition: border-color 0.12s; }
+    .inp-field:focus { border-color: var(--bdr-focus); }
+    .inp-field.err  { border-color: var(--rd); }
+    .inp-field.ok   { border-color: var(--g-bd); }
+    select.inp-field { cursor: pointer; }
+    .form-group  { display: flex; flex-direction: column; }
+    .inp-prefix-wrap { display: flex; align-items: stretch; }
+    .inp-prefix  { padding: 7px 10px; background: var(--surf2); border: 1px solid var(--bdr-mid);
+      border-right: none; border-radius: var(--r) 0 0 var(--r); font-size: 12px;
+      color: var(--t3); font-family: var(--f-mono); display: flex; align-items: center; flex-shrink: 0; }
+    .inp-prefix + .inp-field { border-radius: 0 var(--r) var(--r) 0; }
+    .form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    /* PROGRESS BAR */
+    .prog-wrap  { height: 5px; background: var(--hover); border-radius: 3px; overflow: hidden; margin-top: 5px; }
+    .prog-fill  { height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .prog-green { background: var(--g); }
+    .prog-amber { background: var(--am); }
+    .prog-red   { background: var(--rd); }
+
+    /* STATE PATH */
+    .state-path { display: flex; align-items: center; flex-wrap: wrap; padding: 10px 14px; gap: 0; }
+    .sp-node  { display: flex; align-items: center; }
+    .sp-pill  { padding: 3px 9px; border-radius: 2px; font-size: 10px; font-family: var(--f-mono);
+      font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; border: 1px solid transparent; }
+    .sp-pill.done      { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .sp-pill.current   { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); box-shadow: 0 0 0 2px rgba(133,77,14,0.14); }
+    .sp-pill.next      { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .sp-pill.next-warn { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); box-shadow: 0 0 0 2px rgba(180,83,9,0.12); }
+    .sp-pill.bypassed  { background: var(--hover); color: var(--t4);  border-color: var(--bdr); text-decoration: line-through; opacity: 0.6; }
+    .sp-pill.future    { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .sp-pill.bad       { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .sp-arrow { font-size: 10px; color: var(--t4); margin: 0 4px; flex-shrink: 0; }
+
+    /* REVIEW ROWS */
+    .rev-row { display: flex; align-items: baseline; justify-content: space-between;
+      padding: 5px 0; border-bottom: 1px solid var(--hover); font-size: 12px; gap: 8px; }
+    .rev-row:last-child { border-bottom: none; }
+    .rev-k  { color: var(--t3); font-size: 11px; flex-shrink: 0; }
+    .rev-v  { font-weight: 500; color: var(--t1); text-align: right; }
+    .rev-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+    .rev-v.warn { color: var(--am); }
+    .rev-v.bad  { color: var(--rd); }
+    .rev-v.good { color: var(--g); }
+    .rev-v.or   { color: var(--or); }
+
+    /* RECIPIENT CARD */
+    .recip-card { border: 1px solid var(--bdr); border-radius: var(--r); overflow: hidden; }
+    .recip-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 12px; background: var(--surf2); border-bottom: 1px solid var(--bdr); }
+    .recip-avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; letter-spacing: 0.03em; }
+    .ra-unverif { background: var(--or-bg); color: var(--or); border: 1px solid var(--or-bd); }
+    .ra-verified { background: var(--g-bg);  color: var(--g);  border: 1px solid var(--g-bd); }
+
+    /* TIMELINE RAIL */
+    .tl-rail  { width: var(--w-tl); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .tl-hdr   { padding: 10px 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+      font-size: 9.5px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.1em; }
+    .tl-body  { flex: 1; overflow-y: auto; padding: 10px 14px; }
+    .tl-evt   { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hover); }
+    .tl-evt:last-child { border-bottom: none; }
+    .tl-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .tl-dot.ok   { background: var(--g); }
+    .tl-dot.pend { background: var(--am); }
+    .tl-dot.held { background: var(--or); }
+    .tl-dot.bad  { background: var(--rd); }
+    .tl-dot.neu  { background: var(--t4); }
+    .tl-line  { width: 1px; flex: 1; background: var(--bdr); margin: 4px 0; min-height: 12px; }
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-ts    { font-size: 9.5px; font-family: var(--f-mono); color: var(--t3); margin-bottom: 1px; }
+    .tl-name  { font-size: 11px; font-weight: 600; color: var(--t1); margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .tl-actor { font-size: 10px; color: var(--t3); margin-bottom: 2px; }
+    .tl-desc  { font-size: 10.5px; color: var(--t2); line-height: 1.4; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,20,0.52);
+      display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg);
+      width: 540px; max-width: 100%; max-height: 88vh; display: flex; flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08); }
+    .modal-hdr  { display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 13px 16px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; background: var(--surf2); }
+    .modal-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .modal-sub   { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .modal-close { width: 24px; height: 24px; border-radius: var(--r); background: transparent;
+      border: none; color: var(--t3); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: background 0.1s, color 0.1s; flex-shrink: 0; margin-top: 1px; }
+    .modal-close:hover { background: var(--hover); color: var(--t1); }
+    .modal-body   { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-footer { padding: 12px 16px; border-top: 1px solid var(--bdr); display: flex;
+      gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+    .modal-note   { font-size: 10.5px; color: var(--t3); margin-left: auto; font-style: italic; }
+
+    /* SUCCESS */
+    .success-panel { background: var(--g-bg); border: 1px solid var(--g-bd);
+      border-radius: var(--r-lg); padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+
+    /* SANDBOX NOTE */
+    .sandbox-note { font-size: 10px; color: var(--t3); font-family: var(--f-mono);
+      padding: 4px 9px; background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); }
+
+    @media (max-width: 1100px) { :root { --w-tl: 210px; } }
+    @media (max-width: 960px)  { .tl-rail { display: none; } }
+    @media (max-width: 800px)  { .form-grid2 { grid-template-columns: 1fr; } .form-grid3 { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px)  { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ── CONSTANTS ──────────────────────────────────────────────────────────── */
+const AVAIL_BALANCE   = 842.50;
+const DAILY_LIMIT     = 500;
+const USED_TODAY      = 120;         // prior transfer already sent today
+const PER_TX_MAX_KYC  = 250;         // per-transfer cap while KYC in review
+
+const RECIPIENT_UNVERIFIED = {
+  id: 'EU-10831', name: 'Jonas Hofer', walletId: 'WLT-EU-10831',
+  initials: 'JH', verified: false, verifLabel: 'NOT VERIFIED',
+  relationship: 'Not saved', lastTransfer: null,
+  riskFlags: ['recipient_kyc_incomplete'], saved: false,
+};
+const RECIPIENT_VERIFIED = {
+  id: 'EU-10021', name: 'Marta Petra', walletId: 'WLT-EU-10021',
+  initials: 'MP', verified: true, verifLabel: 'VERIFIED',
+  relationship: 'Saved recipient', lastTransfer: '2026-05-15',
+  riskFlags: [], saved: true,
+};
+
+/* ── TRANSFER HISTORY ───────────────────────────────────────────────────── */
+const TRANSFERS = [
+  {
+    id: 'TRF-71240', ts: '2026-05-17 08:55', dir: 'OUT',
+    counterparty: 'Jonas Hofer', counterpartyId: 'EU-10831',
+    amount: 'EUR 120.00', amountNum: 120,
+    recipientVerif: 'Not Verified', verifCls: 'b-unverif',
+    state: 'HELD_FOR_RECIPIENT_VERIFICATION',
+    badgeCls: 'b-held', badgeLabel: 'HELD',
+    nextOwner: 'System — awaiting recipient KYC completion',
+    note: 'Split invoice reimbursement', purpose: 'Personal reimbursement',
+    ledger: [
+      { side: 'DR', account: 'user.wallet.available · WLT-EU-77820', amount: 'EUR 120.00', type: 'TRANSFER_HOLD' },
+      { side: 'CR', account: 'platform.transfer.hold_account',        amount: 'EUR 120.00', type: 'TRANSFER_HOLD' },
+    ],
+    alert: { cls: 'alert-or', msg: 'Transfer is held pending recipient verification. Funds are debited from your available balance and held in the platform hold account. Will release when recipient completes KYC.' },
+  },
+  {
+    id: 'TRF-70190', ts: '2026-05-15 14:20', dir: 'OUT',
+    counterparty: 'Marta Petra', counterpartyId: 'EU-10021',
+    amount: 'EUR 85.00', amountNum: 85,
+    recipientVerif: 'Verified', verifCls: 'b-verified',
+    state: 'COMPLETED', badgeCls: 'b-completed', badgeLabel: 'COMPLETED',
+    nextOwner: 'Ledger posted — no further action',
+    note: 'Dinner share', purpose: 'Personal reimbursement',
+    ledger: [
+      { side: 'DR', account: 'user.wallet.available · WLT-EU-77820', amount: 'EUR 85.00', type: 'TRANSFER' },
+      { side: 'CR', account: 'user.wallet.available · WLT-EU-10021', amount: 'EUR 85.00', type: 'TRANSFER' },
+    ],
+    alert: { cls: 'alert-green', msg: 'Transfer completed. Funds credited immediately to verified recipient. Audit event: wallet.transfer_completed.' },
+  },
+  {
+    id: 'TRF-69045', ts: '2026-05-12 11:38', dir: 'IN',
+    counterparty: 'Lars Becker', counterpartyId: 'EU-20104',
+    amount: 'EUR 200.00', amountNum: 200,
+    recipientVerif: 'Verified', verifCls: 'b-verified',
+    state: 'COMPLETED', badgeCls: 'b-completed', badgeLabel: 'COMPLETED',
+    nextOwner: 'Received — ledger posted',
+    note: 'Project payment May', purpose: 'Business',
+    ledger: [
+      { side: 'DR', account: 'user.wallet.available · WLT-EU-20104', amount: 'EUR 200.00', type: 'TRANSFER' },
+      { side: 'CR', account: 'user.wallet.available · WLT-EU-77820', amount: 'EUR 200.00', type: 'TRANSFER' },
+    ],
+    alert: { cls: 'alert-green', msg: 'Transfer received from Lars Becker (EU-20104). Credited to available balance immediately.' },
+  },
+  {
+    id: 'TRF-66820', ts: '2026-04-28 09:12', dir: 'OUT',
+    counterparty: 'Jonas Hofer', counterpartyId: 'EU-10831',
+    amount: 'EUR 75.00', amountNum: 75,
+    recipientVerif: 'Not Verified', verifCls: 'b-unverif',
+    state: 'REJECTED', badgeCls: 'b-rejected', badgeLabel: 'REJECTED',
+    nextOwner: 'Reversed — recipient verification expired',
+    note: 'Old invoice Q1', purpose: 'Personal reimbursement',
+    ledger: [
+      { side: 'DR', account: 'platform.transfer.hold_account',        amount: 'EUR 75.00', type: 'REVERSAL' },
+      { side: 'CR', account: 'user.wallet.available · WLT-EU-77820', amount: 'EUR 75.00', type: 'REVERSAL' },
+    ],
+    alert: { cls: 'alert-red', msg: 'Transfer rejected. Recipient did not complete KYC within the hold period. Funds returned to your available balance. Audit event: wallet.transfer_rejected.' },
+  },
+  {
+    id: 'TRF-63100', ts: '2026-04-15 16:44', dir: 'DRAFT',
+    counterparty: '—', counterpartyId: '—',
+    amount: 'EUR 50.00', amountNum: 50,
+    recipientVerif: '—', verifCls: 'b-locked',
+    state: 'CANCELLED', badgeCls: 'b-cancelled', badgeLabel: 'CANCELLED',
+    nextOwner: 'User cancelled draft before submission',
+    note: '', purpose: '',
+    ledger: [],
+    alert: { cls: 'alert-info', msg: 'Draft transfer cancelled by user before submission. No ledger entries were written.' },
+  },
+  {
+    id: 'TRF-58720', ts: '2026-03-29 14:02', dir: 'OUT',
+    counterparty: 'Unknown Recipient', counterpartyId: 'EU-99001',
+    amount: 'EUR 300.00', amountNum: 300,
+    recipientVerif: '—', verifCls: 'b-locked',
+    state: 'FAILED', badgeCls: 'b-failed', badgeLabel: 'FAILED',
+    nextOwner: 'Account control — outbound movement blocked',
+    note: 'Freelance payment', purpose: 'Business',
+    ledger: [],
+    alert: { cls: 'alert-red', msg: 'Transfer failed. Account control rule blocked all outbound movement at the time of submission. No funds were debited. Audit event: wallet.transfer_failed.' },
+  },
+];
+
+/* ── ICONS ──────────────────────────────────────────────────────────────── */
+const LogoMark  = () => (
+  <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+    <rect width="26" height="26" rx="4" fill="#1e1e28"/>
+    <rect x="6" y="9"    width="14" height="2" rx="1" fill="#ddddf0"/>
+    <rect x="6" y="13.5" width="9"  height="2" rx="1" fill="#7070e0"/>
+    <rect x="6" y="18"   width="5"  height="2" rx="1" fill="#4040a0" opacity="0.8"/>
+  </svg>
+);
+const IcoWallet   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 6h12" stroke="currentColor" strokeWidth="1.2"/><circle cx="9.5" cy="8.5" r="1" fill="currentColor"/></svg>;
+const IcoVerify   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoCard     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3.5" width="12" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><line x1="1" y1="6.5" x2="13" y2="6.5" stroke="currentColor" strokeWidth="1.2"/><rect x="3" y="8.5" width="3" height="1.5" rx="0.5" fill="currentColor"/></svg>;
+const IcoTransfer = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5h10M9 2.5L12 5l-3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 9H2M5 6.5L2 9l3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoDeposit  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoWithdraw = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 9V2M4 5l3-3 3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoDispute  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="10.2" r="0.7" fill="currentColor"/></svg>;
+const IcoProfile  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M2 13c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoLockSm   = () => <svg width="11" height="12" viewBox="0 0 11 12" fill="none"><rect x="1.5" y="5" width="8" height="6.5" rx="0.75" stroke="currentColor" strokeWidth="1.1"/><path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const IcoX        = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;
+const IcoCheck    = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4.5 7l2 2 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoWarn     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5L12 11.5H1L6.5 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="6.5" y1="5.5" x2="6.5" y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="6.5" cy="9.5" r="0.6" fill="currentColor"/></svg>;
+const IcoArrow    = () => <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6h8M7 3.5L9.5 6 7 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoSend     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M9 4.5L12 7l-3 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+
+/* ── SIDEBAR ────────────────────────────────────────────────────────────── */
+const NAV = [
+  { ico: <IcoWallet />,   label: 'Wallet',              id: 'UEW-UI-03' },
+  { ico: <IcoVerify />,   label: 'Verification' },
+  { ico: <IcoCard />,     label: 'Cards',               locked: true },
+  { ico: <IcoTransfer />, label: 'Transfers',           current: true, id: 'UEW-UI-05' },
+  { ico: <IcoDeposit />,  label: 'Deposits' },
+  { ico: <IcoWithdraw />, label: 'Withdrawals',         locked: true },
+  { ico: <IcoDispute />,  label: 'Disputes',            locked: true },
+  { ico: <IcoProfile />,  label: 'Profile / Security' },
+];
+
+const Sidebar = () => (
+  <aside className="sidebar">
+    <div className="sb-brand">
+      <div className="sb-mark"><LogoMark /><div className="sb-name">MiniFin</div></div>
+      <div className="sb-sub">End-User Web</div>
+    </div>
+    <nav className="sb-nav">
+      <div className="nav-sec">Navigation</div>
+      {NAV.map((n, i) => (
+        <div key={i} className={`nav-item${n.locked ? ' locked' : ''}${n.current ? ' current' : ''}`}>
+          <span style={{ width: 14, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{n.ico}</span>
+          <span>{n.label}</span>
+          {n.locked && <span className="nav-lock"><IcoLockSm /></span>}
+          {n.id     && <span className="nav-id">{n.id}</span>}
+        </div>
+      ))}
+    </nav>
+    <div className="sb-footer">
+      <div className="env-chip"><div className="env-dot"/><span>Local Sandbox</span></div>
+      <div className="env-host">app.miniefin.local</div>
+    </div>
+  </aside>
+);
+
+/* ── KV / BADGE ─────────────────────────────────────────────────────────── */
+const KV    = ({ k, mono, children }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className={`kv-v${mono ? ' mono' : ''}`}>{children}</div>
+  </div>
+);
+const Badge = ({ cls, label }) => <span className={`badge ${cls}`}>{label}</span>;
+
+/* ── DETAIL MODAL ───────────────────────────────────────────────────────── */
+const DetailModal = ({ txn, onClose }) => (
+  <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal">
+      <div className="modal-hdr">
+        <div>
+          <div className="modal-title">Transfer — {txn.id}</div>
+          <div className="modal-sub">{txn.ts} · {txn.dir === 'IN' ? 'Received from' : txn.dir === 'OUT' ? 'Sent to' : 'Draft'} {txn.counterparty}</div>
+        </div>
+        <button className="modal-close" onClick={onClose}><IcoX /></button>
+      </div>
+      <div className="modal-body">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Badge cls={txn.badgeCls} label={txn.badgeLabel} />
+          {txn.dir !== 'DRAFT' && (
+            <Badge
+              cls={txn.dir === 'IN' ? 'b-active' : 'b-locked'}
+              label={txn.dir === 'IN' ? '← RECEIVED' : '→ SENT'}
+            />
+          )}
+          <span style={{ fontSize: 10.5, color: 'var(--t3)', marginLeft: 4 }}>{txn.nextOwner}</span>
+        </div>
+
+        <div className={`alert ${txn.alert.cls}`} style={{ fontSize: 11.5 }}>
+          {txn.alert.msg}
+        </div>
+
+        <div className="kv-table">
+          <KV k="Transfer ID"  mono>{txn.id}</KV>
+          <KV k="Timestamp"    mono>{txn.ts}</KV>
+          <KV k="Direction">{txn.dir}</KV>
+          <KV k="Counterparty">{txn.counterparty} <span style={{ fontSize: 10.5, fontFamily: 'var(--f-mono)', color: 'var(--t3)' }}>{txn.counterpartyId}</span></KV>
+          <KV k="Amount" mono>{txn.amount}</KV>
+          <KV k="Recipient Verif."><Badge cls={txn.verifCls} label={txn.recipientVerif} /></KV>
+          <KV k="Note">{txn.note || '—'}</KV>
+          <KV k="Purpose">{txn.purpose || '—'}</KV>
+        </div>
+
+        {txn.ledger.length > 0 && (
+          <div>
+            <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--t3)', fontWeight: 600, marginBottom: 6 }}>
+              Ledger Entries
+            </div>
+            <table className="ledger-tbl">
+              <thead>
+                <tr>
+                  <th style={{ width: 36 }}>Side</th>
+                  <th>Account</th>
+                  <th style={{ textAlign: 'right' }}>Amount</th>
+                  <th>Entry Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {txn.ledger.map((l, i) => (
+                  <tr key={i}>
+                    <td className={l.side === 'DR' ? 'le-dr' : 'le-cr'}>{l.side}</td>
+                    <td style={{ color: 'var(--t2)', fontSize: 10.5 }}>{l.account}</td>
+                    <td style={{ textAlign: 'right' }}>{l.amount}</td>
+                    <td style={{ color: 'var(--t3)', fontSize: 10 }}>{l.type}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {txn.ledger.length === 0 && (
+          <div style={{ fontSize: 11.5, color: 'var(--t3)', padding: '4px 0' }}>
+            No ledger entries — transfer did not reach validation stage.
+          </div>
+        )}
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        <span className="modal-note">Read-only · Local prototype</span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── SUCCESS PANEL ──────────────────────────────────────────────────────── */
+const SuccessPanel = ({ txnId, amount, recipient, held, onReset }) => (
+  <div className="success-panel">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ color: 'var(--g)', flexShrink: 0 }}><IcoCheck /></div>
+      <div>
+        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--g)', marginBottom: 2 }}>
+          Transfer Submitted
+        </div>
+        <div style={{ fontSize: 11.5, color: '#166534' }}>
+          EUR {parseFloat(amount).toFixed(2)} → {recipient.name}
+          {' · '}
+          {held ? 'Transfer held — awaiting recipient verification' : 'Processing — funds will arrive shortly'}
+        </div>
+      </div>
+    </div>
+    <div className="kv-table" style={{ background: 'white', borderRadius: 'var(--r)', padding: '4px 12px', border: '1px solid var(--g-bd)' }}>
+      <KV k="Transfer ID" mono><span style={{ color: 'var(--g)' }}>{txnId}</span></KV>
+      <KV k="State"><Badge cls={held ? 'b-held' : 'b-pending'} label={held ? 'HELD — RECIPIENT VERIFICATION' : 'PROCESSING'} /></KV>
+      <KV k="Audit event" mono>wallet.transfer_requested</KV>
+      <KV k="Ledger debit">EUR {parseFloat(amount).toFixed(2)} from available balance</KV>
+      <KV k="Ledger credit">{held ? 'platform.transfer.hold_account' : recipient.name + ' available balance'}</KV>
+      <KV k="Available balance">EUR {(AVAIL_BALANCE - parseFloat(amount)).toFixed(2)}</KV>
+    </div>
+    {held && (
+      <div className="alert alert-or" style={{ fontSize: 11.5 }}>
+        <IcoWarn />
+        <div>
+          Funds are held until <strong>{recipient.name}</strong> completes identity verification. If verification is not completed within 30 days, the hold will be released and funds returned to your available balance.
+        </div>
+      </div>
+    )}
+    <div>
+      <button className="btn btn-ghost btn-sm" onClick={onReset}>Submit Another Transfer</button>
+    </div>
+  </div>
+);
+
+/* ── MAIN APP ───────────────────────────────────────────────────────────── */
+function App() {
+  const [recipientMode, setRecipientMode] = useState('unverified');
+  const [amount, setAmount]     = useState('120.00');
+  const [note, setNote]         = useState('Split invoice reimbursement');
+  const [purpose, setPurpose]   = useState('Personal reimbursement');
+  const [schedule, setSchedule] = useState('now');
+  const [submitted, setSubmitted]   = useState(false);
+  const [submittedId, setSubmittedId] = useState('');
+  const [detailTxn, setDetailTxn]     = useState(null);
+  const [saveMsg, setSaveMsg]         = useState('');
+  const [verifyMsg, setVerifyMsg]     = useState('');
+
+  const recipient = recipientMode === 'verified' ? RECIPIENT_VERIFIED : RECIPIENT_UNVERIFIED;
+  const numAmount = parseFloat(amount) || 0;
+  const remaining = DAILY_LIMIT - USED_TODAY;
+  const usedAfter = USED_TODAY + numAmount;
+  const usedPct   = Math.min((usedAfter / DAILY_LIMIT) * 100, 100);
+
+  const errExceedsBalance   = numAmount > AVAIL_BALANCE;
+  const errExceedsDaily     = numAmount > remaining;
+  const errExceedsPerTx     = numAmount > PER_TX_MAX_KYC;
+  const amountErr = errExceedsBalance
+    ? `Insufficient balance. Available: EUR ${AVAIL_BALANCE.toFixed(2)}`
+    : errExceedsDaily
+      ? `Exceeds daily limit. Remaining today: EUR ${remaining.toFixed(2)}`
+      : errExceedsPerTx
+        ? `Exceeds per-transfer cap of EUR ${PER_TX_MAX_KYC} while KYC is in review`
+        : numAmount <= 0 && amount !== ''
+          ? 'Amount must be greater than 0'
+          : null;
+
+  const canSubmit = numAmount > 0 && !errExceedsBalance && !errExceedsDaily && !errExceedsPerTx;
+  const isHeld    = !recipient.verified;
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    const id = `TRF-${Math.floor(71300 + Math.random() * 500)}`;
+    setSubmittedId(id);
+    setSubmitted(true);
+  };
+
+  const handleReset = () => {
+    setSubmitted(false);
+    setAmount('');
+    setSaveMsg('');
+    setVerifyMsg('');
+  };
+
+  const handleSave = () => {
+    setSaveMsg(recipient.saved
+      ? 'Already in saved recipients.'
+      : 'Saved. [prototype] No persistence — will reset on reload.');
+    setTimeout(() => setSaveMsg(''), 3000);
+  };
+
+  const handleVerify = () => {
+    setVerifyMsg('Verification is managed by the recipient. They must complete KYC on their own account. You cannot trigger this on their behalf.');
+    setTimeout(() => setVerifyMsg(''), 5000);
+  };
+
+  // State path nodes — dynamic based on recipient
+  const stateNodes = [
+    { label: 'DRAFT',               cls: 'future' },
+    { label: 'SUBMITTED',           cls: 'current' },
+    { label: 'VALIDATION PASSED',   cls: 'next' },
+    { label: 'HELD — RECIPIENT VERIF.', cls: isHeld ? 'next-warn' : 'bypassed', note: isHeld ? '← this request' : 'bypassed' },
+    { label: 'LEDGER POSTED',       cls: 'future' },
+    { label: 'COMPLETED',           cls: 'future' },
+  ];
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+        {/* PAGE HEADER */}
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>End-User Web</span><span className="sep">/</span>
+            <strong>Transfers</strong><span className="sep">·</span>
+            <span className="mode">Internal Transfer</span>
+          </div>
+          <div className="page-meta">
+            <span className="screen-id">UEW-UI-05</span>
+            <span className="env-badge"><span className="env-badge-dot"/>Local Sandbox</span>
+            <div className="user-chip">
+              <div className="user-avatar">EM</div>
+              <span className="user-name">Elena Markovic</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="content-area">
+          <div className="left-scroll">
+
+            {/* ── ACCOUNT CONTEXT ──────────────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="panel-title">Account Context</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>WLT-EU-77820</span>
+                </div>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>Last ledger sync: 2026-05-17 11:08</span>
+              </div>
+              <div className="panel-body" style={{ paddingBottom: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1, background: 'var(--bdr)', borderRadius: 'var(--r)', overflow: 'hidden', marginBottom: 12 }}>
+                  {[
+                    { label: 'Available Balance', val: 'EUR 842.50',  sub: 'WLT-EU-77820', mono: true, big: true },
+                    { label: 'KYC State',         val: <Badge cls="b-inreview" label="IN REVIEW"/>, sub: 'Transfers allowed with limits' },
+                    { label: 'Account Control',   val: <Badge cls="b-limited" label="ACTIVE · WITHDRAW LIMIT"/>, sub: 'Internal transfers not blocked' },
+                    { label: 'User',              val: 'Elena Markovic', sub: 'EU-10482' },
+                    { label: 'Currency',          val: 'EUR', sub: 'EUR-only wallet', mono: true },
+                  ].map((c, i) => (
+                    <div key={i} style={{ background: 'var(--surface)', padding: '10px 13px' }}>
+                      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 5 }}>{c.label}</div>
+                      <div style={{ fontSize: c.big ? 18 : 12.5, fontWeight: 600, fontFamily: c.mono ? 'var(--f-mono)' : 'inherit', marginBottom: 2, letterSpacing: c.big ? '-0.02em' : 'inherit', color: c.big ? 'var(--g)' : 'inherit' }}>{c.val}</div>
+                      <div style={{ fontSize: 10.5, color: 'var(--t3)' }}>{c.sub}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ fontSize: 11, color: 'var(--t2)', minWidth: 160 }}>Daily Transfer Limit</div>
+                  <div style={{ flex: 1 }}>
+                    <div className="prog-wrap">
+                      <div className={`prog-fill ${usedPct < 60 ? 'prog-green' : usedPct < 90 ? 'prog-amber' : 'prog-red'}`}
+                        style={{ width: `${Math.min((USED_TODAY / DAILY_LIMIT) * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 10.5, fontFamily: 'var(--f-mono)', color: 'var(--t3)', minWidth: 120, textAlign: 'right' }}>
+                    EUR {USED_TODAY} / EUR {DAILY_LIMIT} used
+                  </div>
+                  <div style={{ fontSize: 10.5, fontFamily: 'var(--f-mono)', color: 'var(--g)', minWidth: 90, textAlign: 'right' }}>
+                    EUR {remaining} left
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── STATE PATH ───────────────────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <span className="panel-title">Transfer State Path</span>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>
+                  {isHeld ? '⚠ This transfer will be held — recipient not verified' : '✓ Recipient verified — immediate ledger post'}
+                </span>
+              </div>
+              <div className="state-path">
+                {stateNodes.map((s, i, arr) => (
+                  <div key={i} className="sp-node">
+                    <div className={`sp-pill ${s.cls}`}>
+                      {s.label}
+                      {s.note && <span style={{ fontSize: 8, fontWeight: 400, marginLeft: 4, opacity: 0.8 }}>({s.note})</span>}
+                    </div>
+                    {i < arr.length - 1 && <span className="sp-arrow">→</span>}
+                  </div>
+                ))}
+                <span className="sp-arrow" style={{ margin: '0 6px' }}>|</span>
+                <div className="sp-node">
+                  <div className="sp-pill bad">REJECTED</div>
+                  <span className="sp-arrow"> / </span>
+                  <div className="sp-pill future">CANCELLED</div>
+                </div>
+              </div>
+              <div style={{ padding: '0 14px 10px', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+                {[
+                  { cls: 'current',   label: 'Form position (submitted state)' },
+                  { cls: 'next-warn', label: 'Held — unverified recipient path' },
+                  { cls: 'next',      label: 'Next step' },
+                  { cls: 'bypassed',  label: 'Bypassed — verified recipient' },
+                ].map((l, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--t3)' }}>
+                    <span className={`sp-pill ${l.cls}`} style={{ fontSize: 8, padding: '1px 5px' }}>●</span>
+                    {l.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {submitted ? (
+              <SuccessPanel txnId={submittedId} amount={amount} recipient={recipient} held={isHeld} onReset={handleReset} />
+            ) : (
+              <>
+                {/* ── TRANSFER FORM ──────────────────────────────────── */}
+                <div className="panel">
+                  <div className="panel-hdr">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="panel-title">Transfer Form</span>
+                      <Badge cls="b-inreview" label="KYC IN REVIEW" />
+                      <span style={{ fontSize: 10.5, color: 'var(--g)' }}>✓ Internal transfers allowed</span>
+                    </div>
+                    <span className="sandbox-note">[prototype] no real submission</span>
+                  </div>
+                  <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+
+                    {/* Recipient selector */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div className="form-grid2">
+                        <div className="form-group">
+                          <label className="inp-label">Recipient Wallet / User ID *</label>
+                          <input
+                            className={`inp-field${recipient.verified ? ' ok' : ''}`}
+                            style={{ fontFamily: 'var(--f-mono)', fontSize: 12 }}
+                            type="text"
+                            value={recipient.id}
+                            readOnly
+                          />
+                          {recipient.verified
+                            ? <div className="inp-ok">✓ Verified wallet user — immediate settlement</div>
+                            : <div className="inp-warn">⚠ Recipient not verified — transfer will be held</div>
+                          }
+                        </div>
+                        <div className="form-group">
+                          <label className="inp-label">Recipient Display Name</label>
+                          <input className="inp-field" type="text" value={recipient.name} readOnly />
+                          <div className="inp-hint">Auto-resolved from wallet ID</div>
+                        </div>
+                      </div>
+
+                      {/* Quick-switch prototype control */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 11px', background: 'var(--surf2)', border: '1px solid var(--bdr)', borderRadius: 'var(--r)', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>[Prototype] Switch recipient:</span>
+                        <button className={`btn btn-sm ${recipientMode === 'unverified' ? 'btn-warn' : 'btn-ghost'}`}
+                          onClick={() => setRecipientMode('unverified')}>
+                          EU-10831 Jonas Hofer (Not Verified)
+                        </button>
+                        <button className={`btn btn-sm ${recipientMode === 'verified' ? 'btn-primary' : 'btn-ghost'}`}
+                          onClick={() => setRecipientMode('verified')}>
+                          EU-10021 Marta Petra (Verified)
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Amount + currency */}
+                    <div className="form-grid3">
+                      <div className="form-group">
+                        <label className="inp-label">Amount *</label>
+                        <div className="inp-prefix-wrap">
+                          <span className="inp-prefix">EUR</span>
+                          <input
+                            className={`inp-field${amountErr ? ' err' : ''}`}
+                            type="number" min="0.01" step="0.01"
+                            placeholder="0.00"
+                            value={amount}
+                            onChange={e => setAmount(e.target.value)}
+                          />
+                        </div>
+                        {amountErr
+                          ? <div className="inp-err">{amountErr}</div>
+                          : numAmount > 0
+                            ? <div className="inp-hint">Available after transfer: EUR {(AVAIL_BALANCE - numAmount).toFixed(2)}</div>
+                            : null
+                        }
+                      </div>
+                      <div className="form-group">
+                        <label className="inp-label">Currency</label>
+                        <select className="inp-field">
+                          <option>EUR</option>
+                        </select>
+                        <div className="inp-hint">EUR only in MVP — other currencies not supported</div>
+                      </div>
+                      <div className="form-group">
+                        <label className="inp-label">Schedule</label>
+                        <select className="inp-field" value={schedule} onChange={e => setSchedule(e.target.value)}>
+                          <option value="now">Send now</option>
+                          <option value="later">Schedule for later</option>
+                        </select>
+                        <div className="inp-hint">Scheduled transfers: prototype only</div>
+                      </div>
+                    </div>
+
+                    {/* Note + purpose */}
+                    <div className="form-grid2">
+                      <div className="form-group">
+                        <label className="inp-label">Note / Reference</label>
+                        <input className="inp-field" type="text"
+                          placeholder="Payment note or reference"
+                          value={note}
+                          onChange={e => setNote(e.target.value)} />
+                        <div className="inp-hint">Visible to recipient</div>
+                      </div>
+                      <div className="form-group">
+                        <label className="inp-label">Transfer Purpose</label>
+                        <select className="inp-field" value={purpose} onChange={e => setPurpose(e.target.value)}>
+                          <option>Personal reimbursement</option>
+                          <option>Gift / Donation</option>
+                          <option>Business payment</option>
+                          <option>Rent / Utilities</option>
+                          <option>Other</option>
+                        </select>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* ── RECIPIENT VERIFICATION PANEL ──────────────────── */}
+                <div className="panel">
+                  <div className="panel-hdr">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="panel-title">Recipient</span>
+                      <Badge cls={recipient.verified ? 'b-verified' : 'b-unverif'} label={recipient.verifLabel} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={handleSave}>Save Recipient</button>
+                      {!recipient.verified && (
+                        <button className="btn btn-ghost btn-sm" onClick={handleVerify}>Verify Recipient</button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+                    {(saveMsg || verifyMsg) && (
+                      <div className="alert alert-info" style={{ fontSize: 11.5 }}>
+                        {saveMsg || verifyMsg}
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flex: 1 }}>
+                        <div className={`recip-avatar ${recipient.verified ? 'ra-verified' : 'ra-unverif'}`}>
+                          {recipient.initials}
+                        </div>
+                        <div className="kv-table" style={{ flex: 1 }}>
+                          <KV k="Recipient ID"    mono>{recipient.id}</KV>
+                          <KV k="Name">{recipient.name}</KV>
+                          <KV k="Wallet ID"       mono>{recipient.walletId}</KV>
+                          <KV k="Verification"><Badge cls={recipient.verified ? 'b-verified' : 'b-unverif'} label={recipient.verifLabel} /></KV>
+                          <KV k="Relationship">{recipient.relationship}</KV>
+                          <KV k="Last Transfer">{recipient.lastTransfer || 'No prior transfers'}</KV>
+                          <KV k="Risk Flags">
+                            {recipient.riskFlags.length === 0
+                              ? <span style={{ color: 'var(--g)', fontSize: 11 }}>None</span>
+                              : recipient.riskFlags.map((f, i) => <Badge key={i} cls="b-unverif" label={f} />)
+                            }
+                          </KV>
+                        </div>
+                      </div>
+                    </div>
+
+                    {!recipient.verified ? (
+                      <div className="alert alert-or">
+                        <IcoWarn />
+                        <div>
+                          <div style={{ fontWeight: 600, marginBottom: 3 }}>Transfer will be held</div>
+                          <div>
+                            <strong>Jonas Hofer</strong> has not completed KYC verification. If you proceed, EUR {numAmount > 0 ? numAmount.toFixed(2) : '—'} will be debited from your available balance immediately and held in a platform hold account. Funds will be released to the recipient only after they complete identity verification.
+                            <div style={{ marginTop: 5, fontSize: 11, color: 'var(--or)' }}>
+                              If recipient verification is not completed within 30 days, funds will be returned to your available balance.
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="alert alert-green">
+                        <IcoCheck />
+                        <div>
+                          <strong>Marta Petra</strong> is a verified wallet user. Funds will be credited to her available balance immediately after submission. No hold period applies.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Saved recipients strip */}
+                    <div style={{ borderTop: '1px solid var(--bdr)', paddingTop: 10 }}>
+                      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 7 }}>
+                        Saved Recipients
+                      </div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {[RECIPIENT_VERIFIED, RECIPIENT_UNVERIFIED].map((r, i) => (
+                          <button key={i}
+                            className={`btn btn-ghost btn-sm ${recipientMode === (r.verified ? 'verified' : 'unverified') ? '' : ''}`}
+                            style={{ display: 'flex', alignItems: 'center', gap: 6,
+                              background: recipientMode === (r.verified ? 'verified' : 'unverified') ? 'var(--hover)' : undefined }}
+                            onClick={() => setRecipientMode(r.verified ? 'verified' : 'unverified')}
+                          >
+                            <div className={`recip-avatar ${r.verified ? 'ra-verified' : 'ra-unverif'}`}
+                              style={{ width: 18, height: 18, fontSize: 7 }}>{r.initials}</div>
+                            <span>{r.name}</span>
+                            <Badge cls={r.verified ? 'b-verified' : 'b-unverif'} label={r.verified ? 'VERIFIED' : 'NOT VERIFIED'} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── TRANSFER PREVIEW ──────────────────────────────── */}
+                <div className="panel">
+                  <div className="panel-hdr">
+                    <span className="panel-title">Transfer Preview &amp; Ledger Impact</span>
+                    <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>Estimated state — not yet submitted</span>
+                  </div>
+                  <div className="panel-body">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                      <div>
+                        <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 8 }}>
+                          Amount Impact
+                        </div>
+                        {[
+                          { k: 'Transfer amount',          v: numAmount > 0 ? `EUR ${numAmount.toFixed(2)}` : '—',                              cls: 'mono' },
+                          { k: 'Fee',                      v: 'EUR 0.00',                                                                        cls: 'mono good' },
+                          { k: 'Total debit',              v: numAmount > 0 ? `EUR ${numAmount.toFixed(2)}` : '—',                              cls: 'mono' },
+                          { k: 'Available balance now',    v: `EUR ${AVAIL_BALANCE.toFixed(2)}`,                                                cls: 'mono' },
+                          { k: 'Available after submit',   v: numAmount > 0 ? `EUR ${(AVAIL_BALANCE - numAmount).toFixed(2)}` : '—',           cls: `mono ${errExceedsBalance ? 'bad' : ''}` },
+                          { k: 'Daily used after submit',  v: numAmount > 0 ? `EUR ${usedAfter.toFixed(0)} / EUR ${DAILY_LIMIT}` : '—',        cls: `mono ${usedPct > 90 ? 'warn' : ''}` },
+                        ].map((r, i) => (
+                          <div key={i} className="rev-row">
+                            <span className="rev-k">{r.k}</span>
+                            <span className={`rev-v ${r.cls}`}>{r.v}</span>
+                          </div>
+                        ))}
+                        {numAmount > 0 && (
+                          <div className="prog-wrap" style={{ marginTop: 8 }}>
+                            <div className={`prog-fill ${usedPct < 60 ? 'prog-green' : usedPct < 90 ? 'prog-amber' : 'prog-red'}`}
+                              style={{ width: `${usedPct}%` }} />
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 8 }}>
+                          Process &amp; Ledger
+                        </div>
+                        {[
+                          { k: 'Expected transfer state',  v: isHeld ? 'HELD_FOR_RECIPIENT_VERIFICATION' : 'COMPLETED',  cls: isHeld ? 'or' : 'good' },
+                          { k: 'Debit account',            v: 'user.wallet.available (WLT-EU-77820)',                     cls: 'mono' },
+                          { k: 'Credit account',           v: isHeld ? 'platform.transfer.hold_account' : `user.wallet.available (${recipient.walletId})`, cls: 'mono' },
+                          { k: 'Ledger entry type',        v: isHeld ? 'TRANSFER_HOLD' : 'TRANSFER',                      cls: 'mono' },
+                          { k: 'Audit event',              v: 'wallet.transfer_requested',                                cls: 'mono' },
+                          { k: 'Second review',            v: 'Not required (below EUR 10,000)',                          cls: 'good' },
+                        ].map((r, i) => (
+                          <div key={i} className="rev-row">
+                            <span className="rev-k">{r.k}</span>
+                            <span className={`rev-v ${r.cls}`} style={{ fontSize: r.cls && r.cls.includes('mono') ? 10.5 : undefined }}>{r.v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', paddingTop: 4 }}>
+                      <button className="btn btn-primary" disabled={!canSubmit} onClick={handleSubmit}>
+                        <IcoSend /> Submit Transfer
+                      </button>
+                      <button className="btn btn-ghost" onClick={handleReset}>Reset Form</button>
+                      <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>
+                        Debit is immediate. {isHeld ? 'Funds held until recipient verifies.' : 'Credit posts immediately for verified recipient.'}
+                      </span>
+                    </div>
+                    {!canSubmit && numAmount > 0 && (
+                      <div style={{ marginTop: 6, fontSize: 11, color: 'var(--rd)' }}>
+                        {errExceedsBalance && '✗ Insufficient available balance. '}
+                        {errExceedsDaily   && '✗ Exceeds daily transfer limit. '}
+                        {errExceedsPerTx   && `✗ Exceeds per-transfer cap (EUR ${PER_TX_MAX_KYC}) while KYC is in review. `}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── LIMITS & RESTRICTIONS ─────────────────────────── */}
+                <div className="panel">
+                  <div className="panel-hdr">
+                    <span className="panel-title">Limits &amp; Restrictions</span>
+                    <Badge cls="b-inreview" label="KYC IN REVIEW" />
+                  </div>
+                  <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                    {[
+                      { icon: '✓', color: 'var(--g)',  label: 'Account active',               desc: 'Account is not frozen or blocked. Internal transfers are permitted.' },
+                      { icon: '✓', color: 'var(--g)',  label: 'KYC in review — transfers allowed', desc: 'KYC in review does not block internal transfers. Limits apply.' },
+                      { icon: '⚠', color: 'var(--am)', label: `Per-transfer cap: EUR ${PER_TX_MAX_KYC}`, desc: 'While KYC is in review, each individual transfer may not exceed EUR 250.' },
+                      { icon: '⚠', color: 'var(--am)', label: `Daily limit: EUR ${DAILY_LIMIT}`, desc: `EUR ${USED_TODAY} used today. EUR ${remaining} remaining. Resets at 00:00 UTC.` },
+                      { icon: '⚠', color: 'var(--or)', label: 'Unverified recipients: held transfer', desc: 'Transfers to unverified wallets are debited immediately and held. Released on recipient KYC or returned after 30 days.' },
+                      { icon: '✓', color: 'var(--g)',  label: 'Verified recipients: immediate settlement', desc: 'Transfers to verified wallet users post to ledger immediately — no hold period.' },
+                      { icon: '✗', color: 'var(--rd)', label: 'Frozen accounts: all transfers blocked', desc: 'If account is frozen (AML/sanctions), no outbound transfer is possible regardless of limits.' },
+                      { icon: '✗', color: 'var(--rd)', label: 'Non-EUR currencies not supported', desc: 'This wallet is EUR-only. Transfers in other currencies will be rejected.' },
+                    ].map((r, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 12, padding: '7px 0', borderBottom: i < 7 ? '1px solid var(--hover)' : 'none', alignItems: 'flex-start' }}>
+                        <span style={{ fontSize: 12, color: r.color, flexShrink: 0, marginTop: 1, width: 14, textAlign: 'center', fontWeight: 700 }}>{r.icon}</span>
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--t1)', marginBottom: 1 }}>{r.label}</div>
+                          <div style={{ fontSize: 11, color: 'var(--t3)' }}>{r.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ── TRANSFER HISTORY ─────────────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <span className="panel-title">Transfer History</span>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>Click row for detail &amp; ledger entries</span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Transfer ID</th>
+                      <th>Timestamp</th>
+                      <th>Dir</th>
+                      <th>Counterparty</th>
+                      <th style={{ textAlign: 'right' }}>Amount</th>
+                      <th>Recip. Verif.</th>
+                      <th>State</th>
+                      <th>Next / Owner</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {TRANSFERS.map((t, i) => (
+                      <tr key={i} onClick={() => setDetailTxn(t)}>
+                        <td><span className="mono-cell" style={{ color: 'var(--t1)' }}>{t.id}</span></td>
+                        <td><span className="mono-cell">{t.ts}</span></td>
+                        <td>
+                          {t.dir === 'OUT'   && <span className="dir-out">→ OUT</span>}
+                          {t.dir === 'IN'    && <span className="dir-in">← IN</span>}
+                          {t.dir === 'DRAFT' && <span className="dir-neu">DRAFT</span>}
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 500 }}>{t.counterparty}</div>
+                          <div style={{ fontSize: 10, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>{t.counterpartyId}</div>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <span style={{
+                            fontFamily: 'var(--f-mono)', fontSize: 11.5, fontWeight: 500,
+                            color: t.dir === 'IN' ? 'var(--g)' : t.dir === 'OUT' ? 'var(--t1)' : 'var(--t3)'
+                          }}>
+                            {t.dir === 'IN' ? '+' : t.dir === 'OUT' ? '−' : ''}{t.amount}
+                          </span>
+                        </td>
+                        <td><Badge cls={t.verifCls} label={t.recipientVerif} /></td>
+                        <td><Badge cls={t.badgeCls} label={t.badgeLabel} /></td>
+                        <td style={{ fontSize: 11, color: 'var(--t3)', maxWidth: 180 }}>{t.nextOwner}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>{/* left-scroll */}
+
+          {/* ── TIMELINE RAIL ───────────────────────────────────────── */}
+          <div className="tl-rail">
+            <div className="tl-hdr">Activity &amp; Audit</div>
+            <div className="tl-body">
+              {[
+                { dot: 'held', ts: '2026-05-17 08:55', name: 'Transfer Held',
+                  actor: 'System · platform.transfer',
+                  desc: 'TRF-71240 EUR 120.00 → Jonas Hofer. Held pending recipient KYC. Audit: wallet.transfer_requested.' },
+                { dot: 'held', ts: '2026-05-17 08:55', name: 'Hold Account Credited',
+                  actor: 'System · double-entry ledger',
+                  desc: 'DR user.wallet.available WLT-EU-77820 120.00 · CR platform.transfer.hold_account 120.00.' },
+                { dot: 'ok', ts: '2026-05-15 14:22', name: 'Transfer Completed',
+                  actor: 'System · platform.transfer',
+                  desc: 'TRF-70190 EUR 85.00 → Marta Petra (EU-10021). Verified recipient — immediate ledger post. Audit: wallet.transfer_completed.' },
+                { dot: 'ok', ts: '2026-05-12 11:40', name: 'Transfer Received',
+                  actor: 'System · platform.transfer',
+                  desc: 'TRF-69045 EUR 200.00 ← Lars Becker (EU-20104). CR user.wallet.available WLT-EU-77820.' },
+                { dot: 'bad', ts: '2026-04-28 14:30', name: 'Hold Released — Rejected',
+                  actor: 'System · hold manager',
+                  desc: 'TRF-66820 hold released. Recipient KYC verification expired. EUR 75.00 returned to WLT-EU-77820. Audit: wallet.transfer_rejected.' },
+                { dot: 'neu', ts: '2026-04-15 16:44', name: 'Draft Cancelled',
+                  actor: 'Elena Markovic · EU-10482',
+                  desc: 'TRF-63100 draft cancelled before submission. No ledger entries written.' },
+                { dot: 'bad', ts: '2026-03-29 14:02', name: 'Transfer Failed',
+                  actor: 'System · account-control',
+                  desc: 'TRF-58720 EUR 300.00 blocked by account control rule. No debit. Audit: wallet.transfer_failed.' },
+              ].map((e, i, arr) => (
+                <div key={i} className="tl-evt">
+                  <div className="tl-spine">
+                    <div className={`tl-dot ${e.dot}`} />
+                    {i < arr.length - 1 && <div className="tl-line" />}
+                  </div>
+                  <div className="tl-content">
+                    <div className="tl-ts">{e.ts}</div>
+                    <div className="tl-name">{e.name}</div>
+                    <div className="tl-actor">{e.actor}</div>
+                    <div className="tl-desc">{e.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>{/* content-area */}
+      </div>
+
+      {detailTxn && <DetailModal txn={detailTxn} onClose={() => setDetailTxn(null)} />}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
