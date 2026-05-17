@@ -1,6 +1,6 @@
 # Phase 05 Slice 02 — Card Authorization Path — Planning Note
 
-Status: **DRAFT v0.1 — planning-only; no product code implemented**.
+Status: **APPROVED v0.1 — planning-only; no product code implemented**.
 
 This document fixes the second implementation slice inside `Phase 05 — Vault, Card Issuance and Authorization`.
 

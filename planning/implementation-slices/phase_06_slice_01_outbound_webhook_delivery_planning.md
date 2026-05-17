@@ -1,6 +1,6 @@
 # Phase 06 Slice 01 — Outbound Merchant Webhook Delivery Foundation — Planning Note
 
-Status: **DRAFT v0.1 — planning-only; no product code implemented**.
+Status: **APPROVED v0.1 — planning-only; no product code implemented**.
 
 This document fixes the first implementation slice inside `Phase 06 — Clearing, Settlement, Refunds and Webhooks`.
 

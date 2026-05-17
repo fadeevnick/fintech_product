@@ -649,16 +649,16 @@ Runtime evidence:
 - `VLT-03` — pass for PAN log masking: raw detokenized PAN was absent from Platform/Issuer/Vault general logs.
 
 Next planned step:
-- Review/approve `planning/implementation-slices/phase_05_slice_02_card_authorization_planning.md` and `planning/implementation-slices/phase_06_slice_01_outbound_webhook_delivery_planning.md`, then choose the next implementation slice.
+- Choose the next approved implementation slice: Phase 05 Slice 02 card authorization, or Phase 06 Slice 01 outbound merchant webhook delivery.
 
 ---
 
 ## Phase 05 Slice 02 — Card Authorization Path
 
-Status: **DRAFT PLANNING NOTE — no product code implemented**.
+Status: **PLANNING APPROVED — no product code implemented**.
 
 Planning contract:
-- `planning/implementation-slices/phase_05_slice_02_card_authorization_planning.md` — DRAFT v0.1.
+- `planning/implementation-slices/phase_05_slice_02_card_authorization_planning.md` — APPROVED v0.1.
 
 Planned backend/runtime scope:
 - synchronous public card authorization path through Acquirer → Network → Issuer;
@@ -675,16 +675,16 @@ Runtime evidence:
 - none; planning-only artifact.
 
 Next planned step:
-- Owner/orchestrator review of the draft planning note, then approval or revision before any product implementation.
+- Implement this approved backend/runtime slice when selected.
 
 ---
 
 ## Phase 06 Slice 01 — Outbound Merchant Webhook Delivery Foundation
 
-Status: **DRAFT PLANNING NOTE — no product code implemented**.
+Status: **PLANNING APPROVED — no product code implemented**.
 
 Planning contract:
-- `planning/implementation-slices/phase_06_slice_01_outbound_webhook_delivery_planning.md` — DRAFT v0.1.
+- `planning/implementation-slices/phase_06_slice_01_outbound_webhook_delivery_planning.md` — APPROVED v0.1.
 
 Planned backend/runtime scope:
 - Use existing merchant webhook endpoint configuration from Phase 04 Slice 03.
@@ -703,4 +703,4 @@ Runtime evidence:
 - None. This is a planning-only artifact.
 
 Next planned step:
-- Owner/orchestrator review of the draft planning note, then approval or revision before any product implementation.
+- Implement this approved backend/runtime slice when selected.
