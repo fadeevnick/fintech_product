@@ -1183,3 +1183,8 @@ Reviewer verification after branch review:
   - `scripts/runtime/reg_phase05_vault_detokenize_restriction.sh` — `VLT-02 pass`;
   - `scripts/runtime/reg_phase05_pan_log_masking.sh` — `VLT-03 pass`.
 - The review stack was stopped with `docker compose down -v` after verification.
+
+Post-merge combined-tree verification:
+- After accepting Phase 04 Slice 03 and Phase 05 Slice 01 into `orchestration`, `COMPOSE_PROJECT_NAME=mfp-review-merged ... docker compose -f deploy/docker-compose.yml config --quiet` passed.
+- `bash -n` passed for the new Phase 04 and Phase 05 retained runtime scripts.
+- `COMPOSE_PROJECT_NAME=mfp-review-merged ... docker compose -f deploy/docker-compose.yml build platform issuer vault` passed for the combined tree, proving `platform` compiles with both the merchant dashboard API additions and the card issuance entrypoint.
