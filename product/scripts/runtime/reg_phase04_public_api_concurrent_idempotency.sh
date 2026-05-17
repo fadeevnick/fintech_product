@@ -12,6 +12,7 @@ source "${script_dir}/lib_phase04_public_api.sh"
 pa_register_merchant "concurrent-idem"
 
 create_body="/tmp/minifin-phase04-concurrent-create.json"
+pa_rm "${create_body}"
 pa_create_api_key "${PA_COOKIE_JAR}" "concurrent" "${create_body}"
 raw_key="$(node -e "const j=JSON.parse(require('fs').readFileSync('${create_body}','utf8')); console.log(j.data.key);")"
 
@@ -25,7 +26,7 @@ pids=()
 for i in $(seq 1 ${N}); do
   (
     out="${run_dir}/resp-${i}.json"
-    status=$(curl -sS -o "${out}" -w "%{http_code}" \
+    status=$(pa_curl -sS -o "${out}" -w "%{http_code}" \
       -X POST "${base_url}/v1/payment_intents" \
       -H "Authorization: Bearer ${raw_key}" \
       -H "Content-Type: application/json" \

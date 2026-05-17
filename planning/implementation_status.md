@@ -557,27 +557,44 @@ Next planned step:
 
 ## Phase 04 Slice 03 — Merchant Dashboard Payments Read Shell and Webhook Configuration
 
-Status: **PLANNING APPROVED — not implemented**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — frontend not in scope**.
 
 Planning contract:
 - `planning/implementation-slices/phase_04_slice_03_merchant_dashboard_payments_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Merchant-authenticated dashboard read APIs for existing `merchant.payment_intents` shell rows.
-- Merchant webhook endpoint configuration CRUD model under `/api/v1/merchant/**`.
-- API key list/read refinements only if needed; Slice 01 API key lifecycle remains the source of truth.
-- Conservative proposed runtime checks:
-  - `MRC-04` — merchant dashboard payment-intent read scoping.
-  - `MRC-05` — merchant webhook endpoint configuration CRUD/scoping.
+Implemented backend/runtime scope:
+- Platform DB migration `V12__merchant_dashboard_read_shell.sql` for `merchant.webhook_endpoints` and dashboard payment-intent read index.
+- Merchant dashboard payment-intent read endpoints:
+  - `GET /api/v1/merchant/payment-intents`;
+  - `GET /api/v1/merchant/payment-intents/{id}`.
+- Payment reads use the authenticated merchant session scope; cross-merchant detail lookup returns 404 and list excludes other merchants' rows.
+- Merchant dashboard webhook endpoint configuration endpoints:
+  - `GET /api/v1/merchant/webhook-endpoints`;
+  - `POST /api/v1/merchant/webhook-endpoints`;
+  - `PUT /api/v1/merchant/webhook-endpoints/{id}`;
+  - `DELETE /api/v1/merchant/webhook-endpoints/{id}`.
+- Webhook endpoint writes require `merchant_admin`; `merchant_member` can list/read but cannot create/update/delete.
+- Audit rows for webhook endpoint create/update/delete.
+- Retained runtime scripts:
+  - `product/scripts/runtime/reg_phase04_merchant_payment_reads.sh`;
+  - `product/scripts/runtime/reg_phase04_merchant_webhook_config.sh`.
+- Phase 04 public API runtime helper supports compose-network curl execution via `PLATFORM_CURL_CONTAINER_NETWORK`, used for branch-isolated runtime verification where host-published platform port accepted TCP but did not return responses.
 
 Explicitly not implemented:
-- No Kotlin, SQL, runtime scripts or frontend code in this planning-only task.
 - No Stripe Connect onboarding (`MRC-01`).
 - No card authorization, capture, refund, settlement or outbound webhook delivery.
 - No `WBH-01..WBH-03` claims.
+- No frontend implementation.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-17 — Phase 04 Slice 03 Merchant Dashboard Payments/Webhook Config Runtime Verification`.
+- `MRC-04` — pass for own payment list/detail and cross-merchant empty-list/404 behavior.
+- `MRC-05` — pass for webhook endpoint create/update/list/delete, merchant-admin write enforcement, merchant-member read-only behavior and cross-merchant scoping.
+- `MRC-03` — pass regression for API key lifecycle.
+- `PAY-01`, `PAY-02`, `PAY-03` — pass targeted public API response/idempotency regressions.
 
 Next planned step:
-- Implement the approved Slice 03 backend/runtime sub-scope when selected.
+- Provide real Stripe Connect sandbox credentials to implement `MRC-01`, or move to the next approved backend/runtime slice.
 
 ---
 

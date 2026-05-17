@@ -62,7 +62,8 @@ node -e "const j=JSON.parse(require('fs').readFileSync('${denied_body}','utf8'))
 
 # Missing Authorization header returns 401 unauthenticated.
 missing_body="/tmp/minifin-phase04-apikey-missing.json"
-missing_status="$(curl -sS -o "${missing_body}" -w "%{http_code}" -X POST "${base_url}/v1/payment_intents" \
+pa_rm "${missing_body}"
+missing_status="$(pa_curl -sS -o "${missing_body}" -w "%{http_code}" -X POST "${base_url}/v1/payment_intents" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: missing-auth-$(date +%s%N)" \
   -d '{"amount":"5.00","currency":"EUR"}')"
@@ -71,7 +72,8 @@ node -e "const j=JSON.parse(require('fs').readFileSync('${missing_body}','utf8')
 
 # Malformed bearer returns 401 invalid_api_key.
 bad_body="/tmp/minifin-phase04-apikey-bad.json"
-bad_status="$(curl -sS -o "${bad_body}" -w "%{http_code}" -X POST "${base_url}/v1/payment_intents" \
+pa_rm "${bad_body}"
+bad_status="$(pa_curl -sS -o "${bad_body}" -w "%{http_code}" -X POST "${base_url}/v1/payment_intents" \
   -H "Authorization: Bearer not_an_mfp_key" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: bad-key-$(date +%s%N)" \

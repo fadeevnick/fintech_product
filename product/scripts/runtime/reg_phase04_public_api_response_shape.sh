@@ -9,11 +9,13 @@ source "${script_dir}/lib_phase04_public_api.sh"
 pa_register_merchant "shape"
 
 create_body="/tmp/minifin-phase04-shape-create.json"
+pa_rm "${create_body}"
 pa_create_api_key "${PA_COOKIE_JAR}" "shape" "${create_body}"
 raw_key="$(node -e "const j=JSON.parse(require('fs').readFileSync('${create_body}','utf8')); console.log(j.data.key);")"
 
 # Success: 201 with data populated and errors empty.
 ok_body="/tmp/minifin-phase04-shape-ok.json"
+pa_rm "${ok_body}"
 ok_status="$(pa_public_post_payment_intent "${raw_key}" "shape-ok-$(date +%s%N)" '{"amount":"19.99","currency":"EUR","description":"hello"}' "${ok_body}")"
 test "${ok_status}" = "201"
 node -e "
@@ -26,6 +28,7 @@ intent_id="$(node -e "const j=JSON.parse(require('fs').readFileSync('${ok_body}'
 
 # GET returns same shape.
 get_body="/tmp/minifin-phase04-shape-get.json"
+pa_rm "${get_body}"
 get_status="$(pa_public_get_payment_intent "${raw_key}" "${intent_id}" "${get_body}")"
 test "${get_status}" = "200"
 node -e "
@@ -35,6 +38,7 @@ if(!Array.isArray(j.errors)||j.errors.length!==0||!j.data||j.data.id!=='${intent
 
 # Missing idempotency key — error shape with data null and errors[0].code=idempotency_key_required, status 400.
 missing_body="/tmp/minifin-phase04-shape-missing-idem.json"
+pa_rm "${missing_body}"
 missing_status="$(pa_public_post_payment_intent "${raw_key}" "-" '{"amount":"1.00","currency":"EUR"}' "${missing_body}")"
 test "${missing_status}" = "400"
 node -e "
@@ -45,6 +49,7 @@ if(!Array.isArray(j.errors)||j.errors[0]?.code!=='idempotency_key_required'||!j.
 
 # Invalid amount — error shape with field set.
 invalid_body="/tmp/minifin-phase04-shape-invalid-amount.json"
+pa_rm "${invalid_body}"
 invalid_status="$(pa_public_post_payment_intent "${raw_key}" "shape-invalid-$(date +%s%N)" '{"amount":"-1.00","currency":"EUR"}' "${invalid_body}")"
 test "${invalid_status}" = "400"
 node -e "
@@ -55,7 +60,8 @@ if(!Array.isArray(j.errors)||j.errors[0]?.code!=='invalid_amount'||j.errors[0]?.
 
 # Unauthenticated request also follows {data, errors} shape.
 unauth_body="/tmp/minifin-phase04-shape-unauth.json"
-unauth_status="$(curl -sS -o "${unauth_body}" -w "%{http_code}" -X POST "${base_url}/v1/payment_intents" \
+pa_rm "${unauth_body}"
+unauth_status="$(pa_curl -sS -o "${unauth_body}" -w "%{http_code}" -X POST "${base_url}/v1/payment_intents" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: shape-unauth-$(date +%s%N)" \
   -d '{"amount":"1.00","currency":"EUR"}')"
@@ -71,6 +77,7 @@ other_create="/tmp/minifin-phase04-shape-other-create.json"
 pa_create_api_key "${PA_COOKIE_JAR}" "shape-other" "${other_create}"
 other_key="$(node -e "const j=JSON.parse(require('fs').readFileSync('${other_create}','utf8')); console.log(j.data.key);")"
 forbidden_body="/tmp/minifin-phase04-shape-forbidden.json"
+pa_rm "${forbidden_body}"
 forbidden_status="$(pa_public_get_payment_intent "${other_key}" "${intent_id}" "${forbidden_body}")"
 test "${forbidden_status}" = "404"
 node -e "

@@ -118,7 +118,7 @@ class PaymentIntentService(
     }
 }
 
-internal fun PaymentIntentRecord.toDto(): PaymentIntentDto =
+fun PaymentIntentRecord.toDto(): PaymentIntentDto =
     PaymentIntentDto(
         id = id.toString(),
         `object` = "payment_intent",

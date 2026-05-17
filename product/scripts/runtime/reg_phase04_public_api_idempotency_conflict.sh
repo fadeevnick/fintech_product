@@ -9,6 +9,7 @@ source "${script_dir}/lib_phase04_public_api.sh"
 pa_register_merchant "idem-conflict"
 
 create_body="/tmp/minifin-phase04-idem-conflict-create.json"
+pa_rm "${create_body}"
 pa_create_api_key "${PA_COOKIE_JAR}" "idem-conflict" "${create_body}"
 raw_key="$(node -e "const j=JSON.parse(require('fs').readFileSync('${create_body}','utf8')); console.log(j.data.key);")"
 
@@ -19,6 +20,7 @@ test "${first_status}" = "201"
 first_intent_id="$(node -e "const j=JSON.parse(require('fs').readFileSync('${first_body_file}','utf8')); console.log(j.data.id);")"
 
 conflict_body="/tmp/minifin-phase04-idem-conflict-conflict.json"
+pa_rm "${conflict_body}"
 conflict_status="$(pa_public_post_payment_intent "${raw_key}" "${idem_key}" '{"amount":"5.01","currency":"EUR","description":"original"}' "${conflict_body}")"
 test "${conflict_status}" = "409"
 node -e "
@@ -39,6 +41,7 @@ test "${intent_count}" = "1"
 
 # Original body still replays cleanly.
 replay_body="/tmp/minifin-phase04-idem-conflict-replay.json"
+pa_rm "${replay_body}"
 replay_status="$(pa_public_post_payment_intent "${raw_key}" "${idem_key}" '{"amount":"5.00","currency":"EUR","description":"original"}' "${replay_body}")"
 test "${replay_status}" = "201"
 replay_intent_id="$(node -e "const j=JSON.parse(require('fs').readFileSync('${replay_body}','utf8')); console.log(j.data.id);")"

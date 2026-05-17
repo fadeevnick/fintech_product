@@ -21,6 +21,7 @@ Implemented runtime behavior so far:
 - Phase 03 Slice 04 wallet internal transfer backend/runtime sub-scope in `platform`: `wallet.internal_transfers` (under EUR 10k), end-user `POST /api/v1/transfers`, sender debit / receiver credit through `ledger.post_journal(...)`, sufficient-funds guard, `Idempotency-Key` duplicate protection and actor-control wallet-write block for sender and receiver.
 - Phase 04 Slice 01 merchant API keys and public API idempotency backend/runtime sub-scope in `platform`: `merchant.api_keys` (one-time-visible key, SHA-256 `key_hash`, 16-hex `fingerprint`), `merchant.payment_intents` shell (`REQUIRES_PAYMENT_METHOD` only), `idempotency.idempotency_keys` append-only on update; merchant dashboard `POST/GET /api/v1/merchant/api-keys`, `POST /api/v1/merchant/api-keys/{id}/revoke` (`merchant_admin`); public `POST /v1/payment_intents` and `GET /v1/payment_intents/{id}` behind `Authorization: Bearer mfp_live_*`; deterministic public idempotency replay/conflict primitive with atomic concurrent replay, per-merchant/per-route scope and append-only finalized rows. Public API endpoints currently hosted in `platform`; moving them into `acquirer` is a deferred later Phase 04 slice gated on a real service-to-service auth primitive.
 - Phase 04 Slice 02 Stripe webhook backend/runtime sub-scope in `platform`: `merchant.stripe_account_links`, `merchant.stripe_webhook_events`, `POST /webhooks/stripe/v1`, real Stripe-format HMAC-SHA256 signature verification, timestamp tolerance, duplicate Stripe event id idempotency, `account.updated` KYB state mapping and audit rows. Stripe Connect onboarding-start remains blocked on real sandbox credentials; no fake Stripe API path exists.
+- Phase 04 Slice 03 merchant dashboard payments/webhook config backend/runtime sub-scope in `platform`: `merchant.webhook_endpoints`, merchant dashboard `GET /api/v1/merchant/payment-intents`, `GET /api/v1/merchant/payment-intents/{id}`, and `GET/POST/PUT/DELETE /api/v1/merchant/webhook-endpoints[/{id}]`; payment reads are merchant-scoped with cross-merchant 404 behavior, webhook config writes require `merchant_admin`, and `merchant_member` remains read-only. No payment authorization/capture/refund/settlement or outbound webhook delivery exists.
 
 ## Local Commands
 
@@ -112,6 +113,8 @@ scripts/runtime/reg_phase04_stripe_webhook_signature_invalid.sh
 scripts/runtime/reg_phase04_stripe_webhook_timestamp_tolerance.sh
 scripts/runtime/reg_phase04_stripe_webhook_idempotency.sh
 scripts/runtime/reg_phase04_stripe_webhook_bad_then_valid_retry.sh
+scripts/runtime/reg_phase04_merchant_payment_reads.sh
+scripts/runtime/reg_phase04_merchant_webhook_config.sh
 ```
 
 ## Stripe Webhook Local Runtime

@@ -5,6 +5,22 @@
 base_url="${PLATFORM_BASE_URL:-http://localhost:8081}"
 compose_file="${COMPOSE_FILE:-deploy/docker-compose.yml}"
 
+pa_curl() {
+  if test -n "${PLATFORM_CURL_CONTAINER_NETWORK:-}"; then
+    docker run --rm --network "${PLATFORM_CURL_CONTAINER_NETWORK}" -v /tmp:/tmp curlimages/curl:8.10.1 "$@"
+  else
+    curl "$@"
+  fi
+}
+
+pa_rm() {
+  if test -n "${PLATFORM_CURL_CONTAINER_NETWORK:-}"; then
+    docker run --rm -v /tmp:/tmp alpine:3.20 rm -f "$@"
+  else
+    rm -f "$@"
+  fi
+}
+
 pa_psql() {
   docker compose -f "${compose_file}" exec -T platform-db psql -U platform -d platform -Atc "$1"
 }
@@ -14,12 +30,17 @@ pa_psql() {
 pa_register_merchant() {
   local tag="$1"
   PA_COOKIE_JAR="/tmp/minifin-phase04-${tag}-cookies.txt"
+  if test -n "${PLATFORM_CURL_CONTAINER_NETWORK:-}"; then
+    pa_rm "${PA_COOKIE_JAR}"
+  else
+    rm -f "${PA_COOKIE_JAR}"
+  fi
   local email="phase04.${tag}.$(date +%s%N)@example.test"
   local password="correct horse battery"
   local register_body="/tmp/minifin-phase04-${tag}-register.json"
   local verify_body="/tmp/minifin-phase04-${tag}-verify.json"
 
-  curl -fsS -X POST "${base_url}/api/v1/merchant/register" \
+  pa_curl -fsS -X POST "${base_url}/api/v1/merchant/register" \
     -H "Content-Type: application/json" \
     -d "{\"email\":\"${email}\",\"password\":\"${password}\",\"companyName\":\"Phase04 Co ${tag}\",\"country\":\"FR\",\"businessType\":\"saas\"}" \
     >"${register_body}"
@@ -29,22 +50,28 @@ pa_register_merchant() {
   local verification_token
   verification_token="$(node -e "const j=JSON.parse(require('fs').readFileSync('${register_body}','utf8')); console.log(j.data.verificationToken);")"
 
-  curl -fsS -X POST "${base_url}/api/v1/merchant/email/verify" \
+  pa_curl -fsS -X POST "${base_url}/api/v1/merchant/email/verify" \
     -H "Content-Type: application/json" \
     -d "{\"token\":\"${verification_token}\"}" \
     >"${verify_body}"
 
-  curl -fsS -c "${PA_COOKIE_JAR}" -X POST "${base_url}/api/v1/merchant/login" \
+  pa_curl -fsS -c "${PA_COOKIE_JAR}" -X POST "${base_url}/api/v1/merchant/login" \
     -H "Content-Type: application/json" \
     -d "{\"email\":\"${email}\",\"password\":\"${password}\"}" \
     >/tmp/minifin-phase04-${tag}-login.json
+  if test -n "${PLATFORM_CURL_CONTAINER_NETWORK:-}"; then
+    local cookie_host
+    cookie_host="$(node -e "console.log(new URL(process.argv[1]).hostname)" "${base_url}")"
+    docker run --rm -v /tmp:/tmp alpine:3.20 sh -c "sed -i -e 's/^#HttpOnly_[^[:space:]]*/#HttpOnly_${cookie_host}/' -e 's/^127\\.0\\.0\\.1[[:space:]]/${cookie_host}\t/' -e 's/^localhost[[:space:]]/${cookie_host}\t/' '${PA_COOKIE_JAR}' && chmod 600 '${PA_COOKIE_JAR}'"
+  fi
 }
 
 pa_create_api_key() {
   local cookie_jar="$1"
   local label="$2"
   local out_body="$3"
-  curl -fsS -b "${cookie_jar}" -X POST "${base_url}/api/v1/merchant/api-keys" \
+  pa_rm "${out_body}"
+  pa_curl -fsS -b "${cookie_jar}" -X POST "${base_url}/api/v1/merchant/api-keys" \
     -H "Content-Type: application/json" \
     -d "{\"label\":\"${label}\"}" \
     >"${out_body}"
@@ -53,14 +80,16 @@ pa_create_api_key() {
 pa_list_api_keys() {
   local cookie_jar="$1"
   local out_body="$2"
-  curl -fsS -b "${cookie_jar}" "${base_url}/api/v1/merchant/api-keys" >"${out_body}"
+  pa_rm "${out_body}"
+  pa_curl -fsS -b "${cookie_jar}" "${base_url}/api/v1/merchant/api-keys" >"${out_body}"
 }
 
 pa_revoke_api_key() {
   local cookie_jar="$1"
   local key_id="$2"
   local out_body="$3"
-  curl -fsS -b "${cookie_jar}" -X POST "${base_url}/api/v1/merchant/api-keys/${key_id}/revoke" >"${out_body}"
+  pa_rm "${out_body}"
+  pa_curl -fsS -b "${cookie_jar}" -X POST "${base_url}/api/v1/merchant/api-keys/${key_id}/revoke" >"${out_body}"
 }
 
 # usage: pa_public_post_payment_intent <api_key> <idempotency_key|-> <json_body> <out_body>
@@ -70,11 +99,12 @@ pa_public_post_payment_intent() {
   local idem_key="$2"
   local body_json="$3"
   local out_body="$4"
+  pa_rm "${out_body}"
   local -a header_args=()
   if test "${idem_key}" != "-"; then
     header_args+=(-H "Idempotency-Key: ${idem_key}")
   fi
-  curl -sS -o "${out_body}" -w "%{http_code}" \
+  pa_curl -sS -o "${out_body}" -w "%{http_code}" \
     -X POST "${base_url}/v1/payment_intents" \
     -H "Authorization: Bearer ${api_key}" \
     -H "Content-Type: application/json" \
@@ -86,7 +116,8 @@ pa_public_get_payment_intent() {
   local api_key="$1"
   local intent_id="$2"
   local out_body="$3"
-  curl -sS -o "${out_body}" -w "%{http_code}" \
+  pa_rm "${out_body}"
+  pa_curl -sS -o "${out_body}" -w "%{http_code}" \
     -X GET "${base_url}/v1/payment_intents/${intent_id}" \
     -H "Authorization: Bearer ${api_key}"
 }
