@@ -1085,3 +1085,58 @@ Local DB hygiene note:
 - The missing V10 SQL was applied manually to the default local DB and a matching Flyway history row was inserted using the checksum observed from the isolated fresh DB.
 - This was local runtime hygiene only; repository migrations are V10 + V11 and validate cleanly on a fresh DB.
 - Default stack was restored afterward; `curl -fsS http://127.0.0.1:8081/actuator/health` returned `{"status":"UP","groups":["liveness","readiness"]}`.
+
+---
+
+## 2026-05-17 — Phase 04 Slice 03 Merchant Dashboard Payments/Webhook Config Runtime Verification
+
+Scope:
+- Merchant dashboard payment-intent read shell over existing `merchant.payment_intents` rows.
+- Merchant webhook endpoint configuration CRUD model under `/api/v1/merchant/**`.
+- No frontend implementation, no Stripe Connect onboarding, no payment authorization/capture/refund/settlement, no outbound webhook delivery.
+
+Runtime slot:
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a2`
+- `PLATFORM_HTTP_HOST_PORT=28181`
+- `PLATFORM_DB_HOST_PORT=25433`
+- `KAFKA_HOST_PORT=29092`
+- `KEYCLOAK_HOST_PORT=38080`
+
+Build/start evidence:
+- `DOCKER_BUILDKIT=0 COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 PLATFORM_HTTP_HOST_PORT=28181 PLATFORM_DB_HOST_PORT=25433 KAFKA_HOST_PORT=29092 KEYCLOAK_HOST_PORT=38080 docker compose -f deploy/docker-compose.yml build platform` passed; image `mini-fintech-platform-a2-platform:latest` built as `f1107cd49635`.
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 ... docker compose -f deploy/docker-compose.yml up -d platform` passed.
+- Platform applied Flyway migration `V12__merchant_dashboard_read_shell.sql`; DB query `select version from flyway_schema_history order by installed_rank desc limit 1;` returned `12`.
+- `docker compose exec -T platform curl -fsS http://127.0.0.1:8080/internal/health` returned `{"service":"platform","status":"UP"}`.
+
+Environment note:
+- In this branch runtime, host-published port `28181` accepted TCP but host curl did not receive HTTP responses. Internal compose-network curl to `http://platform:8080` succeeded.
+- Retained Phase 04 scripts were updated to support `PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default`, while DB checks still use the assigned compose project.
+
+Runtime script evidence:
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default scripts/runtime/reg_phase04_merchant_payment_reads.sh`:
+  - `MRC-04` — pass.
+  - Created merchant A, API key and public payment intent.
+  - Merchant A dashboard list/detail returned the created shell payment intent.
+  - Merchant B dashboard list excluded merchant A's payment intent.
+  - Merchant B detail lookup for merchant A's payment intent returned 404 `payment_intent_not_found`.
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default scripts/runtime/reg_phase04_merchant_webhook_config.sh`:
+  - `MRC-05` — pass.
+  - Merchant admin created, listed, updated and soft-deleted webhook endpoint config.
+  - `merchant_member` write attempt returned 403 `forbidden_role` while read/list remained available.
+  - Another merchant could not list or delete the first merchant's endpoint; delete returned 404.
+  - DB row ended in `status='DELETED'`.
+- `COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default scripts/runtime/reg_phase04_api_key_lifecycle.sh`:
+  - `MRC-03` — pass regression.
+- Targeted public API regression chain:
+  - `scripts/runtime/reg_phase04_public_api_response_shape.sh`
+  - `scripts/runtime/reg_phase04_public_api_idempotency_replay.sh`
+  - `scripts/runtime/reg_phase04_public_api_idempotency_conflict.sh`
+  - Result: command chain exit code `0`; `PAY-01`, `PAY-02`, `PAY-03` pass regression.
+
+Not claimed:
+- `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
+- `WBH-01`, `WBH-02`, `WBH-03` are not claimed; this slice stores webhook endpoint configuration only and does not deliver outbound webhooks.
+- No frontend/UI runtime check is claimed.
+
+Next planned step:
+- Provide real Stripe Connect sandbox credentials to implement `MRC-01`, or move to the next approved backend/runtime slice.

@@ -109,6 +109,8 @@ Result tags:
 | `MRC-01` | Stripe Connect onboarding start. | Merchant can start real Stripe Connect sandbox onboarding. | pending |
 | `MRC-02` | Stripe webhook idempotency/signature. | Valid webhook updates state once; invalid signature rejected. | pending |
 | `MRC-03` | API key lifecycle. | Key shown once, stored hashed/fingerprinted, revoked key fails. | pending |
+| `MRC-04` | Merchant dashboard payment-intent read scoping. | Merchant can list/detail own shell payment intents; another merchant receives 404/empty result. | `product/scripts/runtime/reg_phase04_merchant_payment_reads.sh` |
+| `MRC-05` | Merchant webhook endpoint configuration CRUD. | Merchant admin can create/update/list/delete webhook endpoint config; non-admin writes are rejected; config is scoped to merchant. | `product/scripts/runtime/reg_phase04_merchant_webhook_config.sh` |
 | `PAY-01` | Public API response shape. | Public API returns `{data, errors}` shape. | pending |
 | `PAY-02` | Idempotency same body. | Same key/body returns cached response. | pending |
 | `PAY-03` | Idempotency conflict. | Same key/different body returns 409. | pending |

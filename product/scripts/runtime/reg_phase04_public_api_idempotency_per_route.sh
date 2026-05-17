@@ -19,6 +19,7 @@ source "${script_dir}/lib_phase04_public_api.sh"
 pa_register_merchant "scope"
 
 create_body="/tmp/minifin-phase04-scope-create.json"
+pa_rm "${create_body}"
 pa_create_api_key "${PA_COOKIE_JAR}" "scope-bootstrap" "${create_body}"
 raw_key="$(node -e "const j=JSON.parse(require('fs').readFileSync('${create_body}','utf8')); console.log(j.data.key);")"
 
@@ -26,12 +27,14 @@ shared_key="scope-shared-$(date +%s%N)"
 
 # 1) Use shared key on the public payment intent route.
 public_body="/tmp/minifin-phase04-scope-public.json"
+pa_rm "${public_body}"
 public_status="$(pa_public_post_payment_intent "${raw_key}" "${shared_key}" '{"amount":"3.50","currency":"EUR"}' "${public_body}")"
 test "${public_status}" = "201"
 
 # 2) Use the SAME idempotency key string on the dashboard API key create route.
 dashboard_body="/tmp/minifin-phase04-scope-dashboard.json"
-dashboard_status=$(curl -sS -o "${dashboard_body}" -w "%{http_code}" \
+pa_rm "${dashboard_body}"
+dashboard_status=$(pa_curl -sS -o "${dashboard_body}" -w "%{http_code}" \
   -b "${PA_COOKIE_JAR}" \
   -X POST "${base_url}/api/v1/merchant/api-keys" \
   -H "Content-Type: application/json" \
@@ -53,7 +56,7 @@ test "${public_replay_status}" = "201"
 diff -q "${public_body}" "${public_replay}" >/dev/null
 
 dashboard_replay="/tmp/minifin-phase04-scope-dashboard-replay.json"
-dashboard_replay_status=$(curl -sS -o "${dashboard_replay}" -w "%{http_code}" \
+dashboard_replay_status=$(pa_curl -sS -o "${dashboard_replay}" -w "%{http_code}" \
   -b "${PA_COOKIE_JAR}" \
   -X POST "${base_url}/api/v1/merchant/api-keys" \
   -H "Content-Type: application/json" \
@@ -76,7 +79,7 @@ test "${status_pc}" = "409"
 node -e "const j=JSON.parse(require('fs').readFileSync('${public_conflict}','utf8')); if(j.errors?.[0]?.code!=='idempotency_conflict') process.exit(1);"
 
 dashboard_conflict="/tmp/minifin-phase04-scope-dashboard-conflict.json"
-status_dc=$(curl -sS -o "${dashboard_conflict}" -w "%{http_code}" \
+status_dc=$(pa_curl -sS -o "${dashboard_conflict}" -w "%{http_code}" \
   -b "${PA_COOKIE_JAR}" \
   -X POST "${base_url}/api/v1/merchant/api-keys" \
   -H "Content-Type: application/json" \
