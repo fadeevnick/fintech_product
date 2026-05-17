@@ -650,3 +650,28 @@ Runtime evidence:
 
 Next planned step:
 - Choose the next approved backend/runtime slice. `PAY-04` / `PAY-05` remain deferred to the later card authorization slice.
+
+---
+
+## Phase 06 Slice 01 — Outbound Merchant Webhook Delivery Foundation
+
+Status: **DRAFT PLANNING NOTE — no product code implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_06_slice_01_outbound_webhook_delivery_planning.md` — DRAFT v0.1.
+
+Planned backend/runtime scope:
+- Use existing merchant webhook endpoint configuration from Phase 04 Slice 03.
+- Add one-time webhook signing secret handling with hashed-at-rest storage.
+- Add persisted outbound webhook event and delivery-attempt model.
+- Deliver real signed `payment_intent.created` payloads to a local test receiver.
+- Target `WBH-01`; defer `WBH-02` unless narrow retry/DLQ can be implemented without fake payment lifecycle events.
+
+Explicitly not implemented:
+- No Kotlin, SQL, runtime scripts or frontend implementation in this planning task.
+- No Stripe Connect onboarding (`MRC-01`).
+- No card authorization, capture, clearing, settlement, refund, payout or chargeback implementation.
+- No `SET-*`, `PAY-*`, `MRC-01`, `CHB-*` or frontend claims.
+
+Runtime evidence:
+- None. This is a planning-only artifact.
