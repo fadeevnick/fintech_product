@@ -649,4 +649,30 @@ Runtime evidence:
 - `VLT-03` — pass for PAN log masking: raw detokenized PAN was absent from Platform/Issuer/Vault general logs.
 
 Next planned step:
-- Choose the next approved backend/runtime slice. `PAY-04` / `PAY-05` remain deferred to the later card authorization slice.
+- Review/approve `planning/implementation-slices/phase_05_slice_02_card_authorization_planning.md`, then implement its backend/runtime scope if accepted.
+
+---
+
+## Phase 05 Slice 02 — Card Authorization Path
+
+Status: **DRAFT PLANNING NOTE — no product code implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_05_slice_02_card_authorization_planning.md` — DRAFT v0.1.
+
+Planned backend/runtime scope:
+- synchronous public card authorization path through Acquirer → Network → Issuer;
+- approved authorization hold through Platform Ledger;
+- structured authorization declines for insufficient funds, blocked/frozen actor, inactive/unknown card token and service failures;
+- retained runtime scripts targeting `PAY-04` and `PAY-05`.
+
+Explicitly not implemented:
+- no Kotlin/SQL/runtime-script changes in this planning-only branch;
+- no capture, clearing, settlement, refunds, payouts, chargebacks or outbound merchant webhook delivery;
+- no `SET-*`, `WBH-*`, `CHB-*` or frontend checks claimed.
+
+Runtime evidence:
+- none; planning-only artifact.
+
+Next planned step:
+- Owner/orchestrator review of the draft planning note, then approval or revision before any product implementation.
