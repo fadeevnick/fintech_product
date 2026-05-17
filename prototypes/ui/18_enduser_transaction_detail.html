@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Transaction Detail — UEW-UI-07</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --inp:     #faf9f7;
+      --hover:   #f0efe9;
+
+      --sb:        #111114;
+      --sb-bdr:    #1e1e22;
+      --sb-muted:  #545460;
+      --sb-active: #1e1e28;
+
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+
+      --t1: #1c1c1f;
+      --t2: #575763;
+      --t3: #9898a6;
+      --t4: #d0d0da;
+
+      --cta:     #1c1c1f;
+      --cta-hov: #2e2e35;
+      --cta-t:   #ffffff;
+
+      --g:    #166534;  --g-bg: #f0fdf4;  --g-bd: #bbf7d0;
+      --am:   #854d0e;  --am-bg:#fffbeb;  --am-bd:#fde68a;
+      --rd:   #9b1c1c;  --rd-bg:#fef2f2;  --rd-bd:#fecaca;
+      --or:   #b45309;  --or-bg:#fff7ed;  --or-bd:#fed7aa;
+      --pu:   #5b21b6;  --pu-bg:#f5f3ff;  --pu-bd:#ddd6fe;
+
+      --sb-env-bg: #1a1030;
+      --sb-env-t:  #b39cf0;
+      --sb-env-bd: #362566;
+
+      --f-ui:   'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+
+      --r:    3px;
+      --r-lg: 5px;
+      --w-sb: 220px;
+      --w-tl: 252px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+    #root { height: 100vh; display: flex; overflow: hidden; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 15px 15px 13px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-name  { font-size: 14.5px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+    .sb-nav   { flex: 1; padding: 10px 7px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 9px 5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 12px;
+      cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.35; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; }
+    .nav-lock { margin-left: auto; display: flex; align-items: center; opacity: 0.6; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono); color: var(--sb-muted); opacity: 0.8; }
+    .sb-footer { padding: 10px 14px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 10px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 4px; }
+    .env-dot   { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host  { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); }
+
+    /* MAIN */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .page-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 22px; border-bottom: 1px solid var(--bdr);
+      background: var(--surface); flex-shrink: 0; }
+    .page-bc   { font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .page-bc strong { color: var(--t1); font-weight: 500; }
+    .page-bc .sep   { color: var(--t3); }
+    .page-bc .mode  { font-family: var(--f-mono); font-size: 11.5px; color: var(--t2); }
+    .page-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .screen-id { font-size: 10px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge { font-size: 10px; font-family: var(--f-mono); color: var(--am);
+      background: var(--am-bg); border: 1px solid var(--am-bd);
+      padding: 2px 8px; border-radius: var(--r); display: flex; align-items: center; gap: 5px; }
+    .env-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--am); }
+    .user-chip { display: flex; align-items: center; gap: 7px; padding: 3px 9px 3px 3px;
+      border: 1px solid var(--bdr); border-radius: 20px; background: var(--surf2); }
+    .user-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--cta);
+      color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center;
+      justify-content: center; letter-spacing: 0.03em; flex-shrink: 0; }
+    .user-name { font-size: 11.5px; color: var(--t2); font-weight: 500; }
+
+    /* CONTENT */
+    .content-area { flex: 1; display: flex; overflow: hidden; }
+    .left-scroll  { flex: 1; overflow-y: auto; padding: 16px 20px;
+      background: var(--bg); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+    /* PANELS */
+    .panel     { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); flex-shrink: 0; }
+    .panel-title { font-size: 11.5px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 13px 16px; }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em;
+      font-family: var(--f-mono); border: 1px solid transparent; white-space: nowrap; }
+    .b-active    { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-done      { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-completed { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-pending   { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-held      { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-limited   { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-action    { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-rejected  { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-locked    { background: var(--hover); color: var(--t2);  border-color: var(--bdr); }
+    .b-cancelled { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-inreview  { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-approved  { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-captured  { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-unverif   { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-verified  { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-posted    { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-warn      { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+
+    /* KV */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--t3); min-width: 152px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--r); font-size: 12.5px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover:not(:disabled) { background: var(--cta-hov); }
+    .btn-ghost   { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover:not(:disabled)   { background: var(--hover); color: var(--t1); }
+    .btn-warn    { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+    .btn-warn:hover { background: #fef3c7; }
+    .btn-danger  { background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+    .btn-sm      { padding: 4px 10px; font-size: 11px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    /* ALERTS */
+    .alert { display: flex; gap: 10px; padding: 9px 12px 9px 13px; font-size: 12px;
+      line-height: 1.55; border-left-width: 3px; border-left-style: solid; border-radius: var(--r); }
+    .alert-warn  { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-red   { background: var(--rd-bg); border-left-color: var(--rd); color: #7f1d1d; }
+    .alert-info  { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-green { background: var(--g-bg);  border-left-color: var(--g);  color: #14532d; }
+    .alert-or    { background: var(--or-bg); border-left-color: var(--or); color: #7c2d12; }
+    .alert-pu    { background: var(--pu-bg); border-left-color: var(--pu); color: #3b0764; }
+
+    /* STATE PATH */
+    .state-path { display: flex; align-items: center; flex-wrap: wrap; padding: 10px 14px; gap: 0; }
+    .sp-node  { display: flex; align-items: center; }
+    .sp-pill  { padding: 3px 9px; border-radius: 2px; font-size: 10px; font-family: var(--f-mono);
+      font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; border: 1px solid transparent; }
+    .sp-pill.past     { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .sp-pill.current  { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); box-shadow: 0 0 0 2px rgba(180,83,9,0.14); }
+    .sp-pill.next     { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .sp-pill.future   { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .sp-pill.bad      { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .sp-arrow { font-size: 10px; color: var(--t4); margin: 0 4px; flex-shrink: 0; }
+
+    /* TABLES */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t3); padding: 6px 10px; text-align: left;
+      border-bottom: 1px solid var(--bdr); background: var(--surf2); font-weight: 600; }
+    .data-table td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid var(--hover); vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .mono-cell { font-family: var(--f-mono); font-size: 11px; }
+    .le-dr { color: var(--rd); font-weight: 600; font-family: var(--f-mono); font-size: 10.5px; }
+    .le-cr { color: var(--g);  font-weight: 600; font-family: var(--f-mono); font-size: 10.5px; }
+
+    /* FORM */
+    .inp-label { font-size: 11px; color: var(--t2); margin-bottom: 4px; font-weight: 500; display: block; }
+    .inp-hint  { font-size: 10.5px; color: var(--t3); margin-top: 3px; }
+    .inp-field { width: 100%; padding: 7px 10px; border: 1px solid var(--bdr-mid);
+      border-radius: var(--r); font-size: 12.5px; color: var(--t1);
+      background: var(--inp); outline: none; font-family: var(--f-ui); transition: border-color 0.12s; }
+    .inp-field:focus { border-color: var(--bdr-focus); }
+    select.inp-field { cursor: pointer; }
+    .form-group  { display: flex; flex-direction: column; }
+
+    /* COPY BUTTON */
+    .copy-btn { padding: 3px 9px; font-size: 10px; font-family: var(--f-mono); background: var(--surf2);
+      border: 1px solid var(--bdr-mid); border-radius: var(--r); cursor: pointer; color: var(--t2);
+      transition: all 0.1s; }
+    .copy-btn.copied { background: var(--g-bg); border-color: var(--g-bd); color: var(--g); }
+    .copy-btn:hover:not(.copied) { background: var(--hover); }
+
+    /* HOLD BAR */
+    .hold-bar-wrap { height: 5px; background: var(--bdr); border-radius: 3px; overflow: hidden; margin: 6px 0; }
+    .hold-bar-fill { height: 100%; background: var(--or); border-radius: 3px; }
+
+    /* OUTCOME ROW */
+    .outcome-row { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0;
+      border-bottom: 1px solid var(--hover); }
+    .outcome-row:last-child { border-bottom: none; }
+    .outcome-icon { width: 18px; height: 18px; border-radius: var(--r); font-size: 10px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; font-weight: 700; }
+    .outcome-body { flex: 1; min-width: 0; }
+    .outcome-label { font-size: 11.5px; font-weight: 600; color: var(--t1); }
+    .outcome-desc  { font-size: 10.5px; color: var(--t3); margin-top: 1px; }
+
+    /* TIMELINE RAIL */
+    .tl-rail  { width: var(--w-tl); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .tl-hdr   { padding: 10px 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+      font-size: 9.5px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.1em; }
+    .tl-body  { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px 14px; }
+    .tl-evt   { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hover); cursor: pointer; }
+    .tl-evt:last-child { border-bottom: none; }
+    .tl-evt:hover .tl-name { color: var(--cta); }
+    .tl-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .tl-dot.ok   { background: var(--g); }
+    .tl-dot.pend { background: var(--or); }
+    .tl-dot.bad  { background: var(--rd); }
+    .tl-dot.neu  { background: var(--t4); }
+    .tl-line  { width: 1px; flex: 1; background: var(--bdr); margin: 4px 0; min-height: 12px; }
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-ts    { font-size: 9.5px; font-family: var(--f-mono); color: var(--t3); margin-bottom: 1px; }
+    .tl-name  { font-size: 11px; font-weight: 600; color: var(--t1); margin-bottom: 1px;
+      text-transform: uppercase; letter-spacing: 0.04em; transition: color 0.1s; }
+    .tl-actor { font-size: 10px; color: var(--t3); margin-bottom: 2px; }
+    .tl-desc  { font-size: 10.5px; color: var(--t2); line-height: 1.4; }
+    .tl-audit { font-size: 9.5px; font-family: var(--f-mono); color: var(--pu); margin-top: 4px;
+      background: var(--pu-bg); border: 1px solid var(--pu-bd); border-radius: var(--r);
+      padding: 2px 6px; display: inline-block; max-width: 100%; white-space: normal;
+      overflow-wrap: anywhere; word-break: break-word; }
+    .tl-expand-hint { font-size: 9px; color: var(--t4); margin-top: 3px; font-style: italic; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,20,0.52);
+      display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg);
+      width: 480px; max-width: 100%; max-height: 88vh; display: flex; flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08); }
+    .modal-hdr  { display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 13px 16px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; background: var(--surf2); }
+    .modal-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .modal-sub   { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .modal-close { width: 24px; height: 24px; border-radius: var(--r); background: transparent;
+      border: none; color: var(--t3); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: background 0.1s, color 0.1s; flex-shrink: 0; margin-top: 1px; }
+    .modal-close:hover { background: var(--hover); color: var(--t1); }
+    .modal-body   { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-footer { padding: 12px 16px; border-top: 1px solid var(--bdr); display: flex;
+      gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+    .modal-note   { font-size: 10.5px; color: var(--t3); margin-left: auto; font-style: italic; }
+
+    /* SANDBOX */
+    .sandbox-note { font-size: 10px; color: var(--t3); font-family: var(--f-mono);
+      padding: 4px 9px; background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); }
+
+    /* DETAIL GRID */
+    .detail-grid { display: grid; grid-template-columns: 1fr 320px; gap: 12px; align-items: start; }
+
+    /* TXN AMOUNT DISPLAY */
+    .txn-amount-block { display: flex; align-items: baseline; gap: 8px; margin: 6px 0 4px; }
+    .txn-amount-ccy   { font-size: 14px; font-family: var(--f-mono); color: var(--t3); font-weight: 500; }
+    .txn-amount-val   { font-size: 28px; font-family: var(--f-mono); font-weight: 600; letter-spacing: -0.02em; color: var(--t1); }
+
+    @media (max-width: 1200px) { .detail-grid { grid-template-columns: 1fr 280px; } }
+    @media (max-width: 1100px) { :root { --w-tl: 210px; } .detail-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 960px)  { .tl-rail { display: none; } }
+    @media (max-width: 640px)  { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ── DATA ───────────────────────────────────────────────────────────────── */
+const TXN = {
+  id: 'TXN-29376', publicRef: 'TRF-88201',
+  type: 'Internal Transfer — Sent', typeCode: 'TRANSFER_SENT',
+  amount: 120.00, currency: 'EUR', fee: 0.00,
+  status: 'HELD_FOR_RECIPIENT_VERIFICATION',
+  created: '2026-05-16 16:42:13', updated: '2026-05-17 08:55:02',
+  walletId: 'WLT-EU-77820',
+  sender:    { name: 'Elena Markovic', id: 'EU-10482', walletId: 'WLT-EU-77820' },
+  recipient: { name: 'Jonas Hofer',    id: 'EU-10831', walletId: 'WLT-EU-10831', verified: false },
+  balanceBefore: 962.50, balanceAfter: 842.50,
+  holdAccount: 'platform.transfer.hold_account',
+  holdStarted: '2026-05-16 16:42', holdExpiry: '2026-06-15 16:42',
+  holdReason: 'Recipient EU-10831 (Jonas Hofer) has not completed KYC verification',
+  holdDaysElapsed: 1, holdDaysTotal: 30,
+  journalId: 'JRN-20260516-88201', journalTs: '2026-05-16 16:42:13',
+  kycState: 'IN_REVIEW', accountControl: 'ACTIVE_WITHDRAWAL_LIMITS', frozen: false,
+  nextOwner: 'System — hold manager / recipient KYC verification',
+  note: 'Split invoice reimbursement',
+};
+
+const AUTH = {
+  id: 'AUTH-48201', merchant: 'Supermarkt Müller',
+  mcc: '5411', mccLabel: 'Grocery Stores',
+  amount: 75.00, currency: 'EUR', state: 'APPROVED_HELD',
+  card: 'CARD-90031', pan: '**** **** **** 4242',
+  holdExpiry: '2026-05-24', holdAccount: 'issuer.auth.hold_account',
+  journalId: 'JRN-20260517-48201', journalTs: '2026-05-17 08:44:11',
+  ledger: [
+    { side: 'DR', account: 'user.wallet.available · WLT-EU-77820', amount: '75.00', type: 'AUTH_HOLD',  status: 'Posted', journalId: 'JRN-20260517-48201', ts: '2026-05-17 08:44:11' },
+    { side: 'CR', account: 'issuer.auth.hold_account',              amount: '75.00', type: 'AUTH_HOLD',  status: 'Posted', journalId: 'JRN-20260517-48201', ts: '2026-05-17 08:44:11' },
+  ],
+};
+
+const TXN_LEDGER = [
+  { side: 'DR', account: 'user.wallet.available', detail: 'WLT-EU-77820', amount: '120.00', currency: 'EUR', type: 'TRANSFER_HOLD', status: 'Posted', journalId: 'JRN-20260516-88201', ts: '2026-05-16 16:42:13' },
+  { side: 'CR', account: 'platform.transfer.hold_account', detail: null,  amount: '120.00', currency: 'EUR', type: 'TRANSFER_HOLD', status: 'Posted', journalId: 'JRN-20260516-88201', ts: '2026-05-16 16:42:13' },
+];
+
+const TIMELINE = [
+  { ts: '2026-05-16 16:42:00', actor: 'Elena Markovic · EU-10482', type: 'TRANSFER_DRAFTED',   dot: 'ok',
+    audit: 'wallet.transfer_drafted',
+    desc: 'Transfer draft created. Recipient: Jonas Hofer (EU-10831). Amount: EUR 120.00. Note: Split invoice reimbursement.' },
+  { ts: '2026-05-16 16:42:08', actor: 'Elena Markovic · EU-10482', type: 'TRANSFER_SUBMITTED', dot: 'ok',
+    audit: 'wallet.transfer_submitted',
+    desc: 'Transfer submitted for processing. Form data validated client-side.' },
+  { ts: '2026-05-16 16:42:09', actor: 'System · validation',        type: 'VALIDATION_PASSED', dot: 'ok',
+    audit: 'wallet.transfer_validation_passed',
+    desc: 'Balance check passed (EUR 962.50 ≥ EUR 120.00). Daily limit check passed. Account control: no block on internal transfers.' },
+  { ts: '2026-05-16 16:42:10', actor: 'System · kyc-check',         type: 'RECIPIENT_VERIF_CHECKED', dot: 'pend',
+    audit: 'wallet.recipient_verification_checked',
+    desc: 'Recipient EU-10831 KYC status: NOT_VERIFIED. Transfer placed into HELD state per platform policy.' },
+  { ts: '2026-05-16 16:42:13', actor: 'System · ledger',            type: 'LEDGER_HOLD_POSTED', dot: 'pend',
+    audit: 'wallet.ledger_hold_posted',
+    desc: 'Journal JRN-20260516-88201 posted. DR user.wallet.available EUR 120.00 / CR platform.transfer.hold_account EUR 120.00. Available balance updated.' },
+  { ts: '2026-05-16 16:42:13', actor: 'System · hold-manager',      type: 'HOLD_EXPIRY_SCHEDULED', dot: 'pend',
+    audit: 'wallet.hold_expiry_scheduled',
+    desc: 'Hold expiry scheduled: 2026-06-15 16:42. Automatic return to sender if recipient does not verify within 30 days.' },
+  { ts: '2026-05-17 08:55:02', actor: 'System · hold-monitor',      type: 'HOLD_STATUS_CHECKED', dot: 'neu',
+    audit: 'wallet.hold_status_checked',
+    desc: 'Periodic hold status check. Recipient still NOT_VERIFIED. No state change. Hold remains active.' },
+];
+
+/* ── ICONS ──────────────────────────────────────────────────────────────── */
+const LogoMark  = () => (
+  <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+    <rect width="26" height="26" rx="4" fill="#1e1e28"/>
+    <rect x="6" y="9"    width="14" height="2" rx="1" fill="#ddddf0"/>
+    <rect x="6" y="13.5" width="9"  height="2" rx="1" fill="#7070e0"/>
+    <rect x="6" y="18"   width="5"  height="2" rx="1" fill="#4040a0" opacity="0.8"/>
+  </svg>
+);
+const IcoWallet   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 6h12" stroke="currentColor" strokeWidth="1.2"/><circle cx="9.5" cy="8.5" r="1" fill="currentColor"/></svg>;
+const IcoVerify   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoCard     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3.5" width="12" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><line x1="1" y1="6.5" x2="13" y2="6.5" stroke="currentColor" strokeWidth="1.2"/><rect x="3" y="8.5" width="3" height="1.5" rx="0.5" fill="currentColor"/></svg>;
+const IcoTransfer = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5h10M9 2.5L12 5l-3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 9H2M5 6.5L2 9l3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoDeposit  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoWithdraw = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 9V2M4 5l3-3 3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoDispute  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="10.2" r="0.7" fill="currentColor"/></svg>;
+const IcoProfile  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M2 13c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoLockSm   = () => <svg width="11" height="12" viewBox="0 0 11 12" fill="none"><rect x="1.5" y="5" width="8" height="6.5" rx="0.75" stroke="currentColor" strokeWidth="1.1"/><path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const IcoX        = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;
+const IcoCheck    = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4.5 7l2 2 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoWarn     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5L12 11.5H1L6.5 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="6.5" y1="5.5" x2="6.5" y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="6.5" cy="9.5" r="0.6" fill="currentColor"/></svg>;
+const IcoChevron  = ({ down }) => <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d={down ? "M2 3.5l3 3 3-3" : "M2 6.5l3-3 3 3"} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoSupport  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4.5 5c0-1.1.9-2 2-2s2 .9 2 2c0 .8-.5 1.5-1.2 1.8L7 7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="6.5" cy="9.5" r="0.7" fill="currentColor"/></svg>;
+const IcoFlag     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M3 2v9M3 2h7l-1.5 3L10 8H3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoDownload = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 2v7M4 6.5l2.5 2.5 2.5-2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+
+/* ── SIDEBAR ────────────────────────────────────────────────────────────── */
+const NAV = [
+  { ico: <IcoWallet />,   label: 'Wallet',             current: true, id: 'UEW-UI-03' },
+  { ico: <IcoVerify />,   label: 'Verification' },
+  { ico: <IcoCard />,     label: 'Cards' },
+  { ico: <IcoTransfer />, label: 'Transfers' },
+  { ico: <IcoDeposit />,  label: 'Deposits' },
+  { ico: <IcoWithdraw />, label: 'Withdrawals',  locked: true },
+  { ico: <IcoDispute />,  label: 'Disputes',     locked: true },
+  { ico: <IcoProfile />,  label: 'Profile / Security' },
+];
+
+const Sidebar = () => (
+  <aside className="sidebar">
+    <div className="sb-brand">
+      <div className="sb-mark"><LogoMark /><div className="sb-name">MiniFin</div></div>
+      <div className="sb-sub">End-User Web</div>
+    </div>
+    <nav className="sb-nav">
+      <div className="nav-sec">Navigation</div>
+      {NAV.map((n, i) => (
+        <div key={i} className={`nav-item${n.locked ? ' locked' : ''}${n.current ? ' current' : ''}`}>
+          <span style={{ width: 14, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{n.ico}</span>
+          <span>{n.label}</span>
+          {n.locked && <span className="nav-lock"><IcoLockSm /></span>}
+          {n.id     && <span className="nav-id">{n.id}</span>}
+        </div>
+      ))}
+    </nav>
+    <div className="sb-footer">
+      <div className="env-chip"><div className="env-dot"/><span>Local Sandbox</span></div>
+      <div className="env-host">app.miniefin.local</div>
+    </div>
+  </aside>
+);
+
+/* ── UTILS ──────────────────────────────────────────────────────────────── */
+const KV    = ({ k, children }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className="kv-v">{children}</div>
+  </div>
+);
+const KVm   = ({ k, children }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className="kv-v mono">{children}</div>
+  </div>
+);
+const Badge = ({ cls, label }) => <span className={`badge ${cls}`}>{label}</span>;
+
+/* ── SUPPORT MODAL ──────────────────────────────────────────────────────── */
+const SupportModal = ({ onClose }) => {
+  const [desc, setDesc]         = useState('');
+  const [submitted, setSubmit]  = useState(false);
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-hdr">
+          <div><div className="modal-title">Contact Support</div>
+            <div className="modal-sub">Reference: TXN-29376 · TRF-88201</div></div>
+          <button className="modal-close" onClick={onClose}><IcoX /></button>
+        </div>
+        <div className="modal-body">
+          {!submitted ? (
+            <>
+              <div className="alert alert-info" style={{ fontSize: 11.5 }}>
+                Support tickets are reviewed within 1–2 business days. For urgent issues, include your transaction ID and a clear description.
+              </div>
+              <div className="form-group">
+                <label className="inp-label">Subject</label>
+                <input className="inp-field" type="text" defaultValue="Inquiry about held transfer TXN-29376" readOnly style={{ fontFamily: 'var(--f-mono)', fontSize: 12 }} />
+              </div>
+              <div className="form-group">
+                <label className="inp-label">Category</label>
+                <select className="inp-field">
+                  <option>Held / delayed transfer</option>
+                  <option>Incorrect amount</option>
+                  <option>Account control issue</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="inp-label">Description *</label>
+                <textarea className="inp-field" rows={4} style={{ resize: 'vertical' }}
+                  placeholder="Describe your issue in detail…"
+                  value={desc} onChange={e => setDesc(e.target.value)} />
+                <div className="inp-hint">Include any relevant context. Do not include passwords or full card numbers.</div>
+              </div>
+              <div style={{ fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>
+                Transaction auto-attached: TXN-29376 · EUR 120.00 · 2026-05-16
+              </div>
+            </>
+          ) : (
+            <div className="alert alert-green">
+              <IcoCheck />
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 3 }}>Support Ticket Submitted</div>
+                <div>Ticket ID: <span style={{ fontFamily: 'var(--f-mono)' }}>TKT-{Math.floor(88000 + Math.random() * 5000)}</span> · You will receive a response within 1–2 business days.</div>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          {!submitted
+            ? <><button className="btn btn-primary" onClick={() => desc && setSubmit(true)} disabled={!desc}>Submit Ticket</button>
+                <button className="btn btn-ghost" onClick={onClose}>Cancel</button></>
+            : <button className="btn btn-ghost" onClick={onClose}>Close</button>
+          }
+          <span className="modal-note">Local prototype · no real submission</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── REPORT PROBLEM MODAL ───────────────────────────────────────────────── */
+const ReportModal = ({ onClose }) => {
+  const [pType, setPType]       = useState('');
+  const [desc, setDesc]         = useState('');
+  const [submitted, setSubmit]  = useState(false);
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-hdr">
+          <div><div className="modal-title">Report a Problem</div>
+            <div className="modal-sub">TXN-29376 · EUR 120.00 · 2026-05-16</div></div>
+          <button className="modal-close" onClick={onClose}><IcoX /></button>
+        </div>
+        <div className="modal-body">
+          {!submitted ? (
+            <>
+              <div className="alert alert-warn" style={{ fontSize: 11.5 }}>
+                <IcoWarn />
+                <div>Reporting a problem does not immediately reverse or cancel the transaction. Use this to flag an issue for review.</div>
+              </div>
+              <div className="form-group">
+                <label className="inp-label">Problem type *</label>
+                <select className="inp-field" value={pType} onChange={e => setPType(e.target.value)}>
+                  <option value="">Select…</option>
+                  <option>Wrong amount</option>
+                  <option>Transfer to wrong recipient</option>
+                  <option>Unauthorized transfer</option>
+                  <option>Transfer not arriving</option>
+                  <option>Hold taking too long</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="inp-label">Details</label>
+                <textarea className="inp-field" rows={3} style={{ resize: 'vertical' }}
+                  placeholder="Describe what happened…"
+                  value={desc} onChange={e => setDesc(e.target.value)} />
+              </div>
+            </>
+          ) : (
+            <div className="alert alert-green">
+              <IcoCheck />
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: 3 }}>Problem Reported</div>
+                <div>Report ID: <span style={{ fontFamily: 'var(--f-mono)' }}>RPT-{Math.floor(20000 + Math.random() * 5000)}</span> · Our team will investigate and contact you if further information is needed.</div>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          {!submitted
+            ? <><button className="btn btn-primary" onClick={() => pType && setSubmit(true)} disabled={!pType}>Submit Report</button>
+                <button className="btn btn-ghost" onClick={onClose}>Cancel</button></>
+            : <button className="btn btn-ghost" onClick={onClose}>Close</button>
+          }
+          <span className="modal-note">Local prototype</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── AUTH DETAIL MODAL ──────────────────────────────────────────────────── */
+const AuthDetailModal = ({ onClose }) => (
+  <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal">
+      <div className="modal-hdr">
+        <div><div className="modal-title">Authorization Detail — {AUTH.id}</div>
+          <div className="modal-sub">{AUTH.merchant} · {AUTH.ts}</div></div>
+        <button className="modal-close" onClick={onClose}><IcoX /></button>
+      </div>
+      <div className="modal-body">
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Badge cls="b-approved" label="APPROVED — HELD" />
+          <Badge cls="b-locked"   label="CARD AUTHORIZATION" />
+        </div>
+        <div className="alert alert-or" style={{ fontSize: 11.5 }}>
+          <IcoWarn />
+          <div>
+            Authorization hold is active. EUR 75.00 is debited from available balance and held in <span style={{ fontFamily: 'var(--f-mono)' }}>issuer.auth.hold_account</span>. Merchant has not yet captured. Hold expires 2026-05-24.
+          </div>
+        </div>
+        <div className="kv-table">
+          <KVm k="Authorization ID">{AUTH.id}</KVm>
+          <KV  k="Merchant">{AUTH.merchant} <span style={{ fontSize: 10.5, fontFamily: 'var(--f-mono)', color: 'var(--t3)' }}>MCC {AUTH.mcc} — {AUTH.mccLabel}</span></KV>
+          <KVm k="Amount">EUR {AUTH.amount.toFixed(2)}</KVm>
+          <KV  k="Card"><span style={{ fontFamily: 'var(--f-mono)', fontSize: 11.5 }}>{AUTH.card} · {AUTH.pan}</span></KV>
+          <KV  k="State"><Badge cls="b-approved" label="APPROVED_HELD" /></KV>
+          <KVm k="Hold Account">{AUTH.holdAccount}</KVm>
+          <KVm k="Hold Expiry">{AUTH.holdExpiry}</KVm>
+          <KVm k="Journal ID">{AUTH.journalId}</KVm>
+          <KVm k="Journal Timestamp">{AUTH.journalTs}</KVm>
+        </div>
+        <div>
+          <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 6 }}>Ledger Entries</div>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th style={{ width: 36 }}>Side</th>
+                <th>Account</th>
+                <th style={{ textAlign: 'right' }}>Amount</th>
+                <th>Type</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {AUTH.ledger.map((l, i) => (
+                <tr key={i}>
+                  <td className={l.side === 'DR' ? 'le-dr' : 'le-cr'}>{l.side}</td>
+                  <td style={{ fontFamily: 'var(--f-mono)', fontSize: 10.5, color: 'var(--t2)' }}>{l.account}</td>
+                  <td style={{ textAlign: 'right', fontFamily: 'var(--f-mono)', fontSize: 11.5 }}>EUR {l.amount}</td>
+                  <td style={{ fontFamily: 'var(--f-mono)', fontSize: 10, color: 'var(--t3)' }}>{l.type}</td>
+                  <td><Badge cls="b-posted" label={l.status.toUpperCase()} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ fontSize: 10.5, color: 'var(--t3)' }}>
+          <strong>Dispute eligibility:</strong> Card disputes can be initiated after capture. This authorization is not yet captured — dispute will become available if capture occurs and you believe the charge is incorrect.
+        </div>
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        <span className="modal-note">Read-only · Local prototype</span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── MAIN APP ───────────────────────────────────────────────────────────── */
+function App() {
+  const [copied, setCopied]           = useState(false);
+  const [showSupport, setShowSupport] = useState(false);
+  const [showReport, setShowReport]   = useState(false);
+  const [disputeMsg, setDisputeMsg]   = useState('');
+  const [downloadMsg, setDownloadMsg] = useState('');
+  const [showAuthDetail, setShowAuthDetail] = useState(false);
+  const [expandedEvents, setExpandedEvents] = useState(new Set([3, 4]));
+
+  const handleCopy = () => { setCopied(true); setTimeout(() => setCopied(false), 1800); };
+  const handleDispute = () => {
+    setDisputeMsg('Dispute is not available for held internal transfers. Dispute can only be initiated after a transfer is completed or a card payment is captured. If you believe this hold is incorrect, contact support.');
+    setTimeout(() => setDisputeMsg(''), 7000);
+  };
+  const handleDownload = () => {
+    setDownloadMsg('Receipt download is not available in the local prototype.');
+    setTimeout(() => setDownloadMsg(''), 3000);
+  };
+  const toggleEvent = (i) => {
+    setExpandedEvents(prev => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i); else next.add(i);
+      return next;
+    });
+  };
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+
+        {/* PAGE HEADER */}
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>End-User Web</span><span className="sep">/</span>
+            <strong>Wallet</strong><span className="sep">·</span>
+            <span className="mode">Transaction Detail</span><span className="sep">/</span>
+            <span style={{ fontFamily: 'var(--f-mono)', fontSize: 11.5, color: 'var(--t1)', fontWeight: 500 }}>TXN-29376</span>
+          </div>
+          <div className="page-meta">
+            <span className="screen-id">UEW-UI-07</span>
+            <span className="env-badge"><span className="env-badge-dot"/>Local Sandbox</span>
+            <div className="user-chip">
+              <div className="user-avatar">EM</div>
+              <span className="user-name">Elena Markovic</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="content-area">
+          <div className="left-scroll">
+
+            {/* ── TRANSACTION SUMMARY ──────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="panel-title">Transaction Summary</span>
+                  <Badge cls="b-held" label="HELD — RECIPIENT VERIFICATION" />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>Updated: 2026-05-17 08:55</span>
+                  <button className={`copy-btn${copied ? ' copied' : ''}`} onClick={handleCopy}>
+                    {copied ? '✓ Copied' : 'Copy TXN-29376'}
+                  </button>
+                </div>
+              </div>
+              <div className="panel-body">
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0 32px', alignItems: 'start' }}>
+                  {/* Left: amount + type */}
+                  <div>
+                    <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 2 }}>
+                      Amount
+                    </div>
+                    <div className="txn-amount-block">
+                      <span className="txn-amount-ccy">EUR</span>
+                      <span className="txn-amount-val">120.00</span>
+                      <span style={{ fontSize: 11, color: 'var(--rd)', fontFamily: 'var(--f-mono)', fontWeight: 600 }}>−</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                      <Badge cls="b-locked" label="INTERNAL TRANSFER" />
+                      <Badge cls="b-locked" label="→ SENT" />
+                    </div>
+                  </div>
+                  {/* Right: key IDs */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px 20px' }}>
+                    {[
+                      { k: 'Transaction ID',   v: 'TXN-29376',           mono: true },
+                      { k: 'Public Reference', v: 'TRF-88201',           mono: true },
+                      { k: 'Wallet',           v: 'WLT-EU-77820',        mono: true },
+                      { k: 'Created',          v: '2026-05-16 16:42:13', mono: true },
+                      { k: 'Note',             v: TXN.note,              mono: false },
+                      { k: 'Next Owner',       v: 'Hold Manager / System', mono: false },
+                    ].map((f, i) => (
+                      <div key={i}>
+                        <div style={{ fontSize: 10, color: 'var(--t3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>{f.k}</div>
+                        <div style={{ fontSize: 11.5, fontFamily: f.mono ? 'var(--f-mono)' : 'inherit', color: 'var(--t1)' }}>{f.v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── STATE PATH ───────────────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <span className="panel-title">Transfer State Path</span>
+                <span style={{ fontSize: 10.5, color: 'var(--or)' }}>Current owner: System — hold manager</span>
+              </div>
+              <div className="state-path">
+                {[
+                  { label: 'DRAFT',                        cls: 'past',    done: true },
+                  { label: 'SUBMITTED',                    cls: 'past',    done: true },
+                  { label: 'VALIDATION PASSED',            cls: 'past',    done: true },
+                  { label: 'HELD — RECIPIENT VERIFICATION', cls: 'current', note: '← current' },
+                  { label: 'LEDGER POSTED (RECIPIENT)',    cls: 'next' },
+                  { label: 'COMPLETED',                    cls: 'future' },
+                ].map((s, i, arr) => (
+                  <div key={i} className="sp-node">
+                    <div className={`sp-pill ${s.cls}`}>
+                      {s.label}
+                      {s.note && <span style={{ fontSize: 8, fontWeight: 400, marginLeft: 4, opacity: 0.8 }}>({s.note})</span>}
+                    </div>
+                    {i < arr.length - 1 && <span className="sp-arrow">→</span>}
+                  </div>
+                ))}
+                <span className="sp-arrow" style={{ margin: '0 6px' }}>|</span>
+                <div className="sp-node">
+                  <div className="sp-pill bad">REJECTED</div>
+                  <span className="sp-arrow"> / </span>
+                  <div className="sp-pill future">CANCELLED</div>
+                </div>
+              </div>
+              <div style={{ padding: '0 14px 10px', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                {[
+                  { cls: 'past',    label: 'Completed states' },
+                  { cls: 'current', label: 'Active state' },
+                  { cls: 'next',    label: 'Next on verification' },
+                  { cls: 'future',  label: 'Future' },
+                  { cls: 'bad',     label: 'Failure / terminal' },
+                ].map((l, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--t3)' }}>
+                    <span className={`sp-pill ${l.cls}`} style={{ fontSize: 8, padding: '1px 5px' }}>●</span>
+                    {l.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── DETAIL GRID (two columns) ─────────────────────── */}
+            <div className="detail-grid">
+
+              {/* LEFT: Parties, Amounts, Timing, Risk */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+                {/* Parties */}
+                <div className="panel">
+                  <div className="panel-hdr"><span className="panel-title">Parties</span></div>
+                  <div className="panel-body">
+                    <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--bdr)' }}>
+                      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 6 }}>Sender</div>
+                      <div className="kv-table">
+                        <KV  k="Name"><strong>Elena Markovic</strong></KV>
+                        <KVm k="User ID">EU-10482</KVm>
+                        <KVm k="Wallet ID">WLT-EU-77820</KVm>
+                        <KV  k="KYC State"><Badge cls="b-inreview" label="IN REVIEW" /> <span style={{ fontSize: 11, color: 'var(--t3)', marginLeft: 4 }}>transfers allowed</span></KV>
+                        <KV  k="Account Control"><Badge cls="b-limited" label="ACTIVE · WITHDRAW LIMIT" /></KV>
+                        <KV  k="Account Freeze"><span style={{ color: 'var(--g)', fontSize: 11.5 }}>Not frozen</span></KV>
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 6 }}>Recipient</div>
+                      <div className="kv-table">
+                        <KV  k="Name"><strong>Jonas Hofer</strong></KV>
+                        <KVm k="User ID">EU-10831</KVm>
+                        <KVm k="Wallet ID">WLT-EU-10831</KVm>
+                        <KV  k="Verification"><Badge cls="b-unverif" label="NOT VERIFIED" /></KV>
+                        <KV  k="Funds held until">Recipient completes KYC verification</KV>
+                        <KV  k="Risk flag"><span style={{ fontSize: 11, color: 'var(--or)' }}>recipient_kyc_incomplete</span></KV>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amounts */}
+                <div className="panel">
+                  <div className="panel-hdr"><span className="panel-title">Amounts &amp; Balance Impact</span></div>
+                  <div className="panel-body">
+                    <div className="kv-table">
+                      <KVm k="Transfer amount"><span style={{ fontWeight: 700, color: 'var(--t1)' }}>EUR 120.00</span></KVm>
+                      <KVm k="Fee"><span style={{ color: 'var(--g)' }}>EUR 0.00</span></KVm>
+                      <KVm k="Total debit">EUR 120.00</KVm>
+                      <KVm k="Available before"><span style={{ color: 'var(--t2)' }}>EUR 962.50</span></KVm>
+                      <KVm k="Available after"><span style={{ color: 'var(--rd)', fontWeight: 600 }}>EUR 842.50</span></KVm>
+                      <KVm k="Amount in hold">EUR 120.00 → <span style={{ color: 'var(--or)' }}>platform.transfer.hold_account</span></KVm>
+                      <KV  k="Recipient credited">Not yet — pending verification</KV>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timing */}
+                <div className="panel">
+                  <div className="panel-hdr"><span className="panel-title">Timing</span></div>
+                  <div className="panel-body">
+                    <div className="kv-table">
+                      <KVm k="Created">2026-05-16 16:42:13</KVm>
+                      <KVm k="Last updated">2026-05-17 08:55:02</KVm>
+                      <KVm k="Hold started">2026-05-16 16:42</KVm>
+                      <KVm k="Hold expiry">2026-06-15 16:42 <Badge cls="b-warn" label="30 DAYS" /></KVm>
+                      <KV  k="Days elapsed">Day 1 of 30</KV>
+                      <KV  k="Expected completion">On recipient KYC approval — no fixed date</KV>
+                    </div>
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 10.5, color: 'var(--t3)', marginBottom: 4 }}>Hold period: 1 of 30 days elapsed</div>
+                      <div className="hold-bar-wrap">
+                        <div className="hold-bar-fill" style={{ width: '3.3%' }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9.5, fontFamily: 'var(--f-mono)', color: 'var(--t4)', marginTop: 3 }}>
+                        <span>2026-05-16</span><span>2026-06-15 (expiry)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Risk / Compliance */}
+                <div className="panel">
+                  <div className="panel-hdr"><span className="panel-title">Risk &amp; Compliance Context</span></div>
+                  <div className="panel-body">
+                    <div className="kv-table">
+                      <KV  k="Sender KYC"><Badge cls="b-inreview" label="IN REVIEW" /> <span style={{ fontSize: 11, color: 'var(--t3)', marginLeft: 4 }}>internal transfers not blocked</span></KV>
+                      <KV  k="Recipient KYC"><Badge cls="b-unverif" label="NOT VERIFIED" /> <span style={{ fontSize: 11, color: 'var(--or)', marginLeft: 4 }}>hold applied</span></KV>
+                      <KV  k="Account frozen">No</KV>
+                      <KV  k="AML alert">None active</KV>
+                      <KV  k="Sanctions check">No match</KV>
+                      <KV  k="Audit event (submit)"    ><span style={{ fontFamily: 'var(--f-mono)', fontSize: 11 }}>wallet.transfer_requested</span></KV>
+                      <KV  k="Audit event (hold)"      ><span style={{ fontFamily: 'var(--f-mono)', fontSize: 11 }}>wallet.ledger_hold_posted</span></KV>
+                      <KV  k="Audit event (expiry)"    ><span style={{ fontFamily: 'var(--f-mono)', fontSize: 11 }}>wallet.hold_expiry_scheduled</span></KV>
+                    </div>
+                  </div>
+                </div>
+
+              </div>{/* left col end */}
+
+              {/* RIGHT: Hold/Release + Dispute/Actions */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+                {/* Hold / Release */}
+                <div className="panel">
+                  <div className="panel-hdr">
+                    <span className="panel-title">Hold &amp; Release</span>
+                    <Badge cls="b-held" label="ACTIVE" />
+                  </div>
+                  <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div className="alert alert-or">
+                      <IcoWarn />
+                      <div>
+                        <div style={{ fontWeight: 600, marginBottom: 2 }}>Funds held — recipient not verified</div>
+                        <div style={{ fontSize: 11.5 }}>EUR 120.00 is in platform hold. Recipient EU-10831 must complete KYC to release funds.</div>
+                      </div>
+                    </div>
+                    <div className="kv-table">
+                      <KV  k="Hold reason">Recipient not KYC-verified</KV>
+                      <KVm k="Hold account">platform.transfer.hold_account</KVm>
+                      <KVm k="Hold amount"><span style={{ color: 'var(--or)', fontWeight: 600 }}>EUR 120.00</span></KVm>
+                      <KVm k="Hold started">2026-05-16 16:42</KVm>
+                      <KVm k="Hold expiry">2026-06-15 16:42</KVm>
+                    </div>
+                    <div style={{ paddingTop: 4 }}>
+                      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 8 }}>Possible Outcomes</div>
+                      {[
+                        { icon: '✓', cls: 'var(--g)',  bg: 'var(--g-bg)',  bd: 'var(--g-bd)',
+                          label: 'Release to recipient',
+                          desc: 'Jonas Hofer completes KYC. Funds credited to WLT-EU-10831.' },
+                        { icon: '↩', cls: 'var(--am)', bg: 'var(--am-bg)', bd: 'var(--am-bd)',
+                          label: 'Return to sender',
+                          desc: 'Hold expires on 2026-06-15 if unverified. EUR 120.00 returned to WLT-EU-77820.' },
+                        { icon: '…', cls: 'var(--pu)', bg: 'var(--pu-bg)', bd: 'var(--pu-bd)',
+                          label: 'Manual review',
+                          desc: 'Operator can escalate or override if warranted.' },
+                      ].map((o, i) => (
+                        <div key={i} className="outcome-row">
+                          <div className="outcome-icon" style={{ background: o.bg, color: o.cls, border: `1px solid ${o.bd}` }}>{o.icon}</div>
+                          <div className="outcome-body">
+                            <div className="outcome-label">{o.label}</div>
+                            <div className="outcome-desc">{o.desc}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dispute / Support Actions */}
+                <div className="panel">
+                  <div className="panel-hdr"><span className="panel-title">Actions</span></div>
+                  <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+                    {disputeMsg && (
+                      <div className="alert alert-warn" style={{ fontSize: 11.5 }}>
+                        <IcoWarn /><div>{disputeMsg}</div>
+                      </div>
+                    )}
+                    {downloadMsg && (
+                      <div className="alert alert-info" style={{ fontSize: 11.5 }}>
+                        {downloadMsg}
+                      </div>
+                    )}
+
+                    <button className="btn btn-primary" style={{ justifyContent: 'flex-start' }} onClick={() => setShowSupport(true)}>
+                      <IcoSupport /> Contact Support
+                    </button>
+                    <button className="btn btn-warn" style={{ justifyContent: 'flex-start' }} onClick={() => setShowReport(true)}>
+                      <IcoFlag /> Report Problem
+                    </button>
+                    <button className="btn btn-ghost" style={{ justifyContent: 'flex-start' }} onClick={handleDispute}>
+                      <IcoDispute /> Start Dispute
+                    </button>
+                    <div style={{ fontSize: 10.5, color: 'var(--t3)', paddingLeft: 2, marginTop: -4 }}>
+                      Dispute unavailable — transfer not yet completed or captured.
+                    </div>
+                    <button className="btn btn-ghost" style={{ justifyContent: 'flex-start' }} onClick={handleDownload}>
+                      <IcoDownload /> Download Receipt
+                    </button>
+                    <div style={{ borderTop: '1px solid var(--bdr)', paddingTop: 8, marginTop: 2 }}>
+                      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 6 }}>Dispute Eligibility</div>
+                      {[
+                        { label: 'Internal transfer held', eligible: false, reason: 'Not yet completed' },
+                        { label: 'Card capture',           eligible: true,  reason: 'Eligible after capture' },
+                        { label: 'Unauthorized charge',    eligible: true,  reason: 'Report problem above' },
+                      ].map((e, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: i < 2 ? '1px solid var(--hover)' : 'none', fontSize: 11.5 }}>
+                          <span style={{ color: 'var(--t2)' }}>{e.label}</span>
+                          <span style={{ color: e.eligible ? 'var(--g)' : 'var(--t3)', fontFamily: 'var(--f-mono)', fontSize: 10.5 }}>{e.reason}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+              </div>{/* right col end */}
+            </div>{/* detail-grid end */}
+
+            {/* ── LEDGER ENTRIES ────────────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="panel-title">Ledger Entries</span>
+                  <Badge cls="b-posted" label="POSTED" />
+                </div>
+                <span style={{ fontSize: 10.5, fontFamily: 'var(--f-mono)', color: 'var(--t3)' }}>Journal: JRN-20260516-88201</span>
+              </div>
+              <div>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 36 }}>Side</th>
+                      <th>Account</th>
+                      <th>Detail</th>
+                      <th style={{ textAlign: 'right' }}>Amount</th>
+                      <th>Currency</th>
+                      <th>Entry Type</th>
+                      <th>Status</th>
+                      <th>Journal ID</th>
+                      <th>Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {TXN_LEDGER.map((l, i) => (
+                      <tr key={i}>
+                        <td className={l.side === 'DR' ? 'le-dr' : 'le-cr'}>{l.side}</td>
+                        <td style={{ fontFamily: 'var(--f-mono)', fontSize: 11 }}>{l.account}</td>
+                        <td style={{ fontFamily: 'var(--f-mono)', fontSize: 10.5, color: 'var(--t3)' }}>{l.detail || '—'}</td>
+                        <td style={{ textAlign: 'right', fontFamily: 'var(--f-mono)', fontSize: 11.5, fontWeight: 600 }}>{l.amount}</td>
+                        <td style={{ fontFamily: 'var(--f-mono)', fontSize: 11 }}>{l.currency}</td>
+                        <td style={{ fontFamily: 'var(--f-mono)', fontSize: 10, color: 'var(--t3)' }}>{l.type}</td>
+                        <td><Badge cls="b-posted" label={l.status.toUpperCase()} /></td>
+                        <td style={{ fontFamily: 'var(--f-mono)', fontSize: 10.5, color: 'var(--t3)' }}>{l.journalId}</td>
+                        <td style={{ fontFamily: 'var(--f-mono)', fontSize: 10, color: 'var(--t3)' }}>{l.ts}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ padding: '8px 14px', background: 'var(--surf2)', borderTop: '1px solid var(--bdr)' }}>
+                <div style={{ fontSize: 11, color: 'var(--t2)', lineHeight: 1.5 }}>
+                  <strong>Hold account entry:</strong> The debit reduces Elena's available balance immediately. The credit is to a platform hold account — not to Jonas Hofer's wallet. Recipient only receives funds when KYC is cleared and the hold is released with a second journal (DR hold account / CR recipient wallet).
+                </div>
+              </div>
+            </div>
+
+            {/* ── RELATED CARD AUTHORIZATION ────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="panel-title">Related: Card Authorization Hold</span>
+                  <Badge cls="b-approved" label="APPROVED — HELD" />
+                </div>
+                <button className="btn btn-ghost btn-sm" onClick={() => setShowAuthDetail(true)}>
+                  View Authorization Detail
+                </button>
+              </div>
+              <div className="panel-body">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: 'var(--bdr)', borderRadius: 'var(--r)', overflow: 'hidden', marginBottom: 12 }}>
+                  {[
+                    { label: 'Auth ID',         val: AUTH.id,              mono: true },
+                    { label: 'Merchant',         val: AUTH.merchant,        mono: false },
+                    { label: 'Hold Amount',      val: `EUR ${AUTH.amount.toFixed(2)}`, mono: true, color: 'var(--or)' },
+                    { label: 'Hold Expiry',      val: AUTH.holdExpiry,      mono: true },
+                  ].map((c, i) => (
+                    <div key={i} style={{ background: 'var(--surface)', padding: '9px 12px' }}>
+                      <div style={{ fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 4 }}>{c.label}</div>
+                      <div style={{ fontSize: 12, fontFamily: c.mono ? 'var(--f-mono)' : 'inherit', color: c.color || 'var(--t1)', fontWeight: 600 }}>{c.val}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--t2)', lineHeight: 1.55 }}>
+                  <strong>Distinction from transfer hold:</strong> This card authorization hold (<span style={{ fontFamily: 'var(--f-mono)', fontSize: 11 }}>issuer.auth.hold_account</span>) is a separate hold from the transfer hold (<span style={{ fontFamily: 'var(--f-mono)', fontSize: 11 }}>platform.transfer.hold_account</span>). Both reduce available balance. The card hold will be released or captured when Supermarkt Müller processes the transaction. Card dispute is only available <em>after capture</em>.
+                </div>
+              </div>
+            </div>
+
+          </div>{/* left-scroll end */}
+
+          {/* ── TIMELINE RAIL ──────────────────────────────────────── */}
+          <div className="tl-rail">
+            <div className="tl-hdr">Audit Trail · Click to expand</div>
+            <div className="tl-body">
+              {TIMELINE.map((e, i, arr) => {
+                const expanded = expandedEvents.has(i);
+                return (
+                  <div key={i} className="tl-evt" onClick={() => toggleEvent(i)}>
+                    <div className="tl-spine">
+                      <div className={`tl-dot ${e.dot}`} />
+                      {i < arr.length - 1 && <div className="tl-line" />}
+                    </div>
+                    <div className="tl-content">
+                      <div className="tl-ts">{e.ts}</div>
+                      <div className="tl-name">{e.type.replace(/_/g, ' ')}</div>
+                      <div className="tl-actor">{e.actor}</div>
+                      <div className="tl-desc">{e.desc}</div>
+                      {expanded && (
+                        <div className="tl-audit">{e.audit}</div>
+                      )}
+                      {!expanded && (
+                        <div className="tl-expand-hint">click to show audit event</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>{/* content-area end */}
+      </div>
+
+      {showSupport    && <SupportModal    onClose={() => setShowSupport(false)} />}
+      {showReport     && <ReportModal     onClose={() => setShowReport(false)} />}
+      {showAuthDetail && <AuthDetailModal onClose={() => setShowAuthDetail(false)} />}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
