@@ -750,4 +750,50 @@ Runtime evidence:
   - `PAY-03`.
 
 Next planned step:
-- Choose the next approved backend/runtime slice, likely a later Phase 06 retry/DLQ slice for `WBH-02`, or provide real Stripe Connect sandbox credentials for blocked `MRC-01`.
+- Implement the next approved backend/runtime slice: Phase 06 Slice 02 outbound webhook retry/DLQ for `WBH-02`, or reprioritize Phase 07 Slice 01 KYC/Sumsub foundation if compliance work is preferred. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
+
+---
+
+## Phase 06 Slice 02 — Outbound Webhook Retry/DLQ
+
+Status: **PLANNING APPROVED — product implementation not started**.
+
+Planning contract:
+- `planning/implementation-slices/phase_06_slice_02_outbound_webhook_retry_dlq_planning.md` — APPROVED v0.1.
+
+Approved backend/runtime scope:
+- Implement `WBH-02` only: failed outbound webhook deliveries retry on persisted schedule and move to terminal `DLQ` after retry exhaustion.
+- Keep the current `payment_intent.created` producer as the only required event source for verification.
+- Keep implementation in `platform` beside the existing Phase 06 Slice 01 outbound webhook delivery foundation.
+- Reserve Platform migration `V15__merchant_outbound_webhook_retry_dlq.sql`.
+
+Explicitly not implemented:
+- No product code, SQL migration or runtime script has been added yet.
+- No `WBH-02` runtime evidence is claimed.
+- `WBH-03` DLQ replay remains out of scope and unclaimed.
+
+Next planned step:
+- Implement Phase 06 Slice 02 backend/runtime scope and verify `WBH-02` with retained runtime evidence.
+
+---
+
+## Phase 07 Slice 01 — KYC/Sumsub Foundation
+
+Status: **PLANNING APPROVED — product implementation not started**.
+
+Planning contract:
+- `planning/implementation-slices/phase_07_slice_01_kyc_sumsub_foundation_planning.md` — APPROVED v0.1.
+
+Approved backend/runtime scope:
+- Implement the first KYC/Sumsub foundation in `platform`.
+- Target `KYC-01` and `KYC-02`: end-user KYC start, persisted KYC applicant/session/request state, Sumsub webhook signature verification and vendor-event idempotency.
+- Full `KYC-01` pass requires real Sumsub sandbox credentials; without credentials, evidence must be explicitly partial and must not fake vendor success.
+- Reserve Platform migration `V16__kyc_sumsub_foundation.sql`, because `V15` is reserved for Phase 06 Slice 02 retry/DLQ.
+
+Explicitly not implemented:
+- No product code, SQL migration or runtime script has been added yet.
+- No `KYC-01` or `KYC-02` runtime evidence is claimed.
+- OpenSanctions, AML, document preview/read-audit, case attachments, frontend UI and manual backoffice KYC decisions remain out of scope.
+
+Next planned step:
+- Implement either Phase 06 Slice 02 (`WBH-02`) or Phase 07 Slice 01 (`KYC-01`/`KYC-02`) depending on project priority.

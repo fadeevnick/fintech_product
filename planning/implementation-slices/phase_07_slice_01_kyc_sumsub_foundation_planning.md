@@ -1,6 +1,6 @@
 # Phase 07 Slice 01 — KYC/Sumsub Foundation — Planning Note
 
-Status: **DRAFT v0.1 — planning-only; no product code implemented**.
+Status: **APPROVED v0.1 — planning-only; no product code implemented**.
 
 This document fixes the first implementation slice inside `Phase 07 — Compliance Integrations and Case Management`.
 
@@ -192,16 +192,19 @@ This slice should avoid creating broad case-management abstractions unless a min
 
 ### 7.1 Reserved Migration Name
 
-Current observed Platform latest migration after Phase 06 Slice 01:
+Current observed Platform migrations include:
 
 ```text
-product/apps/platform/src/main/resources/db/migration/V13__merchant_outbound_webhook_delivery.sql
+product/apps/platform/src/main/resources/db/migration/V13__card_authorization_hold_support.sql
+product/apps/platform/src/main/resources/db/migration/V14__merchant_outbound_webhook_delivery.sql
 ```
+
+`Phase 06 Slice 02` reserves `V15__merchant_outbound_webhook_retry_dlq.sql`.
 
 Recommended reservation:
 
 ```text
-product/apps/platform/src/main/resources/db/migration/V14__kyc_sumsub_foundation.sql
+product/apps/platform/src/main/resources/db/migration/V16__kyc_sumsub_foundation.sql
 ```
 
 ### 7.2 Expected Platform Schema / Tables

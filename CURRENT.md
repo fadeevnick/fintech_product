@@ -1,6 +1,6 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-18 (Phase 05 Slice 02 card authorization and Phase 06 Slice 01 outbound merchant webhook delivery implemented and runtime-verified; MRC-01 blocked on Stripe sandbox credentials).
+Last updated: 2026-05-18 (Phase 06 Slice 02 webhook retry/DLQ and Phase 07 Slice 01 KYC/Sumsub planning approved; Phase 05 Slice 02 and Phase 06 Slice 01 implemented/runtime-verified; MRC-01 blocked on Stripe sandbox credentials).
 
 ---
 
@@ -31,6 +31,8 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3.
 - `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocked on Stripe sandbox credentials.
 - `planning/implementation-slices/phase_06_slice_01_outbound_webhook_delivery_planning.md` — backend/runtime sub-scope executed v0.1; `WBH-01` passed, `WBH-02`/`WBH-03` deferred.
+- `planning/implementation-slices/phase_06_slice_02_outbound_webhook_retry_dlq_planning.md` — **APPROVED v0.1**.
+- `planning/implementation-slices/phase_07_slice_01_kyc_sumsub_foundation_planning.md` — **APPROVED v0.1**.
 
 Completed workstream — latest accepted state:
 - Phase 04 Slice 01 merchant API keys, public API authentication and hardened public/dashboard write idempotency primitive implemented in `platform`;
@@ -62,7 +64,7 @@ Latest accepted backend/runtime slices:
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`, `prototypes/ui/19_merchant_onboarding_status.html`.**
 
 Next planned product step:
-- Choose the next approved backend/runtime slice, likely a later Phase 06 retry/DLQ slice for `WBH-02`, or provide real Stripe Connect sandbox credentials to implement blocked `MRC-01`.
+- Implement the next approved backend/runtime slice: Phase 06 Slice 02 outbound webhook retry/DLQ for `WBH-02`, or reprioritize Phase 07 Slice 01 KYC/Sumsub foundation if compliance work is preferred. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.

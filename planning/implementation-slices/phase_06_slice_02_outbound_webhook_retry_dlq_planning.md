@@ -1,6 +1,6 @@
 # Phase 06 Slice 02 — Outbound Webhook Retry and DLQ — Planning Note
 
-Status: **DRAFT v0.1 — planning-only; not approved; no product code implemented**.
+Status: **APPROVED v0.1 — planning-only; no product code implemented**.
 
 This document fixes the next narrow backend/runtime slice after `Phase 06 Slice 01 — Outbound Merchant Webhook Delivery Foundation`.
 
@@ -144,7 +144,7 @@ Specifically:
 
 - do not mark `WBH-02` complete until a real failing receiver has been retried and moved to DLQ;
 - do not claim `WBH-03`, `SET-*`, `MRC-01`, `CHB-*` or frontend checks;
-- do not change `AGENT_TASK.md` as part of the later implementation.
+- do not include temporary orchestration task files in the later implementation commit.
 
 ## 6. Service And Module Boundary
 
@@ -293,7 +293,7 @@ Likely product files:
 
 ### 9.3 Do Not Touch
 
-- `AGENT_TASK.md` — temporary orchestration context.
+- temporary orchestration task files.
 - Acquirer/Network/Issuer/Vault application code — no service-boundary move in this slice.
 - Frontend SPA files — no UI scope.
 - Stripe integration files — `MRC-01` remains blocked on real sandbox credentials.
