@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Cards — UEW-UI-06</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --inp:     #faf9f7;
+      --hover:   #f0efe9;
+
+      --sb:        #111114;
+      --sb-bdr:    #1e1e22;
+      --sb-muted:  #545460;
+      --sb-active: #1e1e28;
+
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+
+      --t1: #1c1c1f;
+      --t2: #575763;
+      --t3: #9898a6;
+      --t4: #d0d0da;
+
+      --cta:     #1c1c1f;
+      --cta-hov: #2e2e35;
+      --cta-t:   #ffffff;
+
+      --g:    #166534;  --g-bg: #f0fdf4;  --g-bd: #bbf7d0;
+      --am:   #854d0e;  --am-bg:#fffbeb;  --am-bd:#fde68a;
+      --rd:   #9b1c1c;  --rd-bg:#fef2f2;  --rd-bd:#fecaca;
+      --or:   #b45309;  --or-bg:#fff7ed;  --or-bd:#fed7aa;
+      --pu:   #5b21b6;  --pu-bg:#f5f3ff;  --pu-bd:#ddd6fe;
+
+      --sb-env-bg: #1a1030;
+      --sb-env-t:  #b39cf0;
+      --sb-env-bd: #362566;
+
+      --f-ui:   'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+
+      --r:    3px;
+      --r-lg: 5px;
+      --w-sb: 220px;
+      --w-tl: 248px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+    #root { height: 100vh; display: flex; overflow: hidden; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 15px 15px 13px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-name  { font-size: 14.5px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+    .sb-nav   { flex: 1; padding: 10px 7px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 9px 5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 12px;
+      cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.35; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; }
+    .nav-lock { margin-left: auto; display: flex; align-items: center; opacity: 0.6; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono); color: var(--sb-muted); opacity: 0.8; }
+    .sb-footer { padding: 10px 14px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 10px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 4px; }
+    .env-dot   { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host  { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); }
+
+    /* MAIN */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .page-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 22px; border-bottom: 1px solid var(--bdr);
+      background: var(--surface); flex-shrink: 0; }
+    .page-bc   { font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .page-bc strong { color: var(--t1); font-weight: 500; }
+    .page-bc .sep   { color: var(--t3); }
+    .page-bc .mode  { font-family: var(--f-mono); font-size: 11.5px; color: var(--t2); }
+    .page-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .screen-id { font-size: 10px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge { font-size: 10px; font-family: var(--f-mono); color: var(--am);
+      background: var(--am-bg); border: 1px solid var(--am-bd);
+      padding: 2px 8px; border-radius: var(--r); display: flex; align-items: center; gap: 5px; }
+    .env-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--am); }
+    .user-chip { display: flex; align-items: center; gap: 7px; padding: 3px 9px 3px 3px;
+      border: 1px solid var(--bdr); border-radius: 20px; background: var(--surf2); }
+    .user-avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--cta);
+      color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center;
+      justify-content: center; letter-spacing: 0.03em; flex-shrink: 0; }
+    .user-name { font-size: 11.5px; color: var(--t2); font-weight: 500; }
+
+    /* CONTENT */
+    .content-area { flex: 1; display: flex; overflow: hidden; }
+    .left-scroll  { flex: 1; overflow-y: auto; padding: 16px 20px;
+      background: var(--bg); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+    /* PANELS */
+    .panel     { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); flex-shrink: 0; }
+    .panel-title { font-size: 11.5px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 13px 16px; }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em;
+      font-family: var(--f-mono); border: 1px solid transparent; white-space: nowrap; }
+    .b-active    { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-done      { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-completed { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-pending   { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-held      { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-limited   { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .b-action    { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-rejected  { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-failed    { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-locked    { background: var(--hover); color: var(--t2);  border-color: var(--bdr); }
+    .b-cancelled { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-inreview  { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-frozen    { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-closed    { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .b-blocked   { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-captured  { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-reversed  { background: var(--hover); color: var(--t2);  border-color: var(--bdr); }
+    .b-declined  { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-approved  { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+
+    /* KV */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--t3); min-width: 160px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--r); font-size: 12.5px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover:not(:disabled) { background: var(--cta-hov); }
+    .btn-ghost   { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover:not(:disabled)   { background: var(--hover); color: var(--t1); }
+    .btn-warn    { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+    .btn-warn:hover  { background: #fef3c7; }
+    .btn-danger  { background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-purple  { background: var(--pu-bg); color: var(--pu); border: 1px solid var(--pu-bd); }
+    .btn-purple:hover { background: #ede9fe; }
+    .btn-sm      { padding: 4px 10px; font-size: 11px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    /* ALERTS */
+    .alert { display: flex; gap: 10px; padding: 9px 12px 9px 13px; font-size: 12px;
+      line-height: 1.55; border-left-width: 3px; border-left-style: solid; border-radius: var(--r); }
+    .alert-warn  { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-red   { background: var(--rd-bg); border-left-color: var(--rd); color: #7f1d1d; }
+    .alert-info  { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-green { background: var(--g-bg);  border-left-color: var(--g);  color: #14532d; }
+    .alert-or    { background: var(--or-bg); border-left-color: var(--or); color: #7c2d12; }
+    .alert-pu    { background: var(--pu-bg); border-left-color: var(--pu); color: #3b0764; }
+
+    /* TABLES */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t3); padding: 6px 10px; text-align: left;
+      border-bottom: 1px solid var(--bdr); background: var(--surf2); font-weight: 600; }
+    .data-table td { padding: 6px 10px; font-size: 12px; border-bottom: 1px solid var(--hover); vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tbody tr:hover td { background: var(--hover); cursor: pointer; }
+    .mono-cell { font-family: var(--f-mono); font-size: 11px; }
+
+    /* LEDGER TABLE */
+    .ledger-tbl { width: 100%; border-collapse: collapse; }
+    .ledger-tbl th { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--t3); padding: 5px 10px; border-bottom: 1px solid var(--bdr);
+      background: var(--surf2); font-weight: 600; text-align: left; }
+    .ledger-tbl td { padding: 5px 10px; font-size: 11px; font-family: var(--f-mono);
+      border-bottom: 1px solid var(--hover); }
+    .ledger-tbl tr:last-child td { border-bottom: none; }
+    .le-dr { color: var(--rd); font-weight: 600; }
+    .le-cr { color: var(--g);  font-weight: 600; }
+
+    /* FORM */
+    .inp-label { font-size: 11px; color: var(--t2); margin-bottom: 4px; font-weight: 500; display: block; }
+    .inp-hint  { font-size: 10.5px; color: var(--t3); margin-top: 3px; }
+    .inp-err   { font-size: 10.5px; color: var(--rd); margin-top: 3px; }
+    .inp-field { width: 100%; padding: 7px 10px; border: 1px solid var(--bdr-mid);
+      border-radius: var(--r); font-size: 12.5px; color: var(--t1);
+      background: var(--inp); outline: none; font-family: var(--f-ui); transition: border-color 0.12s; }
+    .inp-field:focus { border-color: var(--bdr-focus); }
+    .inp-field:disabled { opacity: 0.5; cursor: not-allowed; background: var(--surf2); }
+    select.inp-field { cursor: pointer; }
+    .form-group { display: flex; flex-direction: column; }
+    .inp-prefix-wrap { display: flex; align-items: stretch; }
+    .inp-prefix { padding: 7px 10px; background: var(--surf2); border: 1px solid var(--bdr-mid);
+      border-right: none; border-radius: var(--r) 0 0 var(--r); font-size: 12px;
+      color: var(--t3); font-family: var(--f-mono); display: flex; align-items: center; flex-shrink: 0; }
+    .inp-prefix + .inp-field { border-radius: 0 var(--r) var(--r) 0; }
+    .form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    /* TOGGLE */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 0; border-bottom: 1px solid var(--hover); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-size: 12px; color: var(--t1); }
+    .toggle-sub   { font-size: 10.5px; color: var(--t3); margin-top: 1px; }
+    .toggle-btn   { width: 32px; height: 18px; border-radius: 9px; border: none; cursor: pointer;
+      position: relative; transition: background 0.15s; flex-shrink: 0; }
+    .toggle-btn.on  { background: var(--cta); }
+    .toggle-btn.off { background: var(--bdr-mid); }
+    .toggle-btn::after { content: ''; position: absolute; top: 2px; width: 14px; height: 14px;
+      border-radius: 50%; background: white; transition: left 0.15s; }
+    .toggle-btn.on::after  { left: 16px; }
+    .toggle-btn.off::after { left: 2px; }
+    .toggle-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* CARD VISUAL */
+    .card-chip { width: 100%; max-width: 280px; height: 158px; border-radius: 8px;
+      padding: 18px 20px; display: flex; flex-direction: column; justify-content: space-between;
+      position: relative; overflow: hidden; flex-shrink: 0; }
+    .card-chip-active { background: linear-gradient(135deg, #1c1c2e 0%, #2e2e48 100%);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+    .card-chip-frozen { background: linear-gradient(135deg, #1c2e2e 0%, #1a3a3a 100%);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.18); }
+    .card-chip-closed { background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12); opacity: 0.7; }
+    .card-chip-blocked { background: repeating-linear-gradient(-45deg, #f0efe9 0px, #f0efe9 4px, #e8e6e1 4px, #e8e6e1 8px);
+      border: 2px dashed var(--bdr-mid); box-shadow: none; }
+    .card-net  { font-size: 9px; font-family: var(--f-mono); letter-spacing: 0.12em;
+      text-transform: uppercase; opacity: 0.7; }
+    .card-pan  { font-size: 15px; font-family: var(--f-mono); letter-spacing: 0.18em;
+      color: #f0f0f8; font-weight: 500; }
+    .card-pan-blocked { font-size: 13px; color: var(--t3); letter-spacing: 0.1em; }
+    .card-meta { display: flex; justify-content: space-between; align-items: flex-end; }
+    .card-holder { font-size: 11px; font-family: var(--f-mono); letter-spacing: 0.1em;
+      text-transform: uppercase; color: rgba(255,255,255,0.7); }
+    .card-exp { font-size: 11px; font-family: var(--f-mono); color: rgba(255,255,255,0.5); }
+    .card-type-tag { font-size: 9px; font-family: var(--f-mono); padding: 2px 6px;
+      border-radius: 2px; font-weight: 600; letter-spacing: 0.08em; }
+    .card-corner-mark { position: absolute; top: 14px; right: 16px; width: 30px; height: 20px;
+      border-radius: 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); }
+
+    /* STATE PATH */
+    .state-path { display: flex; align-items: center; flex-wrap: wrap; padding: 10px 14px; gap: 0; }
+    .sp-node  { display: flex; align-items: center; }
+    .sp-pill  { padding: 3px 9px; border-radius: 2px; font-size: 10px; font-family: var(--f-mono);
+      font-weight: 600; letter-spacing: 0.05em; white-space: nowrap; border: 1px solid transparent; }
+    .sp-pill.blocked  { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .sp-pill.current  { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); box-shadow: 0 0 0 2px rgba(133,77,14,0.14); }
+    .sp-pill.next     { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .sp-pill.future   { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .sp-pill.done     { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .sp-pill.active   { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .sp-pill.frozen   { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .sp-pill.closed-s { background: var(--hover); color: var(--t3);  border-color: var(--bdr); }
+    .sp-pill.bad      { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .sp-pill.held     { background: var(--or-bg); color: var(--or);  border-color: var(--or-bd); }
+    .sp-arrow { font-size: 10px; color: var(--t4); margin: 0 4px; flex-shrink: 0; }
+
+    /* PROGRESS */
+    .prog-wrap { height: 5px; background: var(--hover); border-radius: 3px; overflow: hidden; margin-top: 5px; }
+    .prog-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .prog-green { background: var(--g); }
+    .prog-amber { background: var(--am); }
+    .prog-red   { background: var(--rd); }
+
+    /* BALANCE GRID */
+    .bal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+      background: var(--bdr); border-radius: var(--r); overflow: hidden; }
+    .bal-cell { background: var(--surface); padding: 11px 14px; }
+    .bal-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t3); font-weight: 600; margin-bottom: 4px; }
+    .bal-val   { font-size: 16px; font-weight: 600; font-family: var(--f-mono);
+      letter-spacing: -0.02em; margin-bottom: 2px; }
+    .bal-sub   { font-size: 10.5px; color: var(--t3); }
+
+    /* REVIEW ROWS */
+    .rev-row { display: flex; align-items: baseline; justify-content: space-between;
+      padding: 5px 0; border-bottom: 1px solid var(--hover); font-size: 12px; gap: 8px; }
+    .rev-row:last-child { border-bottom: none; }
+    .rev-k { color: var(--t3); font-size: 11px; }
+    .rev-v { font-weight: 500; color: var(--t1); }
+    .rev-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+    .rev-v.good { color: var(--g); }
+    .rev-v.warn { color: var(--am); }
+    .rev-v.bad  { color: var(--rd); }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,20,0.52);
+      display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg);
+      width: 560px; max-width: 100%; max-height: 90vh; display: flex; flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08); }
+    .modal-hdr  { display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 13px 16px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; background: var(--surf2); }
+    .modal-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .modal-sub   { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .modal-close { width: 24px; height: 24px; border-radius: var(--r); background: transparent;
+      border: none; color: var(--t3); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: background 0.1s, color 0.1s; flex-shrink: 0; margin-top: 1px; }
+    .modal-close:hover { background: var(--hover); color: var(--t1); }
+    .modal-body   { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-footer { padding: 12px 16px; border-top: 1px solid var(--bdr); display: flex;
+      gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+    .modal-note   { font-size: 10.5px; color: var(--t3); margin-left: auto; font-style: italic; }
+
+    /* AUDIT TRAIL */
+    .audit-row { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--hover); }
+    .audit-row:last-child { border-bottom: none; }
+    .audit-ts   { font-size: 10px; font-family: var(--f-mono); color: var(--t3); min-width: 130px; flex-shrink: 0; }
+    .audit-evt  { font-size: 11px; font-family: var(--f-mono); color: var(--t2); }
+
+    /* SANDBOX */
+    .sandbox-note { font-size: 10px; color: var(--t3); font-family: var(--f-mono);
+      padding: 4px 9px; background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); }
+
+    /* SUCCESS */
+    .success-panel { background: var(--g-bg); border: 1px solid var(--g-bd);
+      border-radius: var(--r-lg); padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
+
+    /* TIMELINE RAIL */
+    .tl-rail  { width: var(--w-tl); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .tl-hdr   { padding: 10px 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+      font-size: 9.5px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.1em; }
+    .tl-body  { flex: 1; overflow-y: auto; padding: 10px 14px; }
+    .tl-evt   { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hover); }
+    .tl-evt:last-child { border-bottom: none; }
+    .tl-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .tl-dot.ok   { background: var(--g); }
+    .tl-dot.pend { background: var(--am); }
+    .tl-dot.held { background: var(--or); }
+    .tl-dot.bad  { background: var(--rd); }
+    .tl-dot.pu   { background: var(--pu); }
+    .tl-dot.neu  { background: var(--t4); }
+    .tl-line  { width: 1px; flex: 1; background: var(--bdr); margin: 4px 0; min-height: 12px; }
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-ts    { font-size: 9.5px; font-family: var(--f-mono); color: var(--t3); margin-bottom: 1px; }
+    .tl-name  { font-size: 11px; font-weight: 600; color: var(--t1); margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .tl-actor { font-size: 10px; color: var(--t3); margin-bottom: 2px; }
+    .tl-desc  { font-size: 10.5px; color: var(--t2); line-height: 1.4; }
+
+    @media (max-width: 1100px) { :root { --w-tl: 210px; } }
+    @media (max-width: 960px)  { .tl-rail { display: none; } }
+    @media (max-width: 800px)  { .form-grid2, .form-grid3 { grid-template-columns: 1fr; } .bal-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px)  { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+/* ── DATA ───────────────────────────────────────────────────────────────── */
+const CARDS_DATA = [
+  {
+    id: 'CARD-90031', pan: '**** **** **** 4242', shortPan: '4242',
+    tokenRef: 'VLT-TOK-9031A', expiry: '05/28', cardholder: 'ELENA MARKOVIC',
+    type: 'Virtual Debit', status: 'ACTIVE',
+    wallet: 'WLT-EU-77820', spendLimit: 'EUR 500/month',
+    spendUsed: 'EUR 117.50', onlinePayments: true, atm: false,
+    lastAuth: 'AUTH-48201 · 2026-05-17 · EUR 75.00 · APPROVED_HELD',
+    created: '2026-03-12 10:44',
+    merchantCategories: 'All categories',
+    audit: [
+      { ts: '2026-03-12 10:44', evt: 'card.issued' },
+      { ts: '2026-04-08 14:21', evt: 'card.authorization_approved' },
+      { ts: '2026-05-01 09:17', evt: 'card.authorization_captured' },
+      { ts: '2026-05-17 08:44', evt: 'card.authorization_approved_held' },
+    ],
+  },
+  {
+    id: 'CARD-90018', pan: '**** **** **** 1881', shortPan: '1881',
+    tokenRef: 'VLT-TOK-9018B', expiry: '02/28', cardholder: 'ELENA MARKOVIC',
+    type: 'Virtual Debit', status: 'FROZEN',
+    wallet: 'WLT-EU-77820', spendLimit: 'EUR 250/month',
+    spendUsed: 'EUR 0.00', onlinePayments: true, atm: false,
+    lastAuth: 'AUTH-47990 · 2026-05-10 · EUR 29.99 · DECLINED (frozen)',
+    created: '2026-01-05 14:32',
+    merchantCategories: 'Online retail only',
+    audit: [
+      { ts: '2026-01-05 14:32', evt: 'card.issued' },
+      { ts: '2026-03-20 11:04', evt: 'card.frozen — user request' },
+      { ts: '2026-05-10 18:22', evt: 'card.authorization_declined (card_frozen)' },
+    ],
+  },
+  {
+    id: 'CARD-89902', pan: '**** **** **** 7744', shortPan: '7744',
+    tokenRef: 'VLT-TOK-8990C', expiry: 'N/A (closed)', cardholder: 'ELENA MARKOVIC',
+    type: 'Virtual Debit', status: 'CLOSED',
+    wallet: 'WLT-EU-77820', spendLimit: 'EUR 100/month',
+    spendUsed: '—', onlinePayments: false, atm: false,
+    lastAuth: 'AUTH-44102 · 2026-02-14 · EUR 42.00 · CAPTURED',
+    created: '2025-11-18 09:15',
+    merchantCategories: 'All categories',
+    audit: [
+      { ts: '2025-11-18 09:15', evt: 'card.issued' },
+      { ts: '2026-02-14 10:33', evt: 'card.authorization_captured' },
+      { ts: '2026-03-01 16:00', evt: 'card.closed — user request' },
+    ],
+  },
+  {
+    id: 'CARD-NEW-BLOCKED', pan: null, shortPan: null,
+    tokenRef: null, expiry: null, cardholder: 'ELENA MARKOVIC',
+    type: 'Virtual Debit', status: 'ISSUANCE_BLOCKED',
+    wallet: 'WLT-EU-77820', spendLimit: '—',
+    spendUsed: '—', onlinePayments: null, atm: false,
+    lastAuth: '—',
+    created: '2026-05-17 (attempted)',
+    merchantCategories: '—',
+    audit: [
+      { ts: '2026-05-17 11:05', evt: 'card.issue_blocked — kyc_in_review' },
+    ],
+  },
+];
+
+const AUTH_DATA = [
+  {
+    id: 'AUTH-48201', ts: '2026-05-17 08:44', merchant: 'Supermarkt Müller',
+    mcc: '5411 — Grocery Stores', amount: 'EUR 75.00', card: 'CARD-90031 · ****4242',
+    state: 'APPROVED_HELD', badgeCls: 'b-approved', badgeLabel: 'APPROVED — HELD',
+    ledgerEffect: 'Hold placed on available balance', declineReason: null,
+    ledger: [
+      { side: 'DR', account: 'user.wallet.available · WLT-EU-77820', amount: 'EUR 75.00', type: 'AUTH_HOLD' },
+      { side: 'CR', account: 'issuer.auth.hold_account',              amount: 'EUR 75.00', type: 'AUTH_HOLD' },
+    ],
+    note: 'Hold active. Merchant has not yet captured.',
+  },
+  {
+    id: 'AUTH-48180', ts: '2026-05-16 13:20', merchant: 'Spotify AB',
+    mcc: '5735 — Music Stores', amount: 'EUR 9.99', card: 'CARD-90031 · ****4242',
+    state: 'CAPTURED', badgeCls: 'b-captured', badgeLabel: 'CAPTURED',
+    ledgerEffect: 'Hold moved to settled debit', declineReason: null,
+    ledger: [
+      { side: 'DR', account: 'issuer.auth.hold_account',              amount: 'EUR 9.99', type: 'CAPTURE_RELEASE' },
+      { side: 'CR', account: 'issuer.settlement.account',             amount: 'EUR 9.99', type: 'CAPTURE_SETTLE' },
+    ],
+    note: 'Subscription billing. Hold released; debit settled.',
+  },
+  {
+    id: 'AUTH-48055', ts: '2026-05-14 20:15', merchant: 'ElektroShop GmbH',
+    mcc: '5732 — Electronics', amount: 'EUR 350.00', card: 'CARD-90031 · ****4242',
+    state: 'DECLINED', badgeCls: 'b-declined', badgeLabel: 'DECLINED',
+    ledgerEffect: 'No ledger effect', declineReason: 'Insufficient available balance (EUR 842.50 < EUR 350.00 + EUR 75.00 held)',
+    ledger: [],
+    note: 'Available balance including existing hold was insufficient.',
+  },
+  {
+    id: 'AUTH-47990', ts: '2026-05-10 18:22', merchant: 'Amazon EU SARL',
+    mcc: '5999 — Online Retail', amount: 'EUR 29.99', card: 'CARD-90018 · ****1881',
+    state: 'DECLINED', badgeCls: 'b-declined', badgeLabel: 'DECLINED',
+    ledgerEffect: 'No ledger effect', declineReason: 'Card status: FROZEN',
+    ledger: [],
+    note: 'Card CARD-90018 was in frozen state at time of authorization.',
+  },
+  {
+    id: 'AUTH-47881', ts: '2026-05-08 11:03', merchant: 'Billa AG',
+    mcc: '5411 — Grocery Stores', amount: 'EUR 65.00', card: 'CARD-90031 · ****4242',
+    state: 'REVERSED', badgeCls: 'b-reversed', badgeLabel: 'REVERSED',
+    ledgerEffect: 'Hold released back to available', declineReason: null,
+    ledger: [
+      { side: 'DR', account: 'issuer.auth.hold_account',              amount: 'EUR 65.00', type: 'AUTH_REVERSAL' },
+      { side: 'CR', account: 'user.wallet.available · WLT-EU-77820', amount: 'EUR 65.00', type: 'AUTH_REVERSAL' },
+    ],
+    note: 'Merchant reversed auth. Hold released. Balance fully restored.',
+  },
+  {
+    id: 'AUTH-47002', ts: '2026-05-06 09:30', merchant: 'N/A (issuance blocked)',
+    mcc: '—', amount: 'EUR 120.00', card: 'CARD-NEW-BLOCKED',
+    state: 'DECLINED', badgeCls: 'b-declined', badgeLabel: 'DECLINED',
+    ledgerEffect: 'No ledger effect', declineReason: 'Card not issued — KYC in review',
+    ledger: [],
+    note: 'Authorization attempted but no card was issued due to KYC status.',
+  },
+];
+
+/* ── ICONS ──────────────────────────────────────────────────────────────── */
+const LogoMark  = () => (
+  <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+    <rect width="26" height="26" rx="4" fill="#1e1e28"/>
+    <rect x="6" y="9"    width="14" height="2" rx="1" fill="#ddddf0"/>
+    <rect x="6" y="13.5" width="9"  height="2" rx="1" fill="#7070e0"/>
+    <rect x="6" y="18"   width="5"  height="2" rx="1" fill="#4040a0" opacity="0.8"/>
+  </svg>
+);
+const IcoWallet   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1" stroke="currentColor" strokeWidth="1.2"/><path d="M1 6h12" stroke="currentColor" strokeWidth="1.2"/><circle cx="9.5" cy="8.5" r="1" fill="currentColor"/></svg>;
+const IcoVerify   = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2 12c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoCard     = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3.5" width="12" height="8" rx="1" stroke="currentColor" strokeWidth="1.2"/><line x1="1" y1="6.5" x2="13" y2="6.5" stroke="currentColor" strokeWidth="1.2"/><rect x="3" y="8.5" width="3" height="1.5" rx="0.5" fill="currentColor"/></svg>;
+const IcoTransfer = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5h10M9 2.5L12 5l-3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 9H2M5 6.5L2 9l3 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoDeposit  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoWithdraw = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 9V2M4 5l3-3 3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 11h10" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoDispute  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="7" y1="5.5" x2="7" y2="8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="7" cy="10.2" r="0.7" fill="currentColor"/></svg>;
+const IcoProfile  = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="2" stroke="currentColor" strokeWidth="1.2"/><path d="M2 13c0-2.2 2.2-4 5-4s5 1.8 5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoLockSm   = () => <svg width="11" height="12" viewBox="0 0 11 12" fill="none"><rect x="1.5" y="5" width="8" height="6.5" rx="0.75" stroke="currentColor" strokeWidth="1.1"/><path d="M3.5 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>;
+const IcoX        = () => <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1.5 1.5l8 8M9.5 1.5l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;
+const IcoCheck    = () => <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.2"/><path d="M4.5 7l2 2 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IcoWarn     = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5L12 11.5H1L6.5 1.5Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><line x1="6.5" y1="5.5" x2="6.5" y2="8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="6.5" cy="9.5" r="0.6" fill="currentColor"/></svg>;
+const IcoSnowflake = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11M3 3l7 7M10 3l-7 7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>;
+const IcoEye      = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1 6.5C1 6.5 3 3 6.5 3S12 6.5 12 6.5 10 10 6.5 10 1 6.5 1 6.5Z" stroke="currentColor" strokeWidth="1.2"/><circle cx="6.5" cy="6.5" r="1.5" stroke="currentColor" strokeWidth="1.2"/></svg>;
+
+/* ── SIDEBAR ────────────────────────────────────────────────────────────── */
+const NAV = [
+  { ico: <IcoWallet />,   label: 'Wallet',             id: 'UEW-UI-03' },
+  { ico: <IcoVerify />,   label: 'Verification' },
+  { ico: <IcoCard />,     label: 'Cards',              current: true, id: 'UEW-UI-06' },
+  { ico: <IcoTransfer />, label: 'Transfers' },
+  { ico: <IcoDeposit />,  label: 'Deposits' },
+  { ico: <IcoWithdraw />, label: 'Withdrawals',        locked: true },
+  { ico: <IcoDispute />,  label: 'Disputes',           locked: true },
+  { ico: <IcoProfile />,  label: 'Profile / Security' },
+];
+
+const Sidebar = () => (
+  <aside className="sidebar">
+    <div className="sb-brand">
+      <div className="sb-mark"><LogoMark /><div className="sb-name">MiniFin</div></div>
+      <div className="sb-sub">End-User Web</div>
+    </div>
+    <nav className="sb-nav">
+      <div className="nav-sec">Navigation</div>
+      {NAV.map((n, i) => (
+        <div key={i} className={`nav-item${n.locked ? ' locked' : ''}${n.current ? ' current' : ''}`}>
+          <span style={{ width: 14, display: 'flex', alignItems: 'center', flexShrink: 0 }}>{n.ico}</span>
+          <span>{n.label}</span>
+          {n.locked && <span className="nav-lock"><IcoLockSm /></span>}
+          {n.id     && <span className="nav-id">{n.id}</span>}
+        </div>
+      ))}
+    </nav>
+    <div className="sb-footer">
+      <div className="env-chip"><div className="env-dot"/><span>Local Sandbox</span></div>
+      <div className="env-host">app.miniefin.local</div>
+    </div>
+  </aside>
+);
+
+/* ── UTILS ──────────────────────────────────────────────────────────────── */
+const KV    = ({ k, mono, children }) => (
+  <div className="kv-row">
+    <div className="kv-k">{k}</div>
+    <div className={`kv-v${mono ? ' mono' : ''}`}>{children}</div>
+  </div>
+);
+const Badge = ({ cls, label }) => <span className={`badge ${cls}`}>{label}</span>;
+const Toggle = ({ on, onToggle, disabled }) => (
+  <button className={`toggle-btn ${on ? 'on' : 'off'}`} disabled={disabled} onClick={onToggle} />
+);
+
+/* ── CARD CHIP VISUAL ───────────────────────────────────────────────────── */
+const CardChip = ({ card, localState }) => {
+  const status = localState || card.status;
+  const chipCls = status === 'ACTIVE'    ? 'card-chip-active' :
+                  status === 'FROZEN'    ? 'card-chip-frozen' :
+                  status === 'CLOSED'    ? 'card-chip-closed' :
+                  'card-chip-blocked';
+  const isBlocked = status === 'ISSUANCE_BLOCKED';
+
+  return (
+    <div className={`card-chip ${chipCls}`}>
+      <div className="card-corner-mark" />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <span className="card-net" style={{ color: isBlocked ? 'var(--t3)' : 'rgba(255,255,255,0.5)' }}>
+          MiniFin Virtual
+        </span>
+        {status === 'FROZEN' && (
+          <span style={{ fontSize: 9, fontFamily: 'var(--f-mono)', color: '#a5b4fc', background: 'rgba(91,33,182,0.3)', padding: '2px 6px', borderRadius: 2, border: '1px solid rgba(167,139,250,0.3)' }}>
+            FROZEN
+          </span>
+        )}
+        {status === 'CLOSED' && (
+          <span style={{ fontSize: 9, fontFamily: 'var(--f-mono)', color: 'rgba(255,255,255,0.4)', background: 'rgba(0,0,0,0.2)', padding: '2px 6px', borderRadius: 2 }}>
+            CLOSED
+          </span>
+        )}
+        {isBlocked && (
+          <span style={{ fontSize: 9, fontFamily: 'var(--f-mono)', color: 'var(--rd)', background: 'var(--rd-bg)', padding: '2px 6px', borderRadius: 2, border: '1px solid var(--rd-bd)' }}>
+            BLOCKED
+          </span>
+        )}
+      </div>
+      <div>
+        {isBlocked
+          ? <div className="card-pan-blocked">KYC approval required</div>
+          : <div className="card-pan">{card.pan}</div>
+        }
+      </div>
+      <div className="card-meta">
+        <div>
+          <div className="card-holder" style={{ color: isBlocked ? 'var(--t3)' : undefined }}>{card.cardholder}</div>
+          <div className="card-exp" style={{ color: isBlocked ? 'var(--t4)' : undefined }}>
+            {card.expiry ? `EXP ${card.expiry}` : '—'}
+          </div>
+        </div>
+        <div>
+          <svg width="30" height="20" viewBox="0 0 30 20" fill="none" opacity={isBlocked ? 0.3 : 0.6}>
+            <circle cx="11" cy="10" r="9" fill={status === 'ACTIVE' ? '#ef4444' : '#666'}/>
+            <circle cx="19" cy="10" r="9" fill={status === 'ACTIVE' ? '#f97316' : '#555'} opacity="0.85"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── CARD DETAIL MODAL ──────────────────────────────────────────────────── */
+const CardDetailModal = ({ card, localState, onStateChange, onClose }) => {
+  const [actionMsg, setActionMsg] = useState('');
+  const [revealMsg, setRevealMsg] = useState('');
+  const status = localState || card.status;
+
+  const doFreeze = () => {
+    onStateChange(card.id, 'FROZEN');
+    setActionMsg('Card frozen. All new authorizations will be declined. Audit event: card.frozen.');
+  };
+  const doUnfreeze = () => {
+    onStateChange(card.id, 'ACTIVE');
+    setActionMsg('Card unfrozen. Authorizations will be processed normally. Audit event: card.unfrozen.');
+  };
+  const doClose = () => {
+    onStateChange(card.id, 'CLOSED');
+    setActionMsg('Card closed permanently. This action cannot be reversed. Audit event: card.closed.');
+  };
+  const doReveal = () => {
+    setRevealMsg('PAN reveal requires step-up authentication (re-authentication + OTP). This capability is not available in the local prototype. In production, vault detokenization is gated by step-up auth.');
+  };
+
+  const isBlocked = card.status === 'ISSUANCE_BLOCKED';
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-hdr">
+          <div>
+            <div className="modal-title">Card Detail — {card.id}</div>
+            <div className="modal-sub">{card.type} · Created {card.created}</div>
+          </div>
+          <button className="modal-close" onClick={onClose}><IcoX /></button>
+        </div>
+        <div className="modal-body">
+          {/* Card visual */}
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <CardChip card={card} localState={localState} />
+            <div style={{ flex: 1, minWidth: 180 }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                <Badge
+                  cls={status === 'ACTIVE' ? 'b-active' : status === 'FROZEN' ? 'b-frozen' : status === 'CLOSED' ? 'b-closed' : 'b-blocked'}
+                  label={status}
+                />
+                <Badge cls="b-locked" label={card.type} />
+              </div>
+              {actionMsg && (
+                <div className="alert alert-green" style={{ fontSize: 11, marginBottom: 8 }}>
+                  <IcoCheck /><div>{actionMsg}</div>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {!isBlocked && status !== 'CLOSED' && status !== 'FROZEN' && (
+                  <button className="btn btn-purple btn-sm" onClick={doFreeze}><IcoSnowflake /> Freeze Card</button>
+                )}
+                {!isBlocked && status !== 'CLOSED' && status === 'FROZEN' && (
+                  <button className="btn btn-ghost btn-sm" onClick={doUnfreeze}>Unfreeze Card</button>
+                )}
+                {!isBlocked && status !== 'CLOSED' && (
+                  <button className="btn btn-danger btn-sm" onClick={doClose}>Close Card</button>
+                )}
+                {isBlocked && (
+                  <span style={{ fontSize: 11, color: 'var(--rd)' }}>Issuance blocked — no actions available</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* KV details */}
+          <div className="kv-table">
+            <KV k="Card ID"           mono>{card.id}</KV>
+            <KV k="Vault Token Ref"   mono>{card.tokenRef || 'Not issued'}</KV>
+            <KV k="Masked PAN"        mono>{card.pan || '—'}</KV>
+            <KV k="Expiry"            mono>{card.expiry || '—'}</KV>
+            <KV k="Cardholder">{card.cardholder}</KV>
+            <KV k="Status"><Badge cls={status === 'ACTIVE' ? 'b-active' : status === 'FROZEN' ? 'b-frozen' : status === 'CLOSED' ? 'b-closed' : 'b-blocked'} label={status} /></KV>
+            <KV k="Funding Wallet"    mono>{card.wallet}</KV>
+            <KV k="Spend Limit">{card.spendLimit}</KV>
+            <KV k="Spend Used"        mono>{card.spendUsed}</KV>
+            <KV k="Online Payments">{card.onlinePayments === null ? '—' : card.onlinePayments ? 'Enabled' : 'Disabled'}</KV>
+            <KV k="ATM Withdrawals"><span style={{ color: 'var(--t3)' }}>Disabled (MVP scope)</span></KV>
+            <KV k="Merchant Categories">{card.merchantCategories}</KV>
+            <KV k="Last Authorization" mono style={{ fontSize: 11 }}><span style={{ fontSize: 11 }}>{card.lastAuth}</span></KV>
+            <KV k="Ledger Hold Behavior">
+              <span style={{ fontSize: 11, color: 'var(--t2)' }}>Auth approval creates hold on wallet.available. Capture moves hold to settlement. Reversal releases hold.</span>
+            </KV>
+          </div>
+
+          {/* Reveal PAN */}
+          <div style={{ borderTop: '1px solid var(--bdr)', paddingTop: 10 }}>
+            <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 7 }}>
+              PAN / CVV
+            </div>
+            <button className="btn btn-ghost btn-sm" onClick={doReveal} style={{ marginBottom: revealMsg ? 8 : 0 }}>
+              <IcoEye /> Reveal Full PAN
+            </button>
+            {revealMsg && (
+              <div className="alert alert-pu" style={{ marginTop: 8, fontSize: 11.5 }}>
+                <IcoLockSm /><div>{revealMsg}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Audit trail */}
+          <div style={{ borderTop: '1px solid var(--bdr)', paddingTop: 10 }}>
+            <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 7 }}>
+              Audit Trail
+            </div>
+            {card.audit.map((a, i) => (
+              <div key={i} className="audit-row">
+                <div className="audit-ts">{a.ts}</div>
+                <div className="audit-evt">{a.evt}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onClose}>Close</button>
+          <span className="modal-note">Read-only detail · Local prototype</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── AUTH DETAIL MODAL ──────────────────────────────────────────────────── */
+const AuthDetailModal = ({ auth, onClose }) => (
+  <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal">
+      <div className="modal-hdr">
+        <div>
+          <div className="modal-title">Authorization — {auth.id}</div>
+          <div className="modal-sub">{auth.ts} · {auth.merchant}</div>
+        </div>
+        <button className="modal-close" onClick={onClose}><IcoX /></button>
+      </div>
+      <div className="modal-body">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Badge cls={auth.badgeCls} label={auth.badgeLabel} />
+        </div>
+        {auth.declineReason && (
+          <div className="alert alert-red" style={{ fontSize: 11.5 }}>
+            <IcoWarn /><div><strong>Decline reason:</strong> {auth.declineReason}</div>
+          </div>
+        )}
+        {!auth.declineReason && (
+          <div className="alert alert-info" style={{ fontSize: 11.5 }}>
+            {auth.note}
+          </div>
+        )}
+        <div className="kv-table">
+          <KV k="Authorization ID"  mono>{auth.id}</KV>
+          <KV k="Timestamp"         mono>{auth.ts}</KV>
+          <KV k="Merchant">{auth.merchant}</KV>
+          <KV k="MCC"               mono>{auth.mcc}</KV>
+          <KV k="Amount"            mono>{auth.amount}</KV>
+          <KV k="Card"              mono>{auth.card}</KV>
+          <KV k="State"><Badge cls={auth.badgeCls} label={auth.badgeLabel} /></KV>
+          <KV k="Ledger Effect">{auth.ledgerEffect}</KV>
+          {auth.declineReason && <KV k="Decline Reason"><span style={{ color: 'var(--rd)', fontSize: 11 }}>{auth.declineReason}</span></KV>}
+        </div>
+        {auth.ledger.length > 0 && (
+          <div>
+            <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 6 }}>
+              Ledger Entries
+            </div>
+            <table className="ledger-tbl">
+              <thead>
+                <tr>
+                  <th style={{ width: 36 }}>Side</th>
+                  <th>Account</th>
+                  <th style={{ textAlign: 'right' }}>Amount</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auth.ledger.map((l, i) => (
+                  <tr key={i}>
+                    <td className={l.side === 'DR' ? 'le-dr' : 'le-cr'}>{l.side}</td>
+                    <td style={{ color: 'var(--t2)', fontSize: 10.5 }}>{l.account}</td>
+                    <td style={{ textAlign: 'right' }}>{l.amount}</td>
+                    <td style={{ color: 'var(--t3)', fontSize: 10 }}>{l.type}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {auth.ledger.length === 0 && (
+          <div style={{ fontSize: 11.5, color: 'var(--t3)' }}>
+            No ledger entries — authorization did not affect balances.
+          </div>
+        )}
+      </div>
+      <div className="modal-footer">
+        <button className="btn btn-ghost" onClick={onClose}>Close</button>
+        <span className="modal-note">Read-only · Local prototype</span>
+      </div>
+    </div>
+  </div>
+);
+
+/* ── MAIN APP ───────────────────────────────────────────────────────────── */
+function App() {
+  const [previewEligible, setPreviewEligible] = useState(false);
+  const [cardholderName, setCardholderName]   = useState('Elena Markovic');
+  const [spendLimit, setSpendLimit]           = useState('500');
+  const [onlinePayments, setOnlinePayments]   = useState(true);
+  const [merchantCat, setMerchantCat]         = useState('all');
+  const [issued, setIssued]                   = useState(false);
+  const [issuedId, setIssuedId]               = useState('');
+  const [cardLocalStates, setCardLocalStates] = useState({});
+  const [detailCard, setDetailCard]           = useState(null);
+  const [detailAuth, setDetailAuth]           = useState(null);
+
+  const handleCardStateChange = (cardId, newState) => {
+    setCardLocalStates(prev => ({ ...prev, [cardId]: newState }));
+  };
+
+  const handleIssue = () => {
+    const id = `CARD-${Math.floor(90100 + Math.random() * 400)}`;
+    setIssuedId(id);
+    setIssued(true);
+  };
+
+  const handleIssueReset = () => {
+    setIssued(false);
+    setPreviewEligible(false);
+  };
+
+  const getCardStatus = (card) => cardLocalStates[card.id] || card.status;
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+        {/* PAGE HEADER */}
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>End-User Web</span><span className="sep">/</span>
+            <strong>Cards</strong><span className="sep">·</span>
+            <span className="mode">Card Management</span>
+          </div>
+          <div className="page-meta">
+            <span className="screen-id">UEW-UI-06</span>
+            <span className="env-badge"><span className="env-badge-dot"/>Local Sandbox</span>
+            <div className="user-chip">
+              <div className="user-avatar">EM</div>
+              <span className="user-name">Elena Markovic</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="content-area">
+          <div className="left-scroll">
+
+            {/* ── ACCOUNT CONTEXT ────────────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="panel-title">Account Context</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>WLT-EU-77820</span>
+                </div>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>Last ledger sync: 2026-05-17 11:08</span>
+              </div>
+              <div className="panel-body" style={{ paddingBottom: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1, background: 'var(--bdr)', borderRadius: 'var(--r)', overflow: 'hidden', marginBottom: 12 }}>
+                  {[
+                    { label: 'Available Balance', val: 'EUR 842.50',  sub: 'ex. EUR 75.00 hold', mono: true, big: true, color: 'var(--g)' },
+                    { label: 'KYC State',         val: <Badge cls="b-inreview" label="IN REVIEW"/>, sub: 'Card issuance blocked' },
+                    { label: 'Account Control',   val: <Badge cls="b-limited" label="ACTIVE · WITHDRAW LIMIT"/>, sub: 'Cards not blocked' },
+                    { label: 'Card Eligibility',  val: <Badge cls="b-blocked" label="BLOCKED"/>, sub: 'Requires KYC approval' },
+                    { label: 'Active Cards',      val: '1', sub: '3 total (1 frozen, 1 closed)', mono: true },
+                  ].map((c, i) => (
+                    <div key={i} style={{ background: 'var(--surface)', padding: '10px 13px' }}>
+                      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 5 }}>{c.label}</div>
+                      <div style={{ fontSize: c.big ? 17 : 12.5, fontWeight: 600, fontFamily: c.mono ? 'var(--f-mono)' : 'inherit', marginBottom: 2, color: c.color || 'inherit', letterSpacing: c.big ? '-0.02em' : 'inherit' }}>{c.val}</div>
+                      <div style={{ fontSize: 10.5, color: 'var(--t3)' }}>{c.sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Ledger balance grid */}
+                <div className="bal-grid">
+                  {[
+                    { label: 'Available Balance',  val: 'EUR 842.50', color: 'var(--g)',  sub: 'Spendable now' },
+                    { label: 'Auth Hold',           val: 'EUR 75.00',  color: 'var(--or)', sub: 'AUTH-48201 pending' },
+                    { label: 'Pending Deposit',     val: 'EUR 250.00', color: 'var(--am)', sub: 'DEP-48201 in review' },
+                    { label: 'Total Ledger Balance',val: 'EUR 1,167.50', color: 'var(--t1)', sub: 'Available + hold + pending' },
+                  ].map((b, i) => (
+                    <div key={i} className="bal-cell">
+                      <div className="bal-label">{b.label}</div>
+                      <div className="bal-val" style={{ color: b.color }}>{b.val}</div>
+                      <div className="bal-sub">{b.sub}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* ── STATE PATHS ────────────────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <span className="panel-title">Card &amp; Authorization State Paths</span>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>User is blocked before issuance — KYC in review</span>
+              </div>
+              <div style={{ padding: '8px 14px 4px', borderBottom: '1px solid var(--hover)' }}>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 6 }}>Card Lifecycle</div>
+                <div className="state-path" style={{ padding: 0, paddingBottom: 8 }}>
+                  {[
+                    { label: 'KYC BLOCKED',         cls: 'blocked', note: '← current user' },
+                    { label: 'ISSUANCE REQUESTED',  cls: 'future' },
+                    { label: 'VAULT TOKEN CREATED', cls: 'future' },
+                    { label: 'ISSUER CARD CREATED', cls: 'future' },
+                    { label: 'ACTIVE',              cls: 'active' },
+                    { label: 'FROZEN',              cls: 'frozen' },
+                    { label: 'CLOSED',              cls: 'closed-s' },
+                  ].map((s, i, arr) => (
+                    <div key={i} className="sp-node">
+                      <div className={`sp-pill ${s.cls}`}>
+                        {s.label}
+                        {s.note && <span style={{ fontSize: 8, fontWeight: 400, marginLeft: 4, opacity: 0.8 }}>({s.note})</span>}
+                      </div>
+                      {i < arr.length - 1 && <span className="sp-arrow">→</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ padding: '8px 14px 12px' }}>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 6 }}>Authorization Lifecycle</div>
+                <div className="state-path" style={{ padding: 0 }}>
+                  {[
+                    { label: 'REQUESTED',     cls: 'future' },
+                    { label: 'APPROVED / HELD', cls: 'held' },
+                    { label: 'CAPTURED',      cls: 'done' },
+                  ].map((s, i, arr) => (
+                    <div key={i} className="sp-node">
+                      <div className={`sp-pill ${s.cls}`}>{s.label}</div>
+                      {i < arr.length - 1 && <span className="sp-arrow">→</span>}
+                    </div>
+                  ))}
+                  <span className="sp-arrow" style={{ margin: '0 6px' }}>|</span>
+                  <div className="sp-node">
+                    <div className="sp-pill done">REVERSED</div>
+                    <span className="sp-arrow"> / </span>
+                    <div className="sp-pill bad">DECLINED</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── ELIGIBILITY / ISSUE CARD ───────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="panel-title">Issue Card</span>
+                  <Badge cls="b-blocked" label="BLOCKED — KYC IN REVIEW" />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>Preview eligible state:</span>
+                  <Toggle on={previewEligible} onToggle={() => { setPreviewEligible(v => !v); setIssued(false); }} />
+                  <span className="sandbox-note">[prototype toggle]</span>
+                </div>
+              </div>
+              <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+                {!previewEligible ? (
+                  <>
+                    <div className="alert alert-red">
+                      <IcoWarn />
+                      <div>
+                        <div style={{ fontWeight: 600, marginBottom: 3 }}>Card issuance is blocked</div>
+                        <div>
+                          Card issuance requires a fully approved KYC. Your KYC is currently <strong>In Review</strong>.
+                          Once the review is approved, virtual card issuance will be unlocked automatically.
+                        </div>
+                      </div>
+                    </div>
+                    <div className="kv-table">
+                      <KV k="Current eligibility"><Badge cls="b-blocked" label="BLOCKED" /></KV>
+                      <KV k="Reason">KYC approval required. Current state: IN_REVIEW.</KV>
+                      <KV k="Required next step">Complete proof-of-address upload and wait for KYC operator review.</KV>
+                      <KV k="Card type available">Virtual Debit (after KYC approval)</KV>
+                      <KV k="Physical card"><span style={{ color: 'var(--t3)' }}>Not yet in scope — future release</span></KV>
+                      <KV k="ATM withdrawals"><span style={{ color: 'var(--t3)' }}>Disabled — MVP scope</span></KV>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="btn btn-primary" disabled>Issue Virtual Card</button>
+                      <button className="btn btn-ghost" disabled>Issue Physical Card</button>
+                      <span style={{ fontSize: 11, color: 'var(--rd)', alignSelf: 'center' }}>Blocked — KYC approval required</span>
+                    </div>
+                  </>
+                ) : issued ? (
+                  <div className="success-panel">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ color: 'var(--g)', flexShrink: 0 }}><IcoCheck /></div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--g)', marginBottom: 2 }}>Virtual Card Issued</div>
+                        <div style={{ fontSize: 11.5, color: '#166534' }}>Card ID: <strong>{issuedId}</strong> · Status: ACTIVE · Vault token pending provisioning</div>
+                      </div>
+                    </div>
+                    <div className="kv-table" style={{ background: 'white', borderRadius: 'var(--r)', padding: '4px 12px', border: '1px solid var(--g-bd)' }}>
+                      <KV k="Card ID"       mono><span style={{ color: 'var(--g)' }}>{issuedId}</span></KV>
+                      <KV k="Cardholder">{cardholderName}</KV>
+                      <KV k="Type">Virtual Debit</KV>
+                      <KV k="Spend Limit">EUR {spendLimit}/month</KV>
+                      <KV k="Online Payments">{onlinePayments ? 'Enabled' : 'Disabled'}</KV>
+                      <KV k="ATM Withdrawals"><span style={{ color: 'var(--t3)' }}>Disabled</span></KV>
+                      <KV k="Vault token">Provisioning (VLT-TOK-XXXX) · Available in ~30s</KV>
+                      <KV k="Audit event" mono>card.issued</KV>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={handleIssueReset}>Reset</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="alert alert-green" style={{ fontSize: 11.5 }}>
+                      <IcoCheck />
+                      <div>
+                        <strong>[Preview — KYC approved state]</strong> Card issuance is enabled. This is how the screen would appear after KYC is fully approved.
+                      </div>
+                    </div>
+                    <div className="form-grid2">
+                      <div className="form-group">
+                        <label className="inp-label">Cardholder Name</label>
+                        <input className="inp-field" type="text" value={cardholderName}
+                          onChange={e => setCardholderName(e.target.value)} />
+                        <div className="inp-hint">Must match wallet holder identity</div>
+                      </div>
+                      <div className="form-group">
+                        <label className="inp-label">Funding Wallet</label>
+                        <input className="inp-field" type="text" value="WLT-EU-77820" readOnly
+                          style={{ fontFamily: 'var(--f-mono)', fontSize: 12 }} />
+                        <div className="inp-hint">EUR-denominated wallet</div>
+                      </div>
+                    </div>
+                    <div className="form-grid2">
+                      <div className="form-group">
+                        <label className="inp-label">Monthly Spend Limit (EUR)</label>
+                        <div className="inp-prefix-wrap">
+                          <span className="inp-prefix">EUR</span>
+                          <input className="inp-field" type="number" min="1" max="10000" value={spendLimit}
+                            onChange={e => setSpendLimit(e.target.value)} />
+                        </div>
+                        <div className="inp-hint">Max EUR 5,000/month for new cards</div>
+                      </div>
+                      <div className="form-group">
+                        <label className="inp-label">Merchant Categories</label>
+                        <select className="inp-field" value={merchantCat} onChange={e => setMerchantCat(e.target.value)}>
+                          <option value="all">All categories</option>
+                          <option value="retail">Online retail only</option>
+                          <option value="food">Food &amp; grocery</option>
+                          <option value="travel">Travel &amp; transport</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div style={{ background: 'var(--surf2)', border: '1px solid var(--bdr)', borderRadius: 'var(--r)', padding: '4px 12px' }}>
+                      <div className="toggle-row">
+                        <div>
+                          <div className="toggle-label">Online Payments</div>
+                          <div className="toggle-sub">Allow card-not-present transactions</div>
+                        </div>
+                        <Toggle on={onlinePayments} onToggle={() => setOnlinePayments(v => !v)} />
+                      </div>
+                      <div className="toggle-row">
+                        <div>
+                          <div className="toggle-label" style={{ color: 'var(--t3)' }}>ATM Withdrawals</div>
+                          <div className="toggle-sub">Not available in MVP</div>
+                        </div>
+                        <Toggle on={false} disabled />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button className="btn btn-primary" onClick={handleIssue}>Issue Virtual Card</button>
+                      <button className="btn btn-ghost" disabled>Issue Physical Card</button>
+                      <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>Physical cards: future scope</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* ── CARD LIST ──────────────────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <span className="panel-title">Card List</span>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>Click row for detail · Freeze/Unfreeze/Close in detail modal</span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Card ID</th>
+                      <th>Masked PAN</th>
+                      <th>Type</th>
+                      <th>Status</th>
+                      <th>Wallet</th>
+                      <th>Spend Limit</th>
+                      <th>Created</th>
+                      <th>Next Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {CARDS_DATA.map((c, i) => {
+                      const status = getCardStatus(c);
+                      return (
+                        <tr key={i} onClick={() => setDetailCard(c)}>
+                          <td><span className="mono-cell" style={{ color: 'var(--t1)' }}>{c.id}</span></td>
+                          <td>
+                            <span className="mono-cell">
+                              {c.pan || <span style={{ color: 'var(--t3)' }}>Not issued</span>}
+                            </span>
+                          </td>
+                          <td style={{ fontSize: 11.5 }}>{c.type}</td>
+                          <td>
+                            <Badge
+                              cls={status === 'ACTIVE' ? 'b-active' : status === 'FROZEN' ? 'b-frozen' : status === 'CLOSED' ? 'b-closed' : 'b-blocked'}
+                              label={status === 'ISSUANCE_BLOCKED' ? 'BLOCKED' : status}
+                            />
+                          </td>
+                          <td><span className="mono-cell">{c.wallet}</span></td>
+                          <td style={{ fontSize: 11.5 }}>{c.spendLimit}</td>
+                          <td><span className="mono-cell">{c.created}</span></td>
+                          <td style={{ fontSize: 11, color: 'var(--t3)' }}>
+                            {status === 'ACTIVE'            && 'View detail / Freeze / Close'}
+                            {status === 'FROZEN'            && 'Unfreeze or Close'}
+                            {status === 'CLOSED'            && 'Read-only — closed'}
+                            {status === 'ISSUANCE_BLOCKED'  && 'Unblock after KYC approval'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ── AUTHORIZATION ACTIVITY ─────────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <span className="panel-title">Authorization Activity</span>
+                <span style={{ fontSize: 10.5, color: 'var(--t3)' }}>Click row for ledger entries</span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Auth ID</th>
+                      <th>Timestamp</th>
+                      <th>Merchant</th>
+                      <th style={{ textAlign: 'right' }}>Amount</th>
+                      <th>Card</th>
+                      <th>State</th>
+                      <th>Ledger Effect</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {AUTH_DATA.map((a, i) => (
+                      <tr key={i} onClick={() => setDetailAuth(a)}>
+                        <td><span className="mono-cell" style={{ color: 'var(--t1)' }}>{a.id}</span></td>
+                        <td><span className="mono-cell">{a.ts}</span></td>
+                        <td>
+                          <div style={{ fontWeight: 500, fontSize: 12 }}>{a.merchant}</div>
+                          <div style={{ fontSize: 10, color: 'var(--t3)', fontFamily: 'var(--f-mono)' }}>{a.mcc}</div>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <span style={{ fontFamily: 'var(--f-mono)', fontSize: 11.5, fontWeight: 500 }}>{a.amount}</span>
+                        </td>
+                        <td><span className="mono-cell">{a.card.split('·')[0].trim()}</span></td>
+                        <td><Badge cls={a.badgeCls} label={a.badgeLabel} /></td>
+                        <td style={{ fontSize: 11, color: a.declineReason ? 'var(--rd)' : 'var(--t3)', maxWidth: 180 }}>
+                          {a.declineReason
+                            ? <span title={a.declineReason}>{a.ledgerEffect}</span>
+                            : a.ledgerEffect}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ── LEDGER / HOLD EXPLANATION ──────────────────────── */}
+            <div className="panel">
+              <div className="panel-hdr">
+                <span className="panel-title">Ledger &amp; Authorization Hold Mechanics</span>
+                <span style={{ fontSize: 10.5, color: 'var(--or)', fontFamily: 'var(--f-mono)' }}>
+                  Active hold: EUR 75.00 · AUTH-48201
+                </span>
+              </div>
+              <div className="panel-body">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                  <div>
+                    <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 8 }}>
+                      Current Balance State
+                    </div>
+                    {[
+                      { k: 'Available balance',      v: 'EUR 842.50',    cls: 'good' },
+                      { k: 'Authorization hold',     v: 'EUR 75.00',     cls: 'warn' },
+                      { k: 'Pending deposit (in)',    v: 'EUR 250.00',    cls: 'warn' },
+                      { k: 'Total ledger balance',   v: 'EUR 1,167.50',  cls: '' },
+                      { k: 'Active hold (AUTH-48201)',v: 'Supermarkt Müller · 2026-05-17', cls: '' },
+                    ].map((r, i) => (
+                      <div key={i} className="rev-row">
+                        <span className="rev-k">{r.k}</span>
+                        <span className={`rev-v mono ${r.cls}`}>{r.v}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--t3)', fontWeight: 600, marginBottom: 8 }}>
+                      Authorization → Ledger Flow
+                    </div>
+                    {[
+                      { step: '1. Auth approved', desc: 'DR user.wallet.available → CR issuer.auth.hold_account', color: 'var(--or)' },
+                      { step: '2. Capture',       desc: 'DR issuer.auth.hold_account → CR issuer.settlement.account', color: 'var(--g)' },
+                      { step: '3. Reversal',      desc: 'DR issuer.auth.hold_account → CR user.wallet.available', color: 'var(--pu)' },
+                      { step: '4. Decline',       desc: 'No ledger entries. Balance unchanged.', color: 'var(--t3)' },
+                    ].map((r, i) => (
+                      <div key={i} style={{ padding: '6px 0', borderBottom: i < 3 ? '1px solid var(--hover)' : 'none' }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: r.color, marginBottom: 2 }}>{r.step}</div>
+                        <div style={{ fontSize: 10.5, fontFamily: 'var(--f-mono)', color: 'var(--t2)' }}>{r.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>{/* left-scroll */}
+
+          {/* ── TIMELINE RAIL ──────────────────────────────────────── */}
+          <div className="tl-rail">
+            <div className="tl-hdr">Card &amp; Auth Events</div>
+            <div className="tl-body">
+              {[
+                { dot: 'held', ts: '2026-05-17 08:44', name: 'Auth Hold — Active',
+                  actor: 'System · issuer',
+                  desc: 'AUTH-48201 EUR 75.00 · Supermarkt Müller. Hold placed. Available reduced by EUR 75.00. Audit: card.authorization_approved_held.' },
+                { dot: 'bad', ts: '2026-05-17 11:05', name: 'Issuance Blocked',
+                  actor: 'System · eligibility-check',
+                  desc: 'Card issuance attempt rejected — KYC in review. No vault token created. Audit: card.issue_blocked.' },
+                { dot: 'ok', ts: '2026-05-16 13:22', name: 'Auth Captured',
+                  actor: 'System · issuer',
+                  desc: 'AUTH-48180 EUR 9.99 · Spotify AB. Hold released; debit settled. Audit: card.authorization_captured.' },
+                { dot: 'bad', ts: '2026-05-14 20:15', name: 'Auth Declined',
+                  actor: 'System · issuer',
+                  desc: 'AUTH-48055 EUR 350.00 · ElektroShop. Declined — insufficient balance. Audit: card.authorization_declined.' },
+                { dot: 'bad', ts: '2026-05-10 18:22', name: 'Auth Declined — Frozen',
+                  actor: 'System · issuer',
+                  desc: 'AUTH-47990 EUR 29.99 · Amazon. Declined — card CARD-90018 frozen. Audit: card.authorization_declined (card_frozen).' },
+                { dot: 'neu', ts: '2026-05-08 11:05', name: 'Auth Reversed',
+                  actor: 'System · issuer',
+                  desc: 'AUTH-47881 EUR 65.00 · Billa AG. Merchant reversed. Hold released to available. Audit: card.authorization_reversed.' },
+                { dot: 'pu', ts: '2026-03-20 11:04', name: 'Card Frozen',
+                  actor: 'Elena Markovic · EU-10482',
+                  desc: 'CARD-90018 frozen by user request. All new auths will decline. Audit: card.frozen.' },
+                { dot: 'ok', ts: '2026-03-12 10:44', name: 'Card Issued',
+                  actor: 'System · issuer',
+                  desc: 'CARD-90031 issued. Vault token VLT-TOK-9031A created. Status: ACTIVE. Audit: card.issued.' },
+              ].map((e, i, arr) => (
+                <div key={i} className="tl-evt">
+                  <div className="tl-spine">
+                    <div className={`tl-dot ${e.dot}`} />
+                    {i < arr.length - 1 && <div className="tl-line" />}
+                  </div>
+                  <div className="tl-content">
+                    <div className="tl-ts">{e.ts}</div>
+                    <div className="tl-name">{e.name}</div>
+                    <div className="tl-actor">{e.actor}</div>
+                    <div className="tl-desc">{e.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>{/* content-area */}
+      </div>
+
+      {detailCard && (
+        <CardDetailModal
+          card={detailCard}
+          localState={cardLocalStates[detailCard.id]}
+          onStateChange={handleCardStateChange}
+          onClose={() => setDetailCard(null)}
+        />
+      )}
+      {detailAuth && (
+        <AuthDetailModal auth={detailAuth} onClose={() => setDetailAuth(null)} />
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
