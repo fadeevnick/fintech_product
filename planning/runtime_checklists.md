@@ -143,6 +143,7 @@ Result tags:
 |---|---|---|---|
 | `KYC-01` | Sumsub KYC start. | Email-verified user can start real Sumsub sandbox flow. | pending |
 | `KYC-02` | Sumsub webhook verification/idempotency. | Invalid signature rejected; duplicate event does not move state twice. | pending |
+| `KYC-03` | Backoffice manual KYC review. | Operator can list an in-review KYC case and approve/reject/resubmit with rationale and audit. | pending |
 | `SNX-01` | OpenSanctions fail-closed. | Timeout/failure blocks dependent action and opens case. | pending |
 | `SNX-02` | Sanctions false-positive exception. | Cleared exception suppresses same future match. | pending |
 | `AUD-03` | Compliance read-audit. | Sensitive read writes sync read-audit before returning data. | pending |

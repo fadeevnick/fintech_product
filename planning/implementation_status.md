@@ -785,7 +785,7 @@ Explicitly not implemented:
 - No merchant DLQ UI, new webhook event producers, settlement/capture/refund work, Stripe Connect onboarding or frontend implementation was added.
 
 Next planned step:
-- Plan and implement a separate `WBH-03` DLQ replay slice when webhook replay becomes the next priority.
+- Implement the now-approved Phase 06 Slice 03 DLQ replay scope for `WBH-03`.
 
 ---
 
@@ -840,4 +840,40 @@ Explicitly not implemented/claimed:
 - real `KYC-01` full pass without Sumsub sandbox credentials.
 
 Next planned step:
-- Provide real Sumsub sandbox credentials to turn `KYC-01` from partial to pass, or continue with the next approved backend/runtime slice.
+- Implement one of the next approved backend/runtime slices:
+  - Phase 06 Slice 03 outbound webhook DLQ replay for `WBH-03`.
+  - Phase 07 Slice 02 backoffice KYC review queue/manual decisions for `KYC-03`.
+
+---
+
+## Phase 06 Slice 03 — Outbound Webhook DLQ Replay
+
+Status: **APPROVED PLANNING ONLY — not implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_06_slice_03_outbound_webhook_dlq_replay_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Merchant dashboard backend APIs to list/detail DLQ webhook events and replay one retained DLQ event.
+- Replay must reuse existing signed outbound delivery behavior.
+- Target retained runtime check: `WBH-03`.
+
+Not yet implemented:
+- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
+
+---
+
+## Phase 07 Slice 02 — Backoffice KYC Review Queue and Manual Decisions
+
+Status: **APPROVED PLANNING ONLY — not implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_07_slice_02_kyc_review_queue_manual_decisions_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Backoffice KYC queue/detail APIs over existing KYC profiles.
+- Manual approve/reject/request-resubmit decision with rationale validation and audit.
+- Target retained runtime check: `KYC-03`.
+
+Not yet implemented:
+- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
