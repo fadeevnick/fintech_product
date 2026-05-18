@@ -2,7 +2,7 @@
 
 Учебно-практическая production-grade fintech-система: digital wallet + merchant payment processor + double-entry ledger в одной кодовой базе.
 
-Проект построен по методу `project-kit-short` (`../project-kit-short/`).
+Проект построен по canonical kit: `/home/nickf/Documents/sre_projects/project-kit-short/project-method`.
 
 ## Navigation
 
