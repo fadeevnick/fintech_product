@@ -1,16 +1,20 @@
 package com.minifin.platform.merchant.webhooks
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.minifin.platform.identity.MerchantEmployeeRecord
+import com.minifin.platform.merchant.dashboard.MerchantDashboardException
 import com.minifin.platform.publicapi.PaymentIntentRecord
 import com.minifin.platform.publicapi.toDto
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Service
@@ -54,14 +58,19 @@ class OutboundWebhookService(
     }
 
     fun deliver(event: OutboundWebhookEventRecord) {
+        deliver(event, manualReplay = false)
+    }
+
+    fun deliver(event: OutboundWebhookEventRecord, manualReplay: Boolean): WebhookDeliveryAttemptRecord? {
         val endpoints = repository.activeEndpoints(event.merchantId, event.eventType)
-        if (endpoints.isEmpty()) return
+        if (endpoints.isEmpty()) return null
         var delivered = false
+        var latestAttempt: WebhookDeliveryAttemptRecord? = null
         endpoints.forEach { endpoint ->
             val attemptNumber = repository.nextAttemptNumber(event.id, endpoint.id)
             val headers = signedHeaders(event, endpoint, attemptNumber)
             val outcome = post(endpoint.url, headers, event.payloadJson)
-            val nextRetryAt = if (outcome.succeeded) null else nextRetryAt(attemptNumber, event.maxAttempts)
+            val nextRetryAt = if (outcome.succeeded || manualReplay) null else nextRetryAt(attemptNumber, event.maxAttempts)
             repository.insertAttempt(
                 id = UUID.randomUUID(),
                 eventId = event.id,
@@ -73,11 +82,15 @@ class OutboundWebhookService(
                 errorType = outcome.errorType,
                 errorMessage = outcome.errorMessage,
                 nextRetryAt = nextRetryAt,
+                triggerType = if (manualReplay) "MANUAL_REPLAY" else "AUTO",
             )
+            latestAttempt = repository.latestAttempt(event.id)
             delivered = delivered || outcome.succeeded
             if (!outcome.succeeded) {
                 val record = DeliveryOutcomeRecord(outcome.httpStatus, outcome.errorType ?: "HTTP_${outcome.httpStatus}", outcome.errorMessage ?: outcome.responseBody)
-                if (nextRetryAt == null) {
+                if (manualReplay) {
+                    repository.markDlq(event.id, record)
+                } else if (nextRetryAt == null) {
                     repository.markDlq(event.id, record)
                 } else {
                     repository.markRetryableFailure(event.id, nextRetryAt, record)
@@ -85,12 +98,45 @@ class OutboundWebhookService(
             }
         }
         if (delivered) repository.markEvent(event.id, "DELIVERED")
+        return latestAttempt
     }
 
     fun dispatchDueRetries(limit: Int = 25): Int {
         val events = repository.dueRetryEvents(limit)
         events.forEach { deliver(it) }
         return events.size
+    }
+
+    fun listEvents(employee: MerchantEmployeeRecord, status: String?, limit: Int): WebhookEventListResponse {
+        requireActive(employee)
+        val normalizedStatus = status?.trim()?.uppercase()?.takeIf { it.isNotBlank() }
+        if (normalizedStatus != null && normalizedStatus !in setOf("PENDING", "DELIVERED", "FAILED", "DLQ")) {
+            throw MerchantDashboardException("invalid_status", "Webhook event status filter is invalid.", HttpStatus.BAD_REQUEST, "status")
+        }
+        return WebhookEventListResponse(repository.listEventsForMerchant(employee.merchantId, normalizedStatus, limit.coerceIn(1, 100)).map { it.toDto() })
+    }
+
+    fun detail(employee: MerchantEmployeeRecord, id: UUID): WebhookEventDto {
+        requireActive(employee)
+        return (repository.findEventForMerchant(id, employee.merchantId)
+            ?: throw MerchantDashboardException("webhook_event_not_found", "Webhook event was not found.", HttpStatus.NOT_FOUND)).toDto()
+    }
+
+    fun replay(employee: MerchantEmployeeRecord, id: UUID): WebhookReplayResponse {
+        requireAdmin(employee)
+        val event = repository.findEventForMerchant(id, employee.merchantId)
+            ?: throw MerchantDashboardException("webhook_event_not_found", "Webhook event was not found.", HttpStatus.NOT_FOUND)
+        if (event.status != "DLQ") {
+            throw MerchantDashboardException("invalid_state", "Only DLQ webhook events can be replayed.", HttpStatus.CONFLICT)
+        }
+        val attempt = deliver(event, manualReplay = true)
+        val refreshed = repository.findEventForMerchant(id, employee.merchantId) ?: event
+        return WebhookReplayResponse(
+            eventId = id.toString(),
+            status = refreshed.status,
+            replayAttemptNumber = attempt?.attemptNumber,
+            httpStatus = attempt?.httpStatus,
+        )
     }
 
     private fun signedHeaders(event: OutboundWebhookEventRecord, endpoint: WebhookEndpointRecord, attemptNumber: Int): HttpHeaders {
@@ -132,6 +178,32 @@ class OutboundWebhookService(
         mac.init(SecretKeySpec(secret.toByteArray(), "HmacSHA256"))
         return mac.doFinal(payload.toByteArray()).joinToString("") { "%02x".format(it) }
     }
+
+    private fun requireActive(employee: MerchantEmployeeRecord) {
+        if (employee.status != "ACTIVE") throw MerchantDashboardException("merchant_employee_not_active", "Merchant employee is not active.", HttpStatus.FORBIDDEN)
+    }
+
+    private fun requireAdmin(employee: MerchantEmployeeRecord) {
+        requireActive(employee)
+        if (employee.role != "merchant_admin") throw MerchantDashboardException("forbidden_role", "merchant_admin role is required to replay webhook events.", HttpStatus.FORBIDDEN)
+    }
+
+    private fun OutboundWebhookEventRecord.toDto(): WebhookEventDto = WebhookEventDto(
+        id = id.toString(),
+        type = eventType,
+        aggregateType = aggregateType,
+        aggregateId = aggregateId.toString(),
+        status = status,
+        createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        retryCount = retryCount,
+        maxAttempts = maxAttempts,
+        nextRetryAt = nextRetryAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        lastAttemptAt = lastAttemptAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        lastErrorType = lastErrorType,
+        lastErrorMessage = lastErrorMessage,
+        lastHttpStatus = lastHttpStatus,
+        dlqAt = dlqAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+    )
 
     private data class DeliveryOutcome(
         val succeeded: Boolean,

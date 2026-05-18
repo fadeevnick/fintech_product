@@ -34,6 +34,31 @@ class OutboundWebhookRepository(
             id,
         ).firstOrNull()
 
+    fun listEventsForMerchant(merchantId: UUID, status: String?, limit: Int): List<OutboundWebhookEventRecord> =
+        jdbcTemplate.query(
+            eventSelectSql(
+                """
+                where merchant_id = ?
+                  and (? is null or status = ?)
+                order by created_at desc
+                limit ?
+                """.trimIndent(),
+            ),
+            { rs, _ -> rs.toEventRecord() },
+            merchantId,
+            status,
+            status,
+            limit,
+        )
+
+    fun findEventForMerchant(id: UUID, merchantId: UUID): OutboundWebhookEventRecord? =
+        jdbcTemplate.query(
+            eventSelectSql("where id = ? and merchant_id = ?"),
+            { rs, _ -> rs.toEventRecord() },
+            id,
+            merchantId,
+        ).firstOrNull()
+
     fun dueRetryEvents(limit: Int): List<OutboundWebhookEventRecord> =
         jdbcTemplate.query(
             eventSelectSql(
@@ -92,14 +117,15 @@ class OutboundWebhookRepository(
         errorType: String?,
         errorMessage: String?,
         nextRetryAt: OffsetDateTime?,
+        triggerType: String = "AUTO",
     ) {
         jdbcTemplate.update(
             """
             insert into merchant.webhook_delivery_attempts (
                 id, event_id, endpoint_id, attempt_number, status, http_status,
-                response_body_snippet, error_type, error_message, next_retry_at
+                response_body_snippet, error_type, error_message, next_retry_at, trigger_type
             )
-            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """.trimIndent(),
             id,
             eventId,
@@ -111,6 +137,7 @@ class OutboundWebhookRepository(
             errorType?.take(120),
             errorMessage?.take(500),
             nextRetryAt,
+            triggerType,
         )
     }
 
@@ -121,9 +148,17 @@ class OutboundWebhookRepository(
             set status = ?,
                 delivered_at = case when ? = 'DELIVERED' then now() else delivered_at end,
                 next_retry_at = case when ? = 'DELIVERED' then null else next_retry_at end,
-                last_attempt_at = case when ? = 'DELIVERED' then now() else last_attempt_at end
+                last_attempt_at = case when ? = 'DELIVERED' then now() else last_attempt_at end,
+                last_http_status = case when ? = 'DELIVERED' then null else last_http_status end,
+                last_error_type = case when ? = 'DELIVERED' then null else last_error_type end,
+                last_error_message = case when ? = 'DELIVERED' then null else last_error_message end,
+                dlq_at = case when ? = 'DELIVERED' then null else dlq_at end
             where id = ?
             """.trimIndent(),
+            status,
+            status,
+            status,
+            status,
             status,
             status,
             status,
@@ -175,6 +210,20 @@ class OutboundWebhookRepository(
         )
     }
 
+    fun latestAttempt(eventId: UUID): WebhookDeliveryAttemptRecord? =
+        jdbcTemplate.query(
+            """
+            select id, event_id, endpoint_id, attempt_number, status, http_status,
+                   response_body_snippet, error_type, error_message, attempted_at, next_retry_at, trigger_type
+            from merchant.webhook_delivery_attempts
+            where event_id = ?
+            order by attempted_at desc, attempt_number desc
+            limit 1
+            """.trimIndent(),
+            { rs, _ -> rs.toAttemptRecord() },
+            eventId,
+        ).firstOrNull()
+
     private fun eventSelectSql(whereClause: String): String =
         """
         select id, merchant_id, event_type, aggregate_type, aggregate_id, payload::text as payload_json, status, created_at,
@@ -223,10 +272,41 @@ class OutboundWebhookRepository(
             updatedAt = getObject("updated_at", OffsetDateTime::class.java),
             deletedAt = getObject("deleted_at", OffsetDateTime::class.java),
         )
+
+    private fun ResultSet.toAttemptRecord(): WebhookDeliveryAttemptRecord =
+        WebhookDeliveryAttemptRecord(
+            id = getObject("id", UUID::class.java),
+            eventId = getObject("event_id", UUID::class.java),
+            endpointId = getObject("endpoint_id", UUID::class.java),
+            attemptNumber = getInt("attempt_number"),
+            status = getString("status"),
+            httpStatus = getNullableInt("http_status"),
+            responseBodySnippet = getString("response_body_snippet"),
+            errorType = getString("error_type"),
+            errorMessage = getString("error_message"),
+            attemptedAt = getObject("attempted_at", OffsetDateTime::class.java),
+            nextRetryAt = getObject("next_retry_at", OffsetDateTime::class.java),
+            triggerType = getString("trigger_type"),
+        )
 }
 
 data class DeliveryOutcomeRecord(
     val httpStatus: Int?,
     val errorType: String?,
     val errorMessage: String?,
+)
+
+data class WebhookDeliveryAttemptRecord(
+    val id: UUID,
+    val eventId: UUID,
+    val endpointId: UUID,
+    val attemptNumber: Int,
+    val status: String,
+    val httpStatus: Int?,
+    val responseBodySnippet: String?,
+    val errorType: String?,
+    val errorMessage: String?,
+    val attemptedAt: OffsetDateTime,
+    val nextRetryAt: OffsetDateTime?,
+    val triggerType: String,
 )

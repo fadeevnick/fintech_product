@@ -25,7 +25,8 @@ Implemented runtime behavior so far:
 - Phase 05 Slice 01 Vault/Card issuance backend/runtime sub-scope across `platform`, `issuer` and `vault`: end-user `POST /api/v1/cards`, Platform→Issuer and Issuer→Vault service-auth calls, Issuer token/last4 card records, Vault encrypted PAN tokenization, restricted detokenize for `service:issuer` and detokenize audit rows. `VLT-01`, `VLT-02` and `VLT-03` have runtime evidence.
 - Phase 05 Slice 02 card authorization backend/runtime sub-scope across `platform`, `acquirer`, `network` and `issuer`: public `POST /v1/payment_intents/{id}/authorize`, Platform→Acquirer→Network→Issuer routing, approved authorization ledger holds, and structured declines for insufficient funds, blocked actor, inactive card and unknown card token. `PAY-04` and `PAY-05` have runtime evidence.
 - Phase 06 Slice 01 outbound merchant webhook delivery foundation in `platform`: webhook endpoints now have one-time `mfp_whsec_*` signing secrets, encrypted-at-rest delivery secret material, hash/prefix metadata, secret rotation endpoint, persisted `merchant.webhook_events` and `merchant.webhook_delivery_attempts`, real signed HTTP delivery of `payment_intent.created` after public payment-intent creation, and retained `WBH-01` runtime verification with a local signature-validating receiver.
-- Phase 06 Slice 02 outbound merchant webhook retry/DLQ in `platform`: failed deliveries retry on a persisted schedule, HTTP failure metadata is retained, exhausted attempts move events to `DLQ`, and retained `WBH-02` runtime verification passed. `WBH-03` replay remains deferred.
+- Phase 06 Slice 02 outbound merchant webhook retry/DLQ in `platform`: failed deliveries retry on a persisted schedule, HTTP failure metadata is retained, exhausted attempts move events to `DLQ`, and retained `WBH-02` runtime verification passed.
+- Phase 06 Slice 03 outbound merchant webhook DLQ replay in `platform`: merchant dashboard APIs list/detail retained webhook events and replay one `DLQ` event, replay reuses the signed outbound delivery path with current endpoint secret material, successful replay moves the event to `DELIVERED`, and retained `WBH-03` runtime verification passed.
 
 ## Local Commands
 
@@ -169,7 +170,7 @@ These scripts target `VLT-01`, `VLT-02` and `VLT-03`. `PAY-04` and `PAY-05` are 
 
 ## Phase 06 Outbound Webhook Local Runtime
 
-Phase 06 Slice 01 adds signed outbound merchant webhook delivery for the current payment-intent shell. Phase 06 Slice 02 adds persisted failed-delivery retry scheduling and terminal DLQ state:
+Phase 06 Slice 01 adds signed outbound merchant webhook delivery for the current payment-intent shell. Phase 06 Slice 02 adds persisted failed-delivery retry scheduling and terminal DLQ state. Phase 06 Slice 03 adds merchant-scoped DLQ inspection and single-event replay:
 
 - webhook endpoint creation returns `signingSecret` once;
 - `POST /api/v1/merchant/webhook-endpoints/{id}/rotate-secret` returns a new one-time secret;
@@ -177,13 +178,15 @@ Phase 06 Slice 01 adds signed outbound merchant webhook delivery for the current
 - `POST /v1/payment_intents` emits `payment_intent.created`;
 - Platform signs and POSTs the payload to active endpoints subscribed to that event;
 - delivery events and attempts are persisted in `merchant.webhook_events` and `merchant.webhook_delivery_attempts`;
-- failed deliveries are retried on persisted `next_retry_at` schedule and move to `DLQ` after retry exhaustion.
+- failed deliveries are retried on persisted `next_retry_at` schedule and move to `DLQ` after retry exhaustion;
+- merchant dashboard backend routes under `/api/v1/merchant/webhook-events` list/detail DLQ events and replay one DLQ event for `merchant_admin`.
 
 Retained script:
 
 ```bash
 scripts/runtime/reg_phase06_webhook_signing_delivery.sh
 scripts/runtime/reg_phase06_webhook_retry_dlq.sh
+scripts/runtime/reg_phase06_webhook_dlq_replay.sh
 ```
 
 Local runtime default:
@@ -204,7 +207,7 @@ PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default \
 scripts/runtime/reg_phase06_webhook_signing_delivery.sh
 ```
 
-`WBH-01` and `WBH-02` are implemented and verified. `WBH-03` replay is deferred.
+`WBH-01`, `WBH-02` and `WBH-03` are implemented and verified.
 
 
 ## Phase 07 KYC/Sumsub Local Runtime

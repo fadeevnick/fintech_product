@@ -848,18 +848,43 @@ Next planned step:
 
 ## Phase 06 Slice 03 — Outbound Webhook DLQ Replay
 
-Status: **APPROVED PLANNING ONLY — not implemented**.
+Status: **COMPLETE — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_06_slice_03_outbound_webhook_dlq_replay_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Merchant dashboard backend APIs to list/detail DLQ webhook events and replay one retained DLQ event.
-- Replay must reuse existing signed outbound delivery behavior.
-- Target retained runtime check: `WBH-03`.
+Implemented backend/runtime scope:
+- Merchant dashboard backend APIs under `/api/v1/merchant/webhook-events`:
+  - `GET /api/v1/merchant/webhook-events?status=DLQ`;
+  - `GET /api/v1/merchant/webhook-events/{id}`;
+  - `POST /api/v1/merchant/webhook-events/{id}/replay`.
+- DLQ list/detail is scoped to the authenticated merchant; cross-merchant access returns 404.
+- `merchant_admin` can replay one retained DLQ event; `merchant_member` can read list/detail but receives `403 forbidden_role` on replay.
+- Replay reuses the existing signed outbound delivery path and current endpoint signing secret behavior.
+- Successful replay moves the event from `DLQ` to `DELIVERED`.
+- Failed manual replay keeps the event in `DLQ`.
+- Platform migration `V17__merchant_webhook_dlq_replay.sql` adds `merchant.webhook_delivery_attempts.trigger_type` with `AUTO` and `MANUAL_REPLAY`.
+- Retained runtime script `product/scripts/runtime/reg_phase06_webhook_dlq_replay.sh` verifies `WBH-03`.
 
-Not yet implemented:
-- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
+Runtime verification:
+- `WBH-03` — pass.
+- Targeted regressions passed:
+  - `WBH-01`;
+  - `WBH-02`;
+  - `MRC-05`;
+  - `PAY-01`;
+  - `PAY-02`;
+  - `PAY-03`.
+
+Explicitly not implemented/claimed:
+- Frontend DLQ UI;
+- bulk replay;
+- automatic replay of DLQ events;
+- replay of non-DLQ delivered events;
+- new webhook event producers;
+- capture, settlement, refund, payout or chargeback lifecycle;
+- Stripe Connect onboarding (`MRC-01`);
+- KYC/backoffice compliance work.
 
 ---
 

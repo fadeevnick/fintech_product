@@ -1,12 +1,12 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-18 (Phase 06 Slice 03 webhook DLQ replay and Phase 07 Slice 02 KYC manual review planning approved for parallel implementation; Phase 06 Slice 02 and Phase 07 Slice 01 backend/runtime implemented).
+Last updated: 2026-05-18 (Phase 06 Slice 03 webhook DLQ replay implemented/runtime-verified; Phase 07 Slice 02 KYC manual review planning approved).
 
 ---
 
 ## Focus
 
-Phase 06 Slice 03 and Phase 07 Slice 02 are approved planning-only slices ready for two implementation agents; UI prototype baseline continues in parallel.
+Phase 06 Slice 03 is implemented/runtime-verified; Phase 07 Slice 02 remains approved planning-only and ready for implementation. UI prototype baseline continues in parallel.
 
 ## Status
 
@@ -49,6 +49,7 @@ Completed workstream — latest accepted state:
 - Phase 05 Slice 02 backend/runtime scope is complete: public payment-intent authorization flows through Platform → Acquirer → Network → Issuer, approved authorizations post Platform ledger holds, structured declines are returned for insufficient funds/blocked actor/inactive or unknown card, and `PAY-04`/`PAY-05` passed in isolated runtime;
 - Phase 06 Slice 01 backend/runtime scope is complete: merchant webhook endpoints now have one-time signing secrets, encrypted-at-rest delivery secret material, hash/prefix metadata and rotation; `payment_intent.created` emits persisted outbound events, signed HTTP delivery to a local receiver is implemented, delivery attempts are persisted, and retained `WBH-01` runtime verification passed;
 - Phase 06 Slice 02 backend/runtime scope is complete: failed outbound webhook deliveries now retry on persisted schedule, terminal retry exhaustion moves events to `DLQ`, HTTP failure metadata is retained, and `WBH-02` plus `WBH-01`/`MRC-05`/`PAY-01..PAY-03` targeted regressions passed in isolated runtime;
+- Phase 06 Slice 03 backend/runtime scope is complete: merchant dashboard DLQ event list/detail/replay APIs were added, manual replay reuses signed outbound delivery with current endpoint secret, successful replay moves `DLQ` events to `DELIVERED`, `merchant_member` replay and cross-merchant access are denied/hidden, and `WBH-03` plus `WBH-01`/`WBH-02`/`MRC-05`/`PAY-01..PAY-03` targeted regressions passed in isolated runtime;
 - Phase 07 Slice 01 backend/runtime scope is complete: Platform now has `kyc` schema/profile/session/vendor-event persistence, `POST /api/v1/kyc/start`, Sumsub adapter boundary, and `POST /webhooks/sumsub/v1` with HMAC signature verification plus vendor event id idempotency. `KYC-01` is partial because real Sumsub sandbox credentials were absent; `KYC-02` passed with deterministic locally signed Sumsub-format fixtures.
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
@@ -58,7 +59,7 @@ Latest accepted backend/runtime slices:
 - Scope: merchant dashboard API key lifecycle (create / list / revoke) with one-time visibility and hashed/fingerprinted storage; public API authentication via `Authorization: Bearer mfp_live_*`; public/dashboard write idempotency primitive backed by `idempotency.idempotency_keys` scoped per merchant/route/key; minimal `POST /v1/payment_intents` shell in state `REQUIRES_PAYMENT_METHOD`.
 - Target checks: `MRC-03`, `PAY-01`, `PAY-02`, `PAY-03`.
 - `planning/implementation-slices/phase_04_slice_02_stripe_connect_webhooks_planning.md` — webhook-only backend/runtime sub-scope executed v0.1; `MRC-01` blocked on Stripe sandbox credentials.
-- `planning/implementation-slices/phase_06_slice_01_outbound_webhook_delivery_planning.md` — backend/runtime sub-scope executed v0.1; `WBH-01` passed. `WBH-02` was completed later in Phase 06 Slice 02; `WBH-03` is now approved planning-only in Phase 06 Slice 03.
+- `planning/implementation-slices/phase_06_slice_01_outbound_webhook_delivery_planning.md` — backend/runtime sub-scope executed v0.1; `WBH-01` passed. `WBH-02` and `WBH-03` were completed later in Phase 06 Slices 02 and 03.
 - Scope: `POST /webhooks/stripe/v1`, Stripe-format HMAC-SHA256 signature verification, timestamp tolerance, event-id idempotency, `account.updated` KYB mapping and audit rows.
 - Target checks: `MRC-02`, webhook branch of `AUD-01`, `LDG-05` regression.
 - Blocker: `MRC-01` requires real Stripe Connect sandbox credentials; no fake onboarding API path exists.
@@ -68,10 +69,7 @@ Latest accepted backend/runtime slices:
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`, `prototypes/ui/19_merchant_onboarding_status.html`, `prototypes/ui/20_merchant_api_keys.html`.**
 
 Next planned product step:
-- Implement the two newly approved parallel backend/runtime slices:
-  - Phase 06 Slice 03 outbound webhook DLQ replay for `WBH-03`.
-  - Phase 07 Slice 02 backoffice KYC review queue/manual decisions for `KYC-03`.
-  `KYC-01` full pass remains blocked on real Sumsub sandbox credentials. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
+- Implement Phase 07 Slice 02 backoffice KYC review queue/manual decisions for `KYC-03`, or choose the next approved payment/settlement slice. `KYC-01` full pass remains blocked on real Sumsub sandbox credentials. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.

@@ -1504,3 +1504,129 @@ Reviewer merge verification:
 - `node --check product/scripts/runtime/phase06_webhook_receiver.js` passed.
 - `COMPOSE_PROJECT_NAME=mfp-review-merge-kyc ... docker compose -f product/deploy/docker-compose.yml build platform` passed after merging Phase 06 Slice 02 and Phase 07 Slice 01.
 - No `mfp-review-merge-kyc` containers were left running after verification; this review used build-only Compose verification.
+
+---
+
+## 2026-05-18 — Phase 06 Slice 03 Outbound Webhook DLQ Replay Runtime Verification
+
+Runtime phase:
+- Phase 06 Slice 03 backend/runtime implementation for merchant-scoped webhook DLQ list/detail and single-event replay.
+
+Check IDs:
+- `WBH-03` — pass.
+- Targeted regressions:
+  - `WBH-01` — pass.
+  - `WBH-02` — pass.
+  - `MRC-05` — pass.
+  - `PAY-01` — pass.
+  - `PAY-02` — pass.
+  - `PAY-03` — pass.
+
+Actor used:
+- Merchant admin created through local merchant registration/login flow.
+- Merchant member simulated by updating the same merchant employee role to `merchant_member` for access-control assertions.
+- Second merchant admin used for cross-merchant not-found assertions.
+- Merchant API key caller created through dashboard API key lifecycle.
+- Real local MiniFin webhook receiver container on isolated compose network.
+
+Preconditions:
+- Isolated runtime network `mini-fintech-platform-a7_default`.
+- Platform DB migrated through `V17__merchant_webhook_dlq_replay.sql`.
+- Platform app running from rebuilt jar/image with `WEBHOOK_MAX_ATTEMPTS=3` and `WEBHOOK_RETRY_DELAYS_SECONDS=1,2`.
+- Active merchant webhook endpoint subscribed to `payment_intent.created`.
+- Receiver configured first for HTTP 500 until event reaches `DLQ`, then restarted for HTTP 200 replay success.
+
+Action taken:
+- Created a payment intent through public `POST /v1/payment_intents`.
+- Allowed automatic delivery and due-retry dispatch to exhaust attempts and move the event to `DLQ`.
+- Verified merchant-admin DLQ list/detail showed the event.
+- Verified `merchant_member` could read detail but received `403 forbidden_role` on replay.
+- Verified a second merchant received 404 for detail and replay, hiding cross-merchant event existence.
+- Restarted receiver in success mode and called merchant-admin replay API.
+- Asserted replay produced a signed attempt 4 with `trigger_type = MANUAL_REPLAY`, HTTP 200 and final event status `DELIVERED`.
+- Verified replaying the now non-DLQ event returned 409 `invalid_state`.
+
+Commands run:
+
+```bash
+docker run --name minifin-platform-compile-wbh03 \
+  -v /home/nickf/Documents/sre_projects/mini-fintech-platform_1/product:/workspace \
+  -w /workspace \
+  -e GRADLE_OPTS='-Dorg.gradle.jvmargs=-Xmx1024m -XX:MaxMetaspaceSize=512m -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=2' \
+  gradle:8.14.3-jdk21 \
+  gradle --no-daemon --console=plain :apps:platform:compileKotlin
+
+docker run --name minifin-platform-bootjar-wbh03 \
+  -v /home/nickf/Documents/sre_projects/mini-fintech-platform_1/product:/workspace \
+  -w /workspace \
+  -e GRADLE_OPTS='-Dorg.gradle.jvmargs=-Xmx1024m -XX:MaxMetaspaceSize=512m -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=2' \
+  gradle:8.14.3-jdk21 \
+  gradle --no-daemon --console=plain :apps:platform:bootJar
+
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mini-fintech-platform-a7 \
+PLATFORM_BASE_URL=http://mini-fintech-platform-a7-platform-manual:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a7_default \
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase06_webhook_dlq_replay.sh
+```
+
+Targeted regression commands used the same `COMPOSE_FILE`, `COMPOSE_PROJECT_NAME`, `PLATFORM_BASE_URL` and `PLATFORM_CURL_CONTAINER_NETWORK` values with:
+
+```bash
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase06_webhook_signing_delivery.sh
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase06_webhook_retry_dlq.sh
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase04_merchant_webhook_config.sh
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase04_public_api_response_shape.sh
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase04_public_api_idempotency_replay.sh
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase04_public_api_idempotency_conflict.sh
+```
+
+Actual result:
+- Compile check passed: `:apps:platform:compileKotlin`.
+- Boot jar build passed: `:apps:platform:bootJar`.
+- `WBH-03` script output:
+
+```text
+WBH-03 webhook dlq replay pass event_id=0cf6f757-087d-4a04-ad1c-9f0b7acdcfc4 endpoint_id=2d1142d5-2462-49c5-adb7-25645a4f13ee replay_attempt=4 final_status=DELIVERED
+```
+
+DB attempt assertion:
+
+```text
+1|FAILED|500|AUTO
+2|FAILED|500|AUTO
+3|FAILED|500|AUTO
+4|SUCCEEDED|200|MANUAL_REPLAY
+```
+
+Receiver assertion:
+
+```text
+evt_0cf6f757-087d-4a04-ad1c-9f0b7acdcfc4 attempt=4 payment_intent.created
+```
+
+The receiver validates MiniFin signature headers before recording requests, so the recorded replay row proves a real signed HTTP replay using current endpoint secret material.
+
+Targeted regression results:
+
+```text
+WBH-01 outbound webhook signing/delivery pass
+WBH-02 webhook retry dlq pass event_id=8ab72b65-8531-485f-a483-04845ee589ec endpoint_id=e555186a-5d49-45a0-ac97-577110dfb311 attempts=3 final_status=DLQ
+MRC-05 merchant webhook endpoint config pass
+PAY-01 public API response shape pass
+PAY-02 public API idempotency replay pass
+PAY-03 public API idempotency conflict pass
+```
+
+Result tags:
+- `WBH-03` — pass.
+- `WBH-01` — pass.
+- `WBH-02` — pass.
+- `MRC-05` — pass.
+- `PAY-01` — pass.
+- `PAY-02` — pass.
+- `PAY-03` — pass.
+
+Notes:
+- Runtime verification used a compose-network runner pattern to avoid host-to-container published HTTP ambiguity.
+- No frontend DLQ UI, bulk replay or automatic DLQ replay was implemented.
