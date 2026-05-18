@@ -6,7 +6,7 @@ Last updated: 2026-05-18 (Phase 06 Slice 03 webhook DLQ replay and Phase 07 Slic
 
 ## Focus
 
-Phase 06 Slice 03 and Phase 07 Slice 02 are approved planning-only slices ready for two implementation agents; UI prototype baseline continues in parallel.
+Phase 07 Slice 02 KYC manual review is implemented and runtime verified; Phase 06 Slice 03 webhook DLQ replay remains the next approved backend/runtime slice. UI prototype baseline continues in parallel.
 
 ## Status
 
@@ -50,6 +50,7 @@ Completed workstream — latest accepted state:
 - Phase 06 Slice 01 backend/runtime scope is complete: merchant webhook endpoints now have one-time signing secrets, encrypted-at-rest delivery secret material, hash/prefix metadata and rotation; `payment_intent.created` emits persisted outbound events, signed HTTP delivery to a local receiver is implemented, delivery attempts are persisted, and retained `WBH-01` runtime verification passed;
 - Phase 06 Slice 02 backend/runtime scope is complete: failed outbound webhook deliveries now retry on persisted schedule, terminal retry exhaustion moves events to `DLQ`, HTTP failure metadata is retained, and `WBH-02` plus `WBH-01`/`MRC-05`/`PAY-01..PAY-03` targeted regressions passed in isolated runtime;
 - Phase 07 Slice 01 backend/runtime scope is complete: Platform now has `kyc` schema/profile/session/vendor-event persistence, `POST /api/v1/kyc/start`, Sumsub adapter boundary, and `POST /webhooks/sumsub/v1` with HMAC signature verification plus vendor event id idempotency. `KYC-01` is partial because real Sumsub sandbox credentials were absent; `KYC-02` passed with deterministic locally signed Sumsub-format fixtures.
+- Phase 07 Slice 02 backend/runtime scope is complete: backoffice KYC queue/detail/manual decision APIs, rationale validation, manual decision persistence and audit rows are implemented; `KYC-03` passed with retained runtime verification.
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
 
@@ -70,7 +71,7 @@ Latest accepted backend/runtime slices:
 Next planned product step:
 - Implement the two newly approved parallel backend/runtime slices:
   - Phase 06 Slice 03 outbound webhook DLQ replay for `WBH-03`.
-  - Phase 07 Slice 02 backoffice KYC review queue/manual decisions for `KYC-03`.
+  - Phase 07 Slice 02 backoffice KYC review queue/manual decisions for `KYC-03` is implemented and runtime verified.
   `KYC-01` full pass remains blocked on real Sumsub sandbox credentials. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
 
 05 v0.4 resolved stack:

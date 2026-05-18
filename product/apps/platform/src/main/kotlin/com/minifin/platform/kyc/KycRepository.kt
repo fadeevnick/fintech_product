@@ -136,6 +136,76 @@ class KycRepository(private val jdbcTemplate: JdbcTemplate) {
         jdbcTemplate.update("update kyc.sumsub_webhook_events set applied_at = now() where vendor_event_id = ?", vendorEventId)
     }
 
+    fun listReviewCases(): List<KycCaseRecord> =
+        jdbcTemplate.query(
+            """
+            select id, end_user_id, status, vendor, vendor_applicant_id, level_name, external_user_id,
+                   review_answer, review_reject_type, review_moderation_comment, created_at, updated_at
+            from kyc.kyc_profiles
+            where status in ('IN_REVIEW')
+            order by updated_at asc, created_at asc
+            """.trimIndent(),
+        ) { rs, _ -> rs.toCase() }
+
+    fun findCase(id: UUID): KycCaseRecord? =
+        jdbcTemplate.query(
+            """
+            select id, end_user_id, status, vendor, vendor_applicant_id, level_name, external_user_id,
+                   review_answer, review_reject_type, review_moderation_comment, created_at, updated_at
+            from kyc.kyc_profiles
+            where id = ?
+            """.trimIndent(),
+            { rs, _ -> rs.toCase() },
+            id,
+        ).firstOrNull()
+
+    fun insertManualDecision(
+        id: UUID,
+        profileId: UUID,
+        previousStatus: String,
+        decision: String,
+        resultingStatus: String,
+        rationale: String,
+        decidedBySubject: String,
+        decidedByRole: String?,
+    ) {
+        jdbcTemplate.update(
+            """
+            insert into kyc.kyc_manual_decisions (
+                id, kyc_profile_id, previous_status, decision, resulting_status, rationale, decided_by_subject, decided_by_role
+            )
+            values (?, ?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+            id,
+            profileId,
+            previousStatus,
+            decision,
+            resultingStatus,
+            rationale,
+            decidedBySubject,
+            decidedByRole,
+        )
+    }
+
+    fun applyManualDecision(profileId: UUID, expectedStatus: String, resultingStatus: String): Boolean {
+        val timestampColumn = when (resultingStatus) {
+            "APPROVED" -> "approved_at"
+            "REJECTED" -> "rejected_at"
+            "NEEDS_RESUBMIT" -> "needs_resubmit_at"
+            else -> "updated_at"
+        }
+        return jdbcTemplate.update(
+            """
+            update kyc.kyc_profiles
+            set status = ?, $timestampColumn = coalesce($timestampColumn, now()), updated_at = now(), version = version + 1
+            where id = ? and status = ?
+            """.trimIndent(),
+            resultingStatus,
+            profileId,
+            expectedStatus,
+        ) == 1
+    }
+
     private fun ResultSet.toProfile(): KycProfileRecord =
         KycProfileRecord(
             id = getObject("id", UUID::class.java),
@@ -158,3 +228,34 @@ class KycRepository(private val jdbcTemplate: JdbcTemplate) {
             expiresAt = getObject("expires_at", OffsetDateTime::class.java),
         )
 }
+
+data class KycCaseRecord(
+    val id: UUID,
+    val endUserId: UUID,
+    val status: String,
+    val vendor: String,
+    val vendorApplicantId: String?,
+    val levelName: String?,
+    val externalUserId: String,
+    val reviewAnswer: String?,
+    val reviewRejectType: String?,
+    val reviewModerationComment: String?,
+    val createdAt: OffsetDateTime,
+    val updatedAt: OffsetDateTime,
+)
+
+private fun ResultSet.toCase(): KycCaseRecord =
+    KycCaseRecord(
+        id = getObject("id", UUID::class.java),
+        endUserId = getObject("end_user_id", UUID::class.java),
+        status = getString("status"),
+        vendor = getString("vendor"),
+        vendorApplicantId = getString("vendor_applicant_id"),
+        levelName = getString("level_name"),
+        externalUserId = getString("external_user_id"),
+        reviewAnswer = getString("review_answer"),
+        reviewRejectType = getString("review_reject_type"),
+        reviewModerationComment = getString("review_moderation_comment"),
+        createdAt = getObject("created_at", OffsetDateTime::class.java),
+        updatedAt = getObject("updated_at", OffsetDateTime::class.java),
+    )

@@ -1504,3 +1504,79 @@ Reviewer merge verification:
 - `node --check product/scripts/runtime/phase06_webhook_receiver.js` passed.
 - `COMPOSE_PROJECT_NAME=mfp-review-merge-kyc ... docker compose -f product/deploy/docker-compose.yml build platform` passed after merging Phase 06 Slice 02 and Phase 07 Slice 01.
 - No `mfp-review-merge-kyc` containers were left running after verification; this review used build-only Compose verification.
+
+---
+
+## 2026-05-18 — Phase 07 Slice 02 Backoffice KYC Manual Review Runtime Verification
+
+Scope:
+- Platform backend/runtime implementation for `KYC-03`.
+- Backoffice KYC case queue/detail and manual decisions.
+- No frontend, document preview, document read-audit, OpenSanctions, AML or SeaweedFS document storage work was added.
+
+Build/runtime evidence:
+- `docker run ... gradle:8.14.3-jdk21 gradle --no-daemon --console=plain :apps:platform:compileKotlin` passed.
+- `docker run ... gradle:8.14.3-jdk21 gradle --no-daemon --console=plain :apps:platform:bootJar` passed and produced `product/apps/platform/build/libs/platform-0.1.0-SNAPSHOT.jar`.
+- Platform runtime started from the built jar in isolated Docker network `mfp_agent8_kyc03_default` with alias `platform-manual`.
+- Flyway applied `V18__kyc_manual_review.sql`; Platform DB reached version `v18`.
+
+Runtime shape:
+- Used isolated resources with `COMPOSE_PROJECT_NAME=mfp_agent8_kyc03`.
+- Host-published HTTP access to Keycloak/Platform was unreliable in this environment, so checks used compose-network curl runners.
+- Keycloak helper was extended to support `KEYCLOAK_CURL_CONTAINER_NETWORK` for in-network retained checks.
+
+Target command run:
+
+```bash
+PLATFORM_BASE_URL=http://platform-manual:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp_agent8_kyc03_default \
+KEYCLOAK_BASE_URL=http://keycloak:8080 \
+KEYCLOAK_CURL_CONTAINER_NETWORK=mfp_agent8_kyc03_default \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_2/product/deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mfp_agent8_kyc03 \
+/home/nickf/Documents/sre_projects/mini-fintech-platform_2/product/scripts/runtime/reg_phase07_kyc_manual_review.sh
+```
+
+Actual result:
+- Script output included seeded KYC case inserts and completed all assertions.
+- Queue response contained the seeded `IN_REVIEW` case.
+- Detail response returned KYC status/vendor metadata and no document payload.
+- Short rationale returned `400 invalid_rationale`.
+- Valid manual approval returned `APPROVED`.
+- Repeat decision returned `409 invalid_state`.
+- DB assertions passed for:
+  - `kyc.kyc_profiles.status = 'APPROVED'`;
+  - one `kyc.kyc_manual_decisions` row with `decision = 'APPROVE'` and `resulting_status = 'APPROVED'`;
+  - one `audit.audit_log` row with `event_type = 'kyc.manual_decision_recorded'`.
+- End-user and merchant cookie sessions were rejected by backoffice KYC routes with `401 unauthenticated`.
+
+Targeted regression commands:
+
+```bash
+PLATFORM_BASE_URL=http://platform-manual:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp_agent8_kyc03_default \
+SUMSUB_WEBHOOK_SECRET=local-sumsub-webhook-secret \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_2/product/deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mfp_agent8_kyc03 \
+/home/nickf/Documents/sre_projects/mini-fintech-platform_2/product/scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
+```
+
+Output:
+
+```text
+KYC-02 Sumsub webhook signature/idempotency pass profile_id=2743d177-8d3b-46c3-a1cb-b845f8ed2d5a applicant_id=sumsub-applicant-1779073722899420642 event_id=sumsub-event-1779073722900573843
+```
+
+Additional targeted checks:
+- Merchant-session wrong-role denial for `POST /api/v1/kyc/start` returned `403 forbidden_actor_type`.
+- `product/scripts/runtime/reg_phase02_backoffice_role_denial.sh` was run with in-network Keycloak/Platform settings; missing bearer token, unsupported backoffice role, end-user cookie and merchant cookie cases returned the expected denial responses.
+
+Result tags:
+- `KYC-03` — pass.
+- `KYC-02` — pass regression.
+- KYC start merchant-session wrong-role denial — pass regression.
+- Backoffice unauthenticated/wrong-role denial — pass regression.
+
+Not claimed:
+- `KYC-01` full pass; real Sumsub sandbox credentials were not configured or used.
+- `AUD-03`, `SNX-*`, `AML-*`, frontend `UI-*`.
