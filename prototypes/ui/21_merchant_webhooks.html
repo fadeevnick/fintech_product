@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Webhooks — MDB-UI-04</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #eceae5; --surface: #ffffff; --surf2: #f7f6f3; --inp: #faf9f7; --hover: #f0efe9;
+      --sb: #111114; --sb-bdr: #1e1e22; --sb-muted: #545460; --sb-active: #1e1e28;
+      --bdr: #dddad2; --bdr-mid: #c5c2ba; --bdr-focus: #1c1c1f;
+      --t1: #1c1c1f; --t2: #575763; --t3: #9898a6; --t4: #d0d0da;
+      --cta: #1c1c1f; --cta-hov: #2e2e35; --cta-t: #ffffff;
+      --g: #166534;  --g-bg: #f0fdf4;  --g-bd: #bbf7d0;
+      --am: #854d0e; --am-bg: #fffbeb; --am-bd: #fde68a;
+      --rd: #9b1c1c; --rd-bg: #fef2f2; --rd-bd: #fecaca;
+      --or: #b45309; --or-bg: #fff7ed; --or-bd: #fed7aa;
+      --pu: #5b21b6; --pu-bg: #f5f3ff; --pu-bd: #ddd6fe;
+      --sb-env-bg: #1a1030; --sb-env-t: #b39cf0; --sb-env-bd: #362566;
+      --f-ui: 'IBM Plex Sans', sans-serif; --f-mono: 'IBM Plex Mono', monospace;
+      --r: 3px; --r-lg: 5px; --w-sb: 220px; --w-tl: 252px;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--t1); font-family: var(--f-ui); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    #root { width: 100%; height: 100vh; display: flex; overflow: hidden; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* SIDEBAR */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb); border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 14px 14px 12px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-name  { font-size: 14.5px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px; }
+    .sb-merchant { margin-top: 10px; padding: 7px 9px; background: rgba(255,255,255,0.04); border-radius: var(--r); border: 1px solid var(--sb-bdr); }
+    .sb-m-label { font-size: 9px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 3px; }
+    .sb-m-name  { font-size: 12.5px; font-weight: 600; color: #eaeaf4; }
+    .sb-m-id    { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); margin-top: 1px; }
+    .sb-nav   { flex: 1; padding: 10px 7px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--sb-muted); padding: 4px 9px 5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px; border-radius: var(--r); color: var(--sb-muted); font-size: 12px; cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.35; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; }
+    .nav-lock { margin-left: auto; font-size: 9px; opacity: 0.6; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono); color: var(--sb-muted); opacity: 0.8; }
+    .nav-item.current .nav-id { color: #7c6ff7; opacity: 1; }
+    .sb-footer { padding: 10px 14px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd); font-size: 10px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 4px; }
+    .env-dot   { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host  { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); }
+    .sb-user   { display: flex; align-items: center; gap: 7px; margin-top: 9px; }
+    .sb-avatar { width: 24px; height: 24px; border-radius: 50%; background: #5b21b6; color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .sb-uname  { font-size: 11px; font-weight: 500; color: #eaeaf4; }
+    .sb-urole  { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* MAIN */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .page-hdr  { display: flex; align-items: center; justify-content: space-between; padding: 10px 22px; border-bottom: 1px solid var(--bdr); background: var(--surface); flex-shrink: 0; gap: 10px; flex-wrap: wrap; }
+    .page-bc   { font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .page-bc strong { color: var(--t1); font-weight: 500; }
+    .page-bc .sep   { color: var(--t3); }
+    .page-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+    .screen-id { font-size: 10px; font-family: var(--f-mono); color: var(--t3); padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge { font-size: 10px; font-family: var(--f-mono); color: var(--am); background: var(--am-bg); border: 1px solid var(--am-bd); padding: 2px 8px; border-radius: var(--r); display: flex; align-items: center; gap: 5px; }
+    .env-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--am); }
+    .user-chip { display: flex; align-items: center; gap: 7px; padding: 3px 9px 3px 3px; border: 1px solid var(--bdr); border-radius: 20px; background: var(--surf2); }
+    .user-avatar { width: 22px; height: 22px; border-radius: 50%; background: #5b21b6; color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .user-name { font-size: 11.5px; color: var(--t2); font-weight: 500; }
+
+    /* CONTENT */
+    .content-area { flex: 1; display: flex; overflow: hidden; }
+    .left-scroll  { flex: 1; overflow-y: auto; padding: 14px 18px; background: var(--bg); display: flex; flex-direction: column; gap: 11px; min-width: 0; }
+
+    /* PANELS */
+    .panel     { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); flex-shrink: 0; flex-wrap: wrap; gap: 8px; }
+    .panel-title { font-size: 11.5px; font-weight: 600; color: var(--t1); text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 13px 16px; }
+
+    /* BADGES */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px; font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em; font-family: var(--f-mono); border: 1px solid transparent; white-space: nowrap; }
+    .b-active    { background: var(--g-bg);  color: var(--g);  border-color: var(--g-bd); }
+    .b-pending   { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .b-locked    { background: var(--hover); color: var(--t2); border-color: var(--bdr); }
+    .b-disabled  { background: var(--hover); color: var(--t3); border-color: var(--bdr); }
+    .b-sandbox   { background: var(--pu-bg); color: var(--pu); border-color: var(--pu-bd); }
+    .b-new       { background: var(--g-bg);  color: var(--g);  border-color: var(--g-bd); }
+    .b-warn      { background: var(--am-bg); color: var(--am); border-color: var(--am-bd); }
+    .b-delivered { background: var(--g-bg);  color: var(--g);  border-color: var(--g-bd); }
+    .b-failed    { background: var(--rd-bg); color: var(--rd); border-color: var(--rd-bd); }
+    .b-retrying  { background: var(--or-bg); color: var(--or); border-color: var(--or-bd); }
+    .b-dlq       { background: #1c0520; color: #e879f9; border-color: #a21caf; }
+
+    /* STATUS STRIP */
+    .status-strip { display: flex; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
+    .stat-cell { padding: 11px 14px; border-right: 1px solid var(--bdr); flex: 1 1 120px; min-width: 0; }
+    .stat-cell:last-child { border-right: none; }
+    .stat-k { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--t3); margin-bottom: 4px; font-weight: 600; }
+    .stat-v { font-size: 12.5px; color: var(--t1); font-weight: 500; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .stat-v.mono { font-family: var(--f-mono); font-size: 11px; }
+    .stat-v.warn { color: var(--am); }
+    .stat-v.red  { color: var(--rd); }
+    .stat-v.dlq  { color: #a21caf; }
+
+    /* KV */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--t3); min-width: 168px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 14px; border-radius: var(--r); font-size: 12.5px; font-weight: 500; font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover { background: var(--cta-hov); }
+    .btn-ghost   { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover   { background: var(--hover); color: var(--t1); }
+    .btn-danger  { background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+    .btn-danger:hover  { background: #fee2e2; }
+    .btn-warn    { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+    .btn-warn:hover    { background: #fef3c7; }
+    .btn-success { background: var(--g-bg);  color: var(--g);  border: 1px solid var(--g-bd); }
+    .btn-sm  { padding: 4px 10px; font-size: 11px; }
+    .btn-xs  { padding: 2px 7px; font-size: 10.5px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    /* ALERTS */
+    .alert { display: flex; gap: 10px; padding: 9px 12px 9px 13px; font-size: 12px; line-height: 1.55; border-left-width: 3px; border-left-style: solid; border-radius: var(--r); }
+    .alert-warn  { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-red   { background: var(--rd-bg); border-left-color: var(--rd); color: #7f1d1d; }
+    .alert-info  { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-green { background: var(--g-bg);  border-left-color: var(--g);  color: #14532d; }
+    .alert-pu    { background: var(--pu-bg); border-left-color: var(--pu); color: #3b0764; }
+
+    /* TABLES */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--t3); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--bdr); background: var(--surf2); font-weight: 600; white-space: nowrap; }
+    .data-table td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid var(--hover); vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr.row-disabled td { opacity: 0.6; }
+    .data-table tr.row-selected td { background: rgba(91,33,182,0.03); }
+    .data-table tr.row-hover:hover td { background: var(--surf2); cursor: pointer; }
+    .data-table tr.row-expand-open td { background: var(--surf2); }
+    .data-table tr.row-new td { background: rgba(240,253,244,0.5); }
+    .mono-cell  { font-family: var(--f-mono); font-size: 11px; }
+    .tbl-link { font-size: 10.5px; color: var(--pu); cursor: pointer; text-decoration: underline; font-family: var(--f-mono); background: none; border: none; padding: 0; }
+    .tbl-link:hover { color: #4c1d95; }
+    .url-cell { font-family: var(--f-mono); font-size: 10.5px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--t2); }
+    .endpoint-table { table-layout: fixed; }
+    .endpoint-table th,
+    .endpoint-table td { padding-left: 8px; padding-right: 8px; overflow: hidden; }
+    .endpoint-table .endpoint-name-col { width: 25%; }
+    .endpoint-table .endpoint-status-col { width: 8%; }
+    .endpoint-table .endpoint-events-col { width: 22%; }
+    .endpoint-table .endpoint-secret-col { width: 9%; }
+    .endpoint-table .endpoint-date-col { width: 11%; }
+    .endpoint-table .endpoint-actions-col { width: 14%; }
+    .endpoint-table td:nth-child(4),
+    .endpoint-table td:nth-child(5),
+    .endpoint-table td:nth-child(6) { font-size: 10.5px; line-height: 1.35; overflow-wrap: anywhere; }
+    .endpoint-table .url-cell { max-width: 100%; }
+    .endpoint-actions { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
+
+    /* FORMS */
+    .inp-label { font-size: 11px; color: var(--t2); margin-bottom: 4px; font-weight: 500; display: block; }
+    .inp-field { width: 100%; padding: 7px 10px; border: 1px solid var(--bdr-mid); border-radius: var(--r); font-size: 12.5px; color: var(--t1); background: var(--inp); outline: none; font-family: var(--f-ui); transition: border-color 0.12s; }
+    .inp-field:focus { border-color: var(--bdr-focus); }
+    .inp-field.inp-error { border-color: var(--rd); }
+    .inp-field.inp-warn  { border-color: var(--am); }
+    select.inp-field { cursor: pointer; }
+    .inp-hint { font-size: 10.5px; color: var(--t3); margin-top: 3px; }
+    .inp-err  { font-size: 10.5px; color: var(--rd); margin-top: 3px; }
+    .inp-wrn  { font-size: 10.5px; color: var(--am); margin-top: 3px; }
+    .form-row  { display: flex; gap: 11px; }
+    .form-row > * { flex: 1; min-width: 0; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 11px; }
+    .form-group:last-child { margin-bottom: 0; }
+
+    /* SCOPE/EVENT CHECKBOXES */
+    .scope-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+    .scope-item { display: flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid var(--bdr); border-radius: var(--r); cursor: pointer; background: var(--surf2); transition: all 0.1s; user-select: none; }
+    .scope-item:hover { border-color: var(--bdr-focus); background: var(--hover); }
+    .scope-item.checked { background: var(--pu-bg); border-color: var(--pu-bd); }
+    .scope-item input { accent-color: var(--pu); width: 12px; height: 12px; cursor: pointer; }
+    .scope-label { font-size: 11px; font-family: var(--f-mono); color: var(--t2); }
+    .scope-item.checked .scope-label { color: var(--pu); }
+
+    /* ONE-TIME REVEAL */
+    .reveal-box { background: var(--g-bg); border: 1.5px solid var(--g-bd); border-radius: var(--r-lg); padding: 14px 16px; }
+    .reveal-key { font-family: var(--f-mono); font-size: 12px; color: var(--t1); background: var(--surface); border: 1px solid var(--bdr-mid); border-radius: var(--r); padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0; word-break: break-all; }
+    .reveal-key-text { flex: 1; }
+    .reveal-bullets { font-size: 11.5px; color: #166534; line-height: 1.7; margin: 8px 0; }
+    .reveal-bullets li { list-style: none; padding-left: 14px; position: relative; }
+    .reveal-bullets li::before { content: '⚠'; position: absolute; left: 0; font-size: 10px; top: 1px; }
+    .ack-row { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); cursor: pointer; user-select: none; margin-top: 4px; }
+    .ack-row input { accent-color: var(--g); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+    .ack-row span { font-size: 11.5px; color: var(--t1); font-weight: 500; }
+
+    /* TAGS */
+    .evt-tag { display: inline-flex; padding: 1px 5px; border-radius: 2px; font-size: 9.5px; font-family: var(--f-mono); background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; white-space: nowrap; margin: 1px; }
+    .scope-tag { display: inline-flex; padding: 1px 5px; border-radius: 2px; font-size: 9.5px; font-family: var(--f-mono); background: var(--pu-bg); color: var(--pu); border: 1px solid var(--pu-bd); white-space: nowrap; }
+    .scope-tag-gray { background: var(--hover); color: var(--t3); border-color: var(--bdr); }
+
+    /* CODE BLOCK */
+    .code-block { background: #1c1c1f; color: #c8c8d8; font-family: var(--f-mono); font-size: 11.5px; border-radius: var(--r); padding: 10px 14px; line-height: 1.65; overflow-x: auto; }
+    .c-key  { color: #7c6ff7; }
+    .c-str  { color: #fbbf24; }
+    .c-val  { color: #a3e635; }
+    .c-num  { color: #fb923c; }
+    .c-com  { color: #555570; }
+    .c-hdr  { color: #f472b6; }
+    .c-url  { color: #94a3b8; }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,20,0.52); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg); width: 500px; max-width: 100%; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 8px 40px rgba(0,0,0,0.18); }
+    .modal-hdr  { display: flex; align-items: flex-start; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; background: var(--surf2); }
+    .modal-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .modal-sub   { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .modal-close { width: 24px; height: 24px; border-radius: var(--r); background: transparent; border: none; color: var(--t3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.1s; flex-shrink: 0; font-size: 14px; }
+    .modal-close:hover { background: var(--hover); color: var(--t1); }
+    .modal-body  { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-footer{ padding: 12px 16px; border-top: 1px solid var(--bdr); display: flex; gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+    .modal-note  { font-size: 10.5px; color: var(--t3); margin-left: auto; font-style: italic; }
+
+    /* DRAWER */
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(17,17,20,0.35); z-index: 90; }
+    .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 420px; max-width: 95vw; background: var(--surface); border-left: 1px solid var(--bdr); display: flex; flex-direction: column; z-index: 91; box-shadow: -4px 0 24px rgba(0,0,0,0.12); }
+    .drawer-hdr   { padding: 13px 16px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; background: var(--surf2); display: flex; align-items: flex-start; justify-content: space-between; }
+    .drawer-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .drawer-sub   { font-size: 10.5px; color: var(--t3); margin-top: 2px; }
+    .drawer-body  { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .drawer-footer{ padding: 12px 16px; border-top: 1px solid var(--bdr); flex-shrink: 0; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* TIMELINE RAIL */
+    .tl-rail  { width: var(--w-tl); flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .tl-hdr   { padding: 10px 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; font-size: 9.5px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.1em; }
+    .tl-body  { flex: 1; overflow-y: auto; padding: 10px 14px; }
+    .tl-evt   { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hover); cursor: pointer; }
+    .tl-evt:last-child { border-bottom: none; }
+    .tl-evt:hover .tl-name { color: var(--cta); }
+    .tl-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .tl-dot.ok   { background: var(--g); }
+    .tl-dot.pend { background: var(--or); }
+    .tl-dot.bad  { background: var(--rd); }
+    .tl-dot.neu  { background: var(--t4); }
+    .tl-dot.pu   { background: var(--pu); }
+    .tl-dot.dlq  { background: #a21caf; }
+    .tl-line  { width: 1px; flex: 1; background: var(--bdr); margin: 4px 0; min-height: 12px; }
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-ts    { font-size: 9.5px; font-family: var(--f-mono); color: var(--t3); margin-bottom: 1px; }
+    .tl-name  { font-size: 11px; font-weight: 600; color: var(--t1); margin-bottom: 1px; text-transform: uppercase; letter-spacing: 0.04em; transition: color 0.1s; }
+    .tl-actor { font-size: 10px; color: var(--t3); margin-bottom: 2px; }
+    .tl-desc  { font-size: 10.5px; color: var(--t2); line-height: 1.4; }
+    .tl-audit { font-size: 9.5px; font-family: var(--f-mono); color: var(--pu); margin-top: 4px; background: var(--pu-bg); border: 1px solid var(--pu-bd); border-radius: var(--r); padding: 2px 6px; display: inline-block; }
+    .tl-expand-hint { font-size: 9px; color: var(--t4); margin-top: 2px; font-style: italic; }
+    .tl-meta  { margin-top: 6px; padding: 7px 9px; background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); font-size: 10px; font-family: var(--f-mono); color: var(--t2); line-height: 1.6; white-space: pre-wrap; }
+
+    /* SECURITY RULES */
+    .rule-list { display: flex; flex-direction: column; gap: 6px; }
+    .rule-item { display: flex; gap: 10px; padding: 7px 10px; border: 1px solid var(--bdr); border-radius: var(--r); background: var(--surf2); align-items: flex-start; }
+    .rule-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+    .rule-text { flex: 1; min-width: 0; }
+    .rule-title { font-size: 11.5px; font-weight: 600; color: var(--t1); margin-bottom: 2px; }
+    .rule-desc  { font-size: 11px; color: var(--t2); line-height: 1.4; }
+    .rule-mono  { font-family: var(--f-mono); font-size: 10.5px; color: var(--pu); background: var(--pu-bg); padding: 1px 5px; border-radius: 2px; display: inline; }
+
+    /* RETRY DIAGRAM */
+    .retry-diagram { display: flex; align-items: center; gap: 0; flex-wrap: wrap; padding: 8px 0; }
+    .retry-node { width: 36px; height: 36px; border-radius: 50%; background: var(--surf2); border: 1.5px solid var(--bdr-mid); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: var(--t2); font-family: var(--f-mono); flex-shrink: 0; }
+    .retry-node.ok  { border-color: var(--g-bd); background: var(--g-bg); color: var(--g); }
+    .retry-node.dlq { border-color: #a21caf; background: #1c0520; color: #e879f9; font-size: 9px; }
+    .retry-arrow { flex: 1; min-width: 16px; height: 1px; background: var(--bdr-mid); }
+    .retry-step { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .retry-label { font-size: 8.5px; color: var(--t3); font-family: var(--f-mono); white-space: nowrap; }
+
+    /* LOCK ITEMS */
+    .lock-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .lock-item  { padding: 9px 11px; border: 1px solid var(--bdr); border-radius: var(--r); background: var(--surf2); }
+    .lock-item.locked   { border-color: var(--rd-bd); background: var(--rd-bg); }
+    .lock-item.unlocked { border-color: var(--g-bd);  background: var(--g-bg); }
+    .lock-item-label { font-size: 11px; font-weight: 500; color: var(--t1); }
+    .lock-item-sub   { font-size: 10px; color: var(--t3); margin-top: 2px; }
+    .lock-item.locked  .lock-item-label { color: var(--rd); }
+    .lock-item.unlocked .lock-item-label { color: var(--g); }
+
+    @media (max-width: 1100px) { :root { --w-tl: 210px; } }
+    @media (max-width: 960px)  { .tl-rail { display: none; } }
+    @media (max-width: 640px)  { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useCallback } = React;
+
+/* ── STATIC DATA ── */
+const NAV_ITEMS = [
+  { sec: 'MERCHANT' },
+  { id: 'MDB-UI-01', label: 'Overview',    icon: '▤' },
+  { id: 'MDB-UI-02', label: 'Onboarding',  icon: '◎' },
+  { id: 'MDB-UI-03', label: 'API Keys',    icon: '⌗' },
+  { id: 'MDB-UI-04', label: 'Webhooks',    icon: '⇥', current: true },
+  { id: 'MDB-UI-05', label: 'Payments',    icon: '⇅', locked: true },
+  { id: 'MDB-UI-06', label: 'Settlements', icon: '⊟', locked: true },
+  { id: 'MDB-UI-07', label: 'Disputes',    icon: '⊘', locked: true },
+  { sec: 'ACCOUNT' },
+  { id: '', label: 'Team',     icon: '⊙' },
+  { id: '', label: 'Settings', icon: '⊕' },
+];
+
+const ALL_EVENTS = [
+  'payment_intent.created',
+  'payment_intent.succeeded',
+  'payment_intent.failed',
+  'payment_intent.refunded',
+  'chargeback.opened',
+  'chargeback.updated',
+  'settlement.created',
+  'payout.paid',
+];
+
+const INITIAL_ENDPOINTS = [
+  {
+    id: 'EP-001',
+    name: 'Payments backend',
+    url: 'https://api.orbitmarket.example/webhooks/minifin/payments',
+    status: 'active',
+    events: ['payment_intent.created', 'payment_intent.succeeded', 'payment_intent.failed'],
+    secretPrefix: 'whsec_test_7Kp…',
+    fingerprint: 'sha256:3f8a2b1c…d94e',
+    lastSuccess: '2026-05-18 09:42',
+    lastFailure: '2026-05-17 16:18',
+    createdBy: 'Nora Klein',
+    createdAt: '2026-05-12 10:32',
+    lastRotatedBy: '—',
+    lastRotatedAt: '—',
+    description: 'Primary payment processing webhook handler for backend services.',
+    deliveries: 247,
+    failures: 3,
+  },
+  {
+    id: 'EP-002',
+    name: 'Accounting sync',
+    url: 'https://accounting.orbitmarket.example/minifin/webhook',
+    status: 'active',
+    events: ['settlement.created', 'payout.paid'],
+    secretPrefix: 'whsec_test_N4h…',
+    fingerprint: 'sha256:7c1e9d43…a18f',
+    lastSuccess: '2026-05-17 22:10',
+    lastFailure: '—',
+    createdBy: 'Nora Klein',
+    createdAt: '2026-05-14 15:22',
+    lastRotatedBy: 'Nora Klein',
+    lastRotatedAt: '2026-05-14 15:30',
+    description: 'Accounting system webhook for settlement and payout reconciliation.',
+    deliveries: 18,
+    failures: 0,
+  },
+  {
+    id: 'EP-003',
+    name: 'Legacy endpoint',
+    url: 'https://legacy.orbitmarket.example/payment-hook',
+    status: 'disabled',
+    events: ['payment_intent.created'],
+    secretPrefix: 'whsec_test_A91…',
+    fingerprint: 'sha256:5a2f6e78…b24c',
+    lastSuccess: '2026-05-10 11:30',
+    lastFailure: '2026-05-12 08:15',
+    createdBy: 'Nora Klein',
+    createdAt: '2026-04-28 08:45',
+    lastRotatedBy: '—',
+    lastRotatedAt: '—',
+    description: 'Deprecated legacy payment hook. Disabled pending decommission.',
+    deliveries: 142,
+    failures: 11,
+  },
+];
+
+const DELIVERIES = {
+  'EP-001': [
+    { id: 'EVT-90021', type: 'payment_intent.created',   status: 'delivered', httpStatus: 200, attempt: 1, nextRetry: '—',                       ts: '2026-05-18 09:42:11', requestId: 'req_8Kp1A2b3C4d', errorMsg: null },
+    { id: 'EVT-90018', type: 'payment_intent.failed',    status: 'failed',    httpStatus: 500, attempt: 2, nextRetry: '2026-05-18 10:48',         ts: '2026-05-18 10:18:03', requestId: 'req_7Np2B3c4D5e', errorMsg: 'Internal Server Error' },
+    { id: 'EVT-90012', type: 'payment_intent.succeeded', status: 'retrying',  httpStatus: 503, attempt: 3, nextRetry: '2026-05-18 11:05',         ts: '2026-05-18 10:35:44', requestId: 'req_9Qr3C4d5E6f', errorMsg: 'Service Unavailable' },
+    { id: 'EVT-89980', type: 'payment_intent.created',   status: 'dlq',       httpStatus: 500, attempt: 6, nextRetry: 'Max attempts reached',     ts: '2026-05-17 16:18:22', requestId: 'req_2Xy4D5e6F7g', errorMsg: 'Internal Server Error — DLQ after 6 attempts' },
+    { id: 'EVT-89965', type: 'payment_intent.failed',    status: 'delivered', httpStatus: 200, attempt: 1, nextRetry: '—',                       ts: '2026-05-17 14:55:01', requestId: 'req_5Zw5E6f7G8h', errorMsg: null },
+  ],
+  'EP-002': [
+    { id: 'EVT-90005', type: 'settlement.created', status: 'delivered', httpStatus: 200, attempt: 1, nextRetry: '—', ts: '2026-05-17 22:10:07', requestId: 'req_3Mn6F7g8H9i', errorMsg: null },
+    { id: 'EVT-89990', type: 'payout.paid',        status: 'delivered', httpStatus: 200, attempt: 1, nextRetry: '—', ts: '2026-05-17 18:30:44', requestId: 'req_4Op7G8h9I0j', errorMsg: null },
+  ],
+  'EP-003': [
+    { id: 'EVT-88220', type: 'payment_intent.created', status: 'delivered', httpStatus: 200, attempt: 1, nextRetry: '—', ts: '2026-05-10 11:30:15', requestId: 'req_1Pq8H9i0J1k', errorMsg: null },
+  ],
+};
+
+const TIMELINE_EVENTS = [
+  { ts: '2026-05-18 10:35', actor: 'System',     dot: 'pend', name: 'RETRY SCHEDULED',    desc: 'EVT-90012 (payment_intent.succeeded) queued for retry attempt 3. HTTP 503. Next attempt at 11:05.',   audit: 'webhook.delivery_retry',    meta: 'event_id: EVT-90012\nendpoint: EP-001\nattempt: 3\nhttp_status: 503\nnext_retry: 2026-05-18T11:05:00Z' },
+  { ts: '2026-05-18 10:18', actor: 'System',     dot: 'bad',  name: 'DELIVERY FAILED',    desc: 'EVT-90018 delivery failed to EP-001. HTTP 500 — Internal Server Error. Attempt 2 of 6.',             audit: 'webhook.delivery_failed',   meta: 'event_id: EVT-90018\nendpoint: EP-001\nattempt: 2\nhttp_status: 500\nerror: Internal Server Error' },
+  { ts: '2026-05-18 09:42', actor: 'System',     dot: 'ok',   name: 'DELIVERY SUCCEEDED', desc: 'EVT-90021 (payment_intent.created) delivered to EP-001. HTTP 200. Latency 142ms.',                   audit: 'webhook.delivery_success',  meta: 'event_id: EVT-90021\nendpoint: EP-001\nattempt: 1\nhttp_status: 200\nlatency_ms: 142' },
+  { ts: '2026-05-17 22:10', actor: 'System',     dot: 'ok',   name: 'DELIVERY SUCCEEDED', desc: 'EVT-90005 (settlement.created) delivered to EP-002 (Accounting sync). HTTP 200.',                    audit: 'webhook.delivery_success',  meta: 'event_id: EVT-90005\nendpoint: EP-002\nattempt: 1\nhttp_status: 200\nlatency_ms: 89' },
+  { ts: '2026-05-17 16:18', actor: 'System',     dot: 'dlq',  name: 'MOVED TO DLQ',       desc: 'EVT-89980 moved to DLQ after 6 exhausted attempts. Replay requires backoffice or future merchant workflow.', audit: 'webhook.event_dlq',     meta: 'event_id: EVT-89980\nendpoint: EP-001\nattempts_exhausted: 6\nfinal_http_status: 500\ndlq_ts: 2026-05-17T16:18:22Z' },
+  { ts: '2026-05-15 14:30', actor: 'Nora Klein', dot: 'bad',  name: 'ENDPOINT DISABLED',  desc: 'EP-003 (Legacy endpoint) disabled. No deliveries will be attempted until re-enabled.',             audit: 'webhook.endpoint_disabled', meta: 'endpoint_id: EP-003\nactor: nora@orbitmarket.de\nreason: decommission_pending' },
+  { ts: '2026-05-14 15:30', actor: 'Nora Klein', dot: 'pu',   name: 'SECRET ROTATED',     desc: 'Signing secret rotated for EP-002 (Accounting sync). Old secret invalidated immediately. New secret revealed once and acknowledged.', audit: 'webhook.secret_rotated', meta: 'endpoint_id: EP-002\nactor: nora@orbitmarket.de\nold_secret: invalidated\nnew_prefix: whsec_test_N4h…' },
+  { ts: '2026-05-14 15:22', actor: 'Nora Klein', dot: 'ok',   name: 'ENDPOINT CREATED',   desc: 'EP-002 (Accounting sync) created. Subscribed to: settlement.created, payout.paid. HTTPS validated.',  audit: 'webhook.endpoint_created',  meta: 'endpoint_id: EP-002\nactor: nora@orbitmarket.de\nevents: settlement.created, payout.paid' },
+  { ts: '2026-05-14 15:22', actor: 'Nora Klein', dot: 'pu',   name: 'SECRET REVEALED',    desc: 'Signing secret for EP-002 shown once and acknowledged. Only prefix/fingerprint retained in system.',  audit: 'webhook.secret_revealed',   meta: 'endpoint_id: EP-002\nstored_as: sha256_fingerprint_only\nacknowledged: true' },
+  { ts: '2026-05-12 10:32', actor: 'Nora Klein', dot: 'ok',   name: 'ENDPOINT CREATED',   desc: 'EP-001 (Payments backend) created. Subscribed to: payment_intent.*. HTTPS validated.',              audit: 'webhook.endpoint_created',  meta: 'endpoint_id: EP-001\nactor: nora@orbitmarket.de\nevents: payment_intent.created, payment_intent.succeeded, payment_intent.failed' },
+  { ts: '2026-05-12 10:32', actor: 'Nora Klein', dot: 'pu',   name: 'SECRET REVEALED',    desc: 'Signing secret for EP-001 shown once and acknowledged. Only prefix/fingerprint retained in system.',  audit: 'webhook.secret_revealed',   meta: 'endpoint_id: EP-001\nstored_as: sha256_fingerprint_only\nacknowledged: true' },
+];
+
+/* ── HELPERS ── */
+function LogoMark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <rect width="26" height="26" rx="5" fill="#2a2a36"/>
+      <rect x="5"  y="5"  width="7" height="7" rx="1.5" fill="#7c6ff7"/>
+      <rect x="14" y="5"  width="7" height="7" rx="1.5" fill="#4a4a5a"/>
+      <rect x="5"  y="14" width="7" height="7" rx="1.5" fill="#4a4a5a"/>
+      <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#7c6ff7" opacity="0.5"/>
+    </svg>
+  );
+}
+
+function Badge({ cls, children }) {
+  return <span className={`badge ${cls}`}>{children}</span>;
+}
+
+function KV({ k, mono, children }) {
+  return (
+    <div className="kv-row">
+      <div className="kv-k">{k}</div>
+      <div className={`kv-v${mono ? ' mono' : ''}`}>{children}</div>
+    </div>
+  );
+}
+
+function DeliveryBadge({ status }) {
+  const map = { delivered: 'b-delivered', failed: 'b-failed', retrying: 'b-retrying', dlq: 'b-dlq' };
+  const labels = { delivered: 'DELIVERED', failed: 'FAILED', retrying: 'RETRYING', dlq: 'DLQ' };
+  return <Badge cls={map[status] || 'b-locked'}>{labels[status] || status.toUpperCase()}</Badge>;
+}
+
+/* ── SIDEBAR ── */
+function Sidebar() {
+  return (
+    <div className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-mark">
+          <LogoMark />
+          <div>
+            <div className="sb-name">MiniFin</div>
+            <div className="sb-sub">Merchant Dashboard</div>
+          </div>
+        </div>
+        <div className="sb-merchant">
+          <div className="sb-m-label">Merchant</div>
+          <div className="sb-m-name">Orbit Market</div>
+          <div className="sb-m-id">MRC-20491</div>
+        </div>
+      </div>
+      <nav className="sb-nav">
+        {NAV_ITEMS.map((item, i) =>
+          item.sec
+            ? <div key={i} className="nav-sec" style={{marginTop: i === 0 ? 0 : 8}}>{item.sec}</div>
+            : (
+              <div key={i} className={`nav-item${item.current ? ' current' : ''}${item.locked ? ' locked' : ''}`}>
+                <span style={{fontSize: 13}}>{item.icon}</span>
+                <span>{item.label}</span>
+                {item.locked && <span className="nav-lock">🔒</span>}
+                {item.id && <span className="nav-id">{item.id}</span>}
+              </div>
+            )
+        )}
+      </nav>
+      <div className="sb-footer">
+        <div className="env-chip"><div className="env-dot"/>Local Sandbox</div>
+        <div className="env-host">merchants.minifin.local</div>
+        <div className="sb-user">
+          <div className="sb-avatar">NK</div>
+          <div>
+            <div className="sb-uname">Nora Klein</div>
+            <div className="sb-urole">Merchant Admin</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── STATUS STRIP ── */
+function StatusStrip({ endpoints }) {
+  const active   = endpoints.filter(e => e.status === 'active').length;
+  const disabled = endpoints.filter(e => e.status === 'disabled').length;
+  const pending  = 2;
+  const failed   = 1;
+  const dlq      = 1;
+  return (
+    <div className="status-strip">
+      <div className="stat-cell">
+        <div className="stat-k">Total Endpoints</div>
+        <div className="stat-v">{endpoints.length}</div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Active</div>
+        <div className="stat-v"><Badge cls="b-active">{active} ACTIVE</Badge></div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Disabled</div>
+        <div className="stat-v"><Badge cls="b-disabled">{disabled} DISABLED</Badge></div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Pending Delivery</div>
+        <div className="stat-v warn">{pending}</div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Failed Deliveries</div>
+        <div className="stat-v red">{failed}</div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">DLQ Events</div>
+        <div className="stat-v dlq">{dlq}</div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Last Successful</div>
+        <div className="stat-v mono">2026-05-18 09:42</div>
+      </div>
+      <div className="stat-cell">
+        <div className="stat-k">Last Failed</div>
+        <div className="stat-v mono" style={{color:'var(--rd)'}}>2026-05-18 10:18</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── ENDPOINT TABLE ── */
+function EndpointTable({ endpoints, selectedEpId, onSelect, onViewDrawer, onRotate, onDisable, onCreateClick, onEnable }) {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <div style={{display:'flex', alignItems:'center', gap:10}}>
+          <span className="panel-title">Webhook Endpoints</span>
+          <Badge cls="b-sandbox">SANDBOX</Badge>
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:8}}>
+          <span style={{fontSize:10.5, color:'var(--t3)', fontFamily:'var(--f-mono)'}}>merchant: MRC-20491</span>
+          <button className="btn btn-primary btn-sm" onClick={onCreateClick}>+ Add Endpoint</button>
+        </div>
+      </div>
+      <div>
+        <table className="data-table endpoint-table">
+          <thead>
+            <tr>
+              <th className="endpoint-name-col">Name / Endpoint</th>
+              <th className="endpoint-status-col">Status</th>
+              <th className="endpoint-events-col">Subscribed Events</th>
+              <th className="endpoint-secret-col">Secret Prefix</th>
+              <th className="endpoint-date-col">Last Success</th>
+              <th className="endpoint-date-col">Last Failure</th>
+              <th className="endpoint-actions-col" style={{textAlign:'right'}}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {endpoints.map(ep => (
+              <tr
+                key={ep.id}
+                className={`row-hover${ep.status === 'disabled' ? ' row-disabled' : ''}${selectedEpId === ep.id ? ' row-selected' : ''}${ep.isNew ? ' row-new' : ''}`}
+                onClick={() => onSelect(ep.id)}
+              >
+                <td>
+                  <div style={{fontWeight:500, fontSize:12, color:'var(--t1)', marginBottom:2}}>{ep.name}</div>
+                  <div className="url-cell" title={ep.url}>{ep.url}</div>
+                </td>
+                <td>
+                  {ep.status === 'active'
+                    ? <Badge cls="b-active">ACTIVE</Badge>
+                    : <Badge cls="b-disabled">DISABLED</Badge>}
+                </td>
+                <td>
+                  <div style={{display:'flex', flexWrap:'wrap', gap:2}}>
+                    {ep.events.map(ev => <span key={ev} className="evt-tag">{ev}</span>)}
+                  </div>
+                </td>
+                <td className="mono-cell" style={{color:'var(--t2)'}}>{ep.secretPrefix}</td>
+                <td className="mono-cell">{ep.lastSuccess}</td>
+                <td className="mono-cell" style={{color: ep.lastFailure !== '—' ? 'var(--rd)' : 'var(--t3)'}}>{ep.lastFailure}</td>
+                <td style={{textAlign:'right', whiteSpace:'nowrap'}}>
+                  <div className="endpoint-actions" onClick={e => e.stopPropagation()}>
+                    <button className="btn btn-ghost btn-xs" onClick={() => { onSelect(ep.id); }}>Deliveries</button>
+                    <button className="btn btn-ghost btn-xs" onClick={() => onViewDrawer(ep)}>Detail</button>
+                    <button className="btn btn-warn btn-xs" onClick={() => onRotate(ep)}>Rotate</button>
+                    {ep.status === 'active'
+                      ? <button className="btn btn-danger btn-xs" onClick={() => onDisable(ep)}>Disable</button>
+                      : <button className="btn btn-success btn-xs" onClick={() => onEnable(ep.id)}>Enable</button>}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{padding:'8px 14px', borderTop:'1px solid var(--bdr)', background:'var(--surf2)', display:'flex', gap:16, flexWrap:'wrap'}}>
+        <span style={{fontSize:10.5, color:'var(--t3)'}}>Live endpoint creation locked — KYB in review. Sandbox endpoints active.</span>
+        <span style={{fontSize:10.5, color:'var(--t3)', fontFamily:'var(--f-mono)', marginLeft:'auto'}}>{endpoints.length} endpoints · {endpoints.reduce((s,e)=>s+e.deliveries,0)} total deliveries</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── CREATE ENDPOINT PANEL ── */
+function CreateEndpointPanel({ endpoints, onCreate, onClose }) {
+  const [name, setName]     = useState('');
+  const [url, setUrl]       = useState('');
+  const [events, setEvents] = useState([]);
+  const [desc, setDesc]     = useState('');
+  const [step, setStep]     = useState('form'); // 'form' | 'reveal'
+  const [newEp, setNewEp]   = useState(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const SECRET = 'whsec_test_sk_7Xn3kP2m9QbL8vR1cFjA4nZmYoK6wEd2';
+
+  const urlErr  = url && !url.startsWith('https://') ? 'Endpoint URL must use HTTPS.' : null;
+  const dupWarn = url && url.startsWith('https://') && endpoints.some(e => e.url === url)
+    ? 'Duplicate URL: this endpoint URL is already registered.' : null;
+  const evtErr  = events.length === 0 && name ? 'At least one event subscription is required.' : null;
+
+  function toggleEvent(ev) {
+    setEvents(prev => prev.includes(ev) ? prev.filter(x => x !== ev) : [...prev, ev]);
+  }
+
+  function handleSubmit() {
+    if (!name.trim() || urlErr || !url || events.length === 0) return;
+    const ep = onCreate({ name: name.trim(), url, events, description: desc });
+    setNewEp(ep);
+    setStep('reveal');
+  }
+
+  function handleCopy() {
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2200);
+  }
+
+  if (step === 'reveal' && newEp) {
+    if (acknowledged) {
+      return (
+        <div className="panel">
+          <div className="panel-hdr">
+            <span className="panel-title">Endpoint Created — Secret Stored</span>
+            <Badge cls="b-new">NEW</Badge>
+          </div>
+          <div className="panel-body" style={{display:'flex', flexDirection:'column', gap:10}}>
+            <div className="alert alert-green">
+              Secret acknowledged and cleared from view. Only the prefix and fingerprint are retained. The endpoint is now active and receiving events.
+            </div>
+            <div className="kv-table">
+              <KV k="Endpoint ID" mono>{newEp.id}</KV>
+              <KV k="Name">{newEp.name}</KV>
+              <KV k="URL" mono><span style={{color:'var(--t2)'}}>{newEp.url}</span></KV>
+              <KV k="Secret prefix" mono>{newEp.secretPrefix}</KV>
+              <KV k="Fingerprint" mono><span style={{color:'var(--t2)'}}>{newEp.fingerprint}</span></KV>
+              <KV k="Status"><Badge cls="b-active">ACTIVE</Badge></KV>
+            </div>
+            <div style={{display:'flex', gap:8, marginTop:4}}>
+              <button className="btn btn-ghost btn-sm" onClick={onClose}>Close Panel</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Endpoint Signing Secret — One-Time Reveal</span>
+          <Badge cls="b-new">NEW · {newEp.id}</Badge>
+        </div>
+        <div className="panel-body" style={{display:'flex', flexDirection:'column', gap:12}}>
+          <div className="alert alert-warn">
+            <div>
+              <strong>This secret is shown exactly once.</strong> MiniFin stores only an encrypted hash and prefix — the full secret material is not retained. Copy and store it securely now.
+            </div>
+          </div>
+          <div className="reveal-box">
+            <div style={{fontSize:11, fontWeight:600, color:'#166534', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6}}>Signing Secret</div>
+            <div className="reveal-key">
+              <span className="reveal-key-text">{SECRET}</span>
+              <button className="btn btn-success btn-xs" onClick={handleCopy} style={{flexShrink:0}}>
+                {copied ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
+            <ul className="reveal-bullets">
+              <li>Use this secret to verify the <code style={{fontFamily:'var(--f-mono)',fontSize:10.5}}>MiniFin-Signature</code> header on incoming webhook requests.</li>
+              <li>MiniFin stores only the encrypted hash and prefix. The full secret cannot be recovered.</li>
+              <li>If you lose this secret, you must rotate to generate a new one.</li>
+              <li>Store in your secrets manager (e.g. AWS Secrets Manager, HashiCorp Vault).</li>
+            </ul>
+            <div className="ack-row" onClick={() => setAcknowledged(true)}>
+              <input type="checkbox" readOnly checked={acknowledged} />
+              <span>I have securely stored this secret. Hide it now.</span>
+            </div>
+          </div>
+          <div className="kv-table" style={{fontSize:11}}>
+            <KV k="Endpoint">{newEp.name} ({newEp.id})</KV>
+            <KV k="Prefix retained" mono>{newEp.secretPrefix}</KV>
+            <KV k="Fingerprint" mono><span style={{color:'var(--t2)'}}>{newEp.fingerprint}</span></KV>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Add Sandbox Endpoint</span>
+        <div style={{display:'flex', alignItems:'center', gap:8}}>
+          <span style={{fontSize:10, color:'var(--t3)', fontFamily:'var(--f-mono)'}}>mode: sandbox · merchant: MRC-20491</span>
+          <button className="btn btn-ghost btn-xs" onClick={onClose}>✕ Close</button>
+        </div>
+      </div>
+      <div className="panel-body">
+        <div className="alert alert-pu" style={{marginBottom:12}}>
+          <div>Live endpoint creation is <strong>locked</strong> until KYB is approved and Stripe Connect is complete. Only sandbox endpoints can be created now.</div>
+        </div>
+        <div className="form-row" style={{marginBottom:11}}>
+          <div className="form-group" style={{margin:0}}>
+            <label className="inp-label">Endpoint name <span style={{color:'var(--rd)'}}>*</span></label>
+            <input className="inp-field" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Order notifications handler" />
+            <div className="inp-hint">Descriptive name for audit logs and key list.</div>
+          </div>
+          <div className="form-group" style={{margin:0}}>
+            <label className="inp-label">Endpoint URL <span style={{color:'var(--rd)'}}>*</span></label>
+            <input
+              className={`inp-field${urlErr ? ' inp-error' : dupWarn ? ' inp-warn' : ''}`}
+              value={url}
+              onChange={e => setUrl(e.target.value)}
+              placeholder="https://your-domain.example/webhook"
+            />
+            {urlErr  && <div className="inp-err">⚠ {urlErr}</div>}
+            {dupWarn && <div className="inp-wrn">⚠ {dupWarn}</div>}
+            {!urlErr && !dupWarn && <div className="inp-hint">Must be HTTPS. Publicly reachable in sandbox context.</div>}
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="inp-label">Subscribed events <span style={{color:'var(--rd)'}}>*</span></label>
+          <div className="scope-grid">
+            {ALL_EVENTS.map(ev => (
+              <div key={ev} className={`scope-item${events.includes(ev) ? ' checked' : ''}`} onClick={() => toggleEvent(ev)}>
+                <input type="checkbox" readOnly checked={events.includes(ev)} />
+                <span className="scope-label">{ev}</span>
+              </div>
+            ))}
+          </div>
+          {evtErr && <div className="inp-err" style={{marginTop:6}}>⚠ {evtErr}</div>}
+          {!evtErr && <div className="inp-hint" style={{marginTop:6}}>Subscribe only to events your endpoint needs to process.</div>}
+        </div>
+        <div className="form-group">
+          <label className="inp-label">Description / internal note</label>
+          <input className="inp-field" value={desc} onChange={e => setDesc(e.target.value)} placeholder="Optional — purpose, responsible team, linked service…" />
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:10, marginTop:4, flexWrap:'wrap'}}>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={handleSubmit}
+            disabled={!name.trim() || !!urlErr || !url || events.length === 0}
+          >
+            Create Sandbox Endpoint
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <span style={{fontSize:11, color:'var(--t3)', marginLeft:'auto'}}>Signing secret shown once after creation.</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── DELIVERY LOG PANEL ── */
+function DeliveryLogPanel({ selectedEpId, endpoints, expandedId, onExpand }) {
+  const ep = endpoints.find(e => e.id === selectedEpId);
+  const rows = DELIVERIES[selectedEpId] || [];
+
+  return (
+    <div className="panel" id="delivery-log">
+      <div className="panel-hdr">
+        <div style={{display:'flex', alignItems:'center', gap:10}}>
+          <span className="panel-title">Delivery Log</span>
+          {ep && <Badge cls={ep.status === 'active' ? 'b-active' : 'b-disabled'}>{ep.name}</Badge>}
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:8}}>
+          {endpoints.map(e => (
+            <button
+              key={e.id}
+              className={`btn btn-xs${selectedEpId === e.id ? ' btn-primary' : ' btn-ghost'}`}
+              onClick={() => {}}
+              style={{cursor:'default'}}
+            >
+              {e.name}
+            </button>
+          ))}
+        </div>
+      </div>
+      {rows.length === 0 ? (
+        <div className="panel-body" style={{color:'var(--t3)', fontSize:12}}>No delivery attempts recorded for this endpoint.</div>
+      ) : (
+        <div style={{overflowX:'auto'}}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Event ID</th>
+                <th>Event Type</th>
+                <th>Status</th>
+                <th>HTTP</th>
+                <th>Attempt</th>
+                <th>Next Retry</th>
+                <th>Timestamp</th>
+                <th>Request ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(row => (
+                <React.Fragment key={row.id}>
+                  <tr
+                    className={`row-hover${expandedId === row.id ? ' row-expand-open' : ''}`}
+                    onClick={() => onExpand(expandedId === row.id ? null : row.id)}
+                  >
+                    <td className="mono-cell" style={{color:'var(--pu)', cursor:'pointer'}}>
+                      <span className="tbl-link">{row.id}</span>
+                    </td>
+                    <td><span className="evt-tag">{row.type}</span></td>
+                    <td><DeliveryBadge status={row.status} /></td>
+                    <td className="mono-cell">
+                      <span style={{color: row.httpStatus === 200 ? 'var(--g)' : row.httpStatus >= 500 ? 'var(--rd)' : 'var(--am)'}}>
+                        {row.httpStatus}
+                      </span>
+                    </td>
+                    <td className="mono-cell">{row.attempt} / 6</td>
+                    <td className="mono-cell" style={{color: row.nextRetry === '—' ? 'var(--t3)' : row.nextRetry.includes('Max') ? 'var(--rd)' : 'var(--or)'}}>
+                      {row.nextRetry}
+                    </td>
+                    <td className="mono-cell">{row.ts}</td>
+                    <td className="mono-cell" style={{color:'var(--t3)'}}>{row.requestId}</td>
+                  </tr>
+                  {expandedId === row.id && (
+                    <tr>
+                      <td colSpan={8} style={{padding:0}}>
+                        <div style={{padding:'10px 14px', background:'var(--surf2)', borderTop:'1px solid var(--bdr)'}}>
+                          <div style={{display:'flex', gap:24, flexWrap:'wrap'}}>
+                            <div>
+                              <div style={{fontSize:10, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6, fontWeight:600}}>Delivery Detail</div>
+                              <div className="kv-table" style={{minWidth:300}}>
+                                <KV k="Event ID" mono>{row.id}</KV>
+                                <KV k="Event type"><span className="evt-tag">{row.type}</span></KV>
+                                <KV k="Delivery status"><DeliveryBadge status={row.status} /></KV>
+                                <KV k="HTTP status" mono>
+                                  <span style={{color: row.httpStatus === 200 ? 'var(--g)' : 'var(--rd)'}}>{row.httpStatus}</span>
+                                </KV>
+                                <KV k="Attempt">{row.attempt} of 6</KV>
+                                <KV k="Next retry" mono>{row.nextRetry}</KV>
+                                <KV k="Endpoint" mono>{ep?.url}</KV>
+                                <KV k="Request ID" mono>{row.requestId}</KV>
+                                {row.errorMsg && <KV k="Error"><span style={{color:'var(--rd)', fontSize:11}}>{row.errorMsg}</span></KV>}
+                              </div>
+                            </div>
+                            {row.status === 'dlq' && (
+                              <div style={{flex:1, minWidth:200}}>
+                                <div style={{fontSize:10, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6, fontWeight:600}}>DLQ State</div>
+                                <div className="alert alert-red" style={{fontSize:11}}>
+                                  This event has been moved to the Dead Letter Queue after {row.attempt} failed attempts. Automatic retry is exhausted.
+                                  Replay requires backoffice intervention or a future merchant replay workflow (deferred capability).
+                                </div>
+                                <div style={{marginTop:8, padding:'6px 10px', background:'#1c0520', border:'1px solid #a21caf', borderRadius:'var(--r)', fontSize:10.5, fontFamily:'var(--f-mono)', color:'#e879f9'}}>
+                                  STATE: DLQ · REPLAY: DEFERRED · MANUAL_REVIEW: REQUIRED
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── RETRY / DLQ PANEL ── */
+function RetryDLQPanel() {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Retry Schedule &amp; DLQ Policy</span>
+        <Badge cls="b-locked">OPERATIONAL</Badge>
+      </div>
+      <div className="panel-body" style={{display:'flex', flexDirection:'column', gap:14}}>
+        <div style={{display:'flex', gap:20, flexWrap:'wrap'}}>
+          <div style={{flex:'1 1 320px'}}>
+            <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:10}}>Retry Schedule — 6 Attempts Max</div>
+            <div className="retry-diagram">
+              {[{label:'Immediate',n:'1',ok:true},{label:'5 min',n:'2'},{label:'30 min',n:'3'},{label:'2 h',n:'4'},{label:'6 h',n:'5'},{label:'24 h',n:'6'}].map((s, i, arr) => (
+                <React.Fragment key={s.n}>
+                  <div className="retry-step">
+                    <div className={`retry-node${s.ok ? ' ok' : ''}`}>{s.n}</div>
+                    <div className="retry-label">{s.label}</div>
+                  </div>
+                  {i < arr.length - 1 && <div className="retry-arrow" />}
+                </React.Fragment>
+              ))}
+              <div className="retry-arrow" />
+              <div className="retry-step">
+                <div className="retry-node dlq">DLQ</div>
+                <div className="retry-label">Exhausted</div>
+              </div>
+            </div>
+            <div className="alert alert-info" style={{marginTop:10, fontSize:11}}>
+              After 6 failed attempts the event is moved to the Dead Letter Queue. Retry intervals are: immediate, 5 min, 30 min, 2 h, 6 h, 24 h.
+            </div>
+          </div>
+          <div style={{flex:'1 1 240px'}}>
+            <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:10}}>DLQ &amp; Replay Policy</div>
+            <div className="rule-list">
+              <div className="rule-item">
+                <div className="rule-icon">⛔</div>
+                <div className="rule-text">
+                  <div className="rule-title">Dead Letter Queue (DLQ)</div>
+                  <div className="rule-desc">Events exhausting all retry attempts are moved to DLQ. No automatic recovery. Requires operator or future merchant replay workflow.</div>
+                </div>
+              </div>
+              <div className="rule-item">
+                <div className="rule-icon">🔄</div>
+                <div className="rule-text">
+                  <div className="rule-title">Replay — Deferred Capability</div>
+                  <div className="rule-desc">Merchant-initiated replay is <strong>not yet available</strong>. DLQ events require backoffice intervention. This capability is scheduled for a future release.</div>
+                </div>
+              </div>
+              <div className="rule-item">
+                <div className="rule-icon">📋</div>
+                <div className="rule-text">
+                  <div className="rule-title">Delivery Guarantee</div>
+                  <div className="rule-desc">MiniFin provides at-least-once delivery. Your endpoint must handle duplicate <span className="rule-mono">event_id</span> values idempotently.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PAYLOAD PREVIEW ── */
+function PayloadPreviewPanel() {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Payload &amp; Signature Example</span>
+        <Badge cls="b-sandbox">EVT-90021</Badge>
+      </div>
+      <div className="panel-body" style={{display:'flex', gap:14, flexWrap:'wrap'}}>
+        <div style={{flex:'1 1 300px'}}>
+          <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:8}}>Request Headers</div>
+          <div className="code-block" style={{marginBottom:12}}>
+            <div style={{display:'flex', gap:8, padding:'3px 0', borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
+              <span className="c-hdr" style={{minWidth:220}}>Content-Type</span>
+              <span className="c-str">application/json</span>
+            </div>
+            <div style={{display:'flex', gap:8, padding:'3px 0', borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
+              <span className="c-hdr" style={{minWidth:220}}>MiniFin-Request-Id</span>
+              <span className="c-str">req_8Kp1A2b3C4d</span>
+            </div>
+            <div style={{display:'flex', gap:8, padding:'3px 0', borderBottom:'1px solid rgba(255,255,255,0.07)'}}>
+              <span className="c-hdr" style={{minWidth:220}}>MiniFin-Signature</span>
+              <span className="c-str" style={{wordBreak:'break-all'}}>v1=sha256=3f8a2b1c9d4e7f6a0b5c8d2e1f4a7b3c9d6e0f</span>
+            </div>
+            <div style={{display:'flex', gap:8, padding:'3px 0'}}>
+              <span className="c-hdr" style={{minWidth:220}}>MiniFin-Timestamp</span>
+              <span className="c-str">1747560131</span>
+            </div>
+          </div>
+          <div className="alert alert-info" style={{fontSize:11}}>
+            Verify <code style={{fontFamily:'var(--f-mono)',fontSize:10.5}}>MiniFin-Signature</code> using HMAC-SHA256 with your signing secret and the raw request body. Reject requests with timestamps older than 300 seconds.
+          </div>
+        </div>
+        <div style={{flex:'2 1 360px'}}>
+          <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:8}}>Event Payload — payment_intent.created</div>
+          <div className="code-block">
+            <span className="c-com">{'{'}</span><br/>
+            &nbsp;&nbsp;<span className="c-key">"id"</span>: <span className="c-str">"EVT-90021"</span>,<br/>
+            &nbsp;&nbsp;<span className="c-key">"type"</span>: <span className="c-str">"payment_intent.created"</span>,<br/>
+            &nbsp;&nbsp;<span className="c-key">"created"</span>: <span className="c-str">"2026-05-18T09:42:11Z"</span>,<br/>
+            &nbsp;&nbsp;<span className="c-key">"merchant_id"</span>: <span className="c-str">"MRC-20491"</span>,<br/>
+            &nbsp;&nbsp;<span className="c-key">"data"</span>: {'{'}<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span className="c-key">"payment_intent"</span>: {'{'}<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="c-key">"id"</span>: <span className="c-str">"pi_test_9KpA2bC3dE4f5g6h"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="c-key">"amount"</span>: <span className="c-num">12500</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="c-key">"currency"</span>: <span className="c-str">"EUR"</span>,<br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="c-key">"status"</span>: <span className="c-str">"created"</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;{'}'}<br/>
+            &nbsp;&nbsp;{'}'}<br/>
+            {'}'}
+          </div>
+          <div style={{marginTop:8, fontSize:11, color:'var(--t3)'}}>
+            Amount is in the smallest currency unit (e.g. EUR cents). Return <code style={{fontFamily:'var(--f-mono)', fontSize:10.5}}>2xx</code> only after successful processing to prevent unnecessary retries.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── SECURITY RULES ── */
+function SecurityRulesPanel() {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Security &amp; Idempotency Rules</span>
+        <Badge cls="b-locked">REQUIRED</Badge>
+      </div>
+      <div className="panel-body">
+        <div className="rule-list">
+          {[
+            { icon: '🔐', title: 'Verify webhook signatures', desc: <>Always validate the <span className="rule-mono">MiniFin-Signature</span> header using HMAC-SHA256 and your endpoint signing secret. Reject requests with invalid or missing signatures.</> },
+            { icon: '⏱', title: 'Reject stale timestamps', desc: <>Check <span className="rule-mono">MiniFin-Timestamp</span> against current time. Reject any webhook delivered more than 300 seconds (5 minutes) ago to prevent replay attacks.</> },
+            { icon: '🔁', title: 'Handle duplicate event IDs idempotently', desc: <>MiniFin delivers at-least-once. Your handler must be idempotent on <span className="rule-mono">event.id</span>. Store processed IDs and skip re-processing duplicates gracefully.</> },
+            { icon: '✅', title: 'Return 2xx only after successful processing', desc: <>Return a 2xx HTTP response only after your endpoint has fully processed the event. Returning 2xx prematurely prevents correct retry scheduling for failures.</> },
+            { icon: '⚠️', title: 'Do not trust event ordering alone', desc: <>Events may arrive out-of-order due to retries or parallel delivery. Use <span className="rule-mono">event.created</span> and idempotency keys for reconciliation, not delivery sequence.</> },
+            { icon: '🔒', title: 'Keep endpoint URLs HTTPS-only', desc: <>MiniFin enforces HTTPS for all webhook endpoints. Plain HTTP URLs are rejected at configuration time. TLS must be valid and not expired.</> },
+          ].map((r, i) => (
+            <div key={i} className="rule-item">
+              <div className="rule-icon">{r.icon}</div>
+              <div className="rule-text">
+                <div className="rule-title">{r.title}</div>
+                <div className="rule-desc">{r.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── ENDPOINT DRAWER ── */
+function EndpointDrawer({ ep, onClose, onRotate, onDisable, onEnable }) {
+  return (
+    <>
+      <div className="drawer-overlay" onClick={onClose} />
+      <div className="drawer">
+        <div className="drawer-hdr">
+          <div>
+            <div className="drawer-title">{ep.name}</div>
+            <div className="drawer-sub">{ep.id} · sandbox · {ep.status}</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="drawer-body">
+          <div className="kv-table">
+            <KV k="Endpoint ID" mono>{ep.id}</KV>
+            <KV k="Name">{ep.name}</KV>
+            <KV k="URL" mono><span className="url-cell" style={{maxWidth:220}} title={ep.url}>{ep.url}</span></KV>
+            <KV k="Status">
+              {ep.status === 'active' ? <Badge cls="b-active">ACTIVE</Badge> : <Badge cls="b-disabled">DISABLED</Badge>}
+            </KV>
+            <KV k="Mode"><Badge cls="b-sandbox">SANDBOX</Badge></KV>
+            <KV k="Subscribed Events">
+              <div style={{display:'flex', flexWrap:'wrap', gap:2}}>
+                {ep.events.map(ev => <span key={ev} className="evt-tag">{ev}</span>)}
+              </div>
+            </KV>
+            <KV k="Secret prefix" mono>{ep.secretPrefix}</KV>
+            <KV k="Secret fingerprint" mono><span style={{color:'var(--t2)'}}>{ep.fingerprint}</span></KV>
+            <KV k="Created by">{ep.createdBy}</KV>
+            <KV k="Created at" mono>{ep.createdAt}</KV>
+            <KV k="Last rotated by">{ep.lastRotatedBy}</KV>
+            <KV k="Last rotated at" mono>{ep.lastRotatedAt}</KV>
+            <KV k="Last delivery">
+              {ep.lastSuccess !== '—' ? <span style={{color:'var(--g)',fontSize:11}}>{ep.lastSuccess} — OK</span> : <span style={{color:'var(--t3)'}}>—</span>}
+            </KV>
+            <KV k="Last failure">
+              {ep.lastFailure !== '—' ? <span style={{color:'var(--rd)',fontSize:11}}>{ep.lastFailure}</span> : <span style={{color:'var(--t3)'}}>—</span>}
+            </KV>
+            {ep.description && <KV k="Description">{ep.description}</KV>}
+          </div>
+          <div>
+            <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:6}}>Delivery Stats</div>
+            <div style={{display:'flex', gap:10}}>
+              <div style={{padding:'8px 12px', background:'var(--g-bg)', border:'1px solid var(--g-bd)', borderRadius:'var(--r)', flex:1, textAlign:'center'}}>
+                <div style={{fontSize:18, fontWeight:600, color:'var(--g)'}}>{ep.deliveries}</div>
+                <div style={{fontSize:10, color:'var(--t3)', marginTop:2}}>Delivered</div>
+              </div>
+              <div style={{padding:'8px 12px', background: ep.failures > 0 ? 'var(--rd-bg)' : 'var(--surf2)', border:`1px solid ${ep.failures > 0 ? 'var(--rd-bd)' : 'var(--bdr)'}`, borderRadius:'var(--r)', flex:1, textAlign:'center'}}>
+                <div style={{fontSize:18, fontWeight:600, color: ep.failures > 0 ? 'var(--rd)' : 'var(--t3)'}}>{ep.failures}</div>
+                <div style={{fontSize:10, color:'var(--t3)', marginTop:2}}>Failures</div>
+              </div>
+            </div>
+          </div>
+          <div className="alert alert-info" style={{fontSize:11}}>
+            The full signing secret is never stored or displayed after the initial one-time reveal. Only the prefix and SHA-256 fingerprint are retained.
+          </div>
+          {ep.status === 'disabled' && (
+            <div className="alert alert-warn" style={{fontSize:11}}>
+              This endpoint is disabled. No events will be delivered until it is re-enabled. Events generated while disabled are not queued for retroactive delivery.
+            </div>
+          )}
+        </div>
+        <div className="drawer-footer">
+          <button className="btn btn-warn btn-sm" onClick={() => { onRotate(ep); onClose(); }}>Rotate Secret</button>
+          {ep.status === 'active'
+            ? <button className="btn btn-danger btn-sm" onClick={() => { onDisable(ep); onClose(); }}>Disable Endpoint</button>
+            : <button className="btn btn-success btn-sm" onClick={() => { onEnable(ep.id); onClose(); }}>Enable Endpoint</button>}
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── ROTATE SECRET MODAL ── */
+function RotateSecretModal({ ep, onConfirm, onClose }) {
+  const [step, setStep]   = useState('confirm'); // 'confirm' | 'reveal'
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const NEW_SECRET = 'whsec_test_sk_R8x9mV2nKpL5wQ3jFbC7yTdNuEa1sGh';
+  const NEW_PREFIX = 'whsec_test_R8x…';
+  const NEW_FP = 'sha256:9g1h2i3j…k456';
+
+  function handleCopy() {
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2200);
+  }
+
+  if (step === 'confirm') {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-hdr">
+            <div>
+              <div className="modal-title">Rotate Signing Secret</div>
+              <div className="modal-sub">{ep.name} · {ep.id}</div>
+            </div>
+            <button className="modal-close" onClick={onClose}>✕</button>
+          </div>
+          <div className="modal-body">
+            <div className="alert alert-warn">
+              <div>
+                <strong>The old secret is invalidated immediately upon rotation.</strong> Any signature verification using the old secret will fail. Update your endpoint handler before confirming if zero-downtime rotation is required.
+              </div>
+            </div>
+            <div className="kv-table">
+              <KV k="Endpoint">{ep.name}</KV>
+              <KV k="Endpoint ID" mono>{ep.id}</KV>
+              <KV k="Current prefix" mono>{ep.secretPrefix}</KV>
+              <KV k="Current fingerprint" mono><span style={{color:'var(--t2)'}}>{ep.fingerprint}</span></KV>
+              <KV k="Rotation effect">Old secret invalidated immediately. New one-time secret reveal follows.</KV>
+              <KV k="Actor">Nora Klein (Merchant Admin)</KV>
+            </div>
+            <div className="alert alert-info" style={{fontSize:11}}>
+              After confirming: a new signing secret will be generated and shown once. Update your endpoint's secret store before the next webhook delivery.
+              Audit event <code style={{fontFamily:'var(--f-mono)', fontSize:10.5, color:'var(--pu)'}}>webhook.secret_rotated</code> will be written.
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-warn btn-sm" onClick={() => { onConfirm(ep.id, NEW_PREFIX, NEW_FP); setStep('reveal'); }}>Confirm Rotation</button>
+            <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+            <span className="modal-note">This action cannot be undone</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (acknowledged) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-hdr">
+            <div>
+              <div className="modal-title">Secret Rotated — Acknowledged</div>
+              <div className="modal-sub">{ep.name} · {ep.id}</div>
+            </div>
+            <button className="modal-close" onClick={onClose}>✕</button>
+          </div>
+          <div className="modal-body">
+            <div className="alert alert-green">
+              New secret acknowledged and cleared from view. Only the prefix and fingerprint are retained. Old secret is no longer valid.
+            </div>
+            <div className="kv-table">
+              <KV k="Endpoint ID" mono>{ep.id}</KV>
+              <KV k="New prefix" mono>{NEW_PREFIX}</KV>
+              <KV k="New fingerprint" mono><span style={{color:'var(--t2)'}}>{NEW_FP}</span></KV>
+              <KV k="Rotated by">Nora Klein</KV>
+              <KV k="Rotated at" mono>2026-05-18 10:41</KV>
+              <KV k="Audit event" mono><span style={{color:'var(--pu)'}}>webhook.secret_rotated</span></KV>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{width:520}} onClick={e => e.stopPropagation()}>
+        <div className="modal-hdr">
+          <div>
+            <div className="modal-title">New Signing Secret — One-Time Reveal</div>
+            <div className="modal-sub">{ep.name} · {ep.id} · rotation complete</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="alert alert-warn" style={{fontSize:11}}>
+            Old secret has been invalidated. Update your endpoint handler with this new secret now.
+          </div>
+          <div className="reveal-box">
+            <div style={{fontSize:11, fontWeight:600, color:'#166534', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6}}>New Signing Secret</div>
+            <div className="reveal-key">
+              <span className="reveal-key-text">{NEW_SECRET}</span>
+              <button className="btn btn-success btn-xs" onClick={handleCopy} style={{flexShrink:0}}>
+                {copied ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
+            <ul className="reveal-bullets">
+              <li>This secret is shown exactly once. MiniFin does not retain the full value.</li>
+              <li>Replace the old secret in your endpoint handler and secrets manager immediately.</li>
+              <li>Old secret is already invalidated — deliveries using it will fail verification.</li>
+            </ul>
+            <div className="ack-row" onClick={() => setAcknowledged(true)}>
+              <input type="checkbox" readOnly checked={acknowledged} />
+              <span>I have securely stored the new secret. Hide it now.</span>
+            </div>
+          </div>
+          <div className="kv-table" style={{fontSize:11}}>
+            <KV k="New prefix" mono>{NEW_PREFIX}</KV>
+            <KV k="New fingerprint" mono><span style={{color:'var(--t2)'}}>{NEW_FP}</span></KV>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── DISABLE CONFIRM MODAL ── */
+function DisableConfirmModal({ ep, onConfirm, onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" style={{width:460}} onClick={e => e.stopPropagation()}>
+        <div className="modal-hdr">
+          <div>
+            <div className="modal-title">Disable Endpoint</div>
+            <div className="modal-sub">{ep.name} · {ep.id}</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="alert alert-warn">
+            Disabling this endpoint stops all webhook deliveries immediately. Events generated while the endpoint is disabled are <strong>not queued</strong> for retroactive delivery when re-enabled.
+          </div>
+          <div className="kv-table">
+            <KV k="Endpoint">{ep.name}</KV>
+            <KV k="URL" mono><span className="url-cell" title={ep.url}>{ep.url}</span></KV>
+            <KV k="Current status"><Badge cls="b-active">ACTIVE</Badge></KV>
+            <KV k="Subscribed events">
+              <div style={{display:'flex', flexWrap:'wrap', gap:2}}>
+                {ep.events.map(ev => <span key={ev} className="evt-tag">{ev}</span>)}
+              </div>
+            </KV>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-danger btn-sm" onClick={onConfirm}>Disable Endpoint</button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <span className="modal-note">Reversible — can be re-enabled at any time</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── TIMELINE RAIL ── */
+function TimelineRail({ expandedIdx, onExpand }) {
+  return (
+    <div className="tl-rail">
+      <div className="tl-hdr">Activity &amp; Audit</div>
+      <div className="tl-body">
+        {TIMELINE_EVENTS.map((evt, i) => (
+          <div key={i} className="tl-evt" onClick={() => onExpand(expandedIdx === i ? null : i)}>
+            <div className="tl-spine">
+              <div className={`tl-dot ${evt.dot}`} />
+              {i < TIMELINE_EVENTS.length - 1 && <div className="tl-line" />}
+            </div>
+            <div className="tl-content">
+              <div className="tl-ts">{evt.ts}</div>
+              <div className="tl-name">{evt.name}</div>
+              <div className="tl-actor">{evt.actor}</div>
+              <div className="tl-desc">{evt.desc}</div>
+              <div className="tl-audit">{evt.audit}</div>
+              {expandedIdx !== i && <div className="tl-expand-hint">click to expand metadata</div>}
+              {expandedIdx === i && (
+                <div className="tl-meta">{evt.meta}</div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── LIVE MODE STATUS PANEL ── */
+function LiveModePanel() {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Live Mode Availability</span>
+        <Badge cls="b-inreview">KYB IN REVIEW</Badge>
+      </div>
+      <div className="panel-body">
+        <div className="lock-grid">
+          <div className="lock-item unlocked">
+            <div className="lock-item-label">✓ Sandbox Webhooks</div>
+            <div className="lock-item-sub">Active — endpoints can be created and tested</div>
+          </div>
+          <div className="lock-item locked">
+            <div className="lock-item-label">⊘ Live Webhooks</div>
+            <div className="lock-item-sub">Locked — KYB in review + Stripe Connect required</div>
+          </div>
+          <div className="lock-item locked">
+            <div className="lock-item-label">⊘ Live Event Delivery</div>
+            <div className="lock-item-sub">Unavailable until live mode is unlocked</div>
+          </div>
+          <div className="lock-item locked">
+            <div className="lock-item-label">⊘ Live Secret Rotation</div>
+            <div className="lock-item-sub">Not available in sandbox-only mode</div>
+          </div>
+        </div>
+        <div style={{marginTop:10, fontSize:11, color:'var(--t3)'}}>
+          KYB status: <span style={{fontFamily:'var(--f-mono)', color:'var(--pu)'}}>in_review</span> · Stripe Connect: <span style={{fontFamily:'var(--f-mono)', color:'var(--rd)'}}>not_completed</span> · Contact <span style={{fontFamily:'var(--f-mono)'}}>compliance@minifin.io</span> for status.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App() {
+  const [endpoints, setEndpoints]     = useState(INITIAL_ENDPOINTS);
+  const [selectedEpId, setSelectedEpId] = useState('EP-001');
+  const [showCreate, setShowCreate]   = useState(false);
+  const [drawerEp, setDrawerEp]       = useState(null);
+  const [rotateTarget, setRotateTarget] = useState(null);
+  const [disableTarget, setDisableTarget] = useState(null);
+  const [expandedDelivery, setExpandedDelivery] = useState(null);
+  const [expandedTl, setExpandedTl]   = useState(null);
+
+  function handleCreate(formData) {
+    const newEp = {
+      id: `EP-${String(Date.now()).slice(-4)}`,
+      name: formData.name,
+      url: formData.url,
+      status: 'active',
+      events: formData.events,
+      secretPrefix: 'whsec_test_7Xn…',
+      fingerprint: 'sha256:0a1b2c3d…e5f6',
+      lastSuccess: '—',
+      lastFailure: '—',
+      createdBy: 'Nora Klein',
+      createdAt: '2026-05-18 10:42',
+      lastRotatedBy: '—',
+      lastRotatedAt: '—',
+      description: formData.description || '',
+      deliveries: 0,
+      failures: 0,
+      isNew: true,
+    };
+    setEndpoints(prev => [newEp, ...prev]);
+    return newEp;
+  }
+
+  function handleRotateConfirm(epId, newPrefix, newFp) {
+    setEndpoints(prev => prev.map(ep =>
+      ep.id === epId
+        ? { ...ep, secretPrefix: newPrefix, fingerprint: newFp, lastRotatedBy: 'Nora Klein', lastRotatedAt: '2026-05-18 10:41' }
+        : ep
+    ));
+  }
+
+  function handleDisableConfirm() {
+    if (!disableTarget) return;
+    setEndpoints(prev => prev.map(ep =>
+      ep.id === disableTarget.id ? { ...ep, status: 'disabled' } : ep
+    ));
+    setDisableTarget(null);
+  }
+
+  function handleEnable(epId) {
+    setEndpoints(prev => prev.map(ep =>
+      ep.id === epId ? { ...ep, status: 'active' } : ep
+    ));
+  }
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+        {/* PAGE HEADER */}
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>Orbit Market</span>
+            <span className="sep">›</span>
+            <strong>Webhooks</strong>
+            <span className="sep">·</span>
+            <span style={{fontFamily:'var(--f-mono)', fontSize:11, color:'var(--t3)'}}>MRC-20491</span>
+          </div>
+          <div className="page-meta">
+            <div className="env-badge"><div className="env-badge-dot"/>Local Sandbox</div>
+            <Badge cls="b-inreview">KYB IN REVIEW</Badge>
+            <div className="user-chip">
+              <div className="user-avatar">NK</div>
+              <span className="user-name">Nora Klein</span>
+              <span style={{fontSize:10, color:'var(--t3)', marginLeft:2}}>Merchant Admin</span>
+            </div>
+            <span className="screen-id">MDB-UI-04</span>
+          </div>
+        </div>
+
+        {/* CONTENT */}
+        <div className="content-area">
+          <div className="left-scroll">
+            <StatusStrip endpoints={endpoints} />
+
+            <EndpointTable
+              endpoints={endpoints}
+              selectedEpId={selectedEpId}
+              onSelect={setSelectedEpId}
+              onViewDrawer={setDrawerEp}
+              onRotate={setRotateTarget}
+              onDisable={setDisableTarget}
+              onEnable={handleEnable}
+              onCreateClick={() => setShowCreate(true)}
+            />
+
+            {showCreate && (
+              <CreateEndpointPanel
+                endpoints={endpoints}
+                onCreate={handleCreate}
+                onClose={() => setShowCreate(false)}
+              />
+            )}
+
+            <DeliveryLogPanel
+              selectedEpId={selectedEpId}
+              endpoints={endpoints}
+              expandedId={expandedDelivery}
+              onExpand={setExpandedDelivery}
+            />
+
+            <RetryDLQPanel />
+            <PayloadPreviewPanel />
+            <SecurityRulesPanel />
+            <LiveModePanel />
+
+            <div style={{height:14}} />
+          </div>
+
+          <TimelineRail expandedIdx={expandedTl} onExpand={setExpandedTl} />
+        </div>
+      </div>
+
+      {/* DRAWER */}
+      {drawerEp && (
+        <EndpointDrawer
+          ep={endpoints.find(e => e.id === drawerEp.id) || drawerEp}
+          onClose={() => setDrawerEp(null)}
+          onRotate={ep => { setRotateTarget(ep); setDrawerEp(null); }}
+          onDisable={ep => { setDisableTarget(ep); setDrawerEp(null); }}
+          onEnable={id => { handleEnable(id); setDrawerEp(null); }}
+        />
+      )}
+
+      {/* ROTATE MODAL */}
+      {rotateTarget && (
+        <RotateSecretModal
+          ep={rotateTarget}
+          onConfirm={handleRotateConfirm}
+          onClose={() => setRotateTarget(null)}
+        />
+      )}
+
+      {/* DISABLE MODAL */}
+      {disableTarget && (
+        <DisableConfirmModal
+          ep={disableTarget}
+          onConfirm={handleDisableConfirm}
+          onClose={() => setDisableTarget(null)}
+        />
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
