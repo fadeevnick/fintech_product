@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — API Keys — MDB-UI-03</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #eceae5;
+      --surface: #ffffff;
+      --surf2:   #f7f6f3;
+      --inp:     #faf9f7;
+      --hover:   #f0efe9;
+
+      --sb:        #111114;
+      --sb-bdr:    #1e1e22;
+      --sb-muted:  #545460;
+      --sb-active: #1e1e28;
+
+      --bdr:       #dddad2;
+      --bdr-mid:   #c5c2ba;
+      --bdr-focus: #1c1c1f;
+
+      --t1: #1c1c1f;
+      --t2: #575763;
+      --t3: #9898a6;
+      --t4: #d0d0da;
+
+      --cta:     #1c1c1f;
+      --cta-hov: #2e2e35;
+      --cta-t:   #ffffff;
+
+      --g:  #166534;  --g-bg:  #f0fdf4;  --g-bd:  #bbf7d0;
+      --am: #854d0e;  --am-bg: #fffbeb;  --am-bd: #fde68a;
+      --rd: #9b1c1c;  --rd-bg: #fef2f2;  --rd-bd: #fecaca;
+      --or: #b45309;  --or-bg: #fff7ed;  --or-bd: #fed7aa;
+      --pu: #5b21b6;  --pu-bg: #f5f3ff;  --pu-bd: #ddd6fe;
+
+      --sb-env-bg: #1a1030;
+      --sb-env-t:  #b39cf0;
+      --sb-env-bd: #362566;
+
+      --f-ui:   'IBM Plex Sans', sans-serif;
+      --f-mono: 'IBM Plex Mono', monospace;
+
+      --r:    3px;
+      --r-lg: 5px;
+      --w-sb: 220px;
+      --w-tl: 252px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--t1);
+      font-family: var(--f-ui); font-size: 13px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased; }
+    #root { width: 100%; height: 100vh; display: flex; overflow: hidden; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { width: var(--w-sb); flex-shrink: 0; background: var(--sb);
+      border-right: 1px solid var(--sb-bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { padding: 14px 14px 12px; border-bottom: 1px solid var(--sb-bdr); }
+    .sb-mark  { display: flex; align-items: center; gap: 9px; }
+    .sb-name  { font-size: 14.5px; font-weight: 600; color: #eaeaf4; letter-spacing: -0.01em; }
+    .sb-sub   { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 3px; }
+    .sb-merchant { margin-top: 10px; padding: 7px 9px; background: rgba(255,255,255,0.04);
+      border-radius: var(--r); border: 1px solid var(--sb-bdr); }
+    .sb-m-label { font-size: 9px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 3px; }
+    .sb-m-name  { font-size: 12.5px; font-weight: 600; color: #eaeaf4; }
+    .sb-m-id    { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); margin-top: 1px; }
+    .sb-nav   { flex: 1; padding: 10px 7px; overflow-y: auto; }
+    .nav-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--sb-muted); padding: 4px 9px 5px; margin-top: 4px; }
+    .nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+      border-radius: var(--r); color: var(--sb-muted); font-size: 12px;
+      cursor: default; user-select: none; transition: background 0.1s; }
+    .nav-item.locked  { opacity: 0.35; }
+    .nav-item.current { background: var(--sb-active); color: #e0e0ec; }
+    .nav-lock { margin-left: auto; font-size: 9px; opacity: 0.6; }
+    .nav-id   { margin-left: auto; font-size: 9px; font-family: var(--f-mono); color: var(--sb-muted); opacity: 0.8; }
+    .nav-item.current .nav-id { color: #7c6ff7; opacity: 1; }
+    .sb-footer { padding: 10px 14px; border-top: 1px solid var(--sb-bdr); }
+    .env-chip  { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px;
+      border-radius: var(--r); background: var(--sb-env-bg); border: 1px solid var(--sb-env-bd);
+      font-size: 10px; color: var(--sb-env-t); font-family: var(--f-mono); margin-bottom: 4px; }
+    .env-dot   { width: 5px; height: 5px; border-radius: 50%; background: var(--sb-env-t); opacity: 0.7; }
+    .env-host  { font-size: 10px; color: var(--sb-muted); font-family: var(--f-mono); }
+    .sb-user   { display: flex; align-items: center; gap: 7px; margin-top: 9px; }
+    .sb-avatar { width: 24px; height: 24px; border-radius: 50%; background: #5b21b6;
+      color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; }
+    .sb-uname  { font-size: 11px; font-weight: 500; color: #eaeaf4; }
+    .sb-urole  { font-size: 9.5px; color: var(--sb-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── MAIN ── */
+    .main-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+    .page-hdr  { display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 22px; border-bottom: 1px solid var(--bdr);
+      background: var(--surface); flex-shrink: 0; gap: 10px; flex-wrap: wrap; }
+    .page-bc   { font-size: 12.5px; color: var(--t2); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .page-bc strong { color: var(--t1); font-weight: 500; }
+    .page-bc .sep   { color: var(--t3); }
+    .page-bc .mode  { font-family: var(--f-mono); font-size: 11.5px; color: var(--t2); }
+    .page-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+    .screen-id { font-size: 10px; font-family: var(--f-mono); color: var(--t3);
+      padding: 2px 6px; border: 1px solid var(--bdr); border-radius: var(--r); }
+    .env-badge { font-size: 10px; font-family: var(--f-mono); color: var(--am);
+      background: var(--am-bg); border: 1px solid var(--am-bd);
+      padding: 2px 8px; border-radius: var(--r); display: flex; align-items: center; gap: 5px; }
+    .env-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--am); }
+    .user-chip { display: flex; align-items: center; gap: 7px; padding: 3px 9px 3px 3px;
+      border: 1px solid var(--bdr); border-radius: 20px; background: var(--surf2); }
+    .user-avatar { width: 22px; height: 22px; border-radius: 50%; background: #5b21b6;
+      color: #fff; font-size: 9px; font-weight: 600; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; }
+    .user-name { font-size: 11.5px; color: var(--t2); font-weight: 500; }
+
+    /* ── CONTENT ── */
+    .content-area { flex: 1; display: flex; overflow: hidden; }
+    .left-scroll  { flex: 1; overflow-y: auto; padding: 14px 18px;
+      background: var(--bg); display: flex; flex-direction: column; gap: 11px; min-width: 0; }
+
+    /* ── PANELS ── */
+    .panel     { background: var(--surface); border: 1px solid var(--bdr);
+      border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
+    .panel-hdr { display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--bdr); background: var(--surf2); flex-shrink: 0; flex-wrap: wrap; gap: 8px; }
+    .panel-title { font-size: 11.5px; font-weight: 600; color: var(--t1);
+      text-transform: uppercase; letter-spacing: 0.04em; }
+    .panel-body  { padding: 13px 16px; }
+
+    /* ── BADGES ── */
+    .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.07em;
+      font-family: var(--f-mono); border: 1px solid transparent; white-space: nowrap; }
+    .b-active    { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-pending   { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-action    { background: var(--rd-bg); color: var(--rd);  border-color: var(--rd-bd); }
+    .b-locked    { background: var(--hover); color: var(--t2);  border-color: var(--bdr); }
+    .b-inreview  { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-sandbox   { background: var(--pu-bg); color: var(--pu);  border-color: var(--pu-bd); }
+    .b-revoked   { background: var(--hover); color: var(--t3);  border-color: var(--bdr); text-decoration: line-through; }
+    .b-restricted{ background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+    .b-new       { background: var(--g-bg);  color: var(--g);   border-color: var(--g-bd); }
+    .b-warn      { background: var(--am-bg); color: var(--am);  border-color: var(--am-bd); }
+
+    /* ── STATUS STRIP ── */
+    .status-strip { display: flex; flex-wrap: wrap; background: var(--surface);
+      border: 1px solid var(--bdr); border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
+    .stat-cell { padding: 11px 14px; border-right: 1px solid var(--bdr); flex: 1 1 120px; min-width: 0; }
+    .stat-cell:last-child { border-right: none; }
+    .stat-k { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t3); margin-bottom: 4px; font-weight: 600; }
+    .stat-v { font-size: 12.5px; color: var(--t1); font-weight: 500;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .stat-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+
+    /* ── KV ── */
+    .kv-table { display: flex; flex-direction: column; }
+    .kv-row   { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--hover); }
+    .kv-row:last-child { border-bottom: none; }
+    .kv-k { font-size: 11px; color: var(--t3); min-width: 172px; flex-shrink: 0; padding-top: 2px; }
+    .kv-v { font-size: 12px; color: var(--t1); flex: 1; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .kv-v.mono { font-family: var(--f-mono); font-size: 11.5px; }
+
+    /* ── BUTTONS ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--r); font-size: 12.5px; font-weight: 500;
+      font-family: var(--f-ui); cursor: pointer; border: none; transition: background 0.1s; }
+    .btn-primary { background: var(--cta); color: var(--cta-t); }
+    .btn-primary:hover { background: var(--cta-hov); }
+    .btn-ghost   { background: var(--surface); color: var(--t2); border: 1px solid var(--bdr-mid); }
+    .btn-ghost:hover   { background: var(--hover); color: var(--t1); }
+    .btn-danger  { background: var(--rd-bg); color: var(--rd); border: 1px solid var(--rd-bd); }
+    .btn-danger:hover  { background: #fee2e2; }
+    .btn-warn    { background: var(--am-bg); color: var(--am); border: 1px solid var(--am-bd); }
+    .btn-success { background: var(--g-bg);  color: var(--g);  border: 1px solid var(--g-bd); }
+    .btn-sm      { padding: 4px 10px; font-size: 11px; }
+    .btn-xs      { padding: 2px 7px; font-size: 10.5px; }
+    .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+    .btn-faux-disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── ALERTS ── */
+    .alert { display: flex; gap: 10px; padding: 9px 12px 9px 13px; font-size: 12px;
+      line-height: 1.55; border-left-width: 3px; border-left-style: solid; border-radius: var(--r); }
+    .alert-warn  { background: var(--am-bg); border-left-color: var(--am); color: #78350f; }
+    .alert-red   { background: var(--rd-bg); border-left-color: var(--rd); color: #7f1d1d; }
+    .alert-info  { background: var(--hover); border-left-color: var(--bdr-mid); color: var(--t2); }
+    .alert-green { background: var(--g-bg);  border-left-color: var(--g);  color: #14532d; }
+    .alert-pu    { background: var(--pu-bg); border-left-color: var(--pu); color: #3b0764; }
+
+    /* ── TABLES ── */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--t3); padding: 6px 10px; text-align: left;
+      border-bottom: 1px solid var(--bdr); background: var(--surf2); font-weight: 600; }
+    .data-table td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid var(--hover); vertical-align: middle; }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr.row-revoked td { opacity: 0.55; }
+    .data-table tr.row-new td { background: rgba(240,253,244,0.5); }
+    .data-table tr.row-hover:hover td { background: var(--surf2); cursor: pointer; }
+    .mono-cell  { font-family: var(--f-mono); font-size: 11px; }
+    .tbl-link { font-size: 10.5px; color: var(--pu); cursor: pointer; text-decoration: underline;
+      font-family: var(--f-mono); background: none; border: none; padding: 0; }
+    .tbl-link:hover { color: #4c1d95; }
+
+    /* ── FORMS ── */
+    .inp-label { font-size: 11px; color: var(--t2); margin-bottom: 4px; font-weight: 500; display: block; }
+    .inp-field { width: 100%; padding: 7px 10px; border: 1px solid var(--bdr-mid);
+      border-radius: var(--r); font-size: 12.5px; color: var(--t1);
+      background: var(--inp); outline: none; font-family: var(--f-ui); transition: border-color 0.12s; }
+    .inp-field:focus { border-color: var(--bdr-focus); }
+    select.inp-field { cursor: pointer; }
+    .inp-hint { font-size: 10.5px; color: var(--t3); margin-top: 3px; }
+    .form-row  { display: flex; gap: 11px; }
+    .form-row > * { flex: 1; min-width: 0; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 11px; }
+    .form-group:last-child { margin-bottom: 0; }
+
+    /* ── SCOPE CHECKBOXES ── */
+    .scope-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+    .scope-item { display: flex; align-items: center; gap: 6px; padding: 5px 9px;
+      border: 1px solid var(--bdr); border-radius: var(--r); cursor: pointer;
+      background: var(--surf2); transition: all 0.1s; user-select: none; }
+    .scope-item:hover { border-color: var(--bdr-focus); background: var(--hover); }
+    .scope-item.checked { background: var(--pu-bg); border-color: var(--pu-bd); }
+    .scope-item input { accent-color: var(--pu); width: 12px; height: 12px; cursor: pointer; }
+    .scope-label { font-size: 11px; font-family: var(--f-mono); color: var(--t2); }
+    .scope-item.checked .scope-label { color: var(--pu); }
+
+    /* ── ONE-TIME REVEAL ── */
+    .reveal-box { background: var(--g-bg); border: 1.5px solid var(--g-bd);
+      border-radius: var(--r-lg); padding: 14px 16px; }
+    .reveal-key { font-family: var(--f-mono); font-size: 13px; color: var(--t1);
+      background: var(--surface); border: 1px solid var(--bdr-mid); border-radius: var(--r);
+      padding: 8px 12px; display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; margin: 10px 0; word-break: break-all; }
+    .reveal-key-text { flex: 1; }
+    .reveal-bullets { font-size: 11.5px; color: #166534; line-height: 1.7; margin: 8px 0; }
+    .reveal-bullets li { list-style: none; padding-left: 14px; position: relative; }
+    .reveal-bullets li::before { content: '⚠'; position: absolute; left: 0; font-size: 10px; top: 1px; }
+
+    /* ── CODE BLOCK ── */
+    .code-block { background: #1c1c1f; color: #c8c8d8; font-family: var(--f-mono);
+      font-size: 11.5px; border-radius: var(--r); padding: 10px 14px; line-height: 1.6; }
+    .code-block .c-key   { color: #7c6ff7; }
+    .code-block .c-val   { color: #a3e635; }
+    .code-block .c-str   { color: #fbbf24; }
+    .code-block .c-com   { color: #555570; }
+    .code-block .c-meth  { color: #67e8f9; }
+    .code-block .c-url   { color: #94a3b8; }
+
+    /* ── MODAL ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,20,0.52);
+      display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg);
+      width: 500px; max-width: 100%; max-height: 88vh; display: flex; flex-direction: column;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08); }
+    .modal-hdr   { display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 13px 16px; border-bottom: 1px solid var(--bdr); flex-shrink: 0; background: var(--surf2); }
+    .modal-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+    .modal-sub   { font-size: 11px; color: var(--t3); margin-top: 2px; }
+    .modal-close { width: 24px; height: 24px; border-radius: var(--r); background: transparent;
+      border: none; color: var(--t3); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: background 0.1s, color 0.1s; flex-shrink: 0; margin-top: 1px; font-size: 14px; }
+    .modal-close:hover { background: var(--hover); color: var(--t1); }
+    .modal-body  { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .modal-footer{ padding: 12px 16px; border-top: 1px solid var(--bdr); display: flex;
+      gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap; }
+    .modal-note  { font-size: 10.5px; color: var(--t3); margin-left: auto; font-style: italic; }
+
+    /* ── DRAWER ── */
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(17,17,20,0.35); z-index: 90; }
+    .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 400px; max-width: 95vw;
+      background: var(--surface); border-left: 1px solid var(--bdr);
+      display: flex; flex-direction: column; z-index: 91;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.12); }
+    .drawer-hdr  { padding: 13px 16px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+      background: var(--surf2); display: flex; align-items: flex-start; justify-content: space-between; }
+    .drawer-title{ font-size: 13px; font-weight: 600; color: var(--t1); }
+    .drawer-sub  { font-size: 10.5px; color: var(--t3); margin-top: 2px; }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── TIMELINE RAIL ── */
+    .tl-rail  { width: var(--w-tl); flex-shrink: 0; background: var(--surface);
+      border-left: 1px solid var(--bdr); display: flex; flex-direction: column; overflow: hidden; }
+    .tl-hdr   { padding: 10px 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+      font-size: 9.5px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: 0.1em; }
+    .tl-body  { flex: 1; overflow-y: auto; padding: 10px 14px; }
+    .tl-evt   { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--hover); cursor: pointer; }
+    .tl-evt:last-child { border-bottom: none; }
+    .tl-evt:hover .tl-name { color: var(--cta); }
+    .tl-spine { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+    .tl-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+    .tl-dot.ok   { background: var(--g); }
+    .tl-dot.pend { background: var(--or); }
+    .tl-dot.bad  { background: var(--rd); }
+    .tl-dot.neu  { background: var(--t4); }
+    .tl-dot.pu   { background: var(--pu); }
+    .tl-line  { width: 1px; flex: 1; background: var(--bdr); margin: 4px 0; min-height: 12px; }
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-ts    { font-size: 9.5px; font-family: var(--f-mono); color: var(--t3); margin-bottom: 1px; }
+    .tl-name  { font-size: 11px; font-weight: 600; color: var(--t1); margin-bottom: 1px;
+      text-transform: uppercase; letter-spacing: 0.04em; transition: color 0.1s; }
+    .tl-actor { font-size: 10px; color: var(--t3); margin-bottom: 2px; }
+    .tl-desc  { font-size: 10.5px; color: var(--t2); line-height: 1.4; }
+    .tl-audit { font-size: 9.5px; font-family: var(--f-mono); color: var(--pu); margin-top: 4px;
+      background: var(--pu-bg); border: 1px solid var(--pu-bd); border-radius: var(--r);
+      padding: 2px 6px; display: inline-block; }
+    .tl-expand-hint { font-size: 9px; color: var(--t4); margin-top: 2px; font-style: italic; }
+    .tl-meta  { margin-top: 6px; padding: 7px 9px; background: var(--surf2); border: 1px solid var(--bdr);
+      border-radius: var(--r); font-size: 10px; font-family: var(--f-mono); color: var(--t2); line-height: 1.6; }
+
+    /* ── LOCK PANEL ── */
+    .lock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .lock-item { padding: 9px 11px; border: 1px solid var(--bdr); border-radius: var(--r);
+      background: var(--surf2); }
+    .lock-item.locked  { border-color: var(--rd-bd); background: var(--rd-bg); }
+    .lock-item.unlocked{ border-color: var(--g-bd);  background: var(--g-bg); }
+    .lock-item-label { font-size: 11px; font-weight: 500; color: var(--t1); }
+    .lock-item-sub   { font-size: 10px; color: var(--t3); margin-top: 2px; }
+    .lock-item.locked  .lock-item-label { color: var(--rd); }
+    .lock-item.unlocked .lock-item-label { color: var(--g); }
+
+    /* ── IDEMPOTENCY / SECURITY TABLE ── */
+    .rule-list { display: flex; flex-direction: column; gap: 6px; }
+    .rule-item { display: flex; gap: 10px; padding: 7px 10px; border: 1px solid var(--bdr);
+      border-radius: var(--r); background: var(--surf2); align-items: flex-start; }
+    .rule-icon { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+    .rule-text { flex: 1; min-width: 0; }
+    .rule-title { font-size: 11.5px; font-weight: 600; color: var(--t1); margin-bottom: 2px; }
+    .rule-desc  { font-size: 11px; color: var(--t2); line-height: 1.4; }
+    .rule-mono  { font-family: var(--f-mono); font-size: 10.5px; color: var(--pu);
+      background: var(--pu-bg); padding: 1px 5px; border-radius: 2px; }
+
+    /* ── PREVIEW TOGGLE ── */
+    .preview-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px;
+      border-radius: var(--r); font-size: 11px; cursor: pointer; border: none;
+      font-family: var(--f-ui); font-weight: 500; transition: all 0.12s; }
+    .preview-toggle.on  { background: var(--pu-bg); border: 1px solid var(--pu-bd); color: var(--pu); }
+    .preview-toggle.off { background: var(--surf2); border: 1px solid var(--bdr-mid); color: var(--t2); }
+    .preview-toggle.off:hover { background: var(--hover); color: var(--t1); }
+
+    /* ── SANDBOX NOTE ── */
+    .sandbox-note { font-size: 10px; color: var(--t3); font-family: var(--f-mono);
+      padding: 4px 9px; background: var(--surf2); border: 1px solid var(--bdr); border-radius: var(--r); }
+
+    /* ── SCOPES LIST ── */
+    .scope-tag { display: inline-flex; padding: 1px 5px; border-radius: 2px;
+      font-size: 9.5px; font-family: var(--f-mono); background: var(--pu-bg);
+      color: var(--pu); border: 1px solid var(--pu-bd); white-space: nowrap; }
+    .scope-tag-gray { background: var(--hover); color: var(--t3); border-color: var(--bdr); }
+
+    @media (max-width: 1100px) { :root { --w-tl: 210px; } }
+    @media (max-width: 960px)  { .tl-rail { display: none; } }
+    @media (max-width: 640px)  { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef } = React;
+
+/* ── LOGO ── */
+function LogoMark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <rect width="26" height="26" rx="5" fill="#2a2a36"/>
+      <rect x="5" y="5" width="7" height="7" rx="1.5" fill="#7c6ff7"/>
+      <rect x="14" y="5" width="7" height="7" rx="1.5" fill="#4a4a5a"/>
+      <rect x="5" y="14" width="7" height="7" rx="1.5" fill="#4a4a5a"/>
+      <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#7c6ff7" opacity="0.5"/>
+    </svg>
+  );
+}
+
+function Badge({ cls, children }) {
+  return <span className={`badge ${cls}`}>{children}</span>;
+}
+
+function KV({ k, mono, children }) {
+  return (
+    <div className="kv-row">
+      <div className="kv-k">{k}</div>
+      <div className={`kv-v${mono ? ' mono' : ''}`}>{children}</div>
+    </div>
+  );
+}
+
+/* ── STATIC DATA ── */
+const NAV_ITEMS = [
+  { sec: 'MERCHANT' },
+  { id: 'MDB-UI-01', label: 'Overview',        icon: '▤' },
+  { id: 'MDB-UI-02', label: 'Onboarding',      icon: '◎' },
+  { id: 'MDB-UI-03', label: 'API Keys',         icon: '⌗', current: true },
+  { id: 'MDB-UI-04', label: 'Webhooks',         icon: '⇥' },
+  { id: 'MDB-UI-05', label: 'Payments',         icon: '⇅', locked: true },
+  { id: 'MDB-UI-06', label: 'Settlements',      icon: '⊟', locked: true },
+  { id: 'MDB-UI-07', label: 'Disputes',         icon: '⊘', locked: true },
+  { sec: 'ACCOUNT' },
+  { id: '',          label: 'Team',             icon: '⊙' },
+  { id: '',          label: 'Settings',         icon: '⊕' },
+];
+
+const INITIAL_KEYS = [
+  {
+    id: 'KEY-88120',
+    name: 'Backend payments service',
+    prefix: 'mfp_test_7Kp…9Q2',
+    mode: 'sandbox',
+    scopes: ['payment_intents:create', 'payment_intents:read', 'webhooks:read'],
+    status: 'active',
+    type: 'server',
+    createdBy: 'Nora Klein',
+    created: '2026-05-12 10:32',
+    lastUsed: '2026-05-17 13:04',
+    fingerprint: 'sha256:8f2a1c9d…e74b',
+  },
+  {
+    id: 'KEY-88142',
+    name: 'Webhook replay tool',
+    prefix: 'mfp_test_N4h…8ZA',
+    mode: 'sandbox',
+    scopes: ['webhooks:read', 'webhooks:replay'],
+    status: 'active',
+    type: 'restricted',
+    createdBy: 'Nora Klein',
+    created: '2026-05-14 15:18',
+    lastUsed: '2026-05-16 09:11',
+    fingerprint: 'sha256:3c5e7f01…a92c',
+  },
+  {
+    id: 'KEY-87001',
+    name: 'Old integration key',
+    prefix: 'mfp_test_A91…2BC',
+    mode: 'sandbox',
+    scopes: ['payment_intents:create', 'payment_intents:read', 'webhooks:read', 'settlements:read'],
+    status: 'revoked',
+    type: 'server',
+    createdBy: 'Nora Klein',
+    created: '2026-04-28 08:45',
+    lastUsed: '2026-05-10 11:22',
+    revokedAt: '2026-05-12 10:29',
+    fingerprint: 'sha256:1b9d4e77…c3fa',
+  },
+];
+
+const ALL_SCOPES = [
+  'payment_intents:create',
+  'payment_intents:read',
+  'webhooks:read',
+  'webhooks:replay',
+  'settlements:read',
+  'disputes:read',
+];
+
+const TIMELINE_EVENTS = [
+  { ts: '2026-05-17 13:05', actor: 'System',     dot: 'ok',   name: 'KEY USED',             desc: 'KEY-88120 authenticated successfully. POST /v1/payment_intents. Request ID: req_7Kp9Q2a.',    audit: 'api_key.used', meta: 'key_id: KEY-88120\npath: POST /v1/payment_intents\nip: 10.0.1.42\nrequest_id: req_7Kp9Q2a' },
+  { ts: '2026-05-16 09:11', actor: 'System',     dot: 'ok',   name: 'KEY USED',             desc: 'KEY-88142 authenticated. GET /v1/webhooks. Restricted key, read-only scope.',                  audit: 'api_key.used', meta: 'key_id: KEY-88142\npath: GET /v1/webhooks\nscope: webhooks:read\nip: 10.0.1.42' },
+  { ts: '2026-05-14 16:02', actor: 'System',     dot: 'bad',  name: 'AUTH FAILURE',         desc: 'POST /v1/payment_intents rejected — invalid bearer token. 401 returned. No key matched.',      audit: 'api_key.auth_failed', meta: 'path: POST /v1/payment_intents\nreason: key_not_found\nip: 10.0.2.17\nstatus: 401' },
+  { ts: '2026-05-14 15:18', actor: 'Nora Klein', dot: 'ok',   name: 'KEY CREATED',          desc: 'KEY-88142 (Webhook replay tool) created with scopes: webhooks:read, webhooks:replay.',         audit: 'api_key.created', meta: 'key_id: KEY-88142\nscopes: webhooks:read, webhooks:replay\nmode: sandbox' },
+  { ts: '2026-05-14 15:18', actor: 'Nora Klein', dot: 'pu',   name: 'KEY REVEALED ONCE',    desc: 'Full secret for KEY-88142 displayed. One-time reveal acknowledged. Hashed and stored.',         audit: 'api_key.secret_revealed', meta: 'key_id: KEY-88142\nstored_as: sha256_fingerprint_only\nacknowledged: true' },
+  { ts: '2026-05-13 14:30', actor: 'System',     dot: 'pend', name: 'IDEMPOTENCY REPLAY',   desc: 'Replay of POST /v1/payment_intents with matching Idempotency-Key. Stored response returned.',   audit: 'api_key.idempotency_replay', meta: 'idempotency_key: idem_orbit_20260513_pmt_001\noriginal_ts: 2026-05-13T14:28:12Z\nttl: 24h' },
+  { ts: '2026-05-12 10:29', actor: 'Nora Klein', dot: 'bad',  name: 'KEY REVOKED',          desc: 'KEY-87001 (Old integration key) revoked. Effective immediately. Auth requests will return 401.', audit: 'api_key.revoked', meta: 'key_id: KEY-87001\nreason: key_rotation\nactor: nora@orbitmarket.de' },
+  { ts: '2026-05-12 10:32', actor: 'Nora Klein', dot: 'ok',   name: 'KEY CREATED',          desc: 'KEY-88120 (Backend payments service) created with scopes: payment_intents:create, payment_intents:read, webhooks:read.', audit: 'api_key.created', meta: 'key_id: KEY-88120\nscopes: payment_intents:create, payment_intents:read, webhooks:read\nmode: sandbox' },
+  { ts: '2026-05-12 10:32', actor: 'Nora Klein', dot: 'pu',   name: 'KEY REVEALED ONCE',    desc: 'Full secret for KEY-88120 displayed once. Acknowledged. Only fingerprint retained.',            audit: 'api_key.secret_revealed', meta: 'key_id: KEY-88120\nstored_as: sha256_fingerprint_only\nacknowledged: true' },
+  { ts: '2026-04-28 08:45', actor: 'Nora Klein', dot: 'bad',  name: 'LIVE KEY BLOCKED',     desc: 'Attempt to create live-mode API key rejected. Blocker: KYB in review, Stripe Connect incomplete.', audit: 'api_key.live_creation_blocked', meta: 'blocker: kyb_in_review\nblocker: stripe_connect_not_complete\nmode: live' },
+];
+
+/* ── SIDEBAR ── */
+function Sidebar() {
+  return (
+    <div className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-mark">
+          <LogoMark />
+          <div>
+            <div className="sb-name">MiniFin</div>
+            <div className="sb-sub">Merchant Dashboard</div>
+          </div>
+        </div>
+        <div className="sb-merchant">
+          <div className="sb-m-label">Merchant</div>
+          <div className="sb-m-name">Orbit Market</div>
+          <div className="sb-m-id">MRC-20491</div>
+        </div>
+      </div>
+      <nav className="sb-nav">
+        {NAV_ITEMS.map((item, i) => (
+          item.sec
+            ? <div key={i} className="nav-sec" style={{marginTop: i === 0 ? 0 : 8}}>{item.sec}</div>
+            : (
+              <div key={i} className={`nav-item${item.current ? ' current' : ''}${item.locked ? ' locked' : ''}`}>
+                <span style={{fontSize: 13}}>{item.icon}</span>
+                <span>{item.label}</span>
+                {item.locked && <span className="nav-lock">🔒</span>}
+                {item.id && <span className="nav-id">{item.id}</span>}
+              </div>
+            )
+        ))}
+      </nav>
+      <div className="sb-footer">
+        <div className="env-chip"><div className="env-dot"/>Local Sandbox</div>
+        <div className="env-host">merchants.miniefin.local</div>
+        <div className="sb-user">
+          <div className="sb-avatar">NK</div>
+          <div>
+            <div className="sb-uname">Nora Klein</div>
+            <div className="sb-urole">Merchant Admin</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── REVOKE MODAL ── */
+function RevokeModal({ keyData, onConfirm, onClose }) {
+  const [confirmed, setConfirmed] = useState(false);
+  if (confirmed) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" onClick={e => e.stopPropagation()} style={{width: 460}}>
+          <div className="modal-hdr">
+            <div>
+              <div className="modal-title">Key Revoked</div>
+              <div className="modal-sub">{keyData.name} · {keyData.id}</div>
+            </div>
+            <button className="modal-close" onClick={onClose}>✕</button>
+          </div>
+          <div className="modal-body">
+            <div className="alert alert-red">
+              <div>
+                <strong>{keyData.id}</strong> has been revoked. Authentication requests using this key now return <code style={{fontFamily:'var(--f-mono)'}}>401 Unauthorized</code>.
+                The key remains visible in audit history but cannot be restored.
+              </div>
+            </div>
+            <div className="kv-table">
+              <KV k="Key ID">{keyData.id}</KV>
+              <KV k="Key name">{keyData.name}</KV>
+              <KV k="Revoked at">2026-05-18 10:41</KV>
+              <KV k="Revoked by">Nora Klein</KV>
+              <KV k="Audit event" mono><span style={{color:'var(--pu)'}}>api_key.revoked</span></KV>
+              <KV k="Effect">Immediate — all in-flight requests using this key fail authentication</KV>
+            </div>
+            <div className="alert alert-info" style={{fontSize: 11}}>
+              Revoked keys cannot be restored. If you need this capability again, create a new key with the required scopes.
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{width: 460}}>
+        <div className="modal-hdr">
+          <div>
+            <div className="modal-title">Revoke API Key</div>
+            <div className="modal-sub">This action cannot be undone</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="alert alert-warn">
+            Revoking this key immediately invalidates all authentication requests using it.
+            Any running service using this key will receive <strong>401 Unauthorized</strong> on the next request.
+          </div>
+          <div className="kv-table">
+            <KV k="Key ID" mono>{keyData.id}</KV>
+            <KV k="Key name">{keyData.name}</KV>
+            <KV k="Prefix" mono>{keyData.prefix}</KV>
+            <KV k="Last used">{keyData.lastUsed}</KV>
+            <KV k="Scopes">
+              <div style={{display:'flex', gap:4, flexWrap:'wrap'}}>
+                {keyData.scopes.map(s => <span key={s} className="scope-tag">{s}</span>)}
+              </div>
+            </KV>
+          </div>
+          <div style={{fontSize: 12, color: 'var(--t2)', lineHeight: 1.6}}>
+            After revocation:
+            <ul style={{marginTop: 5, paddingLeft: 16}}>
+              <li>Key cannot authenticate any request.</li>
+              <li>Key remains visible in audit history.</li>
+              <li>Key cannot be restored.</li>
+              <li>Audit event <code style={{fontFamily:'var(--f-mono)', color:'var(--pu)'}}>api_key.revoked</code> will be written.</li>
+            </ul>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-danger btn-sm" onClick={() => { setConfirmed(true); onConfirm(keyData.id); }}>
+            Confirm Revoke
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <span className="modal-note">Actor: Nora Klein · {keyData.id}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── KEY DETAIL DRAWER ── */
+function KeyDrawer({ keyData, onClose }) {
+  return (
+    <>
+      <div className="drawer-overlay" onClick={onClose}/>
+      <div className="drawer">
+        <div className="drawer-hdr">
+          <div>
+            <div className="drawer-title">{keyData.name}</div>
+            <div className="drawer-sub">{keyData.id} · {keyData.mode} · {keyData.type}</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="drawer-body">
+          <div className="kv-table">
+            <KV k="Key ID" mono>{keyData.id}</KV>
+            <KV k="Name">{keyData.name}</KV>
+            <KV k="Prefix / fingerprint">
+              <span style={{fontFamily:'var(--f-mono)', fontSize:11}}>{keyData.prefix}</span>
+            </KV>
+            <KV k="Fingerprint" mono>
+              <span style={{color:'var(--t2)'}}>{keyData.fingerprint}</span>
+            </KV>
+            <KV k="Mode">
+              <Badge cls="b-sandbox">SANDBOX</Badge>
+            </KV>
+            <KV k="Type">
+              {keyData.type === 'restricted'
+                ? <Badge cls="b-restricted">RESTRICTED</Badge>
+                : <span style={{fontSize:11, color:'var(--t2)'}}>Server</span>}
+            </KV>
+            <KV k="Status">
+              {keyData.status === 'active'
+                ? <Badge cls="b-active">ACTIVE</Badge>
+                : <Badge cls="b-revoked">REVOKED</Badge>}
+            </KV>
+            <KV k="Created by">{keyData.createdBy}</KV>
+            <KV k="Created at" mono>{keyData.created}</KV>
+            <KV k="Last used" mono>{keyData.lastUsed || '—'}</KV>
+            {keyData.revokedAt && <KV k="Revoked at" mono><span style={{color:'var(--rd)'}}>{keyData.revokedAt}</span></KV>}
+          </div>
+          <div>
+            <div style={{fontSize: 10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6, fontWeight:600}}>Scopes</div>
+            <div style={{display:'flex', flexWrap:'wrap', gap:5}}>
+              {keyData.scopes.map(s => <span key={s} className="scope-tag">{s}</span>)}
+              {ALL_SCOPES.filter(s => !keyData.scopes.includes(s)).map(s =>
+                <span key={s} className="scope-tag scope-tag-gray">{s}</span>
+              )}
+            </div>
+          </div>
+          <div className="alert alert-info" style={{fontSize:11}}>
+            Full secret is never stored or displayed after the one-time reveal. Only the prefix and SHA-256 fingerprint are retained for support and audit.
+          </div>
+          {keyData.status === 'revoked' && (
+            <div className="alert alert-red" style={{fontSize:11}}>
+              This key has been revoked and cannot authenticate requests. It is retained for audit history only.
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── CREATE KEY PANEL ── */
+function CreateKeyPanel({ onKeyCreated }) {
+  const [keyName, setKeyName] = useState('Backend payments service v2');
+  const [expiry, setExpiry] = useState('no_expiry');
+  const [selectedScopes, setSelectedScopes] = useState(['payment_intents:create', 'payment_intents:read']);
+  const [note, setNote] = useState('');
+
+  function toggleScope(s) {
+    setSelectedScopes(prev =>
+      prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
+    );
+  }
+
+  function handleCreate() {
+    if (!keyName.trim() || selectedScopes.length === 0) return;
+    onKeyCreated({ name: keyName.trim(), scopes: selectedScopes });
+  }
+
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Create Sandbox API Key</span>
+        <span className="sandbox-note">mode: sandbox · merchant: MRC-20491</span>
+      </div>
+      <div className="panel-body">
+        <div className="form-row" style={{marginBottom: 11}}>
+          <div className="form-group" style={{margin:0}}>
+            <label className="inp-label">Key name <span style={{color:'var(--rd)'}}>*</span></label>
+            <input className="inp-field" value={keyName} onChange={e => setKeyName(e.target.value)} placeholder="e.g. Backend payments service v2" />
+            <div className="inp-hint">Used for identification in audit logs and key list.</div>
+          </div>
+          <div className="form-group" style={{margin:0}}>
+            <label className="inp-label">Mode</label>
+            <select className="inp-field" disabled>
+              <option>Sandbox (locked — KYB required for live)</option>
+            </select>
+            <div className="inp-hint" style={{color:'var(--rd)'}}>Live mode locked until KYB approved + Stripe Connect complete.</div>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="inp-label">Scopes <span style={{color:'var(--rd)'}}>*</span></label>
+          <div className="scope-grid">
+            {ALL_SCOPES.map(s => (
+              <div key={s} className={`scope-item${selectedScopes.includes(s) ? ' checked' : ''}`}
+                   onClick={() => toggleScope(s)}>
+                <input type="checkbox" readOnly checked={selectedScopes.includes(s)} />
+                <span className="scope-label">{s}</span>
+              </div>
+            ))}
+          </div>
+          <div className="inp-hint">Select only the scopes required. Principle of least privilege.</div>
+        </div>
+
+        <div className="form-row" style={{marginBottom: 11}}>
+          <div className="form-group" style={{margin:0}}>
+            <label className="inp-label">Expiration policy</label>
+            <select className="inp-field" value={expiry} onChange={e => setExpiry(e.target.value)}>
+              <option value="no_expiry">No expiry (sandbox)</option>
+              <option value="30d">30 days</option>
+              <option value="90d">90 days</option>
+              <option value="custom">Custom date</option>
+            </select>
+          </div>
+          <div className="form-group" style={{margin:0}}>
+            <label className="inp-label">Owner / contact</label>
+            <input className="inp-field" defaultValue="Nora Klein" readOnly />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label className="inp-label">Internal note</label>
+          <input className="inp-field" value={note} onChange={e => setNote(e.target.value)}
+                 placeholder="Optional — reason for creating this key, linked service, etc." />
+        </div>
+
+        <div style={{display:'flex', alignItems:'center', gap:10, marginTop:4}}>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={handleCreate}
+            disabled={!keyName.trim() || selectedScopes.length === 0}
+          >
+            Create Sandbox Key
+          </button>
+          <span style={{fontSize:11, color:'var(--t3)'}}>Key secret displayed once and never again.</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── ONE-TIME REVEAL PANEL ── */
+function RevealPanel({ newKey, onAcknowledge }) {
+  const [copied, setCopied] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
+  const secret = 'mfp_test_sk_51sandbox_7Kp9Q2_mockOnly_20260518';
+
+  function handleCopy() {
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2200);
+  }
+
+  if (acknowledged) {
+    return (
+      <div className="panel">
+        <div className="panel-hdr">
+          <span className="panel-title">Key Created — Secret Stored</span>
+          <Badge cls="b-new">NEW · KEY-NEW</Badge>
+        </div>
+        <div className="panel-body">
+          <div className="alert alert-green">
+            Secret acknowledged and cleared from view. Only the prefix and fingerprint are retained.
+          </div>
+          <div className="kv-table">
+            <KV k="Key ID" mono>KEY-NEW</KV>
+            <KV k="Name">{newKey.name}</KV>
+            <KV k="Prefix / fingerprint" mono>mfp_test_7Kp…NEW (sha256:a1b2c3d4…)</KV>
+            <KV k="Status"><Badge cls="b-active">ACTIVE</Badge></KV>
+            <KV k="Scopes">
+              <div style={{display:'flex', gap:4, flexWrap:'wrap'}}>
+                {newKey.scopes.map(s => <span key={s} className="scope-tag">{s}</span>)}
+              </div>
+            </KV>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="panel" style={{border: '2px solid var(--g-bd)'}}>
+      <div className="panel-hdr" style={{background:'var(--g-bg)'}}>
+        <span className="panel-title" style={{color:'var(--g)'}}>New Key Created — Copy and Store Now</span>
+        <Badge cls="b-new">ONE-TIME REVEAL</Badge>
+      </div>
+      <div className="panel-body">
+        <div className="reveal-box">
+          <div style={{fontSize: 12, fontWeight: 600, color: 'var(--g)', marginBottom: 4}}>
+            API Key Secret — displayed once only
+          </div>
+          <div className="reveal-key">
+            <span className="reveal-key-text">{secret}</span>
+            <button className="btn btn-sm" style={{
+              background: copied ? 'var(--g-bg)' : 'var(--surface)',
+              color: copied ? 'var(--g)' : 'var(--t2)',
+              border: `1px solid ${copied ? 'var(--g-bd)' : 'var(--bdr-mid)'}`,
+              flexShrink: 0,
+            }} onClick={handleCopy}>
+              {copied ? '✓ Copied' : 'Copy'}
+            </button>
+          </div>
+          <ul className="reveal-bullets">
+            <li>This key is shown <strong>once only</strong>. It cannot be recovered after you dismiss this panel.</li>
+            <li>Store it securely in a secrets manager, vault, or encrypted environment variable.</li>
+            <li>MiniFin stores only the SHA-256 fingerprint. The plaintext secret is never retained.</li>
+            <li>If lost, revoke this key and create a new one.</li>
+          </ul>
+        </div>
+
+        <div style={{marginTop: 10}}>
+          <div style={{fontSize: 11, color: 'var(--t2)', marginBottom: 6}}>Key details</div>
+          <div className="kv-table">
+            <KV k="Key ID" mono>KEY-NEW</KV>
+            <KV k="Name">{newKey.name}</KV>
+            <KV k="Mode"><Badge cls="b-sandbox">SANDBOX</Badge></KV>
+            <KV k="Scopes">
+              <div style={{display:'flex', gap:4, flexWrap:'wrap'}}>
+                {newKey.scopes.map(s => <span key={s} className="scope-tag">{s}</span>)}
+              </div>
+            </KV>
+            <KV k="Expiration">No expiry (sandbox)</KV>
+            <KV k="Created by">Nora Klein · 2026-05-18 10:41</KV>
+          </div>
+        </div>
+
+        <div style={{display:'flex', alignItems:'center', gap:10, marginTop: 8, flexWrap:'wrap'}}>
+          <button
+            className="btn btn-success btn-sm"
+            onClick={() => { setAcknowledged(true); onAcknowledge(); }}
+          >
+            ✓ I stored this key securely
+          </button>
+          <span style={{fontSize: 11, color: 'var(--t3)'}}>
+            Clicking this hides the secret. Only prefix and fingerprint will remain visible.
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── KEY TABLE ── */
+function KeyTable({ keys, revokedIds, onRevoke, onOpenDrawer }) {
+  function rowClass(k) {
+    if (k.id === 'KEY-NEW') return 'row-new row-hover';
+    if (k.status === 'revoked' || revokedIds.has(k.id)) return 'row-revoked row-hover';
+    return 'row-hover';
+  }
+
+  const allKeys = [
+    ...keys,
+    {
+      id: 'KEY-NEW',
+      name: 'Backend payments service v2',
+      prefix: '— see reveal panel —',
+      mode: 'sandbox',
+      scopes: ['payment_intents:create', 'payment_intents:read'],
+      status: 'active',
+      type: 'server',
+      createdBy: 'Nora Klein',
+      created: '2026-05-18 10:41',
+      lastUsed: '—',
+      isNew: true,
+    }
+  ];
+
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">API Keys</span>
+        <div style={{display:'flex', gap:6, alignItems:'center'}}>
+          <span className="sandbox-note">Sandbox mode only · Live locked</span>
+        </div>
+      </div>
+      <div style={{overflowX: 'auto'}}>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Key ID</th>
+              <th>Name / prefix</th>
+              <th>Mode</th>
+              <th>Type</th>
+              <th>Scopes</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Last used</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allKeys.map(k => {
+              const isRevoked = k.status === 'revoked' || revokedIds.has(k.id);
+              return (
+                <tr key={k.id} className={rowClass(k)} onClick={() => onOpenDrawer(k)}>
+                  <td className="mono-cell" style={{color:'var(--t2)'}}>{k.id}</td>
+                  <td>
+                    <div style={{fontWeight: 500, fontSize: 12}}>{k.name}</div>
+                    <div style={{fontFamily:'var(--f-mono)', fontSize:10.5, color:'var(--t3)', marginTop:1}}>{k.prefix}</div>
+                  </td>
+                  <td><Badge cls="b-sandbox">SANDBOX</Badge></td>
+                  <td>
+                    {k.type === 'restricted'
+                      ? <Badge cls="b-restricted">RESTRICTED</Badge>
+                      : <span style={{fontSize:11, color:'var(--t3)'}}>Server</span>}
+                  </td>
+                  <td>
+                    <div style={{display:'flex', gap:3, flexWrap:'wrap', maxWidth: 220}}>
+                      {k.scopes.slice(0,2).map(s => <span key={s} className="scope-tag">{s}</span>)}
+                      {k.scopes.length > 2 && <span className="scope-tag scope-tag-gray">+{k.scopes.length - 2}</span>}
+                    </div>
+                  </td>
+                  <td>
+                    {k.isNew
+                      ? <Badge cls="b-new">NEW</Badge>
+                      : isRevoked
+                        ? <Badge cls="b-revoked">REVOKED</Badge>
+                        : <Badge cls="b-active">ACTIVE</Badge>}
+                  </td>
+                  <td className="mono-cell" style={{fontSize:10.5, color:'var(--t2)'}}>{k.created}</td>
+                  <td className="mono-cell" style={{fontSize:10.5, color:'var(--t3)'}}>{k.lastUsed || '—'}</td>
+                  <td onClick={e => e.stopPropagation()}>
+                    {!isRevoked && !k.isNew
+                      ? <button className="btn btn-danger btn-xs" onClick={() => onRevoke(k)}>Revoke</button>
+                      : isRevoked
+                        ? <span style={{fontSize:10, color:'var(--t4)', fontStyle:'italic'}}>Retained (audit)</span>
+                        : <span style={{fontSize:10, color:'var(--g)', fontStyle:'italic'}}>Reveal panel ↑</span>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ── USAGE PANEL ── */
+function UsagePanel() {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Public API Usage</span>
+        <span className="sandbox-note">v1 · merchants.miniefin.local</span>
+      </div>
+      <div className="panel-body" style={{display:'flex', flexDirection:'column', gap:12}}>
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+          <div>
+            <div style={{fontSize:10.5, color:'var(--t3)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6}}>Authorization</div>
+            <div className="code-block">
+              <span className="c-key">Authorization</span>: <span className="c-val">Bearer</span> <span className="c-str">mfp_test_...</span><br/>
+              <span className="c-key">Idempotency-Key</span>: <span className="c-str">merchant-uuid-v4</span><br/>
+              <span className="c-key">Content-Type</span>: <span className="c-val">application/json</span>
+            </div>
+          </div>
+          <div>
+            <div style={{fontSize:10.5, color:'var(--t3)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6}}>Create payment intent</div>
+            <div className="code-block">
+              <span className="c-meth">POST</span> <span className="c-url">/v1/payment_intents</span><br/>
+              {`{`}<br/>
+              &nbsp;&nbsp;<span className="c-key">"amount"</span>: <span className="c-val">5000</span>,<br/>
+              &nbsp;&nbsp;<span className="c-key">"currency"</span>: <span className="c-str">"eur"</span>,<br/>
+              &nbsp;&nbsp;<span className="c-key">"merchant_ref"</span>: <span className="c-str">"order_881"</span><br/>
+              {`}`}
+            </div>
+          </div>
+        </div>
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+          <div>
+            <div style={{fontSize:10.5, color:'var(--t3)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6}}>Auth errors</div>
+            <div className="code-block">
+              <span className="c-com">// Missing or invalid key</span><br/>
+              HTTP <span className="c-val">401</span> Unauthorized<br/>
+              {`{`}<span className="c-key">"code"</span>: <span className="c-str">"key_invalid"</span>,<br/>
+              &nbsp;<span className="c-key">"message"</span>: <span className="c-str">"..."</span>{`}`}<br/><br/>
+              <span className="c-com">// Scope not permitted</span><br/>
+              HTTP <span className="c-val">403</span> Forbidden<br/>
+              {`{`}<span className="c-key">"code"</span>: <span className="c-str">"scope_denied"</span>{`}`}
+            </div>
+          </div>
+          <div>
+            <div style={{fontSize:10.5, color:'var(--t3)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:6}}>Idempotency replay</div>
+            <div className="code-block">
+              <span className="c-com">// Same Idempotency-Key = stored response</span><br/>
+              HTTP <span className="c-val">200</span> <span className="c-val">OK</span><br/>
+              <span className="c-key">Idempotency-Replayed</span>: <span className="c-val">true</span><br/><br/>
+              <span className="c-com">// Fingerprint mismatch = conflict</span><br/>
+              HTTP <span className="c-val">409</span> Conflict<br/>
+              {`{`}<span className="c-key">"code"</span>: <span className="c-str">"idempotency_conflict"</span>{`}`}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── SECURITY RULES PANEL ── */
+function SecurityPanel() {
+  const rules = [
+    { icon: '🔐', title: 'Key secret hashed only', desc: 'The plaintext secret is displayed once at creation. MiniFin stores only the SHA-256 fingerprint for audit and support lookup.' },
+    { icon: '📋', title: 'Idempotency required for writes', desc: <>All mutating endpoints require <span className="rule-mono">Idempotency-Key: uuid-v4</span>. Duplicate concurrent writes are protected. TTL: 24 hours.</> },
+    { icon: '🔁', title: 'Idempotency replay', desc: 'Matching key + path returns the stored response. Fingerprint (method + path + key hash) must match exactly. Mismatch returns 409 Conflict.' },
+    { icon: '🚫', title: 'Revocation is immediate', desc: 'Revoking a key invalidates authentication on the next request. No grace period. Revoked keys remain in audit log and cannot be restored.' },
+    { icon: '🔒', title: 'Scoped per merchant', desc: 'Keys are scoped to MRC-20491 only. A key cannot authenticate requests for a different merchant account.' },
+    { icon: '⛔', title: 'Live keys locked', desc: 'Live-mode API keys cannot be created until KYB is approved and Stripe Connect onboarding is complete. Sandbox keys are available immediately.' },
+  ];
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Idempotency &amp; Security Rules</span>
+        <span style={{fontFamily:'var(--f-mono)', fontSize:10, color:'var(--t3)'}}>idempotency TTL: 24h</span>
+      </div>
+      <div className="panel-body">
+        <div className="rule-list">
+          {rules.map((r, i) => (
+            <div key={i} className="rule-item">
+              <div className="rule-icon">{r.icon}</div>
+              <div className="rule-text">
+                <div className="rule-title">{r.title}</div>
+                <div className="rule-desc">{r.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── LIVE MODE LOCK PANEL ── */
+function LiveLockPanel({ previewLive, setPreviewLive }) {
+  const sandboxItems = [
+    { label: 'Sandbox API keys', sub: 'Available — create and use now' },
+    { label: 'Payment intent sandbox shell', sub: 'Available — test flow active' },
+    { label: 'Webhook endpoint config', sub: 'Available — configure endpoints' },
+    { label: 'Sandbox key scopes', sub: 'All 6 scopes available in sandbox' },
+  ];
+  const lockedItems = [
+    { label: 'Live API keys', sub: 'Locked — KYB in review' },
+    { label: 'Live payments', sub: 'Locked — Stripe Connect not complete' },
+    { label: 'Settlements', sub: 'Locked — live mode required' },
+    { label: 'Production webhooks', sub: 'Locked — live mode required' },
+  ];
+  const previewItems = [
+    { label: 'Live API keys', sub: 'Will unlock after KYB + Stripe Connect' },
+    { label: 'Live payments', sub: 'Will unlock after Stripe Connect complete' },
+    { label: 'Settlements', sub: 'Requires bank account verification' },
+    { label: 'Production webhooks', sub: 'Will activate with live mode' },
+  ];
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Live Mode Access</span>
+        <div style={{display:'flex', gap:8, alignItems:'center'}}>
+          <button
+            className={`preview-toggle ${previewLive ? 'on' : 'off'}`}
+            onClick={() => setPreviewLive(p => !p)}
+          >
+            {previewLive ? '◉ Preview: Live-ready state ON' : '○ Preview live-ready state'}
+          </button>
+        </div>
+      </div>
+      <div className="panel-body">
+        {previewLive && (
+          <div className="alert alert-pu" style={{marginBottom: 10}}>
+            Preview mode — showing what becomes available after KYB approval + Stripe Connect completion. No keys are unlocked yet.
+          </div>
+        )}
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
+          {sandboxItems.map((item, i) => (
+            <div key={i} className="lock-item unlocked">
+              <div className="lock-item-label">✓ {item.label}</div>
+              <div className="lock-item-sub">{item.sub}</div>
+            </div>
+          ))}
+          {(previewLive ? previewItems : lockedItems).map((item, i) => (
+            <div key={i} className={`lock-item ${previewLive ? 'unlocked' : 'locked'}`}>
+              <div className="lock-item-label">{previewLive ? '◎' : '🔒'} {item.label}</div>
+              <div className="lock-item-sub">{item.sub}</div>
+            </div>
+          ))}
+        </div>
+        {!previewLive && (
+          <div style={{marginTop: 10, display:'flex', gap:8, flexWrap:'wrap'}}>
+            <button className="btn btn-ghost btn-sm">View Onboarding Requirements</button>
+            <span style={{fontSize:11, color:'var(--t3)', alignSelf:'center'}}>
+              Blockers: KYB in review · Stripe Connect not started
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── TIMELINE RAIL ── */
+function TimelineRail() {
+  const [expanded, setExpanded] = useState(null);
+  return (
+    <div className="tl-rail">
+      <div className="tl-hdr">Audit / Activity</div>
+      <div className="tl-body">
+        {TIMELINE_EVENTS.map((evt, i) => (
+          <div key={i} className="tl-evt" onClick={() => setExpanded(expanded === i ? null : i)}>
+            <div className="tl-spine">
+              <div className={`tl-dot ${evt.dot}`}/>
+              {i < TIMELINE_EVENTS.length - 1 && <div className="tl-line"/>}
+            </div>
+            <div className="tl-content">
+              <div className="tl-ts">{evt.ts}</div>
+              <div className="tl-name">{evt.name}</div>
+              <div className="tl-actor">{evt.actor}</div>
+              <div className="tl-desc">{evt.desc}</div>
+              {evt.audit && <div className="tl-audit">{evt.audit}</div>}
+              {expanded === i && evt.meta && (
+                <div className="tl-meta" style={{whiteSpace:'pre'}}>{evt.meta}</div>
+              )}
+              {expanded !== i && <div className="tl-expand-hint">Click to expand metadata</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App() {
+  const [keys, setKeys] = useState(INITIAL_KEYS);
+  const [revokedIds, setRevokedIds] = useState(new Set());
+  const [revokeTarget, setRevokeTarget] = useState(null);
+  const [drawerKey, setDrawerKey] = useState(null);
+  const [newKey, setNewKey] = useState(null);
+  const [previewLive, setPreviewLive] = useState(false);
+  const mainRef = useRef(null);
+
+  function handleKeyCreated(keyDef) {
+    setNewKey(keyDef);
+    setTimeout(() => {
+      if (mainRef.current) mainRef.current.scrollTop = 0;
+    }, 50);
+  }
+
+  function handleRevoke(id) {
+    setRevokedIds(prev => new Set([...prev, id]));
+  }
+
+  function handleOpenDrawer(k) {
+    if (k.isNew && newKey) {
+      setDrawerKey({
+        ...k,
+        prefix: 'mfp_test_7Kp…NEW',
+        fingerprint: 'sha256:a1b2c3d4…f5e6',
+        scopes: newKey.scopes,
+        name: newKey.name,
+      });
+    } else {
+      setDrawerKey(k);
+    }
+  }
+
+  const activeCount = keys.filter(k => k.status === 'active' && !revokedIds.has(k.id)).length + (newKey ? 1 : 0);
+  const revokedCount = keys.filter(k => k.status === 'revoked').length + revokedIds.size;
+  const sandboxCount = keys.length + (newKey ? 1 : 0);
+
+  return (
+    <div id="root" style={{display:'flex', width:'100%', height:'100vh', overflow:'hidden'}}>
+      <Sidebar />
+      <div className="main-wrap">
+        {/* PAGE HEADER */}
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>Orbit Market</span>
+            <span className="sep">/</span>
+            <strong>API Keys</strong>
+            <span className="sep">·</span>
+            <span className="mode">MDB-UI-03</span>
+          </div>
+          <div className="page-meta">
+            <div className="env-badge"><div className="env-badge-dot"/>Local Sandbox</div>
+            <div className="user-chip">
+              <div className="user-avatar">NK</div>
+              <span className="user-name">Nora Klein</span>
+            </div>
+            <span className="screen-id">MDB-UI-03</span>
+          </div>
+        </div>
+
+        {/* CONTENT */}
+        <div className="content-area">
+          <div className="left-scroll" ref={mainRef}>
+
+            {/* ONE-TIME REVEAL (shown at top when key just created) */}
+            {newKey && (
+              <RevealPanel newKey={newKey} onAcknowledge={() => {}} />
+            )}
+
+            {/* STATUS STRIP */}
+            <div className="status-strip">
+              <div className="stat-cell">
+                <div className="stat-k">Merchant</div>
+                <div className="stat-v">Orbit Market</div>
+              </div>
+              <div className="stat-cell">
+                <div className="stat-k">Merchant ID</div>
+                <div className="stat-v mono">MRC-20491</div>
+              </div>
+              <div className="stat-cell">
+                <div className="stat-k">API Mode</div>
+                <div className="stat-v"><Badge cls="b-sandbox">SANDBOX</Badge></div>
+              </div>
+              <div className="stat-cell">
+                <div className="stat-k">KYB Status</div>
+                <div className="stat-v"><Badge cls="b-inreview">IN REVIEW</Badge></div>
+              </div>
+              <div className="stat-cell">
+                <div className="stat-k">Live Mode</div>
+                <div className="stat-v"><Badge cls="b-locked">LOCKED</Badge></div>
+              </div>
+              <div className="stat-cell">
+                <div className="stat-k">Sandbox Keys</div>
+                <div className="stat-v">{sandboxCount} total</div>
+              </div>
+              <div className="stat-cell">
+                <div className="stat-k">Active</div>
+                <div className="stat-v" style={{color:'var(--g)'}}>{activeCount}</div>
+              </div>
+              <div className="stat-cell">
+                <div className="stat-k">Revoked</div>
+                <div className="stat-v" style={{color:'var(--t3)'}}>{revokedCount}</div>
+              </div>
+              <div className="stat-cell">
+                <div className="stat-k">Last Key Event</div>
+                <div className="stat-v mono" style={{fontSize:11}}>
+                  {newKey ? '2026-05-18 10:41' : '2026-05-17 13:05'}
+                </div>
+              </div>
+            </div>
+
+            {/* KEY TABLE */}
+            <KeyTable
+              keys={keys}
+              revokedIds={revokedIds}
+              onRevoke={setRevokeTarget}
+              onOpenDrawer={handleOpenDrawer}
+            />
+
+            {/* CREATE KEY PANEL */}
+            <CreateKeyPanel onKeyCreated={handleKeyCreated} />
+
+            {/* USAGE PANEL */}
+            <UsagePanel />
+
+            {/* SECURITY / IDEMPOTENCY */}
+            <SecurityPanel />
+
+            {/* LIVE LOCK PANEL */}
+            <LiveLockPanel previewLive={previewLive} setPreviewLive={setPreviewLive} />
+
+          </div>
+
+          {/* TIMELINE RAIL */}
+          <TimelineRail />
+        </div>
+      </div>
+
+      {/* REVOKE MODAL */}
+      {revokeTarget && (
+        <RevokeModal
+          keyData={revokeTarget}
+          onConfirm={id => { handleRevoke(id); }}
+          onClose={() => setRevokeTarget(null)}
+        />
+      )}
+
+      {/* KEY DETAIL DRAWER */}
+      {drawerKey && (
+        <KeyDrawer keyData={drawerKey} onClose={() => setDrawerKey(null)} />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

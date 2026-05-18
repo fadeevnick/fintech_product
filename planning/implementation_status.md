@@ -155,6 +155,7 @@ Created:
 - `prototypes/ui/17_enduser_cards.html` — standalone `UEW-UI-06` end-user cards HTML prototype from UI/UX prototype workflow; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-17.
 - `prototypes/ui/18_enduser_transaction_detail.html` — standalone `UEW-UI-07` end-user transaction detail HTML prototype from UI/UX prototype workflow; minor audit-token overflow fix applied locally; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-17.
 - `prototypes/ui/19_merchant_onboarding_status.html` — standalone `MDB-UI-02` merchant onboarding status HTML prototype from UI/UX prototype workflow; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-17.
+- `prototypes/ui/20_merchant_api_keys.html` — standalone `MDB-UI-03` merchant API keys HTML prototype from UI/UX prototype workflow; minor wide viewport root sizing fix applied locally; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-18.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;
