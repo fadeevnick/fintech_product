@@ -8,8 +8,16 @@ compliance_email="${BACKOFFICE_COMPLIANCE_EMAIL:-compliance@minifin.local}"
 norole_email="${BACKOFFICE_NOROLE_EMAIL:-viewer@minifin.local}"
 backoffice_password="${BACKOFFICE_PASSWORD:-password123}"
 
+kc_curl() {
+  if test -n "${KEYCLOAK_CURL_CONTAINER_NETWORK:-}"; then
+    docker run --rm --network "${KEYCLOAK_CURL_CONTAINER_NETWORK}" --user "$(id -u):$(id -g)" -v /tmp:/tmp curlimages/curl:8.10.1 "$@"
+  else
+    curl "$@"
+  fi
+}
+
 kc_admin_token() {
-  curl -fsS -X POST "${keycloak_url}/realms/master/protocol/openid-connect/token" \
+  kc_curl -fsS -X POST "${keycloak_url}/realms/master/protocol/openid-connect/token" \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -d "client_id=admin-cli" \
     -d "username=${KEYCLOAK_ADMIN_USER:-admin}" \
@@ -31,7 +39,7 @@ kc_ensure_role() {
   local role="$2"
   local body="/tmp/minifin-kc-role-${role}.json"
   local status
-  status="$(curl -sS -o "${body}" -w "%{http_code}" -X POST "${keycloak_url}/admin/realms/${realm}/roles" \
+  status="$(kc_curl -sS -o "${body}" -w "%{http_code}" -X POST "${keycloak_url}/admin/realms/${realm}/roles" \
     -H "Authorization: Bearer ${token}" \
     -H "Content-Type: application/json" \
     -d "{\"name\":\"${role}\"}")"
@@ -45,27 +53,27 @@ kc_ensure_user() {
   local body="/tmp/minifin-kc-user-${username}.json"
   local status
 
-  curl -fsS "${keycloak_url}/admin/realms/${realm}/users?username=${username}&exact=true" \
+  kc_curl -fsS "${keycloak_url}/admin/realms/${realm}/users?username=${username}&exact=true" \
     -H "Authorization: Bearer ${token}" >"${body}"
 
   if test "$(kc_json_array_length "${body}")" = "0"; then
-    status="$(curl -sS -o /tmp/minifin-kc-user-create.json -w "%{http_code}" -X POST "${keycloak_url}/admin/realms/${realm}/users" \
+    status="$(kc_curl -sS -o /tmp/minifin-kc-user-create.json -w "%{http_code}" -X POST "${keycloak_url}/admin/realms/${realm}/users" \
       -H "Authorization: Bearer ${token}" \
       -H "Content-Type: application/json" \
       -d "{\"username\":\"${username}\",\"email\":\"${email}\",\"firstName\":\"${username}\",\"lastName\":\"Backoffice\",\"enabled\":true,\"emailVerified\":true,\"requiredActions\":[],\"credentials\":[{\"type\":\"password\",\"value\":\"${backoffice_password}\",\"temporary\":false}]}")"
     test "${status}" = "201" -o "${status}" = "409"
-    curl -fsS "${keycloak_url}/admin/realms/${realm}/users?username=${username}&exact=true" \
+    kc_curl -fsS "${keycloak_url}/admin/realms/${realm}/users?username=${username}&exact=true" \
       -H "Authorization: Bearer ${token}" >"${body}"
   fi
 
   local user_id
   user_id="$(kc_json_first_id "${body}")"
-  curl -fsS -X PUT "${keycloak_url}/admin/realms/${realm}/users/${user_id}" \
+  kc_curl -fsS -X PUT "${keycloak_url}/admin/realms/${realm}/users/${user_id}" \
     -H "Authorization: Bearer ${token}" \
     -H "Content-Type: application/json" \
     -d "{\"username\":\"${username}\",\"email\":\"${email}\",\"firstName\":\"${username}\",\"lastName\":\"Backoffice\",\"enabled\":true,\"emailVerified\":true,\"requiredActions\":[]}" \
     >/tmp/minifin-kc-user-update.json
-  curl -fsS -X PUT "${keycloak_url}/admin/realms/${realm}/users/${user_id}/reset-password" \
+  kc_curl -fsS -X PUT "${keycloak_url}/admin/realms/${realm}/users/${user_id}/reset-password" \
     -H "Authorization: Bearer ${token}" \
     -H "Content-Type: application/json" \
     -d "{\"type\":\"password\",\"value\":\"${backoffice_password}\",\"temporary\":false}" \
@@ -79,10 +87,10 @@ kc_assign_realm_role() {
   local role="$3"
   local role_body="/tmp/minifin-kc-role-rep-${role}.json"
 
-  curl -fsS "${keycloak_url}/admin/realms/${realm}/roles/${role}" \
+  kc_curl -fsS "${keycloak_url}/admin/realms/${realm}/roles/${role}" \
     -H "Authorization: Bearer ${token}" >"${role_body}"
 
-  curl -fsS -X POST "${keycloak_url}/admin/realms/${realm}/users/${user_id}/role-mappings/realm" \
+  kc_curl -fsS -X POST "${keycloak_url}/admin/realms/${realm}/users/${user_id}/role-mappings/realm" \
     -H "Authorization: Bearer ${token}" \
     -H "Content-Type: application/json" \
     -d "[$(cat "${role_body}")]"
@@ -99,10 +107,10 @@ kc_seed_backoffice_realm() {
 
   token="$(kc_admin_token)"
 
-  status="$(curl -sS -o /tmp/minifin-kc-realm.json -w "%{http_code}" -X GET "${keycloak_url}/admin/realms/${realm}" \
+  status="$(kc_curl -sS -o /tmp/minifin-kc-realm.json -w "%{http_code}" -X GET "${keycloak_url}/admin/realms/${realm}" \
     -H "Authorization: Bearer ${token}")"
   if test "${status}" = "404"; then
-    curl -fsS -X POST "${keycloak_url}/admin/realms" \
+    kc_curl -fsS -X POST "${keycloak_url}/admin/realms" \
       -H "Authorization: Bearer ${token}" \
       -H "Content-Type: application/json" \
       -d "{\"realm\":\"${realm}\",\"enabled\":true}" >/tmp/minifin-kc-realm-create.json
@@ -110,19 +118,19 @@ kc_seed_backoffice_realm() {
     test "${status}" = "200"
   fi
 
-  curl -fsS "${keycloak_url}/admin/realms/${realm}/clients?clientId=${client_id}" \
+  kc_curl -fsS "${keycloak_url}/admin/realms/${realm}/clients?clientId=${client_id}" \
     -H "Authorization: Bearer ${token}" >"${clients_body}"
   if test "$(kc_json_array_length "${clients_body}")" = "0"; then
-    curl -fsS -X POST "${keycloak_url}/admin/realms/${realm}/clients" \
+    kc_curl -fsS -X POST "${keycloak_url}/admin/realms/${realm}/clients" \
       -H "Authorization: Bearer ${token}" \
       -H "Content-Type: application/json" \
       -d "{\"clientId\":\"${client_id}\",\"enabled\":true,\"publicClient\":true,\"directAccessGrantsEnabled\":true,\"standardFlowEnabled\":true,\"protocol\":\"openid-connect\"}" \
       >/tmp/minifin-kc-client-create.json
-    curl -fsS "${keycloak_url}/admin/realms/${realm}/clients?clientId=${client_id}" \
+    kc_curl -fsS "${keycloak_url}/admin/realms/${realm}/clients?clientId=${client_id}" \
       -H "Authorization: Bearer ${token}" >"${clients_body}"
   fi
   client_uuid="$(kc_json_first_id "${clients_body}")"
-  curl -fsS -X PUT "${keycloak_url}/admin/realms/${realm}/clients/${client_uuid}" \
+  kc_curl -fsS -X PUT "${keycloak_url}/admin/realms/${realm}/clients/${client_uuid}" \
     -H "Authorization: Bearer ${token}" \
     -H "Content-Type: application/json" \
     -d "{\"id\":\"${client_uuid}\",\"clientId\":\"${client_id}\",\"enabled\":true,\"publicClient\":true,\"directAccessGrantsEnabled\":true,\"standardFlowEnabled\":true,\"protocol\":\"openid-connect\"}" \
@@ -144,7 +152,7 @@ kc_seed_backoffice_realm() {
 
 kc_backoffice_token() {
   local username="$1"
-  curl -fsS -X POST "${keycloak_url}/realms/${realm}/protocol/openid-connect/token" \
+  kc_curl -fsS -X POST "${keycloak_url}/realms/${realm}/protocol/openid-connect/token" \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -d "client_id=${client_id}" \
     -d "username=${username}" \

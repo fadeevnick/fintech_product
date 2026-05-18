@@ -1,12 +1,12 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-18 (Phase 06 Slice 03 webhook DLQ replay implemented/runtime-verified; Phase 07 Slice 02 KYC manual review planning approved).
+Last updated: 2026-05-18 (Phase 06 Slice 03 webhook DLQ replay and Phase 07 Slice 02 KYC manual review implemented/runtime-verified).
 
 ---
 
 ## Focus
 
-Phase 06 Slice 03 is implemented/runtime-verified; Phase 07 Slice 02 remains approved planning-only and ready for implementation. UI prototype baseline continues in parallel.
+Phase 06 Slice 03 and Phase 07 Slice 02 are implemented/runtime-verified; UI prototype baseline continues in parallel.
 
 ## Status
 
@@ -51,6 +51,7 @@ Completed workstream — latest accepted state:
 - Phase 06 Slice 02 backend/runtime scope is complete: failed outbound webhook deliveries now retry on persisted schedule, terminal retry exhaustion moves events to `DLQ`, HTTP failure metadata is retained, and `WBH-02` plus `WBH-01`/`MRC-05`/`PAY-01..PAY-03` targeted regressions passed in isolated runtime;
 - Phase 06 Slice 03 backend/runtime scope is complete: merchant dashboard DLQ event list/detail/replay APIs were added, manual replay reuses signed outbound delivery with current endpoint secret, successful replay moves `DLQ` events to `DELIVERED`, `merchant_member` replay and cross-merchant access are denied/hidden, and `WBH-03` plus `WBH-01`/`WBH-02`/`MRC-05`/`PAY-01..PAY-03` targeted regressions passed in isolated runtime;
 - Phase 07 Slice 01 backend/runtime scope is complete: Platform now has `kyc` schema/profile/session/vendor-event persistence, `POST /api/v1/kyc/start`, Sumsub adapter boundary, and `POST /webhooks/sumsub/v1` with HMAC signature verification plus vendor event id idempotency. `KYC-01` is partial because real Sumsub sandbox credentials were absent; `KYC-02` passed with deterministic locally signed Sumsub-format fixtures.
+- Phase 07 Slice 02 backend/runtime scope is complete: backoffice KYC queue/detail/manual decision APIs, rationale validation, manual decision persistence and audit rows are implemented; `KYC-03` passed with retained runtime verification.
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
 - local compose stack is currently up.
 
@@ -69,7 +70,7 @@ Latest accepted backend/runtime slices:
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`, `prototypes/ui/19_merchant_onboarding_status.html`, `prototypes/ui/20_merchant_api_keys.html`.**
 
 Next planned product step:
-- Implement Phase 07 Slice 02 backoffice KYC review queue/manual decisions for `KYC-03`, or choose the next approved payment/settlement slice. `KYC-01` full pass remains blocked on real Sumsub sandbox credentials. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
+- Choose and plan the next backend/runtime slice, likely the next payment/settlement slice or the next compliance slice. `KYC-01` full pass remains blocked on real Sumsub sandbox credentials. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
 
 05 v0.4 resolved stack:
 - Backend: Kotlin + Java 21 LTS + Spring Boot 3.5.x.

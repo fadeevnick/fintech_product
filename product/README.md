@@ -27,6 +27,8 @@ Implemented runtime behavior so far:
 - Phase 06 Slice 01 outbound merchant webhook delivery foundation in `platform`: webhook endpoints now have one-time `mfp_whsec_*` signing secrets, encrypted-at-rest delivery secret material, hash/prefix metadata, secret rotation endpoint, persisted `merchant.webhook_events` and `merchant.webhook_delivery_attempts`, real signed HTTP delivery of `payment_intent.created` after public payment-intent creation, and retained `WBH-01` runtime verification with a local signature-validating receiver.
 - Phase 06 Slice 02 outbound merchant webhook retry/DLQ in `platform`: failed deliveries retry on a persisted schedule, HTTP failure metadata is retained, exhausted attempts move events to `DLQ`, and retained `WBH-02` runtime verification passed.
 - Phase 06 Slice 03 outbound merchant webhook DLQ replay in `platform`: merchant dashboard APIs list/detail retained webhook events and replay one `DLQ` event, replay reuses the signed outbound delivery path with current endpoint secret material, successful replay moves the event to `DELIVERED`, and retained `WBH-03` runtime verification passed.
+- Phase 07 Slice 01 KYC/Sumsub foundation in `platform`: end-user `POST /api/v1/kyc/start`, KYC profile/session/vendor-event persistence, Sumsub adapter boundary, inbound `POST /webhooks/sumsub/v1` signature verification and vendor event id idempotency. `KYC-02` has runtime evidence; `KYC-01` is partial until real Sumsub sandbox credentials are configured.
+- Phase 07 Slice 02 backoffice KYC manual review in `platform`: backoffice KYC queue/detail/manual decision APIs, rationale validation, `kyc.kyc_manual_decisions` persistence and `kyc.manual_decision_recorded` audit rows. `KYC-03` has runtime evidence.
 
 ## Local Commands
 
@@ -235,6 +237,7 @@ Retained scripts:
 ```bash
 scripts/runtime/reg_phase07_kyc_start.sh
 scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
+scripts/runtime/reg_phase07_kyc_manual_review.sh
 ```
 
-`reg_phase07_kyc_start.sh` records `KYC-01` as partial when real Sumsub credentials are absent. `reg_phase07_sumsub_webhook_signature_idempotency.sh` proves `KYC-02` locally with deterministic Sumsub-format signed fixtures. For isolated compose-network verification, set `PLATFORM_CURL_CONTAINER_NETWORK` and use a compose-network `PLATFORM_BASE_URL`.
+`reg_phase07_kyc_start.sh` records `KYC-01` as partial when real Sumsub credentials are absent. `reg_phase07_sumsub_webhook_signature_idempotency.sh` proves `KYC-02` locally with deterministic Sumsub-format signed fixtures. `reg_phase07_kyc_manual_review.sh` proves `KYC-03` for backoffice queue/detail/manual approval and audit. For isolated compose-network verification, set `PLATFORM_CURL_CONTAINER_NETWORK` and use a compose-network `PLATFORM_BASE_URL`.

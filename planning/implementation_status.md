@@ -890,15 +890,39 @@ Explicitly not implemented/claimed:
 
 ## Phase 07 Slice 02 — Backoffice KYC Review Queue and Manual Decisions
 
-Status: **APPROVED PLANNING ONLY — not implemented**.
+Status: **COMPLETE — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_07_slice_02_kyc_review_queue_manual_decisions_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Backoffice KYC queue/detail APIs over existing KYC profiles.
-- Manual approve/reject/request-resubmit decision with rationale validation and audit.
-- Target retained runtime check: `KYC-03`.
+Implemented backend/runtime scope:
+- Platform DB migration `V18__kyc_manual_review.sql` creates `kyc.kyc_manual_decisions`.
+- Backoffice KYC routes:
+  - `GET /api/v1/backoffice/kyc-cases`;
+  - `GET /api/v1/backoffice/kyc-cases/{id}`;
+  - `POST /api/v1/backoffice/kyc-cases/{id}/decision`.
+- Queue/detail returns KYC case metadata for profiles in `IN_REVIEW` without document payloads or document preview.
+- Manual decisions support `APPROVE`, `REJECT` and `REQUEST_RESUBMIT` with trimmed rationale length >= 20 characters.
+- Valid transitions from `IN_REVIEW` to `APPROVED`, `REJECTED` or `NEEDS_RESUBMIT`; terminal/invalid transitions return `409 invalid_state`.
+- Manual decision metadata is persisted with backoffice subject/role and timestamp.
+- Business audit rows are written with event type `kyc.manual_decision_recorded`.
+- End-user and merchant sessions cannot access backoffice KYC routes through the existing backoffice bearer-token security boundary.
+- Retained runtime script `product/scripts/runtime/reg_phase07_kyc_manual_review.sh` verifies `KYC-03`.
 
-Not yet implemented:
-- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
+Runtime verification:
+- `planning/runtime_evidence_log.md` — `2026-05-18 — Phase 07 Slice 02 Backoffice KYC Manual Review Runtime Verification`.
+- `KYC-03` — pass for queue listing, case detail, short-rationale validation, manual approval, persisted decision/audit rows, terminal repeat denial and end-user/merchant wrong-role denial.
+- Targeted regressions passed:
+  - `KYC-02`;
+  - merchant-session wrong-role denial for `POST /api/v1/kyc/start`;
+  - backoffice unauthenticated/wrong-role denial helper.
+
+Explicitly not implemented/claimed:
+- OpenSanctions (`SNX-*`);
+- AML alerts/freezes/SoF;
+- document preview or KYC document read-audit (`AUD-03`);
+- SeaweedFS document storage;
+- case attachment upload;
+- wallet/card/payment gating changes beyond updating `kyc.kyc_profiles.status`;
+- frontend UI;
+- real `KYC-01` full pass without Sumsub sandbox credentials.

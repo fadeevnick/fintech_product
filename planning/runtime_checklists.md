@@ -133,17 +133,17 @@ Result tags:
 | `SET-02` | Fee split balance. | Settlement fee postings balance exactly. | pending |
 | `SET-03` | Acquirer projection reconciliation. | Acquirer settlement projection matches Platform Ledger. | pending |
 | `SET-04` | Partial refund bounds. | Aggregate refunds cannot exceed original payment amount. | pending |
-| `WBH-01` | Webhook signing/delivery. | Merchant webhook payload is signed and delivered to test receiver. | pending |
-| `WBH-02` | Webhook retry/DLQ. | Failed delivery retries and moves to DLQ. | pending |
-| `WBH-03` | DLQ replay. | Retained failed event can be replayed. | pending |
+| `WBH-01` | Webhook signing/delivery. | Merchant webhook payload is signed and delivered to test receiver. | `product/scripts/runtime/reg_phase06_webhook_signing_delivery.sh` |
+| `WBH-02` | Webhook retry/DLQ. | Failed delivery retries and moves to DLQ. | `product/scripts/runtime/reg_phase06_webhook_retry_dlq.sh` |
+| `WBH-03` | DLQ replay. | Retained failed event can be replayed. | `product/scripts/runtime/reg_phase06_webhook_dlq_replay.sh` |
 
 ## 10. Phase 07 — Compliance Integrations and Case Management
 
 | Check ID | What to verify | Expected result | Verification script |
 |---|---|---|---|
 | `KYC-01` | Sumsub KYC start. | Email-verified user can start real Sumsub sandbox flow. | pending |
-| `KYC-02` | Sumsub webhook verification/idempotency. | Invalid signature rejected; duplicate event does not move state twice. | pending |
-| `KYC-03` | Backoffice manual KYC review. | Operator can list an in-review KYC case and approve/reject/resubmit with rationale and audit. | pending |
+| `KYC-02` | Sumsub webhook verification/idempotency. | Invalid signature rejected; duplicate event does not move state twice. | `product/scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh` |
+| `KYC-03` | Backoffice manual KYC review. | Operator can list an in-review KYC case and approve/reject/resubmit with rationale and audit. | `product/scripts/runtime/reg_phase07_kyc_manual_review.sh` |
 | `SNX-01` | OpenSanctions fail-closed. | Timeout/failure blocks dependent action and opens case. | pending |
 | `SNX-02` | Sanctions false-positive exception. | Cleared exception suppresses same future match. | pending |
 | `AUD-03` | Compliance read-audit. | Sensitive read writes sync read-audit before returning data. | pending |
