@@ -27,6 +27,13 @@ minifin:
       # In production this must be set to the per-environment Stripe webhook signing secret.
       webhook-signing-secret: ${STRIPE_WEBHOOK_SIGNING_SECRET:whsec_local_test_secret}
       webhook-tolerance-seconds: ${STRIPE_WEBHOOK_TOLERANCE_SECONDS:300}
+  kyc:
+    sumsub:
+      base-url: ${SUMSUB_BASE_URL:https://api.sumsub.com}
+      app-token: ${SUMSUB_APP_TOKEN:}
+      secret-key: ${SUMSUB_SECRET_KEY:}
+      webhook-secret: ${SUMSUB_WEBHOOK_SECRET:local-sumsub-webhook-secret}
+      level-name: ${SUMSUB_LEVEL_NAME:basic-kyc-level}
   cards:
     issuer-base-url: ${ISSUER_BASE_URL:http://localhost:8084}
     acquirer-base-url: ${ACQUIRER_BASE_URL:http://localhost:8082}

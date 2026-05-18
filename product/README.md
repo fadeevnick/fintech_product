@@ -122,6 +122,8 @@ scripts/runtime/reg_phase05_card_issue_pan_isolation.sh
 scripts/runtime/reg_phase05_vault_detokenize_restriction.sh
 scripts/runtime/reg_phase05_pan_log_masking.sh
 scripts/runtime/reg_phase06_webhook_signing_delivery.sh
+scripts/runtime/reg_phase07_kyc_start.sh
+scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
 ```
 
 ## Stripe Webhook Local Runtime
@@ -179,6 +181,8 @@ Retained script:
 
 ```bash
 scripts/runtime/reg_phase06_webhook_signing_delivery.sh
+scripts/runtime/reg_phase07_kyc_start.sh
+scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
 ```
 
 Local runtime default:
@@ -195,6 +199,38 @@ COMPOSE_FILE=deploy/docker-compose.yml \
 PLATFORM_BASE_URL=http://platform:8080 \
 PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default \
 scripts/runtime/reg_phase06_webhook_signing_delivery.sh
+scripts/runtime/reg_phase07_kyc_start.sh
+scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
 ```
 
 `WBH-01` is implemented and verified. `WBH-02` retry/DLQ and `WBH-03` replay are deferred.
+
+
+## Phase 07 KYC/Sumsub Local Runtime
+
+Phase 07 Slice 01 adds the first Platform KYC/Sumsub foundation:
+
+- end-user `POST /api/v1/kyc/start`;
+- persisted KYC profile/session state in `kyc.*`;
+- real Sumsub API boundary when sandbox credentials are configured;
+- no fake successful Sumsub applicant/access-token path when credentials are absent;
+- inbound `POST /webhooks/sumsub/v1` HMAC-SHA256 payload verification and vendor event id idempotency.
+
+Local runtime defaults:
+
+```bash
+SUMSUB_BASE_URL=https://api.sumsub.com
+SUMSUB_APP_TOKEN=
+SUMSUB_SECRET_KEY=
+SUMSUB_WEBHOOK_SECRET=local-sumsub-webhook-secret
+SUMSUB_LEVEL_NAME=basic-kyc-level
+```
+
+Retained scripts:
+
+```bash
+scripts/runtime/reg_phase07_kyc_start.sh
+scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
+```
+
+`reg_phase07_kyc_start.sh` records `KYC-01` as partial when real Sumsub credentials are absent. `reg_phase07_sumsub_webhook_signature_idempotency.sh` proves `KYC-02` locally with deterministic Sumsub-format signed fixtures. For isolated compose-network verification, set `PLATFORM_CURL_CONTAINER_NETWORK` and use a compose-network `PLATFORM_BASE_URL`.

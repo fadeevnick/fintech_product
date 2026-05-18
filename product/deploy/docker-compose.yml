@@ -103,6 +103,11 @@ services:
       ISSUER_BASE_URL: http://issuer:8080
       ACQUIRER_BASE_URL: http://acquirer:8080
       SERVICE_AUTH_SECRET: ${SERVICE_AUTH_SECRET:-local-service-secret}
+      SUMSUB_BASE_URL: ${SUMSUB_BASE_URL:-https://api.sumsub.com}
+      SUMSUB_APP_TOKEN: ${SUMSUB_APP_TOKEN:-}
+      SUMSUB_SECRET_KEY: ${SUMSUB_SECRET_KEY:-}
+      SUMSUB_WEBHOOK_SECRET: ${SUMSUB_WEBHOOK_SECRET:-local-sumsub-webhook-secret}
+      SUMSUB_LEVEL_NAME: ${SUMSUB_LEVEL_NAME:-basic-kyc-level}
     depends_on:
       platform-db:
         condition: service_healthy

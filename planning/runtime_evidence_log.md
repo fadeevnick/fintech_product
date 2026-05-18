@@ -1,6 +1,6 @@
 # Runtime Evidence Log
 
-Last updated: 2026-05-16.
+Last updated: 2026-05-18.
 
 This file records factual verification only. A runtime check is not marked passed unless the corresponding runtime command actually ran.
 
@@ -1292,3 +1292,85 @@ Result tag notes:
 - `WBH-02` is deferred. Retry/DLQ scheduling and terminal DLQ handling are not implemented or claimed.
 - `WBH-03` is not claimed.
 - `MRC-01`, `PAY-04`, `PAY-05`, `SET-*`, `CHB-*` and frontend checks are not claimed.
+
+---
+
+## 2026-05-18 — Phase 07 Slice 01 KYC/Sumsub Foundation Runtime Verification
+
+Scope:
+- Platform backend/runtime implementation for `KYC-01` and `KYC-02`.
+- End-user `POST /api/v1/kyc/start` auth/config/persistence gate.
+- Sumsub-style inbound webhook signature verification and vendor event id idempotency.
+
+Build evidence:
+- `docker run --rm -v ... gradle:8.14.3-jdk21 gradle --no-daemon :apps:platform:bootJar --stacktrace --console=plain` completed and produced `product/apps/platform/build/libs/platform-0.1.0-SNAPSHOT.jar`.
+- Platform runtime started from the built jar in an isolated container on compose network `mini-fintech-platform-a2_default`.
+- Flyway applied `V16__kyc_sumsub_foundation.sql`; Platform DB reached version `v16`.
+
+Runtime shape:
+- Used isolated a2 resources.
+- Host-published HTTP curls hung in this environment, so retained checks used the established compose-network runner pattern:
+  - `PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default`
+  - `PLATFORM_BASE_URL=http://minifin-phase07-platform:8080`
+- Real Sumsub sandbox credentials were **not** configured or used.
+
+Commands run:
+
+```bash
+cd product
+COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_2/product/deploy/docker-compose.yml \
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default \
+PLATFORM_BASE_URL=http://minifin-phase07-platform:8080 \
+scripts/runtime/reg_phase07_kyc_start.sh
+```
+
+Output:
+
+```text
+KYC-01 Sumsub KYC start partial (credentials absent; local auth/config/persistence gate proven)
+```
+
+Result:
+- `KYC-01` — **partial**.
+- Actor used: authenticated, email-verified, active end-user created by the runtime script.
+- Proven locally: end-user session gate, active/email-verified user path, actor-control write guard call path, one KYC profile persisted, failed start session persisted with `failure_code = 'sumsub_not_configured'`, and no fake Sumsub applicant/access-token success.
+- Full pass remains blocked until real Sumsub sandbox credentials are configured and actually used.
+
+Command run:
+
+```bash
+cd product
+COMPOSE_PROJECT_NAME=mini-fintech-platform-a2 \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_2/product/deploy/docker-compose.yml \
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default \
+PLATFORM_BASE_URL=http://minifin-phase07-platform:8080 \
+scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
+```
+
+Output:
+
+```text
+INSERT 0 1
+INSERT 0 1
+KYC-02 Sumsub webhook signature/idempotency pass profile_id=264fdfdc-3d82-401b-a5f5-ef1f5995a8b2 applicant_id=sumsub-applicant-1779064705056225789 event_id=sumsub-event-1779064705057517135
+```
+
+Result:
+- `KYC-02` — **pass**.
+- Webhook payload: deterministic local Sumsub-format `applicantReviewed` JSON fixture with `reviewResult.reviewAnswer = GREEN`.
+- Signature assertion: invalid `X-Payload-Digest` rejected with HTTP `401` / `invalid_sumsub_signature`; valid HMAC-SHA256 signature accepted.
+- Idempotency assertion: duplicate vendor event id returned idempotent success with `duplicate = true`; exactly one `kyc.sumsub_webhook_events` row exists for the event id.
+- State assertion: seeded KYC profile for applicant `sumsub-applicant-1779064705056225789` moved from `SUBMITTED` to `APPROVED`.
+
+Targeted regression:
+- Merchant session calling `POST /api/v1/kyc/start` returned `403` with `forbidden_actor_type`.
+
+Not claimed:
+- Real Sumsub sandbox start full pass.
+- OpenSanctions.
+- AML alerts/freezes/SoF.
+- Document preview/read-audit.
+- Case attachments or SeaweedFS KYC document storage.
+- Backoffice KYC queue/manual decisions.
+- Frontend UI.
