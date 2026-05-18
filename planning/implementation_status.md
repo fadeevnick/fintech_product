@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last updated: 2026-05-17.
+Last updated: 2026-05-18.
 
 ---
 
@@ -784,27 +784,59 @@ Explicitly not implemented:
 - No merchant DLQ UI, new webhook event producers, settlement/capture/refund work, Stripe Connect onboarding or frontend implementation was added.
 
 Next planned step:
-- Plan and implement a separate `WBH-03` DLQ replay slice, or reprioritize Phase 07 Slice 01 KYC/Sumsub foundation if compliance work is preferred.
+- Plan and implement a separate `WBH-03` DLQ replay slice when webhook replay becomes the next priority.
 
 ---
 
 ## Phase 07 Slice 01 — KYC/Sumsub Foundation
 
-Status: **PLANNING APPROVED — product implementation not started**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — `KYC-01` partial, `KYC-02` runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_07_slice_01_kyc_sumsub_foundation_planning.md` — APPROVED v0.1.
 
-Approved backend/runtime scope:
-- Implement the first KYC/Sumsub foundation in `platform`.
-- Target `KYC-01` and `KYC-02`: end-user KYC start, persisted KYC applicant/session/request state, Sumsub webhook signature verification and vendor-event idempotency.
-- Full `KYC-01` pass requires real Sumsub sandbox credentials; without credentials, evidence must be explicitly partial and must not fake vendor success.
-- Reserve Platform migration `V16__kyc_sumsub_foundation.sql`, because `V15` is reserved for Phase 06 Slice 02 retry/DLQ.
+Implemented backend/runtime scope:
+- Platform DB migration `V16__kyc_sumsub_foundation.sql` creates `kyc` schema tables:
+  - `kyc.kyc_profiles`;
+  - `kyc.kyc_sessions`;
+  - `kyc.sumsub_webhook_events`.
+- New Platform package `com.minifin.platform.kyc`.
+- End-user route `POST /api/v1/kyc/start`:
+  - requires authenticated end-user session via `MFP_SESSION`;
+  - rejects merchant sessions through existing identity actor-type checks;
+  - requires active/email-verified user state;
+  - reuses actor-control write guard for blocked/frozen end users;
+  - persists KYC profile/start state;
+  - is idempotent when an active local KYC session already exists;
+  - returns `sumsub_not_configured` and records a failed session when Sumsub sandbox credentials are absent, without faking vendor success.
+- Sumsub adapter boundary:
+  - uses real Sumsub API calls only when app token and secret key are configured;
+  - stores access-token hash only, not raw token material.
+- Webhook route `POST /webhooks/sumsub/v1`:
+  - verifies HMAC-SHA256 payload digest before state mutation;
+  - persists vendor event ids with uniqueness;
+  - treats duplicate vendor event ids as idempotent no-ops;
+  - maps minimal review outcomes (`GREEN`, `RED` + reject type, pending/review events) to internal KYC statuses.
+- Retained runtime scripts:
+  - `product/scripts/runtime/lib_phase07_kyc_sumsub.sh`;
+  - `product/scripts/runtime/reg_phase07_kyc_start.sh`;
+  - `product/scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh`.
 
-Explicitly not implemented:
-- No product code, SQL migration or runtime script has been added yet.
-- No `KYC-01` or `KYC-02` runtime evidence is claimed.
-- OpenSanctions, AML, document preview/read-audit, case attachments, frontend UI and manual backoffice KYC decisions remain out of scope.
+Runtime verification:
+- `planning/runtime_evidence_log.md` — `2026-05-18 — Phase 07 Slice 01 KYC/Sumsub Foundation Runtime Verification`.
+- `KYC-01` — partial because real Sumsub sandbox credentials were not configured; local auth/config/persistence behavior passed and no fake vendor success was returned.
+- `KYC-02` — pass for invalid signature rejection, valid locally signed payload acceptance, duplicate vendor event id idempotency and `APPROVED` state mapping.
+- Targeted wrong-role denial passed for merchant session calling end-user KYC start.
+
+Explicitly not implemented/claimed:
+- OpenSanctions;
+- AML alerts/freezes/SoF;
+- backoffice KYC queue or manual decisions;
+- document preview/read-audit;
+- case attachment upload or SeaweedFS document storage;
+- wallet/card/payment gating changes beyond this slice's KYC state persistence;
+- frontend code;
+- real `KYC-01` full pass without Sumsub sandbox credentials.
 
 Next planned step:
-- Implement either Phase 06 Slice 02 (`WBH-02`) or Phase 07 Slice 01 (`KYC-01`/`KYC-02`) depending on project priority.
+- Provide real Sumsub sandbox credentials to turn `KYC-01` from partial to pass, or continue with the next approved backend/runtime slice.

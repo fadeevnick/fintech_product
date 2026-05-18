@@ -24,7 +24,8 @@ Implemented runtime behavior so far:
 - Phase 04 Slice 03 merchant dashboard payments/webhook config backend/runtime sub-scope in `platform`: `merchant.webhook_endpoints`, merchant dashboard `GET /api/v1/merchant/payment-intents`, `GET /api/v1/merchant/payment-intents/{id}`, and `GET/POST/PUT/DELETE /api/v1/merchant/webhook-endpoints[/{id}]`; payment reads are merchant-scoped with cross-merchant 404 behavior, webhook config writes require `merchant_admin`, and `merchant_member` remains read-only.
 - Phase 05 Slice 01 Vault/Card issuance backend/runtime sub-scope across `platform`, `issuer` and `vault`: end-user `POST /api/v1/cards`, Platform→Issuer and Issuer→Vault service-auth calls, Issuer token/last4 card records, Vault encrypted PAN tokenization, restricted detokenize for `service:issuer` and detokenize audit rows. `VLT-01`, `VLT-02` and `VLT-03` have runtime evidence.
 - Phase 05 Slice 02 card authorization backend/runtime sub-scope across `platform`, `acquirer`, `network` and `issuer`: public `POST /v1/payment_intents/{id}/authorize`, Platform→Acquirer→Network→Issuer routing, approved authorization ledger holds, and structured declines for insufficient funds, blocked actor, inactive card and unknown card token. `PAY-04` and `PAY-05` have runtime evidence.
-- Phase 06 Slice 01 outbound merchant webhook delivery foundation in `platform`: webhook endpoints now have one-time `mfp_whsec_*` signing secrets, encrypted-at-rest delivery secret material, hash/prefix metadata, secret rotation endpoint, persisted `merchant.webhook_events` and `merchant.webhook_delivery_attempts`, real signed HTTP delivery of `payment_intent.created` after public payment-intent creation, and retained `WBH-01` runtime verification with a local signature-validating receiver. `WBH-02` retry/DLQ and `WBH-03` replay remain deferred.
+- Phase 06 Slice 01 outbound merchant webhook delivery foundation in `platform`: webhook endpoints now have one-time `mfp_whsec_*` signing secrets, encrypted-at-rest delivery secret material, hash/prefix metadata, secret rotation endpoint, persisted `merchant.webhook_events` and `merchant.webhook_delivery_attempts`, real signed HTTP delivery of `payment_intent.created` after public payment-intent creation, and retained `WBH-01` runtime verification with a local signature-validating receiver.
+- Phase 06 Slice 02 outbound merchant webhook retry/DLQ in `platform`: failed deliveries retry on a persisted schedule, HTTP failure metadata is retained, exhausted attempts move events to `DLQ`, and retained `WBH-02` runtime verification passed. `WBH-03` replay remains deferred.
 
 ## Local Commands
 
@@ -122,6 +123,8 @@ scripts/runtime/reg_phase05_card_issue_pan_isolation.sh
 scripts/runtime/reg_phase05_vault_detokenize_restriction.sh
 scripts/runtime/reg_phase05_pan_log_masking.sh
 scripts/runtime/reg_phase06_webhook_signing_delivery.sh
+scripts/runtime/reg_phase07_kyc_start.sh
+scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
 ```
 
 ## Stripe Webhook Local Runtime
@@ -202,3 +205,33 @@ scripts/runtime/reg_phase06_webhook_signing_delivery.sh
 ```
 
 `WBH-01` and `WBH-02` are implemented and verified. `WBH-03` replay is deferred.
+
+
+## Phase 07 KYC/Sumsub Local Runtime
+
+Phase 07 Slice 01 adds the first Platform KYC/Sumsub foundation:
+
+- end-user `POST /api/v1/kyc/start`;
+- persisted KYC profile/session state in `kyc.*`;
+- real Sumsub API boundary when sandbox credentials are configured;
+- no fake successful Sumsub applicant/access-token path when credentials are absent;
+- inbound `POST /webhooks/sumsub/v1` HMAC-SHA256 payload verification and vendor event id idempotency.
+
+Local runtime defaults:
+
+```bash
+SUMSUB_BASE_URL=https://api.sumsub.com
+SUMSUB_APP_TOKEN=
+SUMSUB_SECRET_KEY=
+SUMSUB_WEBHOOK_SECRET=local-sumsub-webhook-secret
+SUMSUB_LEVEL_NAME=basic-kyc-level
+```
+
+Retained scripts:
+
+```bash
+scripts/runtime/reg_phase07_kyc_start.sh
+scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
+```
+
+`reg_phase07_kyc_start.sh` records `KYC-01` as partial when real Sumsub credentials are absent. `reg_phase07_sumsub_webhook_signature_idempotency.sh` proves `KYC-02` locally with deterministic Sumsub-format signed fixtures. For isolated compose-network verification, set `PLATFORM_CURL_CONTAINER_NETWORK` and use a compose-network `PLATFORM_BASE_URL`.
