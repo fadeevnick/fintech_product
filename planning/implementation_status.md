@@ -926,3 +926,44 @@ Explicitly not implemented/claimed:
 - wallet/card/payment gating changes beyond updating `kyc.kyc_profiles.status`;
 - frontend UI;
 - real `KYC-01` full pass without Sumsub sandbox credentials.
+
+Next planned step:
+- Implement one of the next approved backend/runtime slices:
+  - Phase 05 Slice 03 payment capture foundation for `PAY-06`.
+  - Phase 07 Slice 03 OpenSanctions fail-closed foundation for `SNX-01`.
+
+---
+
+## Phase 05 Slice 03 — Payment Capture Foundation
+
+Status: **APPROVED PLANNING ONLY — not implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_05_slice_03_payment_capture_foundation_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Public API `POST /v1/payment_intents/{id}/capture`.
+- Durable capture state for an already `AUTHORIZED` payment intent.
+- Idempotent same-key replay and conflict behavior through existing public idempotency primitive.
+- Target retained runtime check: `PAY-06`.
+
+Not yet implemented:
+- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
+
+---
+
+## Phase 07 Slice 03 — OpenSanctions Fail-Closed Foundation
+
+Status: **APPROVED PLANNING ONLY — not implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_07_slice_03_opensanctions_fail_closed_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Platform sanctions schema and OpenSanctions adapter boundary.
+- Fail-closed screening integrated narrowly with KYC manual approval.
+- Sanctions hit creation for unavailable screening or high-confidence match.
+- Target retained runtime check: `SNX-01`.
+
+Not yet implemented:
+- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.

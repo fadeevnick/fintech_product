@@ -124,6 +124,7 @@ Result tags:
 | `VLT-03` | PAN log masking. | PAN does not appear in service logs. | pending |
 | `PAY-04` | Approved authorization hold. | Acquirer→Network→Issuer authorization places ledger hold. | pending |
 | `PAY-05` | Structured auth declines. | Insufficient funds/blocked/expired produce structured decline. | pending |
+| `PAY-06` | Payment capture foundation. | Authorized payment intent can be captured exactly once with idempotent public API behavior. | pending |
 
 ## 9. Phase 06 — Clearing, Settlement, Refunds and Webhooks
 
