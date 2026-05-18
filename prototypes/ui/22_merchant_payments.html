@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Payments — MDB-UI-05</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#eceae5; --surface:#ffffff; --surf2:#f7f6f3; --inp:#faf9f7; --hover:#f0efe9;
+      --sb:#111114; --sb-bdr:#1e1e22; --sb-muted:#545460; --sb-active:#1e1e28;
+      --bdr:#dddad2; --bdr-mid:#c5c2ba; --bdr-focus:#1c1c1f;
+      --t1:#1c1c1f; --t2:#575763; --t3:#9898a6; --t4:#d0d0da;
+      --cta:#1c1c1f; --cta-hov:#2e2e35; --cta-t:#ffffff;
+      --g:#166534;  --g-bg:#f0fdf4;  --g-bd:#bbf7d0;
+      --am:#854d0e; --am-bg:#fffbeb; --am-bd:#fde68a;
+      --rd:#9b1c1c; --rd-bg:#fef2f2; --rd-bd:#fecaca;
+      --or:#b45309; --or-bg:#fff7ed; --or-bd:#fed7aa;
+      --pu:#5b21b6; --pu-bg:#f5f3ff; --pu-bd:#ddd6fe;
+      --bl:#1d4ed8; --bl-bg:#eff6ff; --bl-bd:#bfdbfe;
+      --sb-env-bg:#1a1030; --sb-env-t:#b39cf0; --sb-env-bd:#362566;
+      --f-ui:'IBM Plex Sans',sans-serif; --f-mono:'IBM Plex Mono',monospace;
+      --r:3px; --r-lg:5px; --w-sb:220px; --w-tl:252px;
+    }
+    html,body { height:100%; background:var(--bg); color:var(--t1); font-family:var(--f-ui); font-size:13px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+    #root { width:100%; height:100vh; display:flex; overflow:hidden; }
+    ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:var(--bdr-mid); border-radius:2px; }
+
+    /* SIDEBAR */
+    .sidebar { width:var(--w-sb); flex-shrink:0; background:var(--sb); border-right:1px solid var(--sb-bdr); display:flex; flex-direction:column; overflow:hidden; }
+    .sb-brand { padding:14px 14px 12px; border-bottom:1px solid var(--sb-bdr); }
+    .sb-mark  { display:flex; align-items:center; gap:9px; }
+    .sb-name  { font-size:14.5px; font-weight:600; color:#eaeaf4; letter-spacing:-0.01em; }
+    .sb-sub   { font-size:9.5px; color:var(--sb-muted); text-transform:uppercase; letter-spacing:0.1em; margin-top:3px; }
+    .sb-merchant { margin-top:10px; padding:7px 9px; background:rgba(255,255,255,0.04); border-radius:var(--r); border:1px solid var(--sb-bdr); }
+    .sb-m-label { font-size:9px; color:var(--sb-muted); text-transform:uppercase; letter-spacing:0.09em; margin-bottom:3px; }
+    .sb-m-name  { font-size:12.5px; font-weight:600; color:#eaeaf4; }
+    .sb-m-id    { font-size:10px; color:var(--sb-muted); font-family:var(--f-mono); margin-top:1px; }
+    .sb-nav   { flex:1; padding:10px 7px; overflow-y:auto; }
+    .nav-sec  { font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:var(--sb-muted); padding:4px 9px 5px; margin-top:4px; }
+    .nav-item { display:flex; align-items:center; gap:8px; padding:6px 9px; border-radius:var(--r); color:var(--sb-muted); font-size:12px; cursor:default; user-select:none; transition:background 0.1s; }
+    .nav-item.locked  { opacity:0.35; }
+    .nav-item.current { background:var(--sb-active); color:#e0e0ec; }
+    .nav-lock { margin-left:auto; font-size:9px; opacity:0.6; }
+    .nav-id   { margin-left:auto; font-size:9px; font-family:var(--f-mono); color:var(--sb-muted); opacity:0.8; }
+    .nav-item.current .nav-id { color:#7c6ff7; opacity:1; }
+    .sb-footer { padding:10px 14px; border-top:1px solid var(--sb-bdr); }
+    .env-chip  { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:var(--r); background:var(--sb-env-bg); border:1px solid var(--sb-env-bd); font-size:10px; color:var(--sb-env-t); font-family:var(--f-mono); margin-bottom:4px; }
+    .env-dot   { width:5px; height:5px; border-radius:50%; background:var(--sb-env-t); opacity:0.7; }
+    .env-host  { font-size:10px; color:var(--sb-muted); font-family:var(--f-mono); }
+    .sb-user   { display:flex; align-items:center; gap:7px; margin-top:9px; }
+    .sb-avatar { width:24px; height:24px; border-radius:50%; background:#5b21b6; color:#fff; font-size:9px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .sb-uname  { font-size:11px; font-weight:500; color:#eaeaf4; }
+    .sb-urole  { font-size:9.5px; color:var(--sb-muted); text-transform:uppercase; letter-spacing:0.05em; }
+
+    /* MAIN */
+    .main-wrap { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+    .page-hdr  { display:flex; align-items:center; justify-content:space-between; padding:10px 22px; border-bottom:1px solid var(--bdr); background:var(--surface); flex-shrink:0; gap:10px; flex-wrap:wrap; }
+    .page-bc   { font-size:12.5px; color:var(--t2); display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+    .page-bc strong { color:var(--t1); font-weight:500; }
+    .page-bc .sep   { color:var(--t3); }
+    .page-meta { display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
+    .screen-id { font-size:10px; font-family:var(--f-mono); color:var(--t3); padding:2px 6px; border:1px solid var(--bdr); border-radius:var(--r); }
+    .env-badge { font-size:10px; font-family:var(--f-mono); color:var(--am); background:var(--am-bg); border:1px solid var(--am-bd); padding:2px 8px; border-radius:var(--r); display:flex; align-items:center; gap:5px; }
+    .env-badge-dot { width:5px; height:5px; border-radius:50%; background:var(--am); }
+    .user-chip { display:flex; align-items:center; gap:7px; padding:3px 9px 3px 3px; border:1px solid var(--bdr); border-radius:20px; background:var(--surf2); }
+    .user-avatar { width:22px; height:22px; border-radius:50%; background:#5b21b6; color:#fff; font-size:9px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .user-name { font-size:11.5px; color:var(--t2); font-weight:500; }
+
+    /* CONTENT */
+    .content-area { flex:1; display:flex; overflow:hidden; }
+    .left-scroll  { flex:1; overflow-y:auto; padding:14px 18px; background:var(--bg); display:flex; flex-direction:column; gap:11px; min-width:0; }
+
+    /* PANELS */
+    .panel    { background:var(--surface); border:1px solid var(--bdr); border-radius:var(--r-lg); overflow:hidden; flex-shrink:0; }
+    .panel-hdr{ display:flex; align-items:center; justify-content:space-between; padding:9px 14px; border-bottom:1px solid var(--bdr); background:var(--surf2); flex-shrink:0; flex-wrap:wrap; gap:8px; }
+    .panel-title { font-size:11.5px; font-weight:600; color:var(--t1); text-transform:uppercase; letter-spacing:0.04em; }
+    .panel-body  { padding:13px 16px; }
+
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; padding:2px 6px; border-radius:2px; font-size:9.5px; font-weight:600; letter-spacing:0.07em; font-family:var(--f-mono); border:1px solid transparent; white-space:nowrap; }
+    .b-active   { background:var(--g-bg);  color:var(--g);   border-color:var(--g-bd); }
+    .b-locked   { background:var(--hover); color:var(--t2);  border-color:var(--bdr); }
+    .b-disabled { background:var(--hover); color:var(--t3);  border-color:var(--bdr); }
+    .b-sandbox  { background:var(--pu-bg); color:var(--pu);  border-color:var(--pu-bd); }
+    .b-inreview { background:var(--pu-bg); color:var(--pu);  border-color:var(--pu-bd); }
+    .b-delivered{ background:var(--g-bg);  color:var(--g);   border-color:var(--g-bd); }
+    .b-retrying { background:var(--or-bg); color:var(--or);  border-color:var(--or-bd); }
+    .b-dlq      { background:#1c0520;      color:#e879f9;     border-color:#a21caf; }
+    /* Payment status */
+    .b-rqpm     { background:var(--am-bg); color:var(--am);  border-color:var(--am-bd); }
+    .b-auth     { background:var(--bl-bg); color:var(--bl);  border-color:var(--bl-bd); }
+    .b-req-cap  { background:var(--or-bg); color:var(--or);  border-color:var(--or-bd); }
+    .b-captured { background:var(--g-bg);  color:var(--g);   border-color:var(--g-bd); }
+    .b-succeeded{ background:var(--g-bg);  color:var(--g);   border-color:var(--g-bd); }
+    .b-failed   { background:var(--rd-bg); color:var(--rd);  border-color:var(--rd-bd); }
+    .b-refunded { background:var(--pu-bg); color:var(--pu);  border-color:var(--pu-bd); }
+    .b-disputed { background:#fff7ed;      color:#c2410c;    border-color:#fed7aa; }
+    .b-none     { color:var(--t4); font-family:var(--f-mono); font-size:11px; }
+
+    /* STATUS STRIP */
+    .status-strip { display:flex; flex-wrap:wrap; background:var(--surface); border:1px solid var(--bdr); border-radius:var(--r-lg); overflow:hidden; flex-shrink:0; }
+    .stat-cell { padding:11px 14px; border-right:1px solid var(--bdr); flex:1 1 110px; min-width:0; }
+    .stat-cell:last-child { border-right:none; }
+    .stat-k { font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:var(--t3); margin-bottom:4px; font-weight:600; }
+    .stat-v { font-size:12.5px; color:var(--t1); font-weight:500; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .stat-v.mono { font-family:var(--f-mono); font-size:11px; }
+    .stat-v.red { color:var(--rd); } .stat-v.warn { color:var(--am); } .stat-v.pu { color:var(--pu); }
+
+    /* KV */
+    .kv-table { display:flex; flex-direction:column; }
+    .kv-row   { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--hover); }
+    .kv-row:last-child { border-bottom:none; }
+    .kv-k { font-size:11px; color:var(--t3); min-width:164px; flex-shrink:0; padding-top:2px; }
+    .kv-v { font-size:12px; color:var(--t1); flex:1; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .kv-v.mono { font-family:var(--f-mono); font-size:11px; }
+
+    /* BUTTONS */
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:7px 14px; border-radius:var(--r); font-size:12.5px; font-weight:500; font-family:var(--f-ui); cursor:pointer; border:none; transition:background 0.1s; white-space:nowrap; }
+    .btn-primary { background:var(--cta); color:var(--cta-t); }
+    .btn-primary:hover { background:var(--cta-hov); }
+    .btn-ghost   { background:var(--surface); color:var(--t2); border:1px solid var(--bdr-mid); }
+    .btn-ghost:hover { background:var(--hover); color:var(--t1); }
+    .btn-danger  { background:var(--rd-bg); color:var(--rd); border:1px solid var(--rd-bd); }
+    .btn-sm { padding:4px 10px; font-size:11px; } .btn-xs { padding:2px 7px; font-size:10.5px; }
+    .btn:disabled { opacity:0.32; cursor:not-allowed; }
+    .btn-faux-dis { opacity:0.32; cursor:not-allowed; }
+
+    /* ALERTS */
+    .alert { display:flex; gap:10px; padding:9px 12px 9px 13px; font-size:12px; line-height:1.55; border-left-width:3px; border-left-style:solid; border-radius:var(--r); }
+    .alert-warn  { background:var(--am-bg); border-left-color:var(--am); color:#78350f; }
+    .alert-red   { background:var(--rd-bg); border-left-color:var(--rd); color:#7f1d1d; }
+    .alert-info  { background:var(--hover); border-left-color:var(--bdr-mid); color:var(--t2); }
+    .alert-green { background:var(--g-bg);  border-left-color:var(--g);  color:#14532d; }
+    .alert-pu    { background:var(--pu-bg); border-left-color:var(--pu); color:#3b0764; }
+    .alert-blue  { background:var(--bl-bg); border-left-color:var(--bl); color:#1e3a8a; }
+
+    /* TABLES */
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th { font-size:10px; text-transform:uppercase; letter-spacing:0.07em; color:var(--t3); padding:6px 10px; text-align:left; border-bottom:1px solid var(--bdr); background:var(--surf2); font-weight:600; white-space:nowrap; }
+    .data-table td { padding:7px 10px; font-size:12px; border-bottom:1px solid var(--hover); vertical-align:middle; }
+    .data-table tr:last-child td { border-bottom:none; }
+    .data-table tr.row-hover:hover td { background:var(--surf2); cursor:pointer; }
+    .data-table tr.row-selected td { background:rgba(29,78,216,0.04); }
+    .mono-cell { font-family:var(--f-mono); font-size:11px; }
+    .url-cell { font-family:var(--f-mono); font-size:10.5px; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--t2); }
+    .payment-table { table-layout:fixed; }
+    .payment-table th,
+    .payment-table td { padding-left:8px; padding-right:8px; overflow:hidden; }
+    .payment-table .pi-col { width:8%; }
+    .payment-table .customer-col { width:15%; }
+    .payment-table .amount-col { width:7%; }
+    .payment-table .status-col { width:8%; }
+    .payment-table .capture-col { width:8%; }
+    .payment-table .date-col { width:8%; }
+    .payment-table .api-col { width:8%; }
+    .payment-table .request-col { width:9%; }
+    .payment-table .actions-col { width:21%; }
+    .payment-table .truncate { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .payment-actions { display:flex; gap:4px; justify-content:flex-end; flex-wrap:wrap; }
+    .payment-actions .btn-xs { padding-left:6px; padding-right:6px; font-size:10px; }
+
+    /* FORMS */
+    .inp-field { width:100%; padding:6px 9px; border:1px solid var(--bdr-mid); border-radius:var(--r); font-size:12px; color:var(--t1); background:var(--inp); outline:none; font-family:var(--f-ui); transition:border-color 0.12s; }
+    .inp-field:focus { border-color:var(--bdr-focus); }
+    select.inp-field { cursor:pointer; }
+
+    /* FILTER CHIPS */
+    .filter-chips { display:flex; gap:4px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:1px; }
+    .filter-chips::-webkit-scrollbar { height:2px; }
+    .fc { display:inline-flex; align-items:center; padding:3px 9px; border-radius:2px; font-size:10px; font-family:var(--f-mono); border:1px solid var(--bdr-mid); background:var(--surf2); color:var(--t2); cursor:pointer; transition:all 0.1s; white-space:nowrap; font-weight:500; user-select:none; }
+    .fc:hover { border-color:var(--bdr-focus); color:var(--t1); background:var(--hover); }
+    .fc.fc-on { background:var(--cta); color:var(--cta-t); border-color:var(--cta); }
+
+    /* TOGGLE */
+    .toggle-row { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+    .toggle-track { width:32px; height:17px; border-radius:9px; background:var(--bdr-mid); position:relative; transition:background 0.15s; flex-shrink:0; }
+    .toggle-track.on { background:#1d4ed8; }
+    .toggle-thumb { width:13px; height:13px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px; transition:left 0.15s; box-shadow:0 1px 2px rgba(0,0,0,0.15); }
+    .toggle-track.on .toggle-thumb { left:17px; }
+    .toggle-label { font-size:10.5px; color:var(--t2); }
+    .toggle-track.on + .toggle-label { color:var(--bl); font-weight:500; }
+
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; background:rgba(17,17,20,0.52); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+    .modal { background:var(--surface); border:1px solid var(--bdr); border-radius:var(--r-lg); width:480px; max-width:100%; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.18); }
+    .modal-hdr   { display:flex; align-items:flex-start; justify-content:space-between; padding:13px 16px; border-bottom:1px solid var(--bdr); flex-shrink:0; background:var(--surf2); }
+    .modal-title { font-size:13px; font-weight:600; color:var(--t1); }
+    .modal-sub   { font-size:11px; color:var(--t3); margin-top:2px; }
+    .modal-close { width:24px; height:24px; border-radius:var(--r); background:transparent; border:none; color:var(--t3); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; transition:background 0.1s; }
+    .modal-close:hover { background:var(--hover); color:var(--t1); }
+    .modal-body  { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+    .modal-footer{ padding:12px 16px; border-top:1px solid var(--bdr); display:flex; gap:8px; align-items:center; flex-shrink:0; flex-wrap:wrap; }
+    .modal-note  { font-size:10.5px; color:var(--t3); margin-left:auto; font-style:italic; }
+
+    /* DRAWER */
+    .drawer-overlay { position:fixed; inset:0; background:rgba(17,17,20,0.35); z-index:90; }
+    .drawer { position:fixed; top:0; right:0; bottom:0; width:440px; max-width:95vw; background:var(--surface); border-left:1px solid var(--bdr); display:flex; flex-direction:column; z-index:91; box-shadow:-4px 0 24px rgba(0,0,0,0.12); }
+    .drawer-hdr  { padding:12px 16px; border-bottom:1px solid var(--bdr); flex-shrink:0; background:var(--surf2); display:flex; align-items:flex-start; justify-content:space-between; }
+    .drawer-title{ font-size:13px; font-weight:600; color:var(--t1); }
+    .drawer-sub  { font-size:10.5px; color:var(--t3); margin-top:2px; font-family:var(--f-mono); }
+    .drawer-body { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:12px; }
+    .drawer-footer{ padding:10px 16px; border-top:1px solid var(--bdr); flex-shrink:0; display:flex; gap:6px; flex-wrap:wrap; }
+    .drawer-tabs { display:flex; border-bottom:1px solid var(--bdr); background:var(--surf2); flex-shrink:0; overflow-x:auto; }
+    .drawer-tabs::-webkit-scrollbar { height:2px; }
+    .dt { padding:8px 12px; font-size:11px; font-weight:500; color:var(--t3); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.1s; white-space:nowrap; user-select:none; }
+    .dt:hover { color:var(--t1); }
+    .dt.dt-on { color:var(--t1); border-bottom-color:var(--cta); }
+
+    /* LIFECYCLE */
+    .lc-flow  { display:flex; align-items:flex-start; overflow-x:auto; gap:0; padding-bottom:4px; }
+    .lc-step  { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; padding:5px 5px; border-radius:var(--r); min-width:58px; transition:background 0.1s; flex-shrink:0; }
+    .lc-step:hover { background:var(--hover); }
+    .lc-icon  { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--bdr-mid); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; }
+    .lc-done   .lc-icon { background:var(--g);    color:#fff; border-color:var(--g); }
+    .lc-curr   .lc-icon { background:var(--bl);   color:#fff; border-color:var(--bl); }
+    .lc-pend   .lc-icon { background:var(--surf2); color:var(--t3); border-color:var(--bdr-mid); }
+    .lc-fail   .lc-icon { background:var(--rd);   color:#fff; border-color:var(--rd); }
+    .lc-label { font-size:9px; font-family:var(--f-mono); color:var(--t3); text-align:center; line-height:1.3; max-width:58px; }
+    .lc-done  .lc-label { color:var(--g); }
+    .lc-curr  .lc-label { color:var(--bl); font-weight:600; }
+    .lc-fail  .lc-label { color:var(--rd); font-weight:600; }
+    .lc-arrow { font-size:13px; color:var(--t4); flex-shrink:0; align-self:center; margin:0 1px; margin-bottom:18px; }
+
+    /* TIMELINE RAIL */
+    .tl-rail  { width:var(--w-tl); flex-shrink:0; background:var(--surface); border-left:1px solid var(--bdr); display:flex; flex-direction:column; overflow:hidden; }
+    .tl-hdr   { padding:10px 14px; border-bottom:1px solid var(--bdr); flex-shrink:0; font-size:9.5px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:0.1em; }
+    .tl-body  { flex:1; overflow-y:auto; padding:10px 14px; }
+    .tl-evt   { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--hover); cursor:pointer; }
+    .tl-evt:last-child { border-bottom:none; }
+    .tl-evt:hover .tl-name { color:var(--cta); }
+    .tl-spine { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+    .tl-dot   { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+    .tl-dot.ok   { background:var(--g); } .tl-dot.pend { background:var(--or); }
+    .tl-dot.bad  { background:var(--rd); } .tl-dot.neu  { background:var(--t4); }
+    .tl-dot.pu   { background:var(--pu); } .tl-dot.bl   { background:var(--bl); }
+    .tl-dot.dlq  { background:#a21caf; }
+    .tl-line  { width:1px; flex:1; background:var(--bdr); margin:4px 0; min-height:12px; }
+    .tl-content { flex:1; min-width:0; }
+    .tl-ts    { font-size:9.5px; font-family:var(--f-mono); color:var(--t3); margin-bottom:1px; }
+    .tl-name  { font-size:11px; font-weight:600; color:var(--t1); margin-bottom:1px; text-transform:uppercase; letter-spacing:0.04em; transition:color 0.1s; }
+    .tl-actor { font-size:10px; color:var(--t3); margin-bottom:2px; }
+    .tl-desc  { font-size:10.5px; color:var(--t2); line-height:1.4; }
+    .tl-audit { font-size:9.5px; font-family:var(--f-mono); color:var(--pu); margin-top:4px; background:var(--pu-bg); border:1px solid var(--pu-bd); border-radius:var(--r); padding:2px 6px; display:inline-block; }
+    .tl-expand-hint { font-size:9px; color:var(--t4); margin-top:2px; font-style:italic; }
+    .tl-meta  { margin-top:6px; padding:7px 9px; background:var(--surf2); border:1px solid var(--bdr); border-radius:var(--r); font-size:10px; font-family:var(--f-mono); color:var(--t2); line-height:1.6; white-space:pre-wrap; }
+
+    /* LEDGER */
+    .ledger-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--hover); align-items:baseline; gap:10px; }
+    .ledger-row:last-child { border-bottom:none; }
+    .ledger-k { font-size:11px; color:var(--t3); flex-shrink:0; }
+    .ledger-v { font-size:11.5px; color:var(--t1); font-family:var(--f-mono); text-align:right; }
+
+    /* WH EVENTS */
+    .wh-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--hover); flex-wrap:wrap; }
+    .wh-row:last-child { border-bottom:none; }
+
+    /* SCOPE TAG */
+    .scope-tag { display:inline-flex; padding:1px 5px; border-radius:2px; font-size:9.5px; font-family:var(--f-mono); background:var(--pu-bg); color:var(--pu); border:1px solid var(--pu-bd); white-space:nowrap; }
+
+    @media (max-width:1100px) { :root { --w-tl:210px; } }
+    @media (max-width:960px)  { .tl-rail { display:none; } }
+    @media (max-width:640px)  { .sidebar { display:none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback } = React;
+
+/* ── NAV ── */
+const NAV = [
+  { sec:'MERCHANT' },
+  { id:'MDB-UI-01', label:'Overview',    icon:'▤' },
+  { id:'MDB-UI-02', label:'Onboarding',  icon:'◎' },
+  { id:'MDB-UI-03', label:'API Keys',    icon:'⌗' },
+  { id:'MDB-UI-04', label:'Webhooks',    icon:'⇥' },
+  { id:'MDB-UI-05', label:'Payments',    icon:'⇅', current:true },
+  { id:'MDB-UI-06', label:'Settlements', icon:'⊟', locked:true },
+  { id:'MDB-UI-07', label:'Disputes',    icon:'⊘', locked:true },
+  { sec:'ACCOUNT' },
+  { id:'', label:'Team',     icon:'⊙' },
+  { id:'', label:'Settings', icon:'⊕' },
+];
+
+/* ── PAYMENT DATA ── */
+const PAYMENTS = [
+  {
+    id:'PI-90021', customer:{email:'ava.ross@example.com', name:'Ava Ross'},
+    amount:84.50, currency:'EUR', status:'requires_payment_method', captureState:'uncaptured',
+    created:'2026-05-18 09:42', updated:'2026-05-18 09:42',
+    apiKeyPrefix:'mfp_test_7Kp…', requestId:'req_8Kp1A2b3C4d',
+    idempotencyKey:'orbit_pm_20260518_ava_001', paymentMethod:null,
+    apiCtx:{ endpoint:'POST /v1/payment_intents', method:'POST', responseStatus:201, errorCode:null, scopeUsed:'payment_intents:create', idempotencyResult:'created', note:'Initial creation. No payment method provided at creation time. Payment awaiting customer input.' },
+    ledgerItems:[ {k:'Authorization hold', v:'—'}, {k:'Captured amount', v:'—'}, {k:'Settlement status', v:'Not applicable'}, {k:'Reconciliation', v:'Not applicable'} ],
+    webhooks:[ {event:'payment_intent.created',status:'delivered',ts:'2026-05-18 09:42',reqId:'req_wh_8Kp1A'}, {event:'payment_intent.succeeded',status:'not_emitted',ts:'—'}, {event:'payment_intent.failed',status:'not_emitted',ts:'—'}, {event:'payment_intent.refunded',status:'not_emitted',ts:'—'}, {event:'chargeback.opened',status:'not_emitted',ts:'—'} ],
+    lifecycleEvts:[ {ts:'2026-05-18 09:42',label:'Payment Intent Created',s:'done',note:'PI created via POST /v1/payment_intents. Idempotency key registered. No funds movement.'}, {ts:'—',label:'Awaiting Payment Method',s:'current',note:'No payment method attached yet. Customer has not provided card or wallet details.'} ],
+    dispute:null, refund:null, statusPosition:1,
+  },
+  {
+    id:'PI-90018', customer:{email:'leon.martin@example.com', name:'Leon Martin'},
+    amount:145.00, currency:'EUR', status:'authorized', captureState:'authorized_hold',
+    created:'2026-05-18 10:18', updated:'2026-05-18 10:20',
+    apiKeyPrefix:'mfp_test_7Kp…', requestId:'req_7Np2B3c4D5e',
+    idempotencyKey:'orbit_pm_20260518_leon_001', paymentMethod:{type:'card',brand:'Visa',last4:'4242',expiry:'08/28',country:'DE'},
+    apiCtx:{ endpoint:'POST /v1/payment_intents', method:'POST', responseStatus:200, errorCode:null, scopeUsed:'payment_intents:create', idempotencyResult:'replayed', note:'Idempotent replay — same idempotency key + identical parameters. Cached response returned. No duplicate payment created.' },
+    ledgerItems:[ {k:'Authorization hold', v:'EUR 145.00', note:'Reserved on cardholder account. Not yet captured.'}, {k:'Captured amount', v:'— (pending capture)'}, {k:'Platform fee (est.)', v:'EUR 4.51'}, {k:'Merchant receivable (est.)', v:'EUR 140.49'}, {k:'Settlement status', v:'Pending capture'}, {k:'Reconciliation', v:'Pending'} ],
+    webhooks:[ {event:'payment_intent.created',status:'delivered',ts:'2026-05-18 10:18',reqId:'req_wh_7Np2B'}, {event:'payment_intent.succeeded',status:'not_emitted',ts:'—'}, {event:'payment_intent.failed',status:'not_emitted',ts:'—'}, {event:'payment_intent.refunded',status:'not_emitted',ts:'—'}, {event:'chargeback.opened',status:'not_emitted',ts:'—'} ],
+    lifecycleEvts:[ {ts:'2026-05-18 10:18',label:'Payment Intent Created',s:'done',note:'PI created.'}, {ts:'2026-05-18 10:19',label:'Payment Method Attached',s:'done',note:'Visa •••• 4242 attached by cardholder.'}, {ts:'2026-05-18 10:20',label:'Authorization Approved',s:'current',note:'Issuer approved. EUR 145.00 hold placed. Not captured — hold only.'} ],
+    dispute:null, refund:null, statusPosition:2,
+  },
+  {
+    id:'PI-90012', customer:{email:'emma.schulz@example.com', name:'Emma Schulz'},
+    amount:39.90, currency:'EUR', status:'captured', captureState:'captured',
+    created:'2026-05-18 10:35', updated:'2026-05-18 10:38',
+    apiKeyPrefix:'mfp_test_7Kp…', requestId:'req_9Qr3C4d5E6f',
+    idempotencyKey:'orbit_pm_20260518_emma_001', paymentMethod:{type:'card',brand:'Mastercard',last4:'1234',expiry:'12/27',country:'DE'},
+    apiCtx:{ endpoint:'POST /v1/payment_intents', method:'POST', responseStatus:200, errorCode:null, scopeUsed:'payment_intents:create', idempotencyResult:'replayed', note:'Idempotent replay — duplicate POST with same idempotency key detected. Cached 201 response returned. No new payment intent created.' },
+    ledgerItems:[ {k:'Authorization hold', v:'EUR 39.90 (cleared)'}, {k:'Captured amount', v:'EUR 39.90'}, {k:'Platform fee', v:'EUR 1.46 (2.9% + €0.30)'}, {k:'Merchant receivable', v:'EUR 38.44'}, {k:'Settlement batch', v:'SETT-20260520 (T+2)'}, {k:'Settlement status', v:'Pending settlement'}, {k:'Reconciliation', v:'Pending'} ],
+    webhooks:[ {event:'payment_intent.created',status:'delivered',ts:'2026-05-18 10:35',reqId:'req_wh_9Qr3C'}, {event:'payment_intent.succeeded',status:'delivered',ts:'2026-05-18 10:38',reqId:'req_wh_9Qr4D'}, {event:'payment_intent.failed',status:'not_emitted',ts:'—'}, {event:'payment_intent.refunded',status:'not_emitted',ts:'—'}, {event:'chargeback.opened',status:'not_emitted',ts:'—'} ],
+    lifecycleEvts:[ {ts:'2026-05-18 10:35',label:'Payment Intent Created',s:'done'}, {ts:'2026-05-18 10:36',label:'Payment Method Attached',s:'done',note:'Mastercard •••• 1234 attached.'}, {ts:'2026-05-18 10:37',label:'Authorization Approved',s:'done',note:'Issuer approved.'}, {ts:'2026-05-18 10:38',label:'Capture Posted',s:'done',note:'EUR 39.90 captured. Ledger entry posted. Settlement batch SETT-20260520 assigned.'} ],
+    dispute:null, refund:null, statusPosition:4,
+  },
+  {
+    id:'PI-89980', customer:{email:'noah.weber@example.com', name:'Noah Weber'},
+    amount:220.00, currency:'EUR', status:'failed', captureState:'none',
+    created:'2026-05-17 16:18', updated:'2026-05-17 16:19',
+    apiKeyPrefix:'mfp_test_N4h…', requestId:'req_2Xy4D5e6F7g',
+    idempotencyKey:'orbit_pm_20260517_noah_001', paymentMethod:{type:'card',brand:'Visa',last4:'0002',expiry:'03/27',country:'DE'},
+    apiCtx:{ endpoint:'POST /v1/payment_intents', method:'POST', responseStatus:402, errorCode:'insufficient_funds', scopeUsed:'payment_intents:create', idempotencyResult:'created', note:'Authorization declined by issuer — insufficient_funds. No capture. No ledger entry posted. Payment is terminal.' },
+    ledgerItems:[ {k:'Authorization hold', v:'— (declined)'}, {k:'Captured amount', v:'— (no capture)'}, {k:'Ledger impact', v:'None — authorization declined'}, {k:'Settlement status', v:'Not applicable'}, {k:'Reconciliation', v:'Not applicable'} ],
+    webhooks:[ {event:'payment_intent.created',status:'delivered',ts:'2026-05-17 16:18',reqId:'req_wh_2Xy4D'}, {event:'payment_intent.failed',status:'dlq',ts:'2026-05-17 16:19',reqId:'req_wh_2Xy5E'}, {event:'payment_intent.succeeded',status:'not_emitted',ts:'—'}, {event:'payment_intent.refunded',status:'not_emitted',ts:'—'}, {event:'chargeback.opened',status:'not_emitted',ts:'—'} ],
+    lifecycleEvts:[ {ts:'2026-05-17 16:18',label:'Payment Intent Created',s:'done'}, {ts:'2026-05-17 16:18',label:'Payment Method Attached',s:'done',note:'Visa •••• 0002 attached.'}, {ts:'2026-05-17 16:19',label:'Authorization Declined',s:'failed',note:'Issuer declined — error_code: insufficient_funds. No hold placed. No ledger entry.'} ],
+    dispute:null, refund:null, statusPosition:'failed',
+  },
+  {
+    id:'PI-89965', customer:{email:'mia.fischer@example.com', name:'Mia Fischer'},
+    amount:18.99, currency:'EUR', status:'refunded', captureState:'captured',
+    created:'2026-05-17 14:55', updated:'2026-05-17 16:01',
+    apiKeyPrefix:'mfp_test_7Kp…', requestId:'req_5Zw5E6f7G8h',
+    idempotencyKey:'orbit_pm_20260517_mia_001', paymentMethod:{type:'card',brand:'Mastercard',last4:'5678',expiry:'06/26',country:'DE'},
+    apiCtx:{ endpoint:'POST /v1/payment_intents', method:'POST', responseStatus:201, errorCode:null, scopeUsed:'payment_intents:create', idempotencyResult:'created', note:'Standard creation. Refund subsequently issued via backoffice. Original PI remains for audit history.' },
+    ledgerItems:[ {k:'Original capture', v:'EUR 18.99'}, {k:'Refund amount', v:'EUR 18.99 (full refund)'}, {k:'Net merchant receivable', v:'EUR 0.00'}, {k:'Platform fee reversal', v:'EUR 0.85 returned'}, {k:'Settlement status', v:'Refund offset applied'}, {k:'Reconciliation', v:'Reconciled'} ],
+    webhooks:[ {event:'payment_intent.created',status:'delivered',ts:'2026-05-17 14:55',reqId:'req_wh_5Zw5E'}, {event:'payment_intent.succeeded',status:'delivered',ts:'2026-05-17 14:57',reqId:'req_wh_5Zw6F'}, {event:'payment_intent.refunded',status:'delivered',ts:'2026-05-17 16:01',reqId:'req_wh_5Zw7G'}, {event:'payment_intent.failed',status:'not_emitted',ts:'—'}, {event:'chargeback.opened',status:'not_emitted',ts:'—'} ],
+    lifecycleEvts:[ {ts:'2026-05-17 14:55',label:'Payment Intent Created',s:'done'}, {ts:'2026-05-17 14:56',label:'Payment Method Attached',s:'done',note:'Mastercard •••• 5678 attached.'}, {ts:'2026-05-17 14:56',label:'Authorization Approved',s:'done'}, {ts:'2026-05-17 14:57',label:'Capture Posted',s:'done',note:'EUR 18.99 captured.'}, {ts:'2026-05-17 16:01',label:'Full Refund Issued',s:'done',note:'EUR 18.99 refunded to cardholder. Net merchant receivable: EUR 0.00.'} ],
+    dispute:null, refund:{amount:18.99, type:'full', ts:'2026-05-17 16:01', by:'Backoffice'}, statusPosition:4,
+  },
+  {
+    id:'PI-89930', customer:{email:'oliver.khan@example.com', name:'Oliver Khan'},
+    amount:312.00, currency:'EUR', status:'disputed', captureState:'captured',
+    created:'2026-05-16 11:20', updated:'2026-05-17 09:14',
+    apiKeyPrefix:'mfp_test_7Kp…', requestId:'req_6Lm8N9p0Q1r',
+    idempotencyKey:'orbit_pm_20260516_oliver_001', paymentMethod:{type:'card',brand:'Visa',last4:'9999',expiry:'11/27',country:'GB'},
+    apiCtx:{ endpoint:'POST /v1/payment_intents', method:'POST', responseStatus:201, errorCode:null, scopeUsed:'payment_intents:create', idempotencyResult:'created', note:'Standard creation. Dispute opened by cardholder subsequently. See Disputes screen (MDB-UI-07) for response workflow.' },
+    ledgerItems:[ {k:'Original capture', v:'EUR 312.00'}, {k:'Dispute hold', v:'EUR 312.00 reserved'}, {k:'Merchant receivable', v:'On hold — dispute open'}, {k:'Dispute fee', v:'EUR 15.00'}, {k:'Settlement status', v:'Blocked — dispute open'}, {k:'Reconciliation', v:'Blocked — awaiting outcome'} ],
+    webhooks:[ {event:'payment_intent.created',status:'delivered',ts:'2026-05-16 11:20',reqId:'req_wh_6Lm8N'}, {event:'payment_intent.succeeded',status:'delivered',ts:'2026-05-16 11:22',reqId:'req_wh_6Lm9O'}, {event:'chargeback.opened',status:'retrying',ts:'2026-05-17 09:14',reqId:'req_wh_6Lm0P'}, {event:'payment_intent.failed',status:'not_emitted',ts:'—'}, {event:'payment_intent.refunded',status:'not_emitted',ts:'—'} ],
+    lifecycleEvts:[ {ts:'2026-05-16 11:20',label:'Payment Intent Created',s:'done'}, {ts:'2026-05-16 11:21',label:'Payment Method Attached',s:'done',note:'Visa •••• 9999 attached.'}, {ts:'2026-05-16 11:21',label:'Authorization Approved',s:'done'}, {ts:'2026-05-16 11:22',label:'Capture Posted',s:'done',note:'EUR 312.00 captured.'}, {ts:'2026-05-17 09:14',label:'Dispute Opened',s:'dispute',note:'Cardholder initiated chargeback. Dispute ID: CB-40019. EUR 312.00 on hold. Respond via Disputes screen.'} ],
+    dispute:{id:'CB-40019', amount:312.00, ts:'2026-05-17 09:14', reason:'unauthorized_transaction'}, refund:null, statusPosition:4,
+  },
+  {
+    id:'PI-89892', customer:{email:'sofia.moretti@example.com', name:'Sofia Moretti'},
+    amount:64.00, currency:'EUR', status:'requires_capture', captureState:'authorized_hold',
+    created:'2026-05-16 09:05', updated:'2026-05-16 09:07',
+    apiKeyPrefix:'mfp_test_A91…', requestId:'req_4Bt6U7v8W9x',
+    idempotencyKey:'orbit_pm_20260516_sofia_001', paymentMethod:{type:'card',brand:'Amex',last4:'3030',expiry:'09/29',country:'IT'},
+    apiCtx:{ endpoint:'POST /v1/payment_intents', method:'POST', responseStatus:409, errorCode:'idempotency_key_reuse_violation', scopeUsed:'payment_intents:create', idempotencyResult:'conflict', note:'Idempotency key reuse violation — same key resubmitted with different amount parameter. Request rejected 409. Original PI-89892 (EUR 64.00) remains active.' },
+    ledgerItems:[ {k:'Authorization hold', v:'EUR 64.00', note:'Active hold. Capture required to finalize.'}, {k:'Captured amount', v:'— (pending capture)'}, {k:'Platform fee (est.)', v:'EUR 2.16'}, {k:'Merchant receivable (est.)', v:'EUR 61.84'}, {k:'Settlement status', v:'Pending capture'}, {k:'Reconciliation', v:'Pending'} ],
+    webhooks:[ {event:'payment_intent.created',status:'delivered',ts:'2026-05-16 09:05',reqId:'req_wh_4Bt6U'}, {event:'payment_intent.succeeded',status:'not_emitted',ts:'—'}, {event:'payment_intent.failed',status:'not_emitted',ts:'—'}, {event:'payment_intent.refunded',status:'not_emitted',ts:'—'}, {event:'chargeback.opened',status:'not_emitted',ts:'—'} ],
+    lifecycleEvts:[ {ts:'2026-05-16 09:05',label:'Payment Intent Created',s:'done'}, {ts:'2026-05-16 09:06',label:'Payment Method Attached',s:'done',note:'Amex •••• 3030 attached.'}, {ts:'2026-05-16 09:07',label:'Authorization Approved',s:'done',note:'Issuer approved. EUR 64.00 hold placed.'}, {ts:'—',label:'Awaiting Capture',s:'current',note:'Capture required. Merchant UI capture not yet available — requires backoffice or API.'} ],
+    dispute:null, refund:null, statusPosition:3,
+  },
+  {
+    id:'PI-89851', customer:{email:'theo.bauer@example.com', name:'Theo Bauer'},
+    amount:27.50, currency:'EUR', status:'succeeded', captureState:'captured',
+    created:'2026-05-15 18:44', updated:'2026-05-15 18:46',
+    apiKeyPrefix:'mfp_test_N4h…', requestId:'req_1Cd2E3f4G5h',
+    idempotencyKey:'orbit_pm_20260515_theo_001', paymentMethod:{type:'card',brand:'Mastercard',last4:'7890',expiry:'02/28',country:'DE'},
+    apiCtx:{ endpoint:'POST /v1/payment_intents', method:'POST', responseStatus:201, errorCode:null, scopeUsed:'payment_intents:create', idempotencyResult:'created', note:'Standard creation and capture. Settled in batch SETT-20260517.' },
+    ledgerItems:[ {k:'Authorization hold', v:'EUR 27.50 (cleared)'}, {k:'Captured amount', v:'EUR 27.50'}, {k:'Platform fee', v:'EUR 1.10 (2.9% + €0.30)'}, {k:'Merchant receivable', v:'EUR 26.40'}, {k:'Settlement batch', v:'SETT-20260517 (settled)'}, {k:'Settlement status', v:'Settled'}, {k:'Reconciliation', v:'Reconciled — 2026-05-17'} ],
+    webhooks:[ {event:'payment_intent.created',status:'delivered',ts:'2026-05-15 18:44',reqId:'req_wh_1Cd2E'}, {event:'payment_intent.succeeded',status:'delivered',ts:'2026-05-15 18:46',reqId:'req_wh_1Cd3F'}, {event:'payment_intent.failed',status:'not_emitted',ts:'—'}, {event:'payment_intent.refunded',status:'not_emitted',ts:'—'}, {event:'chargeback.opened',status:'not_emitted',ts:'—'} ],
+    lifecycleEvts:[ {ts:'2026-05-15 18:44',label:'Payment Intent Created',s:'done'}, {ts:'2026-05-15 18:44',label:'Payment Method Attached',s:'done',note:'Mastercard •••• 7890 attached.'}, {ts:'2026-05-15 18:45',label:'Authorization Approved',s:'done'}, {ts:'2026-05-15 18:46',label:'Capture Posted',s:'done',note:'EUR 27.50 captured.'}, {ts:'2026-05-15 18:46',label:'Payment Succeeded',s:'done',note:'Payment complete. Settled in batch SETT-20260517.'} ],
+    dispute:null, refund:null, statusPosition:5,
+  },
+];
+
+/* ── LIFECYCLE STEPS ── */
+const LC_STEPS = [
+  { id:'created',                  label:'Created' },
+  { id:'requires_payment_method',  label:'Req. PM' },
+  { id:'authorized',               label:'Authorized' },
+  { id:'requires_capture',         label:'Req. Capture' },
+  { id:'captured',                 label:'Captured' },
+  { id:'succeeded',                label:'Succeeded' },
+];
+const STEP_EXPLAIN = {
+  created:                 'Payment intent created via API. Parameters recorded — amount, currency, idempotency key. No funds movement.',
+  requires_payment_method: 'Awaiting a valid payment method. No authorization has been attempted. The intent can expire or be cancelled at this point.',
+  authorized:              'Payment method authorized by the issuing bank. Funds reserved (hold). Not a final capture — the hold may expire if not captured within the issuer window.',
+  requires_capture:        'Authorization hold active. Merchant must explicitly capture to post the ledger entry and initiate settlement. Capture is a separate API call and is not yet available in the merchant UI.',
+  captured:                'Funds captured. Ledger entry posted. Platform fee deducted. Settlement batch assigned (T+2 typical).',
+  succeeded:               'Payment lifecycle complete. Captured and settled. No further action needed.',
+};
+
+/* ── TIMELINE EVENTS ── */
+const TL_EVENTS = [
+  { ts:'2026-05-18 10:38', actor:'System',     dot:'ok',   name:'CAPTURE POSTED',       desc:'PI-90012 captured. EUR 39.90 posted. SETT-20260520 assigned.',            audit:'payment.capture_posted',   meta:'pi_id: PI-90012\namount: EUR 39.90\nbatch: SETT-20260520\nfee: EUR 1.46' },
+  { ts:'2026-05-18 10:20', actor:'System',     dot:'bl',   name:'AUTH APPROVED',        desc:'PI-90018 authorized. Visa •••• 4242. EUR 145.00 hold placed.',            audit:'payment.auth_approved',    meta:'pi_id: PI-90018\ncardlast4: 4242\nhold_amount: EUR 145.00\nissuer: DE' },
+  { ts:'2026-05-18 10:18', actor:'System',     dot:'pu',   name:'IDEMPOTENT REPLAY',    desc:'PI-90018 — duplicate POST returned cached 200. No new payment created.',   audit:'payment.idempotency_replay', meta:'pi_id: PI-90018\nidempotency_key: orbit_pm_20260518_leon_001\nresult: replayed\ncached_status: 200' },
+  { ts:'2026-05-18 09:42', actor:'API',        dot:'ok',   name:'REQUEST ACCEPTED',     desc:'PI-90021 created. POST /v1/payment_intents 201. req_8Kp1A2b3C4d.',        audit:'payment.api_request',      meta:'pi_id: PI-90021\npath: POST /v1/payment_intents\nstatus: 201\nkey: mfp_test_7Kp…' },
+  { ts:'2026-05-17 16:19', actor:'System',     dot:'dlq',  name:'WEBHOOK DLQ',          desc:'payment_intent.failed for PI-89980 moved to DLQ after 6 retries.',         audit:'webhook.event_dlq',        meta:'event: payment_intent.failed\npi_id: PI-89980\nattempts: 6\nfinal_status: 500' },
+  { ts:'2026-05-17 16:19', actor:'System',     dot:'bad',  name:'AUTH DECLINED',        desc:'PI-89980 declined — insufficient_funds. Visa •••• 0002. No capture.',      audit:'payment.auth_declined',    meta:'pi_id: PI-89980\nerror_code: insufficient_funds\ncardlast4: 0002\nledger_impact: none' },
+  { ts:'2026-05-17 16:01', actor:'Backoffice', dot:'pu',   name:'REFUND RECORDED',      desc:'PI-89965 full refund. EUR 18.99. Fee reversal applied.',                   audit:'payment.refund_recorded',  meta:'pi_id: PI-89965\nrefund_type: full\namount: EUR 18.99\nfee_reversal: EUR 0.85' },
+  { ts:'2026-05-17 09:14', actor:'System',     dot:'pend', name:'DISPUTE OPENED',       desc:'PI-89930 chargeback CB-40019. EUR 312.00 on hold.',                        audit:'payment.dispute_opened',   meta:'pi_id: PI-89930\ndispute_id: CB-40019\namount: EUR 312.00\nreason: unauthorized_transaction' },
+  { ts:'2026-05-16 09:07', actor:'System',     dot:'bad',  name:'IDEMPOTENCY CONFLICT', desc:'PI-89892 — key reuse violation. Same key, different amount. 409.',          audit:'payment.idempotency_conflict', meta:'pi_id: PI-89892\nidempotency_key: orbit_pm_20260516_sofia_001\nerror: idempotency_key_reuse_violation\nhttp_status: 409' },
+  { ts:'2026-05-15 18:46', actor:'System',     dot:'ok',   name:'PAYMENT SUCCEEDED',    desc:'PI-89851 succeeded. EUR 27.50 settled in SETT-20260517.',                  audit:'payment.succeeded',        meta:'pi_id: PI-89851\namount: EUR 27.50\nbatch: SETT-20260517\nreconciled: 2026-05-17' },
+  { ts:'2026-05-15 18:46', actor:'System',     dot:'ok',   name:'WEBHOOK DELIVERED',    desc:'payment_intent.succeeded for PI-89851 delivered. HTTP 200. Latency 88ms.', audit:'webhook.delivery_success', meta:'event: payment_intent.succeeded\npi_id: PI-89851\nhttp_status: 200\nlatency_ms: 88' },
+];
+
+/* ── HELPERS ── */
+function LogoMark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <rect width="26" height="26" rx="5" fill="#2a2a36"/>
+      <rect x="5"  y="5"  width="7" height="7" rx="1.5" fill="#7c6ff7"/>
+      <rect x="14" y="5"  width="7" height="7" rx="1.5" fill="#4a4a5a"/>
+      <rect x="5"  y="14" width="7" height="7" rx="1.5" fill="#4a4a5a"/>
+      <rect x="14" y="14" width="7" height="7" rx="1.5" fill="#7c6ff7" opacity="0.5"/>
+    </svg>
+  );
+}
+function Badge({ cls, children }) { return <span className={`badge ${cls}`}>{children}</span>; }
+function KV({ k, mono, children }) {
+  return (
+    <div className="kv-row">
+      <div className="kv-k">{k}</div>
+      <div className={`kv-v${mono?' mono':''}`}>{children}</div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const M = {
+    requires_payment_method:{ cls:'b-rqpm',     label:'REQ. PM' },
+    authorized:             { cls:'b-auth',      label:'AUTHORIZED' },
+    requires_capture:       { cls:'b-req-cap',   label:'REQ. CAPTURE' },
+    captured:               { cls:'b-captured',  label:'CAPTURED' },
+    succeeded:              { cls:'b-succeeded', label:'SUCCEEDED' },
+    failed:                 { cls:'b-failed',    label:'FAILED' },
+    refunded:               { cls:'b-refunded',  label:'REFUNDED' },
+    disputed:               { cls:'b-disputed',  label:'DISPUTED' },
+  };
+  const c = M[status] || { cls:'b-locked', label: status.toUpperCase() };
+  return <span className={`badge ${c.cls}`}>{c.label}</span>;
+}
+
+function CaptureStateBadge({ state }) {
+  if (!state || state === 'none' || state === 'uncaptured') return <span style={{color:'var(--t4)'}}>—</span>;
+  if (state === 'authorized_hold') return <Badge cls="b-auth">AUTH HOLD</Badge>;
+  if (state === 'captured') return <Badge cls="b-captured">CAPTURED</Badge>;
+  return <span style={{fontFamily:'var(--f-mono)', fontSize:11, color:'var(--t3)'}}>{state}</span>;
+}
+
+function WhBadge({ status }) {
+  const M = {
+    delivered:  { cls:'b-delivered', label:'DELIVERED' },
+    retrying:   { cls:'b-retrying',  label:'RETRYING' },
+    dlq:        { cls:'b-dlq',       label:'DLQ' },
+    failed:     { cls:'b-failed',    label:'FAILED' },
+    not_emitted:{ cls:'b-locked',    label:'NOT EMITTED' },
+  };
+  const c = M[status] || { cls:'b-locked', label:status };
+  return <Badge cls={c.cls}>{c.label}</Badge>;
+}
+
+function IdempBadge({ result }) {
+  if (result === 'created')  return <Badge cls="b-active">CREATED</Badge>;
+  if (result === 'replayed') return <Badge cls="b-auth">REPLAYED</Badge>;
+  if (result === 'conflict') return <Badge cls="b-failed">CONFLICT 409</Badge>;
+  return <Badge cls="b-locked">{result}</Badge>;
+}
+
+/* ── SIDEBAR ── */
+function Sidebar() {
+  return (
+    <div className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-mark"><LogoMark /><div><div className="sb-name">MiniFin</div><div className="sb-sub">Merchant Dashboard</div></div></div>
+        <div className="sb-merchant">
+          <div className="sb-m-label">Merchant</div>
+          <div className="sb-m-name">Orbit Market</div>
+          <div className="sb-m-id">MRC-20491</div>
+        </div>
+      </div>
+      <nav className="sb-nav">
+        {NAV.map((item, i) =>
+          item.sec
+            ? <div key={i} className="nav-sec" style={{marginTop:i===0?0:8}}>{item.sec}</div>
+            : (
+              <div key={i} className={`nav-item${item.current?' current':''}${item.locked?' locked':''}`}>
+                <span style={{fontSize:13}}>{item.icon}</span>
+                <span>{item.label}</span>
+                {item.locked && <span className="nav-lock">🔒</span>}
+                {item.id && <span className="nav-id">{item.id}</span>}
+              </div>
+            )
+        )}
+      </nav>
+      <div className="sb-footer">
+        <div className="env-chip"><div className="env-dot"/>Local Sandbox</div>
+        <div className="env-host">merchants.minifin.local</div>
+        <div className="sb-user">
+          <div className="sb-avatar">NK</div>
+          <div><div className="sb-uname">Nora Klein</div><div className="sb-urole">Merchant Admin</div></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── STATUS STRIP ── */
+function StatusStrip({ payments }) {
+  const c = (s) => payments.filter(p => p.status === s).length;
+  const totalAuth = payments.filter(p => p.captureState === 'authorized_hold').reduce((s,p)=>s+p.amount,0);
+  const totalCap  = payments.filter(p => p.captureState === 'captured').reduce((s,p)=>s+p.amount,0);
+  return (
+    <div className="status-strip">
+      <div className="stat-cell"><div className="stat-k">Total</div><div className="stat-v">{payments.length}</div></div>
+      <div className="stat-cell"><div className="stat-k">Req. PM</div><div className="stat-v warn">{c('requires_payment_method')}</div></div>
+      <div className="stat-cell"><div className="stat-k">Authorized</div><div className="stat-v">{c('authorized')}</div></div>
+      <div className="stat-cell"><div className="stat-k">Captured</div><div className="stat-v">{c('captured')+c('succeeded')}</div></div>
+      <div className="stat-cell"><div className="stat-k">Failed</div><div className="stat-v red">{c('failed')}</div></div>
+      <div className="stat-cell"><div className="stat-k">Refunded</div><div className="stat-v pu">{c('refunded')}</div></div>
+      <div className="stat-cell"><div className="stat-k">Disputed</div><div className="stat-v warn">{c('disputed')}</div></div>
+      <div className="stat-cell"><div className="stat-k">Auth Held</div><div className="stat-v mono">EUR {totalAuth.toFixed(2)}</div></div>
+      <div className="stat-cell"><div className="stat-k">Captured</div><div className="stat-v mono">EUR {totalCap.toFixed(2)}</div></div>
+      <div className="stat-cell"><div className="stat-k">Last API</div><div className="stat-v mono">2026-05-18 10:42</div></div>
+    </div>
+  );
+}
+
+/* ── FILTER WORKBAR ── */
+const STATUS_CHIPS = [
+  { val:'all', label:'All' },
+  { val:'requires_payment_method', label:'Req. PM' },
+  { val:'authorized', label:'Authorized' },
+  { val:'requires_capture', label:'Req. Capture' },
+  { val:'captured', label:'Captured' },
+  { val:'succeeded', label:'Succeeded' },
+  { val:'failed', label:'Failed' },
+  { val:'refunded', label:'Refunded' },
+  { val:'disputed', label:'Disputed' },
+];
+const CURRENCIES = ['All', 'EUR', 'USD', 'GBP'];
+const API_KEYS   = ['All keys', 'mfp_test_7Kp…', 'mfp_test_N4h…', 'mfp_test_A91…'];
+
+function FilterWorkbar({ filters, onChange, count, total }) {
+  return (
+    <div className="panel">
+      <div style={{padding:'10px 14px', display:'flex', flexDirection:'column', gap:8}}>
+        {/* Row 1 */}
+        <div style={{display:'flex', gap:8, flexWrap:'wrap', alignItems:'center'}}>
+          <div style={{flex:'1 1 200px', position:'relative'}}>
+            <span style={{position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', color:'var(--t3)', fontSize:12, pointerEvents:'none'}}>⌕</span>
+            <input
+              className="inp-field"
+              style={{paddingLeft:26, fontSize:11.5}}
+              placeholder="Search payment ID, email, request ID, idempotency key…"
+              value={filters.search}
+              onChange={e => onChange({...filters, search:e.target.value})}
+            />
+          </div>
+          <select className="inp-field" style={{width:110, fontSize:11}} value={filters.currency} onChange={e => onChange({...filters, currency:e.target.value})}>
+            {CURRENCIES.map(c => <option key={c} value={c.toLowerCase()}>{c}</option>)}
+          </select>
+          <select className="inp-field" style={{width:148, fontSize:11}} value={filters.apiKey} onChange={e => onChange({...filters, apiKey:e.target.value})}>
+            {API_KEYS.map(k => <option key={k} value={k}>{k}</option>)}
+          </select>
+          <div className="toggle-row" onClick={() => onChange({...filters, failedOnly:!filters.failedOnly})}>
+            <div className={`toggle-track${filters.failedOnly?' on':''}`}><div className="toggle-thumb"/></div>
+            <span className="toggle-label">{filters.failedOnly ? 'Action needed' : 'Action needed'}</span>
+          </div>
+          <button className="btn btn-ghost btn-xs" onClick={() => onChange({search:'',status:'all',currency:'all',apiKey:'All keys',failedOnly:false})}>Reset</button>
+          <span style={{fontSize:10.5, color:'var(--t3)', fontFamily:'var(--f-mono)', marginLeft:'auto', flexShrink:0}}>
+            {count} / {total} payments
+          </span>
+        </div>
+        {/* Row 2 — Status chips */}
+        <div className="filter-chips">
+          {STATUS_CHIPS.map(chip => (
+            <div
+              key={chip.val}
+              className={`fc${filters.status === chip.val ? ' fc-on' : ''}`}
+              onClick={() => onChange({...filters, status: chip.val})}
+            >
+              {chip.label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── PAYMENTS TABLE ── */
+function PaymentsTable({ payments, selectedId, onRowClick, onCopyId, copiedId, onOpenApi, onOpenEvents }) {
+  const [disabledNote, setDisabledNote] = useState(null);
+
+  function showNote(msg) {
+    setDisabledNote(msg);
+    setTimeout(() => setDisabledNote(null), 3000);
+  }
+
+  return (
+    <div className="panel" style={{position:'relative'}}>
+      <div className="panel-hdr">
+        <div style={{display:'flex', alignItems:'center', gap:10}}>
+          <span className="panel-title">Payment Intents</span>
+          <Badge cls="b-sandbox">SANDBOX</Badge>
+        </div>
+        <span style={{fontSize:10.5, color:'var(--t3)', fontFamily:'var(--f-mono)'}}>merchant: MRC-20491 · mode: sandbox</span>
+      </div>
+      {disabledNote && (
+        <div style={{position:'absolute', top:44, left:'50%', transform:'translateX(-50%)', zIndex:10, background:'var(--surface)', border:'1px solid var(--bdr-mid)', padding:'6px 12px', borderRadius:'var(--r)', fontSize:11, color:'var(--t2)', boxShadow:'0 2px 8px rgba(0,0,0,0.1)', whiteSpace:'nowrap', pointerEvents:'none'}}>
+          {disabledNote}
+        </div>
+      )}
+      <div>
+        <table className="data-table payment-table">
+          <thead>
+            <tr>
+              <th className="pi-col">Payment ID</th>
+              <th className="customer-col">Customer</th>
+              <th className="amount-col">Amount</th>
+              <th className="status-col">Status</th>
+              <th className="capture-col">Capture</th>
+              <th className="date-col">Created</th>
+              <th className="date-col">Updated</th>
+              <th className="api-col">API Key</th>
+              <th className="request-col">Request ID</th>
+              <th className="actions-col" style={{textAlign:'right'}}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map(p => (
+              <tr
+                key={p.id}
+                className={`row-hover${selectedId === p.id ? ' row-selected' : ''}`}
+                onClick={() => onRowClick(p.id)}
+              >
+                <td className="mono-cell" style={{color:'var(--pu)', fontWeight:500}}><span className="truncate">{p.id}</span></td>
+                <td>
+                  <div className="truncate" style={{fontSize:12, fontWeight:500, color:'var(--t1)'}}>{p.customer.name}</div>
+                  <div className="truncate" style={{fontSize:10.5, color:'var(--t3)', fontFamily:'var(--f-mono)'}}>{p.customer.email}</div>
+                </td>
+                <td className="mono-cell" style={{fontWeight:500}}>
+                  <span style={{fontSize:12.5}}>{p.amount.toFixed(2)}</span>
+                  <span style={{color:'var(--t3)', fontSize:10, marginLeft:3}}>{p.currency}</span>
+                </td>
+                <td><StatusBadge status={p.status} /></td>
+                <td><CaptureStateBadge state={p.captureState} /></td>
+                <td className="mono-cell"><span className="truncate">{p.created}</span></td>
+                <td className="mono-cell" style={{color:'var(--t3)'}}><span className="truncate">{p.updated}</span></td>
+                <td className="mono-cell" style={{color:'var(--t2)'}}><span className="truncate">{p.apiKeyPrefix}</span></td>
+                <td className="mono-cell" style={{color:'var(--t3)'}}><span className="truncate">{p.requestId}</span></td>
+                <td style={{textAlign:'right', whiteSpace:'nowrap'}} onClick={e => e.stopPropagation()}>
+                  <div className="payment-actions">
+                    <button className="btn btn-ghost btn-xs" onClick={() => onRowClick(p.id)}>Detail</button>
+                    <button className="btn btn-ghost btn-xs" onClick={() => onCopyId(p.id)}>
+                      {copiedId === p.id ? 'Copied' : 'Copy'}
+                    </button>
+                    <button className="btn btn-ghost btn-xs" onClick={() => onOpenApi(p.id)}>API</button>
+                    <button className="btn btn-ghost btn-xs" onClick={() => onOpenEvents(p.id)}>Events</button>
+                    <button
+                      className="btn btn-xs btn-faux-dis"
+                      style={{background:'var(--surf2)', border:'1px solid var(--bdr)', color:'var(--t3)'}}
+                      onClick={() => showNote('Capture: not available in merchant UI — use API or backoffice.')}
+                      title="Capture not available in merchant UI"
+                    >Cap.</button>
+                    <button
+                      className="btn btn-xs btn-faux-dis"
+                      style={{background:'var(--surf2)', border:'1px solid var(--bdr)', color:'var(--t3)'}}
+                      onClick={() => showNote('Refund: not available in merchant UI — pending workflow implementation.')}
+                      title="Refund workflow not yet available"
+                    >Ref.</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {payments.length === 0 && (
+              <tr><td colSpan={10} style={{textAlign:'center', padding:'20px', color:'var(--t3)', fontSize:12}}>No payments match the current filters.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div style={{padding:'7px 14px', borderTop:'1px solid var(--bdr)', background:'var(--surf2)', display:'flex', gap:16, flexWrap:'wrap'}}>
+        <span style={{fontSize:10.5, color:'var(--t3)'}}>Live payments locked — KYB in review. Sandbox data only.</span>
+        <span style={{fontSize:10.5, color:'var(--t3)', fontFamily:'var(--f-mono)', marginLeft:'auto'}}>Capture and Refund actions require backoffice or direct API call</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── DRAWER TABS ── */
+function DetailTab({ p }) {
+  return (
+    <div style={{display:'flex', flexDirection:'column', gap:12}}>
+      <div className="kv-table">
+        <KV k="Payment ID" mono>{p.id}</KV>
+        <KV k="Merchant">Orbit Market (MRC-20491)</KV>
+        <KV k="Customer email" mono><span style={{color:'var(--t2)'}}>{p.customer.email}</span></KV>
+        <KV k="Customer name">{p.customer.name}</KV>
+        <KV k="Amount" mono><strong>{p.amount.toFixed(2)}</strong> <span style={{color:'var(--t3)'}}>{p.currency}</span></KV>
+        <KV k="Status"><StatusBadge status={p.status} /></KV>
+        <KV k="Capture state"><CaptureStateBadge state={p.captureState} /></KV>
+        <KV k="Created at" mono>{p.created}</KV>
+        <KV k="Updated at" mono>{p.updated}</KV>
+        <KV k="API key prefix" mono>{p.apiKeyPrefix}</KV>
+        <KV k="Request ID" mono>{p.requestId}</KV>
+        <KV k="Idempotency key" mono><span style={{color:'var(--t2)', wordBreak:'break-all'}}>{p.idempotencyKey}</span></KV>
+        <KV k="Idempotency result"><IdempBadge result={p.apiCtx.idempotencyResult} /></KV>
+        <KV k="Scope used"><span className="scope-tag">{p.apiCtx.scopeUsed}</span></KV>
+      </div>
+      {p.paymentMethod ? (
+        <div>
+          <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:6}}>Payment Method</div>
+          <div className="kv-table">
+            <KV k="Type">{p.paymentMethod.type}</KV>
+            <KV k="Brand / last 4" mono>{p.paymentMethod.brand} •••• {p.paymentMethod.last4}</KV>
+            <KV k="Expiry" mono>{p.paymentMethod.expiry}</KV>
+            <KV k="Card country" mono>{p.paymentMethod.country}</KV>
+          </div>
+        </div>
+      ) : (
+        <div className="alert alert-warn" style={{fontSize:11}}>
+          No payment method attached. Customer has not provided card or wallet details.
+        </div>
+      )}
+      {p.dispute && (
+        <div>
+          <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:6}}>Dispute</div>
+          <div className="alert alert-warn">
+            <div>
+              <strong>Chargeback {p.dispute.id}</strong> — EUR {p.dispute.amount.toFixed(2)} on hold since {p.dispute.ts}. Reason: <span style={{fontFamily:'var(--f-mono)', fontSize:10.5}}>{p.dispute.reason}</span>. Respond via the Disputes screen (MDB-UI-07).
+            </div>
+          </div>
+        </div>
+      )}
+      {p.refund && (
+        <div>
+          <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:6}}>Refund</div>
+          <div className="alert alert-pu" style={{fontSize:11}}>
+            <strong>{p.refund.type === 'full' ? 'Full refund' : 'Partial refund'}</strong> of EUR {p.refund.amount.toFixed(2)} issued on {p.refund.ts} by {p.refund.by}.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LifecycleTab({ p, explanationStep, onStepClick }) {
+  const pos = p.statusPosition;
+  const isFailedTerminal = p.status === 'failed';
+
+  function stepClass(i) {
+    if (isFailedTerminal) {
+      if (i < 2) return 'lc-done';
+      if (i === 2) return 'lc-fail';
+      return 'lc-pend';
+    }
+    if (typeof pos === 'number') {
+      if (i < pos) return 'lc-done';
+      if (i === pos) return 'lc-curr';
+      return 'lc-pend';
+    }
+    return 'lc-pend';
+  }
+
+  function stepIcon(i, cls) {
+    if (cls === 'lc-done') return '✓';
+    if (cls === 'lc-fail') return '✕';
+    return String(i + 1);
+  }
+
+  return (
+    <div style={{display:'flex', flexDirection:'column', gap:12}}>
+      {/* Flow visualization */}
+      <div>
+        <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:10}}>State Progression — click a step for details</div>
+        <div className="lc-flow">
+          {LC_STEPS.map((step, i) => {
+            const cls = stepClass(i);
+            return (
+              <React.Fragment key={step.id}>
+                <div className={`lc-step ${cls}`} onClick={() => onStepClick(explanationStep === step.id ? null : step.id)}>
+                  <div className="lc-icon">{stepIcon(i, cls)}</div>
+                  <div className="lc-label">{step.label}</div>
+                </div>
+                {i < LC_STEPS.length - 1 && <div className="lc-arrow">›</div>}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Terminal state alerts */}
+      {isFailedTerminal && (
+        <div className="alert alert-red" style={{fontSize:11}}>
+          <strong>FAILED</strong> — Authorization declined. Error: <span style={{fontFamily:'var(--f-mono)', fontSize:10.5}}>{p.apiCtx.errorCode}</span>. No hold, no capture, no ledger entry.
+        </div>
+      )}
+      {p.status === 'refunded' && (
+        <div className="alert alert-pu" style={{fontSize:11}}>
+          <strong>REFUNDED</strong> — Full refund of EUR {p.refund?.amount?.toFixed(2)} issued. Net merchant receivable: EUR 0.00.
+        </div>
+      )}
+      {p.status === 'disputed' && (
+        <div className="alert alert-warn" style={{fontSize:11}}>
+          <strong>DISPUTED</strong> — Chargeback {p.dispute?.id}. EUR {p.dispute?.amount?.toFixed(2)} on hold. Settlement blocked. Use Disputes screen (MDB-UI-07) to respond.
+        </div>
+      )}
+
+      {/* Step explanation */}
+      {explanationStep && STEP_EXPLAIN[explanationStep] && (
+        <div className="alert alert-blue" style={{fontSize:11}}>
+          <div>
+            <strong style={{textTransform:'uppercase', fontSize:9.5, letterSpacing:'0.05em'}}>{explanationStep.replace(/_/g,' ')}</strong>
+            <div style={{marginTop:3}}>{STEP_EXPLAIN[explanationStep]}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Policy notes */}
+      <div style={{display:'flex', flexDirection:'column', gap:5}}>
+        {[
+          { icon:'⚠', text:'Authorized holds are NOT final captures. The hold may expire if not captured within the issuer window.' },
+          { icon:'⊘', text:'Capture and Refund require API calls or backoffice action. These workflows are not yet available in the merchant UI.' },
+          { icon:'⚑', text:'Disputes are handled in the Disputes workflow (MDB-UI-07). Failed payments do not post captured ledger entries.' },
+        ].map((n, i) => (
+          <div key={i} style={{display:'flex', gap:8, padding:'5px 9px', background:'var(--surf2)', border:'1px solid var(--bdr)', borderRadius:'var(--r)', fontSize:11, color:'var(--t2)'}}>
+            <span style={{fontSize:11, color:'var(--t3)', flexShrink:0}}>{n.icon}</span>
+            {n.text}
+          </div>
+        ))}
+      </div>
+
+      {/* Lifecycle events timeline */}
+      <div>
+        <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:8}}>Lifecycle Events</div>
+        {p.lifecycleEvts.map((evt, i) => (
+          <div key={i} style={{display:'flex', gap:10, paddingBottom:10}}>
+            <div style={{display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0}}>
+              <div style={{width:8, height:8, borderRadius:'50%', marginTop:3, background: evt.s==='done'?'var(--g)': evt.s==='failed'?'var(--rd)': evt.s==='dispute'?'var(--or)': evt.s==='current'?'var(--bl)':'var(--t4)'}} />
+              {i < p.lifecycleEvts.length - 1 && <div style={{width:1, flex:1, background:'var(--bdr)', margin:'4px 0', minHeight:12}} />}
+            </div>
+            <div style={{flex:1, minWidth:0}}>
+              <div style={{fontSize:9.5, fontFamily:'var(--f-mono)', color:'var(--t3)', marginBottom:1}}>{evt.ts}</div>
+              <div style={{fontSize:11.5, fontWeight:600, color:'var(--t1)', marginBottom:evt.note?2:0}}>{evt.label}</div>
+              {evt.note && <div style={{fontSize:11, color:'var(--t2)', lineHeight:1.4}}>{evt.note}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ApiTab({ p }) {
+  const c = p.apiCtx;
+  const isConflict = c.idempotencyResult === 'conflict';
+  const isFailed   = c.errorCode != null;
+  const isReplay   = c.idempotencyResult === 'replayed';
+
+  return (
+    <div style={{display:'flex', flexDirection:'column', gap:12}}>
+      {isConflict && (
+        <div className="alert alert-red">
+          <div>
+            <strong>Idempotency Key Reuse Violation</strong> — A request was submitted with an existing idempotency key but different parameters. The request was rejected with 409. The original payment intent is unaffected.
+          </div>
+        </div>
+      )}
+      {isReplay && (
+        <div className="alert alert-blue">
+          <div>
+            <strong>Idempotent Replay</strong> — A duplicate request was detected. The stored response was returned without creating a new payment. Safe retry behavior confirmed.
+          </div>
+        </div>
+      )}
+      {isFailed && (
+        <div className="alert alert-red" style={{fontSize:11}}>
+          <div>
+            <strong>Authorization Failed</strong> — Error code: <span style={{fontFamily:'var(--f-mono)'}}>{c.errorCode}</span>. HTTP {c.responseStatus}. No capture occurred.
+          </div>
+        </div>
+      )}
+      <div className="kv-table">
+        <KV k="Endpoint path" mono><span style={{color:'var(--bl)'}}>{c.endpoint}</span></KV>
+        <KV k="Method" mono>POST</KV>
+        <KV k="API key prefix" mono>{p.apiKeyPrefix}</KV>
+        <KV k="Request ID" mono>{p.requestId}</KV>
+        <KV k="Idempotency key" mono><span style={{color:'var(--t2)', wordBreak:'break-all'}}>{p.idempotencyKey}</span></KV>
+        <KV k="Idempotency result"><IdempBadge result={c.idempotencyResult} /></KV>
+        <KV k="Response status" mono>
+          <span style={{color: c.responseStatus < 300 ? 'var(--g)' : c.responseStatus < 500 ? 'var(--am)' : 'var(--rd)'}}>
+            {c.responseStatus}
+          </span>
+        </KV>
+        {c.errorCode && <KV k="Error code" mono><span style={{color:'var(--rd)'}}>{c.errorCode}</span></KV>}
+        <KV k="Scope used"><span className="scope-tag">{c.scopeUsed}</span></KV>
+      </div>
+      {c.note && (
+        <div className="alert alert-info" style={{fontSize:11}}>
+          {c.note}
+        </div>
+      )}
+      {/* Idempotency rules */}
+      <div>
+        <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:8}}>Idempotency Rules</div>
+        {[
+          { icon:'✓', color:'var(--g)', text:'Same key + same params → cached response returned, no duplicate created.' },
+          { icon:'✕', color:'var(--rd)', text:'Same key + different params → 409 idempotency_key_reuse_violation. Request rejected.' },
+          { icon:'⏱', color:'var(--am)', text:'Idempotency keys are stored for 24 hours. TTL resets on each access.' },
+        ].map((r, i) => (
+          <div key={i} style={{display:'flex', gap:8, padding:'5px 9px', background:'var(--surf2)', border:'1px solid var(--bdr)', borderRadius:'var(--r)', fontSize:11, color:'var(--t2)', marginBottom:4}}>
+            <span style={{color:r.color, fontWeight:700, flexShrink:0, fontSize:11}}>{r.icon}</span>
+            {r.text}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LedgerTab({ p }) {
+  return (
+    <div style={{display:'flex', flexDirection:'column', gap:12}}>
+      <div>
+        <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:8}}>
+          Ledger &amp; Settlement Summary — {p.id}
+        </div>
+        {p.ledgerItems.map((item, i) => (
+          <div key={i} className="ledger-row">
+            <div className="ledger-k">{item.k}</div>
+            <div style={{textAlign:'right'}}>
+              <div className="ledger-v">{item.v}</div>
+              {item.note && <div style={{fontSize:9.5, color:'var(--t3)', marginTop:1}}>{item.note}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="alert alert-info" style={{fontSize:11}}>
+        This is a business-facing summary. Platform fee is estimated at 2.9% + €0.30 (sandbox rate). Actual settlement timing and fees depend on production configuration.
+      </div>
+      {p.status === 'disputed' && (
+        <div className="alert alert-warn" style={{fontSize:11}}>
+          Settlement is blocked pending dispute resolution. EUR {p.dispute?.amount?.toFixed(2)} is held in chargeback reserve. Merchant receivable will remain on hold until the dispute is resolved.
+        </div>
+      )}
+      {p.status === 'failed' && (
+        <div className="alert alert-info" style={{fontSize:11}}>
+          No ledger entries posted. Authorization was declined and no funds movement occurred.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WebhooksTab({ p }) {
+  return (
+    <div style={{display:'flex', flexDirection:'column', gap:12}}>
+      <div>
+        <div style={{fontSize:10.5, color:'var(--t3)', textTransform:'uppercase', letterSpacing:'0.07em', fontWeight:600, marginBottom:8}}>
+          Webhook Events — {p.id}
+        </div>
+        {p.webhooks.map((w, i) => (
+          <div key={i} className="wh-row">
+            <span style={{fontFamily:'var(--f-mono)', fontSize:10.5, color:'var(--t2)', flex:'1 1 180px'}}>{w.event}</span>
+            <WhBadge status={w.status} />
+            <span style={{fontFamily:'var(--f-mono)', fontSize:10, color:'var(--t3)', marginLeft:'auto'}}>{w.ts}</span>
+          </div>
+        ))}
+      </div>
+      {p.webhooks.some(w => w.status === 'retrying' || w.status === 'dlq') && (
+        <div className="alert alert-warn" style={{fontSize:11}}>
+          One or more webhook deliveries are retrying or have been moved to DLQ. See the Webhooks screen (MDB-UI-04) for retry state, DLQ management, and delivery logs.
+        </div>
+      )}
+      <button className="btn btn-ghost btn-sm" style={{alignSelf:'flex-start'}}>View in Webhooks → MDB-UI-04</button>
+    </div>
+  );
+}
+
+/* ── PAYMENT DRAWER ── */
+function PaymentDrawer({ payment, tab, onTabChange, onClose, explanationStep, onStepClick }) {
+  const TABS = [
+    { id:'detail',   label:'Detail' },
+    { id:'lifecycle',label:'Lifecycle' },
+    { id:'api',      label:'API Context' },
+    { id:'ledger',   label:'Ledger' },
+    { id:'webhooks', label:'Webhooks' },
+  ];
+  return (
+    <>
+      <div className="drawer-overlay" onClick={onClose} />
+      <div className="drawer">
+        <div className="drawer-hdr">
+          <div>
+            <div className="drawer-title">{payment.id}</div>
+            <div className="drawer-sub">{payment.customer.email} · EUR {payment.amount.toFixed(2)} · {payment.currency}</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="drawer-tabs">
+          {TABS.map(t => (
+            <div key={t.id} className={`dt${tab === t.id ? ' dt-on' : ''}`} onClick={() => onTabChange(t.id)}>{t.label}</div>
+          ))}
+        </div>
+        <div className="drawer-body">
+          {tab === 'detail'    && <DetailTab    p={payment} />}
+          {tab === 'lifecycle' && <LifecycleTab p={payment} explanationStep={explanationStep} onStepClick={onStepClick} />}
+          {tab === 'api'       && <ApiTab       p={payment} />}
+          {tab === 'ledger'    && <LedgerTab    p={payment} />}
+          {tab === 'webhooks'  && <WebhooksTab  p={payment} />}
+        </div>
+        <div className="drawer-footer">
+          <button
+            className="btn btn-ghost btn-sm btn-faux-dis"
+            style={{opacity:0.4, cursor:'not-allowed'}}
+            title="Capture not available in merchant UI"
+          >Capture</button>
+          <button
+            className="btn btn-ghost btn-sm btn-faux-dis"
+            style={{opacity:0.4, cursor:'not-allowed'}}
+            title="Refund workflow pending"
+          >Refund</button>
+          {payment.dispute && (
+            <button className="btn btn-ghost btn-sm btn-faux-dis" style={{opacity:0.4, cursor:'not-allowed'}} title="Dispute response in Disputes screen">
+              Dispute Response
+            </button>
+          )}
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── TIMELINE RAIL ── */
+function TimelineRail({ expandedIdx, onExpand }) {
+  return (
+    <div className="tl-rail">
+      <div className="tl-hdr">Activity &amp; Audit</div>
+      <div className="tl-body">
+        {TL_EVENTS.map((evt, i) => (
+          <div key={i} className="tl-evt" onClick={() => onExpand(expandedIdx === i ? null : i)}>
+            <div className="tl-spine">
+              <div className={`tl-dot ${evt.dot}`} />
+              {i < TL_EVENTS.length - 1 && <div className="tl-line" />}
+            </div>
+            <div className="tl-content">
+              <div className="tl-ts">{evt.ts}</div>
+              <div className="tl-name">{evt.name}</div>
+              <div className="tl-actor">{evt.actor}</div>
+              <div className="tl-desc">{evt.desc}</div>
+              <div className="tl-audit">{evt.audit}</div>
+              {expandedIdx !== i && <div className="tl-expand-hint">click to expand</div>}
+              {expandedIdx === i && <div className="tl-meta">{evt.meta}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App() {
+  const [filters, setFilters]   = useState({ search:'', status:'all', currency:'all', apiKey:'All keys', failedOnly:false });
+  const [selectedId, setSelectedId] = useState(null);
+  const [drawerTab, setDrawerTab]   = useState('detail');
+  const [copiedId, setCopiedId]     = useState(null);
+  const [expandedTl, setExpandedTl] = useState(null);
+  const [lcStep, setLcStep]         = useState(null);
+
+  const filtered = PAYMENTS.filter(p => {
+    if (filters.status !== 'all' && p.status !== filters.status) return false;
+    if (filters.currency !== 'all' && filters.currency !== 'all' && p.currency.toLowerCase() !== filters.currency) return false;
+    if (filters.apiKey !== 'All keys' && p.apiKeyPrefix !== filters.apiKey) return false;
+    if (filters.failedOnly && !['failed','disputed','requires_payment_method','requires_capture'].includes(p.status)) return false;
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      return (
+        p.id.toLowerCase().includes(q) ||
+        p.customer.email.toLowerCase().includes(q) ||
+        p.customer.name.toLowerCase().includes(q) ||
+        p.requestId.toLowerCase().includes(q) ||
+        p.idempotencyKey.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  function handleRowClick(id) {
+    setSelectedId(id);
+    setDrawerTab('detail');
+    setLcStep(null);
+  }
+  function handleCopyId(id) {
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
+  function handleOpenApi(id) {
+    setSelectedId(id);
+    setDrawerTab('api');
+  }
+  function handleOpenEvents(id) {
+    setSelectedId(id);
+    setDrawerTab('webhooks');
+  }
+
+  const selectedPayment = PAYMENTS.find(p => p.id === selectedId);
+
+  return (
+    <>
+      <Sidebar />
+      <div className="main-wrap">
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>Orbit Market</span>
+            <span className="sep">›</span>
+            <strong>Payments</strong>
+            <span className="sep">·</span>
+            <span style={{fontFamily:'var(--f-mono)', fontSize:11, color:'var(--t3)'}}>MRC-20491</span>
+          </div>
+          <div className="page-meta">
+            <div className="env-badge"><div className="env-badge-dot"/>Local Sandbox</div>
+            <Badge cls="b-inreview">KYB IN REVIEW</Badge>
+            <div className="user-chip">
+              <div className="user-avatar">NK</div>
+              <span className="user-name">Nora Klein</span>
+              <span style={{fontSize:10, color:'var(--t3)', marginLeft:2}}>Merchant Admin</span>
+            </div>
+            <span className="screen-id">MDB-UI-05</span>
+          </div>
+        </div>
+        <div className="content-area">
+          <div className="left-scroll">
+            <StatusStrip payments={PAYMENTS} />
+            <FilterWorkbar
+              filters={filters}
+              onChange={setFilters}
+              count={filtered.length}
+              total={PAYMENTS.length}
+            />
+            <PaymentsTable
+              payments={filtered}
+              selectedId={selectedId}
+              onRowClick={handleRowClick}
+              onCopyId={handleCopyId}
+              copiedId={copiedId}
+              onOpenApi={handleOpenApi}
+              onOpenEvents={handleOpenEvents}
+            />
+            <div style={{height:14}} />
+          </div>
+          <TimelineRail expandedIdx={expandedTl} onExpand={setExpandedTl} />
+        </div>
+      </div>
+
+      {selectedPayment && (
+        <PaymentDrawer
+          payment={selectedPayment}
+          tab={drawerTab}
+          onTabChange={setDrawerTab}
+          onClose={() => setSelectedId(null)}
+          explanationStep={lcStep}
+          onStepClick={setLcStep}
+        />
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
