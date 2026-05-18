@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.minifin.platform.publicapi.PaymentIntentRecord
 import com.minifin.platform.publicapi.toDto
 import java.time.Instant
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -13,12 +15,14 @@ import org.springframework.http.MediaType
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClientException
+import org.springframework.web.client.RestClientResponseException
 import org.springframework.web.client.RestTemplate
 
 @Service
 class OutboundWebhookService(
     private val repository: OutboundWebhookRepository,
     private val objectMapper: ObjectMapper,
+    private val properties: WebhookDeliveryProperties,
 ) {
     private val restTemplate = RestTemplate(
         SimpleClientHttpRequestFactory().apply {
@@ -57,6 +61,7 @@ class OutboundWebhookService(
             val attemptNumber = repository.nextAttemptNumber(event.id, endpoint.id)
             val headers = signedHeaders(event, endpoint, attemptNumber)
             val outcome = post(endpoint.url, headers, event.payloadJson)
+            val nextRetryAt = if (outcome.succeeded) null else nextRetryAt(attemptNumber, event.maxAttempts)
             repository.insertAttempt(
                 id = UUID.randomUUID(),
                 eventId = event.id,
@@ -67,10 +72,25 @@ class OutboundWebhookService(
                 responseBodySnippet = outcome.responseBody,
                 errorType = outcome.errorType,
                 errorMessage = outcome.errorMessage,
+                nextRetryAt = nextRetryAt,
             )
             delivered = delivered || outcome.succeeded
+            if (!outcome.succeeded) {
+                val record = DeliveryOutcomeRecord(outcome.httpStatus, outcome.errorType ?: "HTTP_${outcome.httpStatus}", outcome.errorMessage ?: outcome.responseBody)
+                if (nextRetryAt == null) {
+                    repository.markDlq(event.id, record)
+                } else {
+                    repository.markRetryableFailure(event.id, nextRetryAt, record)
+                }
+            }
         }
-        repository.markEvent(event.id, if (delivered) "DELIVERED" else "FAILED")
+        if (delivered) repository.markEvent(event.id, "DELIVERED")
+    }
+
+    fun dispatchDueRetries(limit: Int = 25): Int {
+        val events = repository.dueRetryEvents(limit)
+        events.forEach { deliver(it) }
+        return events.size
     }
 
     private fun signedHeaders(event: OutboundWebhookEventRecord, endpoint: WebhookEndpointRecord, attemptNumber: Int): HttpHeaders {
@@ -95,9 +115,17 @@ class OutboundWebhookService(
                 httpStatus = response.statusCode.value(),
                 responseBody = response.body,
             )
+        } catch (e: RestClientResponseException) {
+            DeliveryOutcome(false, e.statusCode.value(), e.responseBodyAsString, e.javaClass.simpleName, e.message)
         } catch (e: RestClientException) {
             DeliveryOutcome(false, null, null, e.javaClass.simpleName, e.message)
         }
+
+    private fun nextRetryAt(attemptNumber: Int, maxAttempts: Int): OffsetDateTime? {
+        if (attemptNumber >= maxAttempts) return null
+        val delay = properties.retryDelaysSeconds.getOrElse(attemptNumber - 1) { properties.retryDelaysSeconds.lastOrNull() ?: 1 }
+        return OffsetDateTime.now(ZoneOffset.UTC).plusSeconds(delay)
+    }
 
     private fun hmac(secret: String, payload: String): String {
         val mac = Mac.getInstance("HmacSHA256")

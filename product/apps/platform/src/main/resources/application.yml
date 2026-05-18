@@ -21,6 +21,8 @@ minifin:
   merchant:
     webhooks:
       signing-secret-encryption-key: ${WEBHOOK_SIGNING_SECRET_ENCRYPTION_KEY:local-webhook-signing-secret-key-change-me}
+      max-attempts: ${WEBHOOK_MAX_ATTEMPTS:3}
+      retry-delays-seconds: ${WEBHOOK_RETRY_DELAYS_SECONDS:1,2}
     stripe:
       # Local-test placeholder. Phase 04 Slice 02 implements only the webhook receiver.
       # The onboarding-start path is recorded as a blocker pending real Stripe sandbox credentials.

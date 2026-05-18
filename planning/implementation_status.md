@@ -756,24 +756,35 @@ Next planned step:
 
 ## Phase 06 Slice 02 — Outbound Webhook Retry/DLQ
 
-Status: **PLANNING APPROVED — product implementation not started**.
+Status: **COMPLETE — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_06_slice_02_outbound_webhook_retry_dlq_planning.md` — APPROVED v0.1.
 
-Approved backend/runtime scope:
-- Implement `WBH-02` only: failed outbound webhook deliveries retry on persisted schedule and move to terminal `DLQ` after retry exhaustion.
-- Keep the current `payment_intent.created` producer as the only required event source for verification.
-- Keep implementation in `platform` beside the existing Phase 06 Slice 01 outbound webhook delivery foundation.
-- Reserve Platform migration `V15__merchant_outbound_webhook_retry_dlq.sql`.
+Implemented backend/runtime scope:
+- Platform migration `V15__merchant_outbound_webhook_retry_dlq.sql` adds persisted event retry/DLQ state: retry count, max attempts, next retry time, latest error/status metadata and `dlq_at`.
+- Outbound webhook delivery now distinguishes success (`DELIVERED`), retryable failed delivery (`FAILED` with persisted `next_retry_at`) and exhausted failed delivery (`DLQ`).
+- Failed non-2xx receiver responses, including HTTP 500, persist the HTTP status and response/error metadata.
+- A narrow internal dispatcher endpoint retries due failed events without implementing replay.
+- Local retry policy is configurable with `WEBHOOK_MAX_ATTEMPTS` and `WEBHOOK_RETRY_DELAYS_SECONDS`, defaulting to 3 total attempts and short local delays.
+- Retained runtime receiver helpers can return deterministic non-2xx responses for retry/DLQ verification.
+- Retained runtime script `product/scripts/runtime/reg_phase06_webhook_retry_dlq.sh` verifies `WBH-02` with a real failing HTTP receiver and DB assertions.
+
+Runtime verification:
+- `WBH-02` — pass.
+- Targeted regressions passed:
+  - `WBH-01`
+  - `MRC-05`
+  - `PAY-01`
+  - `PAY-02`
+  - `PAY-03`
 
 Explicitly not implemented:
-- No product code, SQL migration or runtime script has been added yet.
-- No `WBH-02` runtime evidence is claimed.
 - `WBH-03` DLQ replay remains out of scope and unclaimed.
+- No merchant DLQ UI, new webhook event producers, settlement/capture/refund work, Stripe Connect onboarding or frontend implementation was added.
 
 Next planned step:
-- Implement Phase 06 Slice 02 backend/runtime scope and verify `WBH-02` with retained runtime evidence.
+- Plan and implement a separate `WBH-03` DLQ replay slice, or reprioritize Phase 07 Slice 01 KYC/Sumsub foundation if compliance work is preferred.
 
 ---
 

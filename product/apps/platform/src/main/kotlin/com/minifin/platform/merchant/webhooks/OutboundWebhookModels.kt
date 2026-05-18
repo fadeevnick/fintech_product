@@ -12,4 +12,12 @@ data class OutboundWebhookEventRecord(
     val payloadJson: String,
     val status: String,
     val createdAt: OffsetDateTime,
+    val retryCount: Int,
+    val maxAttempts: Int,
+    val nextRetryAt: OffsetDateTime?,
+    val lastAttemptAt: OffsetDateTime?,
+    val lastErrorType: String?,
+    val lastErrorMessage: String?,
+    val lastHttpStatus: Int?,
+    val dlqAt: OffsetDateTime?,
 )

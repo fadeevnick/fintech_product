@@ -17,6 +17,7 @@ phase06_start_receiver() {
       -e MINIFIN_WEBHOOK_SECRET="${secret}" \
       -e MINIFIN_WEBHOOK_RECEIVED_FILE="${received_file}" \
       -e MINIFIN_WEBHOOK_RECEIVER_PORT="${port}" \
+      -e MINIFIN_WEBHOOK_RESPONSE_STATUS="${MINIFIN_WEBHOOK_RESPONSE_STATUS:-200}" \
       node:22-alpine node /scripts/phase06_webhook_receiver.js >"${log_file}" 2>&1 &
     PHASE06_RECEIVER_PID="$!"
     PHASE06_RECEIVER_CONTAINER="minifin-phase06-receiver"
@@ -26,6 +27,7 @@ phase06_start_receiver() {
     MINIFIN_WEBHOOK_SECRET="${secret}" \
       MINIFIN_WEBHOOK_RECEIVED_FILE="${received_file}" \
       MINIFIN_WEBHOOK_RECEIVER_PORT="${port}" \
+      MINIFIN_WEBHOOK_RESPONSE_STATUS="${MINIFIN_WEBHOOK_RESPONSE_STATUS:-200}" \
       node "${phase06_receiver_script}" >"${log_file}" 2>&1 &
     PHASE06_RECEIVER_PID="$!"
     PHASE06_RECEIVER_URL="http://127.0.0.1:${port}/webhooks/minifin"

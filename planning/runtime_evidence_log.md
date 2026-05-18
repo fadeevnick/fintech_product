@@ -1292,3 +1292,125 @@ Result tag notes:
 - `WBH-02` is deferred. Retry/DLQ scheduling and terminal DLQ handling are not implemented or claimed.
 - `WBH-03` is not claimed.
 - `MRC-01`, `PAY-04`, `PAY-05`, `SET-*`, `CHB-*` and frontend checks are not claimed.
+
+---
+
+## 2026-05-18 — Phase 06 Slice 02 Outbound Webhook Retry/DLQ Runtime Verification
+
+Runtime phase:
+- Phase 06 Slice 02 backend/runtime implementation for outbound webhook retry scheduling and terminal DLQ.
+
+Check IDs:
+- `WBH-02` — pass.
+- Targeted regressions:
+  - `WBH-01` — pass.
+  - `MRC-05` — pass.
+  - `PAY-01` — pass.
+  - `PAY-02` — pass.
+  - `PAY-03` — pass.
+
+Actor used:
+- Merchant admin created through local merchant registration/login flow.
+- Merchant API key caller created through dashboard API key lifecycle.
+- Real local MiniFin webhook receiver container on the isolated compose network.
+
+Preconditions:
+- Isolated runtime network `mini-fintech-platform-a1_default`.
+- Platform DB migrated through `V15__merchant_outbound_webhook_retry_dlq.sql`.
+- Platform app running from rebuilt jar/image with `WEBHOOK_MAX_ATTEMPTS=3` and `WEBHOOK_RETRY_DELAYS_SECONDS=1,2`.
+- Active merchant webhook endpoint subscribed to `payment_intent.created`.
+- Receiver configured with the endpoint one-time signing secret and deterministic HTTP 500 responses.
+
+Action taken:
+- Created a payment intent through public `POST /v1/payment_intents`.
+- Observed the initial signed delivery fail against the HTTP 500 receiver.
+- Invoked the retained due-retry dispatcher through the `WBH-02` script until retry exhaustion.
+- Asserted final event state and delivery attempts in Platform DB.
+- Ran targeted regression scripts for signed delivery, merchant webhook config and public API idempotency checks.
+
+Commands run:
+
+```bash
+docker run --name minifin-platform-compile2 \
+  -v /home/nickf/Documents/sre_projects/mini-fintech-platform_1/product:/workspace \
+  -w /workspace \
+  -e GRADLE_OPTS='-Dorg.gradle.jvmargs=-Xmx1024m -XX:MaxMetaspaceSize=512m -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=2' \
+  gradle:8.14.3-jdk21 \
+  gradle --no-daemon --console=plain :apps:platform:compileKotlin
+
+docker run --name minifin-platform-bootjar \
+  -v /home/nickf/Documents/sre_projects/mini-fintech-platform_1/product:/workspace \
+  -w /workspace \
+  -e GRADLE_OPTS='-Dorg.gradle.jvmargs=-Xmx1024m -XX:MaxMetaspaceSize=512m -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=2' \
+  gradle:8.14.3-jdk21 \
+  gradle --no-daemon --console=plain :apps:platform:bootJar
+
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mini-fintech-platform-a1 \
+PLATFORM_BASE_URL=http://mini-fintech-platform-a1-platform-manual:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a1_default \
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase06_webhook_retry_dlq.sh
+```
+
+Targeted regression commands used the same `COMPOSE_FILE`, `COMPOSE_PROJECT_NAME`, `PLATFORM_BASE_URL` and `PLATFORM_CURL_CONTAINER_NETWORK` values with:
+
+```bash
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase06_webhook_signing_delivery.sh
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase04_merchant_webhook_config.sh
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase04_public_api_response_shape.sh
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase04_public_api_idempotency_replay.sh
+/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/scripts/runtime/reg_phase04_public_api_idempotency_conflict.sh
+```
+
+Actual result:
+- Compile check passed: `:apps:platform:compileKotlin`.
+- Boot jar build passed: `:apps:platform:bootJar`.
+- `WBH-02` script output:
+
+```text
+WBH-02 webhook retry dlq pass event_id=ca30bcb4-0cef-4583-a46f-09721d7ffa63 endpoint_id=d579916d-28d4-4ab2-9dfe-337f2ab2185c attempts=3 final_status=DLQ
+```
+
+DB assertion:
+
+```text
+event_id=ca30bcb4-0cef-4583-a46f-09721d7ffa63
+endpoint_id=d579916d-28d4-4ab2-9dfe-337f2ab2185c
+attempt_count=3
+final_status=DLQ
+dlq_at_present=true
+next_retry_at_null=true
+last_http_status=500
+```
+
+Receiver assertion:
+
+```text
+evt_ca30bcb4-0cef-4583-a46f-09721d7ffa63 attempt=1 payment_intent.created
+evt_ca30bcb4-0cef-4583-a46f-09721d7ffa63 attempt=2 payment_intent.created
+evt_ca30bcb4-0cef-4583-a46f-09721d7ffa63 attempt=3 payment_intent.created
+```
+
+The receiver validates MiniFin signature headers before recording each request, so repeated recorded rows prove repeated real HTTP attempts with valid signatures.
+
+Targeted regression results:
+
+```text
+WBH-01 outbound webhook signing/delivery pass
+MRC-05 merchant webhook endpoint config pass
+PAY-01 public API response shape pass
+PAY-02 public API idempotency replay pass
+PAY-03 public API idempotency conflict pass
+```
+
+Result tags:
+- `WBH-02` — pass.
+- `WBH-01` — pass.
+- `MRC-05` — pass.
+- `PAY-01` — pass.
+- `PAY-02` — pass.
+- `PAY-03` — pass.
+
+Notes:
+- Runtime verification used a compose-network runner pattern because this environment has previously shown unreliable host-to-container published HTTP behavior.
+- `WBH-03` remains unclaimed. DLQ replay is not implemented.

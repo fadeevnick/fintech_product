@@ -5,6 +5,7 @@ const http = require("http");
 const port = Number(process.env.MINIFIN_WEBHOOK_RECEIVER_PORT || "39091");
 const secret = process.env.MINIFIN_WEBHOOK_SECRET;
 const receivedFile = process.env.MINIFIN_WEBHOOK_RECEIVED_FILE || "/tmp/minifin-phase06-webhooks.jsonl";
+const responseStatus = Number(process.env.MINIFIN_WEBHOOK_RESPONSE_STATUS || "200");
 
 function validSignature(body, timestamp, header) {
   const match = /^t=([^,]+),v1=([0-9a-f]+)$/i.exec(header || "");
@@ -41,7 +42,7 @@ const server = http.createServer((req, res) => {
       body: JSON.parse(body),
     };
     fs.appendFileSync(receivedFile, `${JSON.stringify(record)}\n`);
-    res.writeHead(200, { "content-type": "application/json" }).end('{"ok":true}');
+    res.writeHead(responseStatus, { "content-type": "application/json" }).end(JSON.stringify({ ok: responseStatus >= 200 && responseStatus < 300 }));
   });
 });
 
