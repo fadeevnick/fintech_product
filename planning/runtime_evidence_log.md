@@ -2034,3 +2034,54 @@ SNX-01 regression observations:
 
 Not claimed:
 - `AML-*`, `AUD-03`, frontend `UI-*`, true-match permanent block, freeze/unfreeze, settlement/payment processing.
+
+---
+
+## 2026-05-19 — Phase 08 Slice 01 AML Velocity Alert Foundation Runtime Verification
+
+Scope:
+- Backend/runtime sub-scope of Phase 08 Slice 01.
+- Target `AML-01` plus targeted `RUN-01` regression.
+
+Implementation evidence:
+- Added `V24__aml_velocity_alert_foundation.sql` with `aml.aml_alerts` and `aml.aml_rule_evaluations`.
+- Added Platform AML repository/service/controller/model boundary.
+- Added internal `POST /internal/aml/evaluate-velocity`.
+- Added retained runtime script `product/scripts/runtime/reg_phase08_aml_velocity_alert.sh`.
+
+Build/runtime note:
+- Normal host Gradle was unavailable and Docker/Compose Gradle builds stalled at daemon startup.
+- Runtime verification used the existing latest Platform boot jar image from the prior verified slice, targeted Kotlin compilation for AML classes in the Gradle Docker image, and a patched local verification image `agent-aml01-platform:latest`.
+- Isolated compose project: `agent-aml01`.
+
+Commands run:
+- `bash -n product/scripts/runtime/reg_phase08_aml_velocity_alert.sh` — passed.
+- Targeted Kotlin compiler invocation for AML classes in `gradle:8.14.3-jdk21` — passed.
+- Patched image build: `docker build -t agent-aml01-platform:latest /tmp/aml01-patch` — passed.
+- `COMPOSE_PROJECT_NAME=agent-aml01 ... docker compose -f product/deploy/docker-compose.yml -f /tmp/agent-aml01-compose.override.yml up -d platform` — passed.
+- `COMPOSE_PROJECT_NAME=agent-aml01 COMPOSE_FILE=product/deploy/docker-compose.yml PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=agent-aml01_default product/scripts/runtime/reg_phase08_aml_velocity_alert.sh` — passed.
+- Network-local `RUN-01` health checks for platform/acquirer/network/issuer/vault — passed.
+
+Runtime script output:
+
+```text
+AML-01 velocity alert pass alert_id=48380472-7459-4aa6-8182-95464700404d end_user_id=0afd7c01-abc0-4c21-8cfc-e583f0ce271c
+RUN-01 platform health pass
+RUN-01 acquirer health pass
+RUN-01 network health pass
+RUN-01 issuer health pass
+RUN-01 vault health pass
+```
+
+AML-01 observations:
+- Synthetic completed wallet deposit activity for one end user tripped the `VELOCITY` rule.
+- One `OPEN` `MEDIUM` AML alert was persisted for that end user.
+- `aml.alert_created` audit row was persisted.
+- A second evaluation for the same user/rule/window returned the same alert and did not create a duplicate open alert.
+- `aml.aml_rule_evaluations` retained both evaluations.
+
+Not run:
+- `LDG-05`, because AML implementation reads completed wallet activity but does not write ledger tables directly.
+
+Not claimed:
+- `AML-02`, `AML-03`, `AML-04`, AML review decisions, account freeze/unfreeze, SoF/two-eyes controls, AML frontend, SAR, settlement/refund/chargeback behavior.
