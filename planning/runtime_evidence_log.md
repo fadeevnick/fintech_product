@@ -1706,3 +1706,97 @@ Result tags:
 Not claimed:
 - `KYC-01` full pass; real Sumsub sandbox credentials were not configured or used.
 - `AUD-03`, `SNX-*`, `AML-*`, frontend `UI-*`.
+
+---
+
+## 2026-05-19 — Phase 05 Slice 03 Payment Capture Foundation Runtime Verification
+
+Scope:
+- Platform backend/runtime implementation for `PAY-06`.
+- Public payment-intent capture for already authorized payment intents.
+- No clearing, settlement, refunds, payouts, chargebacks, sanctions/KYC/AML or frontend work was added.
+
+Build/static evidence:
+- `docker run --rm -v .../product:/workspace -w /workspace gradle:8.14.3-jdk21 gradle --no-daemon --console=plain :apps:platform:compileKotlin` passed.
+- The first compile attempt found `MerchantPaymentDashboardRepository` still constructing `PaymentIntentRecord` without the new capture fields; after adding `captured_at`, `captured_amount` and `capture_request_id` to those reads, compile passed.
+
+Runtime shape:
+- Used isolated compose project `mfp_agent9_pay06` with non-default host ports and compose network `mfp_agent9_pay06_default`.
+- Docker/Gradle `bootJar` builds inside fresh containers stalled during dependency resolution, so runtime verification used:
+  - the previous Platform boot jar as a dependency/runtime base;
+  - freshly compiled updated Platform classes/resources overlaid into a patched jar at `/tmp/mfp-agent9-platform-pay06.jar`;
+  - a small `mfp_agent9_pay06-platform` runtime image built from that patched jar;
+  - existing compatible service images tagged for `mfp_agent9_pay06-{acquirer,network,issuer,vault}`.
+- Platform startup applied Flyway `V19__payment_capture_foundation.sql`; Platform DB reached version `v19`.
+- Host-published HTTP connected but hung in this environment, so retained scripts were run through compose-network curl runner settings. Phase 05 helper and ledger reconciliation scripts were adjusted to support `PLATFORM_CURL_CONTAINER_NETWORK` / `COMPOSE_FILE` for this runtime shape.
+
+Target command run:
+
+```bash
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp_agent9_pay06_default \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mfp_agent9_pay06 \
+product/scripts/runtime/reg_phase05_payment_capture.sh
+```
+
+Output:
+
+```text
+PAY-06 payment capture foundation pass intent_id=b8f7f28d-5e27-4179-9607-35f619c3f3b6
+```
+
+Targeted regression commands:
+
+```bash
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp_agent9_pay06_default \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mfp_agent9_pay06 \
+product/scripts/runtime/reg_phase05_authorization_approved_hold.sh
+
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp_agent9_pay06_default \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mfp_agent9_pay06 \
+product/scripts/runtime/reg_phase05_authorization_structured_declines.sh
+
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp_agent9_pay06_default \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mfp_agent9_pay06 \
+product/scripts/runtime/reg_phase04_public_api_response_shape.sh
+
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp_agent9_pay06_default \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mfp_agent9_pay06 \
+product/scripts/runtime/reg_phase04_public_api_idempotency_replay.sh
+
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp_agent9_pay06_default \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_1/product/deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mfp_agent9_pay06 \
+product/scripts/runtime/reg_phase04_public_api_idempotency_conflict.sh
+```
+
+Output:
+
+```text
+PAY-04 approved authorization hold pass
+PAY-05 structured authorization declines pass
+PAY-01 public API response shape pass
+PAY-02 public API idempotency replay pass
+PAY-03 public API idempotency conflict pass
+```
+
+Result tags:
+- `PAY-06` — pass.
+- `PAY-04` — pass regression.
+- `PAY-05` — pass regression.
+- `PAY-01` — pass regression.
+- `PAY-02` — pass regression.
+- `PAY-03` — pass regression.
+
+Not claimed:
+- `SET-*`, `CHB-*`, frontend `UI-*`, Stripe Connect onboarding `MRC-01`, sanctions/AML/KYC changes.

@@ -24,6 +24,7 @@ Implemented runtime behavior so far:
 - Phase 04 Slice 03 merchant dashboard payments/webhook config backend/runtime sub-scope in `platform`: `merchant.webhook_endpoints`, merchant dashboard `GET /api/v1/merchant/payment-intents`, `GET /api/v1/merchant/payment-intents/{id}`, and `GET/POST/PUT/DELETE /api/v1/merchant/webhook-endpoints[/{id}]`; payment reads are merchant-scoped with cross-merchant 404 behavior, webhook config writes require `merchant_admin`, and `merchant_member` remains read-only.
 - Phase 05 Slice 01 Vault/Card issuance backend/runtime sub-scope across `platform`, `issuer` and `vault`: end-user `POST /api/v1/cards`, Platform→Issuer and Issuer→Vault service-auth calls, Issuer token/last4 card records, Vault encrypted PAN tokenization, restricted detokenize for `service:issuer` and detokenize audit rows. `VLT-01`, `VLT-02` and `VLT-03` have runtime evidence.
 - Phase 05 Slice 02 card authorization backend/runtime sub-scope across `platform`, `acquirer`, `network` and `issuer`: public `POST /v1/payment_intents/{id}/authorize`, Platform→Acquirer→Network→Issuer routing, approved authorization ledger holds, and structured declines for insufficient funds, blocked actor, inactive card and unknown card token. `PAY-04` and `PAY-05` have runtime evidence.
+- Phase 05 Slice 03 payment capture foundation in `platform`: public `POST /v1/payment_intents/{id}/capture`, full-capture-only transition from `AUTHORIZED` to `CAPTURED`, durable capture metadata and existing public API idempotency behavior. `PAY-06` has runtime evidence.
 - Phase 06 Slice 01 outbound merchant webhook delivery foundation in `platform`: webhook endpoints now have one-time `mfp_whsec_*` signing secrets, encrypted-at-rest delivery secret material, hash/prefix metadata, secret rotation endpoint, persisted `merchant.webhook_events` and `merchant.webhook_delivery_attempts`, real signed HTTP delivery of `payment_intent.created` after public payment-intent creation, and retained `WBH-01` runtime verification with a local signature-validating receiver.
 - Phase 06 Slice 02 outbound merchant webhook retry/DLQ in `platform`: failed deliveries retry on a persisted schedule, HTTP failure metadata is retained, exhausted attempts move events to `DLQ`, and retained `WBH-02` runtime verification passed.
 - Phase 06 Slice 03 outbound merchant webhook DLQ replay in `platform`: merchant dashboard APIs list/detail retained webhook events and replay one `DLQ` event, replay reuses the signed outbound delivery path with current endpoint secret material, successful replay moves the event to `DELIVERED`, and retained `WBH-03` runtime verification passed.
@@ -125,6 +126,9 @@ scripts/runtime/reg_phase04_merchant_webhook_config.sh
 scripts/runtime/reg_phase05_card_issue_pan_isolation.sh
 scripts/runtime/reg_phase05_vault_detokenize_restriction.sh
 scripts/runtime/reg_phase05_pan_log_masking.sh
+scripts/runtime/reg_phase05_authorization_approved_hold.sh
+scripts/runtime/reg_phase05_authorization_structured_declines.sh
+scripts/runtime/reg_phase05_payment_capture.sh
 scripts/runtime/reg_phase06_webhook_signing_delivery.sh
 scripts/runtime/reg_phase07_kyc_start.sh
 scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
@@ -166,9 +170,12 @@ Retained scripts:
 scripts/runtime/reg_phase05_card_issue_pan_isolation.sh
 scripts/runtime/reg_phase05_vault_detokenize_restriction.sh
 scripts/runtime/reg_phase05_pan_log_masking.sh
+scripts/runtime/reg_phase05_authorization_approved_hold.sh
+scripts/runtime/reg_phase05_authorization_structured_declines.sh
+scripts/runtime/reg_phase05_payment_capture.sh
 ```
 
-These scripts target `VLT-01`, `VLT-02` and `VLT-03`. `PAY-04` and `PAY-05` are covered by the Phase 05 Slice 02 authorization scripts listed above.
+These scripts target `VLT-01`, `VLT-02` and `VLT-03`. `PAY-04` and `PAY-05` are covered by the Phase 05 Slice 02 authorization scripts listed above. `reg_phase05_payment_capture.sh` targets `PAY-06` and has runtime evidence.
 
 ## Phase 06 Outbound Webhook Local Runtime
 

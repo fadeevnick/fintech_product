@@ -15,7 +15,7 @@ class MerchantPaymentDashboardRepository(
         if (state == null) {
             jdbcTemplate.query(
                 """
-                select id, merchant_id, api_key_id, amount, currency, description, state, created_at, authorization_id, auth_code, decline_code, decline_message
+                select id, merchant_id, api_key_id, amount, currency, description, state, created_at, authorization_id, auth_code, decline_code, decline_message, captured_at, captured_amount, capture_request_id
                 from merchant.payment_intents
                 where merchant_id = ?
                 order by created_at desc, id desc
@@ -28,7 +28,7 @@ class MerchantPaymentDashboardRepository(
         } else {
             jdbcTemplate.query(
                 """
-                select id, merchant_id, api_key_id, amount, currency, description, state, created_at, authorization_id, auth_code, decline_code, decline_message
+                select id, merchant_id, api_key_id, amount, currency, description, state, created_at, authorization_id, auth_code, decline_code, decline_message, captured_at, captured_amount, capture_request_id
                 from merchant.payment_intents
                 where merchant_id = ? and state = ?
                 order by created_at desc, id desc
@@ -44,7 +44,7 @@ class MerchantPaymentDashboardRepository(
     fun findByIdForMerchant(id: UUID, merchantId: UUID): PaymentIntentRecord? =
         jdbcTemplate.query(
             """
-            select id, merchant_id, api_key_id, amount, currency, description, state, created_at, authorization_id, auth_code, decline_code, decline_message
+            select id, merchant_id, api_key_id, amount, currency, description, state, created_at, authorization_id, auth_code, decline_code, decline_message, captured_at, captured_amount, capture_request_id
             from merchant.payment_intents
             where id = ? and merchant_id = ?
             """.trimIndent(),
@@ -67,5 +67,8 @@ class MerchantPaymentDashboardRepository(
             authCode = getString("auth_code"),
             declineCode = getString("decline_code"),
             declineMessage = getString("decline_message"),
+            capturedAt = getObject("captured_at", OffsetDateTime::class.java),
+            capturedAmount = getBigDecimal("captured_amount"),
+            captureRequestId = getString("capture_request_id"),
         )
 }

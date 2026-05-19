@@ -938,19 +938,38 @@ Next planned step:
 
 ## Phase 05 Slice 03 — Payment Capture Foundation
 
-Status: **APPROVED PLANNING ONLY — not implemented**.
+Status: **COMPLETE — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_05_slice_03_payment_capture_foundation_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Public API `POST /v1/payment_intents/{id}/capture`.
-- Durable capture state for an already `AUTHORIZED` payment intent.
-- Idempotent same-key replay and conflict behavior through existing public idempotency primitive.
-- Target retained runtime check: `PAY-06`.
+Implemented backend/runtime scope:
+- Platform public API route `POST /v1/payment_intents/{id}/capture`.
+- Public API key auth and required `Idempotency-Key` use the existing public API auth/idempotency primitives.
+- Capture is scoped to the authenticated merchant; cross-merchant capture returns the same not-found behavior as payment-intent reads.
+- Capture is allowed only from `AUTHORIZED`; non-`AUTHORIZED` second capture returns `409 invalid_state`.
+- Optional `amount` and `currency` request fields are validated against the authorized payment intent for full-capture-only behavior.
+- Platform migration `V19__payment_capture_foundation.sql` adds `CAPTURED` state plus `captured_at`, `captured_amount` and `capture_request_id` metadata.
+- Merchant payment dashboard repository reads the new capture columns for captured payment-intent DTOs.
+- Retained runtime script `product/scripts/runtime/reg_phase05_payment_capture.sh` verifies `PAY-06`.
+- Retained Phase 05 helper and ledger reconciliation scripts support compose-network curl runners for isolated runtime slots where host-published HTTP hangs.
 
-Not yet implemented:
-- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
+Runtime verification:
+- `planning/runtime_evidence_log.md` — `2026-05-19 — Phase 05 Slice 03 Payment Capture Foundation Runtime Verification`.
+- `PAY-06` — pass.
+- Targeted regressions passed:
+  - `PAY-04`;
+  - `PAY-05`;
+  - `PAY-01`;
+  - `PAY-02`;
+  - `PAY-03`.
+
+Verification note:
+- Gradle `bootJar` inside fresh Docker build containers stalled during dependency resolution in this environment. Runtime verification used a patched runtime jar built from the previous boot jar plus the freshly compiled classes/resources and a small `mfp_agent9_pay06-platform` image; Flyway applied `V19` and the runtime scripts exercised the actual updated Platform process in isolated compose network `mfp_agent9_pay06_default`.
+
+Explicitly not implemented/claimed:
+- clearing batch, settlement batch, fee split ledger postings, Acquirer settlement projection, refunds, payouts, chargebacks, frontend UI, Stripe Connect onboarding (`MRC-01`) or sanctions/AML/KYC changes.
+- `SET-*`, `CHB-*` and frontend `UI-*` are not claimed.
 
 ---
 

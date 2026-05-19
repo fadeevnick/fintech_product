@@ -13,7 +13,7 @@ p05_register_enduser() {
   local password="correct horse battery"
   local register_body="/tmp/minifin-phase05-${tag}-register.json"
 
-  curl -fsS -X POST "${base_url}/api/v1/enduser/register" \
+  pa_curl -fsS -X POST "${base_url}/api/v1/enduser/register" \
     -H "Content-Type: application/json" \
     -d "{\"email\":\"${email}\",\"password\":\"${password}\"}" \
     >"${register_body}"
@@ -22,23 +22,28 @@ p05_register_enduser() {
   user_id="$(node -e "const j=JSON.parse(require('fs').readFileSync('${register_body}','utf8')); if(!j.data?.userId||!j.data?.verificationToken) process.exit(1); console.log(j.data.userId);")"
   verification_token="$(node -e "const j=JSON.parse(require('fs').readFileSync('${register_body}','utf8')); console.log(j.data.verificationToken);")"
 
-  curl -fsS -X POST "${base_url}/api/v1/enduser/email/verify" \
+  pa_curl -fsS -X POST "${base_url}/api/v1/enduser/email/verify" \
     -H "Content-Type: application/json" \
     -d "{\"token\":\"${verification_token}\"}" \
     >/tmp/minifin-phase05-${tag}-verify.json
 
-  curl -fsS -c "${cookie_jar}" -X POST "${base_url}/api/v1/enduser/login" \
+  pa_curl -fsS -c "${cookie_jar}" -X POST "${base_url}/api/v1/enduser/login" \
     -H "Content-Type: application/json" \
     -d "{\"email\":\"${email}\",\"password\":\"${password}\"}" \
     >/tmp/minifin-phase05-${tag}-login.json
 
   echo "${user_id}"
+  if test -n "${PLATFORM_CURL_CONTAINER_NETWORK:-}"; then
+    local cookie_host
+    cookie_host="$(node -e "console.log(new URL(process.argv[1]).hostname)" "${base_url}")"
+    docker run --rm -v /tmp:/tmp alpine:3.20 sh -c "sed -i -e 's/^#HttpOnly_[^[:space:]]*/#HttpOnly_${cookie_host}/' -e 's/^127\\.0\\.0\\.1[[:space:]]/${cookie_host}\t/' -e 's/^localhost[[:space:]]/${cookie_host}\t/' '${cookie_jar}' && chmod 600 '${cookie_jar}'"
+  fi
 }
 
 p05_issue_card() {
   local cookie_jar="$1"
   local out_body="$2"
-  curl -fsS -b "${cookie_jar}" -X POST "${base_url}/api/v1/cards" \
+  pa_curl -fsS -b "${cookie_jar}" -X POST "${base_url}/api/v1/cards" \
     -H "Content-Type: application/json" \
     -d '{}' \
     >"${out_body}"

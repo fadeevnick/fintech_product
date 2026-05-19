@@ -25,6 +25,11 @@ data class AuthorizePaymentIntentRequest(
     val currency: String? = null,
 )
 
+data class CapturePaymentIntentRequest(
+    val amount: String? = null,
+    val currency: String? = null,
+)
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class PaymentAuthorizationDto(
     val id: String? = null,
@@ -44,6 +49,7 @@ data class PaymentIntentDto(
     val state: String,
     val description: String?,
     val createdAt: String,
+    val capturedAt: String? = null,
     val authorization: PaymentAuthorizationDto? = null,
 )
 
@@ -54,6 +60,7 @@ class PaymentIntentService(
     private val outboundWebhookService: OutboundWebhookService,
 ) {
     private val restTemplate = org.springframework.web.client.RestTemplate()
+
     @Transactional
     fun create(principal: PublicApiPrincipal, request: CreatePaymentIntentRequest): PaymentIntentDto {
         val amount = validateAmount(request.amount)
@@ -82,25 +89,78 @@ class PaymentIntentService(
         return record.toDto()
     }
 
-
     @Transactional
     fun authorize(principal: PublicApiPrincipal, id: UUID, request: AuthorizePaymentIntentRequest): PaymentIntentDto {
-        val record = repository.findById(id) ?: throw PublicApiException("payment_intent_not_found", "Payment intent was not found.", HttpStatus.NOT_FOUND)
-        if (record.merchantId != principal.merchantId) throw PublicApiException("payment_intent_not_found", "Payment intent was not found.", HttpStatus.NOT_FOUND)
-        val cardToken = request.cardToken?.trim()?.takeIf { it.isNotEmpty() } ?: throw PublicApiException("invalid_card_token", "Card token is required.", HttpStatus.BAD_REQUEST, "cardToken")
+        val record = repository.findById(id)
+            ?: throw PublicApiException("payment_intent_not_found", "Payment intent was not found.", HttpStatus.NOT_FOUND)
+        if (record.merchantId != principal.merchantId)
+            throw PublicApiException("payment_intent_not_found", "Payment intent was not found.", HttpStatus.NOT_FOUND)
+        val cardToken = request.cardToken?.trim()?.takeIf { it.isNotEmpty() }
+            ?: throw PublicApiException("invalid_card_token", "Card token is required.", HttpStatus.BAD_REQUEST, "cardToken")
         val amount = request.amount?.let { validateAmount(it) } ?: record.amount
         val currency = validateCurrency(request.currency ?: record.currency)
         val acquirer = callAcquirer(record.id, principal.merchantId, amount, currency, cardToken)
-        repository.markAuthorizedResult(record.id, cardToken, acquirer.authorizationId?.let { UUID.fromString(it) }, acquirer.authCode, acquirer.declineCode, acquirer.declineMessage, if (acquirer.state == "AUTHORIZED") "AUTHORIZED" else "FAILED")
+        repository.markAuthorizedResult(
+            record.id, cardToken,
+            acquirer.authorizationId?.let { UUID.fromString(it) },
+            acquirer.authCode, acquirer.declineCode, acquirer.declineMessage,
+            if (acquirer.state == "AUTHORIZED") "AUTHORIZED" else "FAILED",
+        )
         return repository.findById(record.id)!!.toDto(acquirer.toAuthorizationDto())
     }
 
-    private fun callAcquirer(paymentIntentId: UUID, merchantId: UUID, amount: BigDecimal, currency: String, cardToken: String): AcquirerAuthorizeResponse {
-        val headers = HttpHeaders(); headers.set("X-Service-Name", "platform"); headers.set("X-Service-Secret", properties.serviceAuthSecret)
-        val body = AcquirerAuthorizeRequest(paymentIntentId.toString(), merchantId.toString(), amount.toPlainString(), currency, cardToken, paymentIntentId.toString(), paymentIntentId.toString())
-        val response = runCatching { restTemplate.exchange("${properties.acquirerBaseUrl}/internal/acquirer/authorize", HttpMethod.POST, HttpEntity(body, headers), AcquirerApiResponse::class.java) }
-            .getOrElse { throw PublicApiException("network_unavailable", "Authorization network is unavailable.", HttpStatus.BAD_GATEWAY) }
-        return response.body?.data ?: throw PublicApiException("network_unavailable", "Authorization network returned no response.", HttpStatus.BAD_GATEWAY)
+    @Transactional
+    fun capture(principal: PublicApiPrincipal, id: UUID, request: CapturePaymentIntentRequest, idempotencyKey: String): PaymentIntentDto {
+        val record = repository.findById(id)
+            ?: throw PublicApiException("payment_intent_not_found", "Payment intent was not found.", HttpStatus.NOT_FOUND)
+        if (record.merchantId != principal.merchantId)
+            throw PublicApiException("payment_intent_not_found", "Payment intent was not found.", HttpStatus.NOT_FOUND)
+
+        if (request.amount != null) {
+            val requestedAmount = validateAmount(request.amount)
+            if (requestedAmount.compareTo(record.amount) != 0) {
+                throw PublicApiException(
+                    code = "amount_mismatch",
+                    message = "Capture amount must match the authorized amount.",
+                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    field = "amount",
+                )
+            }
+        }
+        if (request.currency != null) {
+            val requestedCurrency = validateCurrency(request.currency)
+            if (requestedCurrency != record.currency) {
+                throw PublicApiException(
+                    code = "currency_mismatch",
+                    message = "Capture currency must match the authorized currency.",
+                    status = HttpStatus.UNPROCESSABLE_ENTITY,
+                    field = "currency",
+                )
+            }
+        }
+
+        if (record.state != "AUTHORIZED") {
+            throw PublicApiException(
+                code = "invalid_state",
+                message = "Only AUTHORIZED payment intents can be captured.",
+                status = HttpStatus.CONFLICT,
+            )
+        }
+
+        val updated = repository.markCaptured(
+            id = record.id,
+            capturedAmount = record.amount,
+            captureRequestId = idempotencyKey,
+        )
+        if (updated == 0) {
+            throw PublicApiException(
+                code = "invalid_state",
+                message = "Only AUTHORIZED payment intents can be captured.",
+                status = HttpStatus.CONFLICT,
+            )
+        }
+
+        return repository.findById(record.id)!!.toDto()
     }
 
     @Transactional(readOnly = true)
@@ -119,6 +179,35 @@ class PaymentIntentService(
             )
         }
         return record.toDto()
+    }
+
+    private fun callAcquirer(
+        paymentIntentId: UUID,
+        merchantId: UUID,
+        amount: BigDecimal,
+        currency: String,
+        cardToken: String,
+    ): AcquirerAuthorizeResponse {
+        val headers = HttpHeaders()
+        headers.set("X-Service-Name", "platform")
+        headers.set("X-Service-Secret", properties.serviceAuthSecret)
+        val body = AcquirerAuthorizeRequest(
+            paymentIntentId.toString(), merchantId.toString(),
+            amount.toPlainString(), currency, cardToken,
+            paymentIntentId.toString(), paymentIntentId.toString(),
+        )
+        val response = runCatching {
+            restTemplate.exchange(
+                "${properties.acquirerBaseUrl}/internal/acquirer/authorize",
+                HttpMethod.POST,
+                HttpEntity(body, headers),
+                AcquirerApiResponse::class.java,
+            )
+        }.getOrElse {
+            throw PublicApiException("network_unavailable", "Authorization network is unavailable.", HttpStatus.BAD_GATEWAY)
+        }
+        return response.body?.data
+            ?: throw PublicApiException("network_unavailable", "Authorization network returned no response.", HttpStatus.BAD_GATEWAY)
     }
 
     private fun validateAmount(value: String?): BigDecimal {
@@ -173,6 +262,7 @@ fun PaymentIntentRecord.toDto(authorization: PaymentAuthorizationDto? = null): P
         state = state,
         description = description,
         createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        capturedAt = capturedAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         authorization = authorization ?: declineAuthorization(),
     )
 
@@ -182,7 +272,36 @@ private fun PaymentIntentRecord.declineAuthorization(): PaymentAuthorizationDto?
     else -> null
 }
 
-data class AcquirerAuthorizeRequest(val paymentIntentId: String, val merchantId: String, val amount: String, val currency: String, val cardToken: String, val requestId: String? = null, val correlationId: String? = null)
-data class AcquirerAuthorizeResponse(val paymentIntentId: String? = null, val state: String? = null, val status: String? = null, val authorizationId: String? = null, val authCode: String? = null, val expiresAt: String? = null, val declineCode: String? = null, val declineMessage: String? = null, val routeId: String? = null)
-data class AcquirerApiResponse(val data: AcquirerAuthorizeResponse? = null, val errors: List<PublicApiError> = emptyList())
-private fun AcquirerAuthorizeResponse.toAuthorizationDto(): PaymentAuthorizationDto = if (status == "AUTH_APPROVED") PaymentAuthorizationDto(authorizationId, "AUTH_APPROVED", authCode, expiresAt) else PaymentAuthorizationDto(status = "AUTH_DECLINED", declineCode = declineCode, declineMessage = declineMessage)
+data class AcquirerAuthorizeRequest(
+    val paymentIntentId: String,
+    val merchantId: String,
+    val amount: String,
+    val currency: String,
+    val cardToken: String,
+    val requestId: String? = null,
+    val correlationId: String? = null,
+)
+
+data class AcquirerAuthorizeResponse(
+    val paymentIntentId: String? = null,
+    val state: String? = null,
+    val status: String? = null,
+    val authorizationId: String? = null,
+    val authCode: String? = null,
+    val expiresAt: String? = null,
+    val declineCode: String? = null,
+    val declineMessage: String? = null,
+    val routeId: String? = null,
+)
+
+data class AcquirerApiResponse(
+    val data: AcquirerAuthorizeResponse? = null,
+    val errors: List<PublicApiError> = emptyList(),
+)
+
+private fun AcquirerAuthorizeResponse.toAuthorizationDto(): PaymentAuthorizationDto =
+    if (status == "AUTH_APPROVED") {
+        PaymentAuthorizationDto(authorizationId, "AUTH_APPROVED", authCode, expiresAt)
+    } else {
+        PaymentAuthorizationDto(status = "AUTH_DECLINED", declineCode = declineCode, declineMessage = declineMessage)
+    }

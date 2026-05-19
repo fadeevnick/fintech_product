@@ -20,6 +20,9 @@ data class PaymentIntentRecord(
     val authCode: String?,
     val declineCode: String?,
     val declineMessage: String?,
+    val capturedAt: OffsetDateTime?,
+    val capturedAmount: BigDecimal?,
+    val captureRequestId: String?,
 )
 
 @Repository
@@ -56,19 +59,53 @@ class PaymentIntentRepository(
         )
     }
 
-    fun markAuthorizedResult(id: UUID, cardToken: String, authorizationId: UUID?, authCode: String?, declineCode: String?, declineMessage: String?, state: String) {
-        jdbcTemplate.update("""
+    fun markAuthorizedResult(
+        id: UUID,
+        cardToken: String,
+        authorizationId: UUID?,
+        authCode: String?,
+        declineCode: String?,
+        declineMessage: String?,
+        state: String,
+    ) {
+        jdbcTemplate.update(
+            """
             update merchant.payment_intents
-               set state = ?, card_token = ?, authorization_id = ?, auth_code = ?, decline_code = ?, decline_message = ?, updated_at = now(), version = version + 1
+               set state = ?, card_token = ?, authorization_id = ?, auth_code = ?,
+                   decline_code = ?, decline_message = ?, updated_at = now(), version = version + 1
              where id = ?
-        """.trimIndent(), state, cardToken, authorizationId, authCode, declineCode, declineMessage, id)
+            """.trimIndent(),
+            state, cardToken, authorizationId, authCode, declineCode, declineMessage, id,
+        )
     }
+
+    fun markCaptured(
+        id: UUID,
+        capturedAmount: BigDecimal,
+        captureRequestId: String,
+    ): Int = jdbcTemplate.update(
+        """
+        update merchant.payment_intents
+           set state             = 'CAPTURED',
+               captured_at       = now(),
+               captured_amount   = ?,
+               capture_request_id = ?,
+               updated_at        = now(),
+               version           = version + 1
+         where id = ?
+           and state = 'AUTHORIZED'
+        """.trimIndent(),
+        capturedAmount,
+        captureRequestId,
+        id,
+    )
 
     fun findById(id: UUID): PaymentIntentRecord? =
         jdbcTemplate.query(
             """
             select id, merchant_id, api_key_id, amount, currency, description, state, created_at,
-                   authorization_id, auth_code, decline_code, decline_message
+                   authorization_id, auth_code, decline_code, decline_message,
+                   captured_at, captured_amount, capture_request_id
             from merchant.payment_intents
             where id = ?
             """.trimIndent(),
@@ -90,5 +127,8 @@ class PaymentIntentRepository(
             authCode = getString("auth_code"),
             declineCode = getString("decline_code"),
             declineMessage = getString("decline_message"),
+            capturedAt = getObject("captured_at", OffsetDateTime::class.java),
+            capturedAmount = getBigDecimal("captured_amount"),
+            captureRequestId = getString("capture_request_id"),
         )
 }
