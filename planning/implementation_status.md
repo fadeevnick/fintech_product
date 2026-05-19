@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last updated: 2026-05-18.
+Last updated: 2026-05-19.
 
 ---
 
@@ -1003,27 +1003,33 @@ Runtime evidence:
 - `KYC-03` — pass targeted regression.
 
 Next planned step:
-- Implement one of the next approved backend/runtime slices:
-  - Phase 06 Slice 04 capture-to-settlement foundation for `SET-01`.
-  - Phase 07 Slice 04 sanctions false-positive exception for `SNX-02`.
+- Implement Phase 06 Slice 04 capture-to-settlement foundation for `SET-01`, or Phase 07 Slice 04 sanctions false-positive exception for `SNX-02`.
 
 ---
 
 ## Phase 06 Slice 04 — Capture to Settlement Foundation
 
-Status: **APPROVED PLANNING ONLY — not implemented**.
+Status: **COMPLETE — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_06_slice_04_capture_to_settlement_foundation_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Durable settlement/clearing persistence for captured payment intents.
-- Internal runtime processor to settle eligible captured payments.
-- Minimal balanced settlement ledger movement without claiming fee split correctness.
-- Target retained runtime check: `SET-01`.
+Implemented backend/runtime scope:
+- Platform DB migration `V21__capture_to_settlement_foundation.sql` creates `settlement.settlement_batches`, `settlement.settlement_items`, the `CARD_SETTLEMENT_CLEARING` ledger account and extends payment-intent state to `SETTLED`.
+- Internal `POST /internal/settlement/process-captured` processor settles eligible `CAPTURED` payment intents, persists one settlement item per intent and marks the payment queryable as `SETTLED`.
+- Settlement processing posts one balanced `CARD_PAYMENT_SETTLEMENT` ledger journal from `CARD_SETTLEMENT_CLEARING` to a per-merchant `MERCHANT_SETTLEMENT:<merchantId>` ledger account.
+- Processor reruns are idempotent for already-settled intents through the unique settlement item per payment intent.
+- Retained runtime script: `product/scripts/runtime/reg_phase06_capture_to_settlement.sh`.
 
-Not yet implemented:
-- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-19 — Phase 06 Slice 04 Capture to Settlement Runtime Verification`.
+- `SET-01` — pass.
+- Targeted regressions passed: `PAY-06`, `PAY-04`, `PAY-05`, `PAY-01`, `LDG-05`.
+
+Not implemented / not claimed:
+- fee split correctness;
+- refunds, payouts, chargebacks, clearing-file export or acquirer settlement projection;
+- merchant dashboard settlement UI.
 
 ---
 

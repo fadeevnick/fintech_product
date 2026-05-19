@@ -1,6 +1,6 @@
 # Runtime Evidence Log
 
-Last updated: 2026-05-18.
+Last updated: 2026-05-19.
 
 This file records factual verification only. A runtime check is not marked passed unless the corresponding runtime command actually ran.
 
@@ -1895,3 +1895,89 @@ Not claimed:
 - `AUD-03`;
 - frontend `UI-*`;
 - real OpenSanctions production watchlist ingestion.
+
+---
+
+## 2026-05-19 — Phase 06 Slice 04 Capture to Settlement Runtime Verification
+
+Scope:
+- Phase 06 Slice 04 backend/runtime implementation in `platform`.
+- Durable settlement persistence, internal captured-payment processor and minimal balanced settlement ledger movement.
+
+Build evidence:
+- Offline Docker Gradle compile/build using cached Gradle home completed for `:apps:platform:compileKotlin`.
+- Offline Docker Gradle `bootJar` completed for `platform`, `acquirer`, `network`, `issuer` and `vault`.
+- Runtime images were built from the produced jars to avoid the known slow Dockerfile Gradle stage.
+
+Runtime environment:
+- Isolated compose project: `mfp_set04`.
+- Stack services: `platform`, `acquirer`, `network`, `issuer`, `vault`, service DBs, Kafka and Keycloak.
+- Platform startup applied Flyway through `V21__capture_to_settlement_foundation.sql`.
+
+Runtime-driven fixes applied:
+- `V21__capture_to_settlement_foundation.sql` settlement item FK was corrected from non-existent `identity.merchants` to `merchant.merchants` after the first isolated Platform startup failed during Flyway migration.
+
+Primary command:
+
+```bash
+COMPOSE_FILE=deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=mfp_set04 \
+PLATFORM_BASE_URL=http://platform:8080 \
+ISSUER_BASE_URL=http://issuer:8080 \
+VAULT_BASE_URL=http://vault:8080 \
+ACQUIRER_BASE_URL=http://acquirer:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp_set04_default \
+scripts/runtime/reg_phase06_capture_to_settlement.sh
+```
+
+Observed primary output:
+
+```text
+SET-01 capture to settlement foundation pass intent_id=<uuid> batch_id=<uuid>
+```
+
+Runtime assertions passed:
+- the script created a merchant API key, end-user card and funded wallet, then created, authorized and captured a public payment intent;
+- `POST /internal/settlement/process-captured?limit=10` returned a batch id and included the captured payment intent id;
+- `settlement.settlement_items` contains exactly one `SETTLED` item for the payment intent with `gross_amount = 18.2500` and `currency = 'EUR'`;
+- `merchant.payment_intents.state` became `SETTLED`;
+- the settlement item references one `CARD_PAYMENT_SETTLEMENT` ledger journal;
+- the settlement journal has balanced debit/credit postings and at least two postings;
+- public `GET /v1/payment_intents/{id}` returns the intent as queryable with `state = SETTLED` and retained `capturedAt`;
+- rerunning the processor does not create a second settlement item for the same payment intent.
+
+Targeted regression commands:
+
+```bash
+COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_PROJECT_NAME=mfp_set04 PLATFORM_BASE_URL=http://platform:8080 ISSUER_BASE_URL=http://issuer:8080 VAULT_BASE_URL=http://vault:8080 ACQUIRER_BASE_URL=http://acquirer:8080 PLATFORM_CURL_CONTAINER_NETWORK=mfp_set04_default scripts/runtime/reg_phase05_payment_capture.sh
+COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_PROJECT_NAME=mfp_set04 PLATFORM_BASE_URL=http://platform:8080 ISSUER_BASE_URL=http://issuer:8080 VAULT_BASE_URL=http://vault:8080 ACQUIRER_BASE_URL=http://acquirer:8080 PLATFORM_CURL_CONTAINER_NETWORK=mfp_set04_default scripts/runtime/reg_phase05_authorization_approved_hold.sh
+COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_PROJECT_NAME=mfp_set04 PLATFORM_BASE_URL=http://platform:8080 ISSUER_BASE_URL=http://issuer:8080 VAULT_BASE_URL=http://vault:8080 ACQUIRER_BASE_URL=http://acquirer:8080 PLATFORM_CURL_CONTAINER_NETWORK=mfp_set04_default scripts/runtime/reg_phase05_authorization_structured_declines.sh
+COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_PROJECT_NAME=mfp_set04 PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=mfp_set04_default scripts/runtime/reg_phase04_public_api_response_shape.sh
+COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_PROJECT_NAME=mfp_set04 PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=mfp_set04_default scripts/runtime/reg_phase03_ledger_reconciliation.sh
+```
+
+Regression output captured:
+
+```text
+PAY-06 payment capture foundation pass intent_id=<uuid>
+PAY-04 authorization approved hold pass intent_id=<uuid> card_token=<token>
+PAY-05 authorization structured declines pass
+PAY-01 public API response shape pass
+LDG-05 ledger reconciliation pass
+```
+
+Result tags:
+- `SET-01` — pass.
+- `PAY-06` — pass targeted regression.
+- `PAY-04` — pass targeted regression.
+- `PAY-05` — pass targeted regression.
+- `PAY-01` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Not claimed:
+- fee split correctness;
+- refunds;
+- payouts;
+- chargebacks;
+- acquirer settlement-file export/projection;
+- merchant dashboard settlement UI.

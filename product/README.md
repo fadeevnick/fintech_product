@@ -28,6 +28,7 @@ Implemented runtime behavior so far:
 - Phase 06 Slice 01 outbound merchant webhook delivery foundation in `platform`: webhook endpoints now have one-time `mfp_whsec_*` signing secrets, encrypted-at-rest delivery secret material, hash/prefix metadata, secret rotation endpoint, persisted `merchant.webhook_events` and `merchant.webhook_delivery_attempts`, real signed HTTP delivery of `payment_intent.created` after public payment-intent creation, and retained `WBH-01` runtime verification with a local signature-validating receiver.
 - Phase 06 Slice 02 outbound merchant webhook retry/DLQ in `platform`: failed deliveries retry on a persisted schedule, HTTP failure metadata is retained, exhausted attempts move events to `DLQ`, and retained `WBH-02` runtime verification passed.
 - Phase 06 Slice 03 outbound merchant webhook DLQ replay in `platform`: merchant dashboard APIs list/detail retained webhook events and replay one `DLQ` event, replay reuses the signed outbound delivery path with current endpoint secret material, successful replay moves the event to `DELIVERED`, and retained `WBH-03` runtime verification passed.
+- Phase 06 Slice 04 capture-to-settlement foundation in `platform`: captured payment intents can be processed by `POST /internal/settlement/process-captured`, creating `settlement.settlement_batches` / `settlement.settlement_items`, marking payment intents `SETTLED`, and posting a minimal balanced `CARD_PAYMENT_SETTLEMENT` ledger journal from `CARD_SETTLEMENT_CLEARING` to a per-merchant settlement account. `SET-01` has runtime evidence.
 - Phase 07 Slice 01 KYC/Sumsub foundation in `platform`: end-user `POST /api/v1/kyc/start`, KYC profile/session/vendor-event persistence, Sumsub adapter boundary, inbound `POST /webhooks/sumsub/v1` signature verification and vendor event id idempotency. `KYC-02` has runtime evidence; `KYC-01` is partial until real Sumsub sandbox credentials are configured.
 - Phase 07 Slice 02 backoffice KYC manual review in `platform`: backoffice KYC queue/detail/manual decision APIs, rationale validation, `kyc.kyc_manual_decisions` persistence and `kyc.manual_decision_recorded` audit rows. `KYC-03` has runtime evidence.
 - Phase 07 Slice 03 OpenSanctions fail-closed foundation in `platform`: `sanctions.sanctions_hits`, OpenSanctions adapter boundary with explicit local modes, fail-closed screening before KYC manual approval, persisted hit/audit rows for unavailable and possible-match outcomes, and no-match approval pass-through. `SNX-01` has runtime evidence.
@@ -131,6 +132,7 @@ scripts/runtime/reg_phase05_authorization_approved_hold.sh
 scripts/runtime/reg_phase05_authorization_structured_declines.sh
 scripts/runtime/reg_phase05_payment_capture.sh
 scripts/runtime/reg_phase06_webhook_signing_delivery.sh
+scripts/runtime/reg_phase06_capture_to_settlement.sh
 scripts/runtime/reg_phase07_kyc_start.sh
 scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
 ```
@@ -218,6 +220,23 @@ scripts/runtime/reg_phase06_webhook_signing_delivery.sh
 ```
 
 `WBH-01`, `WBH-02` and `WBH-03` are implemented and verified.
+
+## Phase 06 Capture-to-Settlement Local Runtime
+
+Phase 06 Slice 04 adds the first captured-payment settlement path:
+
+- `POST /internal/settlement/process-captured?limit=50` processes eligible `CAPTURED` payment intents;
+- settlement batches/items are persisted under the `settlement` schema;
+- each processed payment intent becomes queryable as `SETTLED`;
+- one minimal balanced `CARD_PAYMENT_SETTLEMENT` ledger journal is posted per settlement item.
+
+Retained script:
+
+```bash
+scripts/runtime/reg_phase06_capture_to_settlement.sh
+```
+
+`SET-01` is implemented and verified. Fee splits, payouts, refunds, chargebacks and merchant dashboard settlement UI are not implemented in this slice.
 
 
 ## Phase 07 KYC/Sumsub Local Runtime
