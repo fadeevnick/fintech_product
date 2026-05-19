@@ -1085,22 +1085,26 @@ Explicitly not implemented/claimed:
 
 ## Phase 08 Slice 01 — AML Velocity Alert Foundation
 
-Status: **APPROVED v0.1 — planning-only; no product code implemented**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_08_slice_01_aml_velocity_alert_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Add `aml` schema foundation for AML alerts.
-- Add Platform AML service/rule engine boundary.
-- Implement deterministic local velocity rule evaluation for synthetic completed money-moving activity.
-- Create one `OPEN` AML alert when the rule trips, with duplicate suppression for reruns.
-- Write audit event(s) for alert creation.
-- Add retained runtime script `product/scripts/runtime/reg_phase08_aml_velocity_alert.sh`.
+Implemented backend/runtime scope:
+- Added `aml` schema foundation with `aml.aml_alerts` and `aml.aml_rule_evaluations`.
+- Added Platform AML service/rule engine boundary.
+- Implemented deterministic local velocity rule evaluation for completed wallet deposit, withdrawal and internal-transfer activity.
+- Added internal trigger `POST /internal/aml/evaluate-velocity`.
+- Creates one `OPEN` `VELOCITY` AML alert with `MEDIUM` severity when observed activity exceeds threshold.
+- Suppresses duplicate open alerts for the same end user/rule/window on rerun.
+- Writes `aml.alert_created` audit event for alert creation.
+- Added retained runtime script `product/scripts/runtime/reg_phase08_aml_velocity_alert.sh`.
 
-Target runtime checks:
-- `AML-01` — synthetic activity trips velocity rule and opens alert.
-- Targeted regressions: `RUN-01`; `LDG-05` only if ledger tables are touched directly.
+Runtime verification:
+- `planning/runtime_evidence_log.md` — `2026-05-19 — Phase 08 Slice 01 AML Velocity Alert Foundation Runtime Verification`.
+- `AML-01` — pass.
+- `RUN-01` — pass targeted regression.
+- `LDG-05` not run because AML implementation does not write ledger tables directly.
 
 Explicitly not implemented/claimed:
 - structuring (`AML-02`), dormancy-break (`AML-03`), critical auto-freeze (`AML-04`), AML review decisions, SoF (`WLT-03`), two-eyes (`WLT-04`), frontend `UI-*`.

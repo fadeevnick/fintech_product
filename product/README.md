@@ -34,6 +34,7 @@ Implemented runtime behavior so far:
 - Phase 07 Slice 02 backoffice KYC manual review in `platform`: backoffice KYC queue/detail/manual decision APIs, rationale validation, `kyc.kyc_manual_decisions` persistence and `kyc.manual_decision_recorded` audit rows. `KYC-03` has runtime evidence.
 - Phase 07 Slice 03 OpenSanctions fail-closed foundation in `platform`: `sanctions.sanctions_hits`, OpenSanctions adapter boundary with explicit local modes, fail-closed screening before KYC manual approval, persisted hit/audit rows for unavailable and possible-match outcomes, and no-match approval pass-through. `SNX-01` has runtime evidence.
 - Phase 07 Slice 04 sanctions false-positive exception in `platform`: compliance-only backoffice sanctions hit list/detail/decision APIs, `CLEAR_FALSE_POSITIVE` decision with rationale, `sanctions.sanctions_hit_decisions`, `sanctions.sanctions_false_positive_exceptions`, audit rows, and suppression of the same future OpenSanctions match for the same end user/vendor entity during KYC manual approval. `SNX-02` has runtime evidence.
+- Phase 08 Slice 01 AML velocity alert foundation in `platform`: `aml.aml_alerts` / `aml.aml_rule_evaluations`, internal `POST /internal/aml/evaluate-velocity`, deterministic local completed-activity velocity rule, duplicate suppression for same user/rule/window open alerts, and `aml.alert_created` audit rows. `AML-01` has runtime evidence.
 
 ## Local Commands
 
@@ -138,6 +139,9 @@ scripts/runtime/reg_phase06_capture_to_settlement.sh
 scripts/runtime/reg_phase06_settlement_fee_split.sh
 scripts/runtime/reg_phase07_kyc_start.sh
 scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
+scripts/runtime/reg_phase07_opensanctions_fail_closed.sh
+scripts/runtime/reg_phase07_sanctions_false_positive.sh
+scripts/runtime/reg_phase08_aml_velocity_alert.sh
 ```
 
 ## Stripe Webhook Local Runtime
@@ -271,6 +275,9 @@ Retained scripts:
 ```bash
 scripts/runtime/reg_phase07_kyc_start.sh
 scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
+scripts/runtime/reg_phase07_opensanctions_fail_closed.sh
+scripts/runtime/reg_phase07_sanctions_false_positive.sh
+scripts/runtime/reg_phase08_aml_velocity_alert.sh
 scripts/runtime/reg_phase07_kyc_manual_review.sh
 scripts/runtime/reg_phase07_opensanctions_fail_closed.sh
 scripts/runtime/reg_phase07_sanctions_false_positive.sh
