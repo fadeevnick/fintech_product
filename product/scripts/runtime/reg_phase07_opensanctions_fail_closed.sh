@@ -27,8 +27,12 @@ wait_keycloak() {
 
 set_mode() {
   export OPENSANCTIONS_LOCAL_MODE="$1"
-  docker compose -f "${compose_file}" up -d --force-recreate platform >/dev/null
-  docker compose -f "${compose_file}" restart platform-db platform >/dev/null
+  local compose_args=(-f "${compose_file}")
+  if test -n "${COMPOSE_OVERRIDE_FILE:-}"; then
+    compose_args+=(-f "${COMPOSE_OVERRIDE_FILE}")
+  fi
+  docker compose "${compose_args[@]}" up -d --no-build --force-recreate platform >/dev/null
+  docker compose "${compose_args[@]}" restart platform-db platform >/dev/null
   wait_platform
 }
 

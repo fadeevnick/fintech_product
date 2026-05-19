@@ -1,6 +1,6 @@
 # Runtime Evidence Log
 
-Last updated: 2026-05-18.
+Last updated: 2026-05-19.
 
 This file records factual verification only. A runtime check is not marked passed unless the corresponding runtime command actually ran.
 
@@ -1895,3 +1895,56 @@ Not claimed:
 - `AUD-03`;
 - frontend `UI-*`;
 - real OpenSanctions production watchlist ingestion.
+
+---
+
+## 2026-05-19 — Phase 07 Slice 04 Sanctions False-Positive Exception Runtime Verification
+
+Scope:
+- Backend/runtime sub-scope of Phase 07 Slice 04.
+- Target `SNX-02` plus targeted `SNX-01` regression.
+- No frontend sanctions UI, true-match block, freeze/unfreeze, AML, document preview/read-audit or wallet/card/payment sanctions gating beyond KYC manual approval was implemented or claimed.
+
+Implementation evidence:
+- Added migration `product/apps/platform/src/main/resources/db/migration/V22__sanctions_false_positive_exception.sql`.
+- Added backoffice sanctions hit list/detail/decision APIs in Platform.
+- Added `CLEAR_FALSE_POSITIVE` decision persistence, false-positive exception persistence and audit rows.
+- Added false-positive exception suppression for the same end user/OpenSanctions matched entity during KYC manual approval.
+- Added retained runtime script `product/scripts/runtime/reg_phase07_sanctions_false_positive.sh`.
+
+Verification environment:
+- Isolated Compose project: `agent11snx02`.
+- Platform host port: `19181`; Keycloak host port: `19180`; Platform DB host port: `19433`.
+- Runtime used `agent11snx02-platform` image assembled from the previous runtime boot jar plus freshly compiled changed sanctions classes/resources because Gradle-in-Docker builds stalled in this environment after daemon startup. Flyway applied `V22` and Platform logs showed schema at version `22`.
+- Runtime scripts were executed through compose-network curl mode (`PLATFORM_CURL_CONTAINER_NETWORK=agent11snx02_default`, `KEYCLOAK_CURL_CONTAINER_NETWORK=agent11snx02_default`) because host-published HTTP calls hung in this environment.
+
+Commands/evidence:
+- `bash -n product/scripts/runtime/reg_phase07_sanctions_false_positive.sh` — pass.
+- `bash -n product/scripts/runtime/reg_phase07_opensanctions_fail_closed.sh` — pass after script was updated to support an optional compose override for isolated no-build runtime slots.
+- `product/scripts/runtime/reg_phase07_sanctions_false_positive.sh` — pass with output:
+
+```text
+SNX-02 sanctions false-positive exception pass hit_id=9656e6c7-ffa0-4026-8aaa-4598357fcfb1 end_user_id=82836056-ee88-4b69-a617-82e685aeaf75
+```
+
+SNX-02 observations:
+- Deterministic OpenSanctions local `match` mode first blocked KYC manual approval with `sanctions_possible_match` and created an `OPEN` `POSSIBLE_MATCH` sanctions hit.
+- Compliance token listed and retrieved the sanctions hit detail.
+- `backoffice_operator` decision attempt returned `forbidden_role`.
+- Compliance `CLEAR_FALSE_POSITIVE` decision returned `CLEARED_FALSE_POSITIVE`, persisted one decision row, one active false-positive exception row and one `sanctions.hit_false_positive_cleared` audit row.
+- Re-attempting approval on the same still-`IN_REVIEW` KYC profile with the same deterministic local match succeeded; no additional blocking sanctions hit was created for that KYC profile, and `sanctions.opensanctions_screening_suppressed` audit row was written.
+
+Targeted regression:
+- `product/scripts/runtime/reg_phase07_opensanctions_fail_closed.sh` — pass with output:
+
+```text
+SNX-01 OpenSanctions fail-closed pass
+```
+
+SNX-01 regression observations:
+- OpenSanctions unavailable path still blocked KYC manual approval and created an `OPEN` `SCREENING_UNAVAILABLE` hit.
+- Possible-match path still blocked KYC manual approval and created an `OPEN` `POSSIBLE_MATCH` hit.
+- No-match path still allowed approval.
+
+Not claimed:
+- `AML-*`, `AUD-03`, frontend `UI-*`, true-match permanent block, freeze/unfreeze, settlement/payment processing.

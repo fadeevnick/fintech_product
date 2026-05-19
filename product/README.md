@@ -31,6 +31,7 @@ Implemented runtime behavior so far:
 - Phase 07 Slice 01 KYC/Sumsub foundation in `platform`: end-user `POST /api/v1/kyc/start`, KYC profile/session/vendor-event persistence, Sumsub adapter boundary, inbound `POST /webhooks/sumsub/v1` signature verification and vendor event id idempotency. `KYC-02` has runtime evidence; `KYC-01` is partial until real Sumsub sandbox credentials are configured.
 - Phase 07 Slice 02 backoffice KYC manual review in `platform`: backoffice KYC queue/detail/manual decision APIs, rationale validation, `kyc.kyc_manual_decisions` persistence and `kyc.manual_decision_recorded` audit rows. `KYC-03` has runtime evidence.
 - Phase 07 Slice 03 OpenSanctions fail-closed foundation in `platform`: `sanctions.sanctions_hits`, OpenSanctions adapter boundary with explicit local modes, fail-closed screening before KYC manual approval, persisted hit/audit rows for unavailable and possible-match outcomes, and no-match approval pass-through. `SNX-01` has runtime evidence.
+- Phase 07 Slice 04 sanctions false-positive exception in `platform`: backoffice sanctions hit list/detail/decision APIs, compliance-only `CLEAR_FALSE_POSITIVE` decision with rationale, `sanctions.sanctions_hit_decisions`, `sanctions.sanctions_false_positive_exceptions`, audit rows, and suppression of the same future OpenSanctions match for the same end user/vendor entity during KYC manual approval. `SNX-02` has runtime evidence.
 
 ## Local Commands
 
@@ -247,6 +248,7 @@ scripts/runtime/reg_phase07_kyc_start.sh
 scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
 scripts/runtime/reg_phase07_kyc_manual_review.sh
 scripts/runtime/reg_phase07_opensanctions_fail_closed.sh
+scripts/runtime/reg_phase07_sanctions_false_positive.sh
 ```
 
 OpenSanctions local runtime defaults:
