@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Disputes — MDB-UI-07</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#eceae5; --surface:#ffffff; --surf2:#f7f6f3; --inp:#faf9f7; --hover:#f0efe9;
+      --sb:#111114; --sb-bdr:#1e1e22; --sb-muted:#545460; --sb-active:#1e1e28;
+      --bdr:#dddad2; --bdr-mid:#c5c2ba; --bdr-focus:#1c1c1f;
+      --t1:#1c1c1f; --t2:#575763; --t3:#9898a6; --t4:#d0d0da;
+      --cta:#1c1c1f; --cta-hov:#2e2e35; --cta-t:#ffffff;
+      --g:#166534;  --g-bg:#f0fdf4;  --g-bd:#bbf7d0;
+      --am:#854d0e; --am-bg:#fffbeb; --am-bd:#fde68a;
+      --rd:#9b1c1c; --rd-bg:#fef2f2; --rd-bd:#fecaca;
+      --or:#b45309; --or-bg:#fff7ed; --or-bd:#fed7aa;
+      --pu:#5b21b6; --pu-bg:#f5f3ff; --pu-bd:#ddd6fe;
+      --bl:#1d4ed8; --bl-bg:#eff6ff; --bl-bd:#bfdbfe;
+      --sb-env-bg:#1a1030; --sb-env-t:#b39cf0; --sb-env-bd:#362566;
+      --f-ui:'IBM Plex Sans',sans-serif; --f-mono:'IBM Plex Mono',monospace;
+      --r:3px; --r-lg:5px; --w-sb:220px; --w-tl:256px;
+    }
+    html,body { height:100%; background:var(--bg); color:var(--t1); font-family:var(--f-ui); font-size:13px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+    #root { width:100%; height:100vh; display:flex; overflow:hidden; }
+    ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:var(--bdr-mid); border-radius:2px; }
+
+    /* SIDEBAR */
+    .sidebar { width:var(--w-sb); flex-shrink:0; background:var(--sb); border-right:1px solid var(--sb-bdr); display:flex; flex-direction:column; overflow:hidden; }
+    .sb-brand { padding:14px 14px 12px; border-bottom:1px solid var(--sb-bdr); }
+    .sb-mark  { display:flex; align-items:center; gap:9px; }
+    .sb-name  { font-size:14.5px; font-weight:600; color:#eaeaf4; letter-spacing:-0.01em; }
+    .sb-sub   { font-size:9.5px; color:var(--sb-muted); text-transform:uppercase; letter-spacing:0.1em; margin-top:3px; }
+    .sb-merchant { margin-top:10px; padding:7px 9px; background:rgba(255,255,255,0.04); border-radius:var(--r); border:1px solid var(--sb-bdr); }
+    .sb-m-label { font-size:9px; color:var(--sb-muted); text-transform:uppercase; letter-spacing:0.09em; margin-bottom:3px; }
+    .sb-m-name  { font-size:12.5px; font-weight:600; color:#eaeaf4; }
+    .sb-m-id    { font-size:10px; color:var(--sb-muted); font-family:var(--f-mono); margin-top:1px; }
+    .sb-nav   { flex:1; padding:10px 7px; overflow-y:auto; }
+    .nav-sec  { font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:var(--sb-muted); padding:4px 9px 5px; margin-top:4px; }
+    .nav-item { display:flex; align-items:center; gap:8px; padding:6px 9px; border-radius:var(--r); color:var(--sb-muted); font-size:12px; cursor:default; user-select:none; transition:background 0.1s; }
+    .nav-item.locked  { opacity:0.35; }
+    .nav-item.current { background:var(--sb-active); color:#e0e0ec; }
+    .nav-lock { margin-left:auto; font-size:9px; opacity:0.6; }
+    .nav-id   { margin-left:auto; font-size:9px; font-family:var(--f-mono); color:var(--sb-muted); opacity:0.8; }
+    .nav-item.current .nav-id { color:#7c6ff7; opacity:1; }
+    .sb-footer { padding:10px 14px; border-top:1px solid var(--sb-bdr); }
+    .env-chip  { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:var(--r); background:var(--sb-env-bg); border:1px solid var(--sb-env-bd); font-size:10px; color:var(--sb-env-t); font-family:var(--f-mono); margin-bottom:4px; }
+    .env-dot   { width:5px; height:5px; border-radius:50%; background:var(--sb-env-t); opacity:0.7; }
+    .env-host  { font-size:10px; color:var(--sb-muted); font-family:var(--f-mono); }
+    .sb-user   { display:flex; align-items:center; gap:7px; margin-top:9px; }
+    .sb-avatar { width:24px; height:24px; border-radius:50%; background:#5b21b6; color:#fff; font-size:9px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .sb-uname  { font-size:11px; font-weight:500; color:#eaeaf4; }
+    .sb-urole  { font-size:9.5px; color:var(--sb-muted); text-transform:uppercase; letter-spacing:0.05em; }
+
+    /* MAIN */
+    .main-wrap { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+    .page-hdr  { display:flex; align-items:center; justify-content:space-between; padding:10px 22px; border-bottom:1px solid var(--bdr); background:var(--surface); flex-shrink:0; gap:10px; flex-wrap:wrap; }
+    .page-bc   { font-size:12.5px; color:var(--t2); display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+    .page-bc strong { color:var(--t1); font-weight:500; }
+    .page-bc .sep   { color:var(--t3); }
+    .page-meta { display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
+    .screen-id { font-size:10px; font-family:var(--f-mono); color:var(--t3); padding:2px 6px; border:1px solid var(--bdr); border-radius:var(--r); }
+    .env-badge { font-size:10px; font-family:var(--f-mono); color:var(--am); background:var(--am-bg); border:1px solid var(--am-bd); padding:2px 8px; border-radius:var(--r); display:flex; align-items:center; gap:5px; }
+    .env-badge-dot { width:5px; height:5px; border-radius:50%; background:var(--am); }
+    .user-chip { display:flex; align-items:center; gap:7px; padding:3px 9px 3px 3px; border:1px solid var(--bdr); border-radius:20px; background:var(--surf2); }
+    .user-avatar { width:22px; height:22px; border-radius:50%; background:#5b21b6; color:#fff; font-size:9px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .user-name { font-size:11.5px; color:var(--t2); font-weight:500; }
+
+    /* CONTENT */
+    .content-area { flex:1; display:flex; overflow:hidden; }
+    .left-scroll  { flex:1; overflow-y:auto; padding:14px 18px; background:var(--bg); display:flex; flex-direction:column; gap:11px; min-width:0; }
+
+    /* PANELS */
+    .panel    { background:var(--surface); border:1px solid var(--bdr); border-radius:var(--r-lg); overflow:hidden; flex-shrink:0; }
+    .panel-hdr{ display:flex; align-items:center; justify-content:space-between; padding:9px 14px; border-bottom:1px solid var(--bdr); background:var(--surf2); flex-shrink:0; flex-wrap:wrap; gap:8px; }
+    .panel-title { font-size:11.5px; font-weight:600; color:var(--t1); text-transform:uppercase; letter-spacing:0.04em; }
+    .panel-body  { padding:13px 16px; }
+
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; padding:2px 6px; border-radius:2px; font-size:9.5px; font-weight:600; letter-spacing:0.07em; font-family:var(--f-mono); border:1px solid transparent; white-space:nowrap; }
+    .b-needs-resp { background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+    .b-under-rev  { background:var(--bl-bg); color:var(--bl); border-color:var(--bl-bd); }
+    .b-won        { background:var(--g-bg); color:var(--g); border-color:var(--g-bd); }
+    .b-lost       { background:var(--rd-bg); color:var(--rd); border-color:var(--rd-bd); }
+    .b-accepted   { background:var(--hover); color:var(--t2); border-color:var(--bdr-mid); }
+    .b-hold-active   { background:#fff7ed; color:#c2410c; border-color:#fed7aa; }
+    .b-hold-released { background:var(--g-bg); color:var(--g); border-color:var(--g-bd); }
+    .b-hold-captured { background:var(--rd-bg); color:var(--rd); border-color:var(--rd-bd); }
+    .b-due-soon   { background:#fffbeb; color:#854d0e; border-color:#fde68a; }
+    .b-overdue    { background:var(--rd-bg); color:var(--rd); border-color:var(--rd-bd); }
+    .b-sandbox    { background:var(--pu-bg); color:var(--pu); border-color:var(--pu-bd); }
+    .b-disabled   { background:var(--hover); color:var(--t3); border-color:var(--bdr); }
+    .b-ev-missing { background:var(--rd-bg); color:var(--rd); border-color:var(--rd-bd); }
+    .b-ev-draft   { background:var(--am-bg); color:var(--am); border-color:var(--am-bd); }
+    .b-ev-sub     { background:var(--bl-bg); color:var(--bl); border-color:var(--bl-bd); }
+    .b-ev-review  { background:var(--pu-bg); color:var(--pu); border-color:var(--pu-bd); }
+    .b-ev-expired { background:var(--rd-bg); color:var(--rd); border-color:var(--rd-bd); }
+    .b-none { color:var(--t4); font-family:var(--f-mono); font-size:11px; }
+    .b-delivered{ background:var(--g-bg); color:var(--g); border-color:var(--g-bd); }
+    .b-retrying { background:var(--or-bg); color:var(--or); border-color:var(--or-bd); }
+    .b-dlq      { background:#1c0520; color:#e879f9; border-color:#a21caf; }
+    .b-not-emit { background:var(--hover); color:var(--t3); border-color:var(--bdr); }
+
+    /* STATUS STRIP */
+    .status-strip { display:flex; flex-wrap:wrap; background:var(--surface); border:1px solid var(--bdr); border-radius:var(--r-lg); overflow:hidden; flex-shrink:0; }
+    .stat-cell { padding:11px 14px; border-right:1px solid var(--bdr); flex:1 1 100px; min-width:0; }
+    .stat-cell:last-child { border-right:none; }
+    .stat-k { font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:var(--t3); margin-bottom:4px; font-weight:600; }
+    .stat-v { font-size:13px; color:var(--t1); font-weight:600; display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+    .stat-v.mono { font-family:var(--f-mono); font-size:11px; font-weight:400; }
+    .stat-v.red  { color:var(--rd); }
+    .stat-v.warn { color:var(--am); }
+    .stat-v.pu   { color:var(--pu); }
+    .stat-v.bl   { color:var(--bl); }
+    .stat-v.g    { color:var(--g); }
+
+    /* KV */
+    .kv-table { display:flex; flex-direction:column; }
+    .kv-row   { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--hover); }
+    .kv-row:last-child { border-bottom:none; }
+    .kv-k { font-size:11px; color:var(--t3); min-width:164px; flex-shrink:0; padding-top:2px; }
+    .kv-v { font-size:12px; color:var(--t1); flex:1; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .kv-v.mono { font-family:var(--f-mono); font-size:11px; }
+
+    /* BUTTONS */
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:7px 14px; border-radius:var(--r); font-size:12.5px; font-weight:500; font-family:var(--f-ui); cursor:pointer; border:none; transition:background 0.1s; white-space:nowrap; }
+    .btn-primary { background:var(--cta); color:var(--cta-t); }
+    .btn-primary:hover { background:var(--cta-hov); }
+    .btn-ghost   { background:var(--surface); color:var(--t2); border:1px solid var(--bdr-mid); }
+    .btn-ghost:hover { background:var(--hover); color:var(--t1); }
+    .btn-danger  { background:var(--rd-bg); color:var(--rd); border:1px solid var(--rd-bd); }
+    .btn-warn    { background:var(--am-bg); color:var(--am); border:1px solid var(--am-bd); }
+    .btn-sm { padding:4px 10px; font-size:11px; } .btn-xs { padding:2px 7px; font-size:10.5px; }
+    .btn:disabled { opacity:0.32; cursor:not-allowed; }
+    .btn-faux-dis { opacity:0.4; cursor:not-allowed; pointer-events:none; }
+
+    /* ALERTS */
+    .alert { display:flex; gap:10px; padding:9px 12px 9px 13px; font-size:12px; line-height:1.55; border-left-width:3px; border-left-style:solid; border-radius:var(--r); }
+    .alert-warn  { background:var(--am-bg); border-left-color:var(--am); color:#78350f; }
+    .alert-red   { background:var(--rd-bg); border-left-color:var(--rd); color:#7f1d1d; }
+    .alert-info  { background:var(--hover); border-left-color:var(--bdr-mid); color:var(--t2); }
+    .alert-green { background:var(--g-bg);  border-left-color:var(--g);  color:#14532d; }
+    .alert-pu    { background:var(--pu-bg); border-left-color:var(--pu); color:#3b0764; }
+    .alert-blue  { background:var(--bl-bg); border-left-color:var(--bl); color:#1e3a8a; }
+
+    /* TABLES */
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th { font-size:10px; text-transform:uppercase; letter-spacing:0.07em; color:var(--t3); padding:6px 10px; text-align:left; border-bottom:1px solid var(--bdr); background:var(--surf2); font-weight:600; white-space:nowrap; }
+    .data-table td { padding:7px 10px; font-size:12px; border-bottom:1px solid var(--hover); vertical-align:middle; }
+    .data-table tr:last-child td { border-bottom:none; }
+    .data-table tr.row-hover:hover td { background:var(--surf2); cursor:pointer; }
+    .data-table tr.row-selected td { background:rgba(29,78,216,0.05); }
+    .mono-cell { font-family:var(--f-mono); font-size:11px; }
+    .disputes-table { table-layout:fixed; }
+    .disputes-table th,
+    .disputes-table td { padding-left:8px; padding-right:8px; overflow:hidden; }
+    .disputes-table .dispute-id-col { width:9%; }
+    .disputes-table .payment-col { width:8%; }
+    .disputes-table .customer-col { width:18%; }
+    .disputes-table .amount-col { width:8%; }
+    .disputes-table .reason-col { width:11%; }
+    .disputes-table .status-col { width:11%; }
+    .disputes-table .due-col { width:10%; }
+    .disputes-table .hold-col { width:12%; }
+    .disputes-table .updated-col { width:8%; }
+    .disputes-table .actions-col { width:5%; }
+    .disputes-table .truncate { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .dispute-actions { display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end; }
+    .dispute-actions .btn-xs { padding-left:6px; padding-right:6px; font-size:10px; }
+
+    /* FORMS */
+    .inp-field { width:100%; padding:6px 9px; border:1px solid var(--bdr-mid); border-radius:var(--r); font-size:12px; color:var(--t1); background:var(--inp); outline:none; font-family:var(--f-ui); transition:border-color 0.12s; }
+    .inp-field:focus { border-color:var(--bdr-focus); }
+    select.inp-field { cursor:pointer; }
+    textarea.inp-field { resize:vertical; min-height:72px; line-height:1.5; }
+
+    /* FILTER CHIPS */
+    .filter-chips { display:flex; gap:4px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:1px; }
+    .filter-chips::-webkit-scrollbar { height:2px; }
+    .fc { display:inline-flex; align-items:center; padding:3px 9px; border-radius:2px; font-size:10px; font-family:var(--f-mono); border:1px solid var(--bdr-mid); background:var(--surf2); color:var(--t2); cursor:pointer; transition:all 0.1s; white-space:nowrap; font-weight:500; user-select:none; }
+    .fc:hover { border-color:var(--bdr-focus); color:var(--t1); background:var(--hover); }
+    .fc.fc-on { background:var(--cta); color:var(--cta-t); border-color:var(--cta); }
+
+    /* TOGGLE */
+    .toggle-row { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+    .toggle-track { width:32px; height:17px; border-radius:9px; background:var(--bdr-mid); position:relative; transition:background 0.15s; flex-shrink:0; }
+    .toggle-track.on { background:#1d4ed8; }
+    .toggle-thumb { width:13px; height:13px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px; transition:left 0.15s; box-shadow:0 1px 2px rgba(0,0,0,0.15); }
+    .toggle-track.on .toggle-thumb { left:17px; }
+    .toggle-label { font-size:10.5px; color:var(--t2); }
+    .toggle-track.on + .toggle-label { color:var(--bl); font-weight:500; }
+
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; background:rgba(17,17,20,0.52); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+    .modal { background:var(--surface); border:1px solid var(--bdr); border-radius:var(--r-lg); width:480px; max-width:100%; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.18); }
+    .modal-hdr   { display:flex; align-items:flex-start; justify-content:space-between; padding:13px 16px; border-bottom:1px solid var(--bdr); flex-shrink:0; background:var(--surf2); }
+    .modal-title { font-size:13px; font-weight:600; color:var(--t1); }
+    .modal-sub   { font-size:11px; color:var(--t3); margin-top:2px; }
+    .modal-close { width:24px; height:24px; border-radius:var(--r); background:transparent; border:none; color:var(--t3); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; transition:background 0.1s; }
+    .modal-close:hover { background:var(--hover); color:var(--t1); }
+    .modal-body  { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+    .modal-footer{ padding:12px 16px; border-top:1px solid var(--bdr); display:flex; gap:8px; align-items:center; flex-shrink:0; flex-wrap:wrap; }
+    .modal-note  { font-size:10.5px; color:var(--t3); margin-left:auto; font-style:italic; }
+
+    /* DRAWER */
+    .drawer-overlay { position:fixed; inset:0; background:rgba(17,17,20,0.35); z-index:90; }
+    .drawer { position:fixed; top:0; right:0; bottom:0; width:500px; max-width:95vw; background:var(--surface); border-left:1px solid var(--bdr); display:flex; flex-direction:column; z-index:91; box-shadow:-4px 0 24px rgba(0,0,0,0.12); }
+    .drawer-hdr  { padding:12px 16px; border-bottom:1px solid var(--bdr); flex-shrink:0; background:var(--surf2); display:flex; align-items:flex-start; justify-content:space-between; }
+    .drawer-title{ font-size:13px; font-weight:600; color:var(--t1); }
+    .drawer-sub  { font-size:10.5px; color:var(--t3); margin-top:2px; font-family:var(--f-mono); }
+    .drawer-body { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:12px; }
+    .drawer-footer{ padding:10px 16px; border-top:1px solid var(--bdr); flex-shrink:0; display:flex; gap:6px; flex-wrap:wrap; }
+    .drawer-tabs { display:flex; border-bottom:1px solid var(--bdr); background:var(--surf2); flex-shrink:0; overflow-x:auto; }
+    .drawer-tabs::-webkit-scrollbar { height:2px; }
+    .dt { padding:8px 12px; font-size:11px; font-weight:500; color:var(--t3); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.1s; white-space:nowrap; user-select:none; }
+    .dt:hover { color:var(--t1); }
+    .dt.dt-on { color:var(--t1); border-bottom-color:var(--cta); }
+
+    /* TIMELINE RAIL */
+    .tl-rail  { width:var(--w-tl); flex-shrink:0; background:var(--surface); border-left:1px solid var(--bdr); display:flex; flex-direction:column; overflow:hidden; }
+    .tl-hdr   { padding:10px 14px; border-bottom:1px solid var(--bdr); flex-shrink:0; font-size:9.5px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:0.1em; }
+    .tl-body  { flex:1; overflow-y:auto; padding:10px 14px; }
+    .tl-evt   { display:flex; gap:9px; padding:7px 0; border-bottom:1px solid var(--hover); cursor:pointer; }
+    .tl-evt:last-child { border-bottom:none; }
+    .tl-evt:hover .tl-name { color:var(--bl); }
+    .tl-spine { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+    .tl-dot   { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+    .tl-dot.ok   { background:var(--g); } .tl-dot.pend { background:var(--or); }
+    .tl-dot.bad  { background:var(--rd); } .tl-dot.neu  { background:var(--t4); }
+    .tl-dot.pu   { background:var(--pu); } .tl-dot.bl   { background:var(--bl); }
+    .tl-dot.warn { background:var(--am); }
+    .tl-line  { width:1px; flex:1; background:var(--bdr); margin:4px 0; min-height:12px; }
+    .tl-content { flex:1; min-width:0; }
+    .tl-ts    { font-size:9.5px; font-family:var(--f-mono); color:var(--t3); margin-bottom:1px; }
+    .tl-name  { font-size:10.5px; font-weight:600; color:var(--t1); margin-bottom:1px; text-transform:uppercase; letter-spacing:0.04em; transition:color 0.1s; }
+    .tl-actor { font-size:10px; color:var(--t3); margin-bottom:2px; }
+    .tl-desc  { font-size:10px; color:var(--t2); line-height:1.4; }
+    .tl-audit { font-size:9.5px; font-family:var(--f-mono); color:var(--pu); margin-top:4px; background:var(--pu-bg); border:1px solid var(--pu-bd); border-radius:var(--r); padding:2px 6px; display:inline-block; }
+    .tl-expand-hint { font-size:9px; color:var(--t4); margin-top:2px; font-style:italic; }
+    .tl-meta  { margin-top:6px; padding:7px 9px; background:var(--surf2); border:1px solid var(--bdr); border-radius:var(--r); font-size:10px; font-family:var(--f-mono); color:var(--t2); line-height:1.6; white-space:pre-wrap; }
+
+    /* DISPUTE LIFECYCLE */
+    .lc-flow { display:flex; align-items:flex-start; overflow-x:auto; gap:0; padding-bottom:4px; }
+    .lc-step { display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; padding:5px 4px; border-radius:var(--r); min-width:52px; transition:background 0.1s; flex-shrink:0; }
+    .lc-step:hover { background:var(--hover); }
+    .lc-icon { width:26px; height:26px; border-radius:50%; border:1.5px solid var(--bdr-mid); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; flex-shrink:0; }
+    .lc-done .lc-icon { background:var(--g); color:#fff; border-color:var(--g); }
+    .lc-curr .lc-icon { background:var(--bl); color:#fff; border-color:var(--bl); }
+    .lc-pend .lc-icon { background:var(--surf2); color:var(--t3); border-color:var(--bdr-mid); }
+    .lc-fail .lc-icon { background:var(--rd); color:#fff; border-color:var(--rd); }
+    .lc-warn .lc-icon { background:var(--am); color:#fff; border-color:var(--am); }
+    .lc-label { font-size:9px; font-family:var(--f-mono); color:var(--t3); text-align:center; line-height:1.3; max-width:52px; }
+    .lc-done .lc-label { color:var(--g); }
+    .lc-curr .lc-label { color:var(--bl); font-weight:600; }
+    .lc-fail .lc-label { color:var(--rd); font-weight:600; }
+    .lc-warn .lc-label { color:var(--am); font-weight:600; }
+    .lc-arrow { font-size:12px; color:var(--t4); flex-shrink:0; align-self:center; margin:0 1px; margin-bottom:18px; }
+    .lc-step-info { background:var(--bl-bg); border:1px solid var(--bl-bd); border-radius:var(--r); padding:8px 11px; font-size:11px; color:#1e3a8a; line-height:1.5; margin-top:4px; }
+
+    /* EVIDENCE CHECKLIST */
+    .ev-item { display:flex; align-items:center; gap:9px; padding:7px 0; border-bottom:1px solid var(--hover); }
+    .ev-item:last-child { border-bottom:none; }
+    .ev-check { width:16px; height:16px; border-radius:2px; border:1.5px solid var(--bdr-mid); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; cursor:pointer; transition:all 0.12s; }
+    .ev-check.checked { background:var(--g); border-color:var(--g); color:#fff; }
+    .ev-check.missing { border-color:var(--rd); }
+    .ev-name  { font-size:12px; color:var(--t1); flex:1; }
+    .ev-owner { font-size:10px; color:var(--t3); }
+    .ev-req   { font-size:9.5px; font-family:var(--f-mono); }
+    .ev-req.req  { color:var(--rd); }
+    .ev-req.rec  { color:var(--am); }
+    .ev-req.opt  { color:var(--t3); }
+
+    /* FINANCIAL IMPACT */
+    .fin-row { display:flex; justify-content:space-between; align-items:baseline; padding:6px 0; border-bottom:1px solid var(--hover); gap:12px; }
+    .fin-row:last-child { border-bottom:none; }
+    .fin-k { font-size:11.5px; color:var(--t2); }
+    .fin-v { font-size:12px; font-family:var(--f-mono); color:var(--t1); text-align:right; font-weight:500; }
+    .fin-v.red   { color:var(--rd); }
+    .fin-v.green { color:var(--g); }
+    .fin-v.warn  { color:var(--am); }
+    .fin-v.muted { color:var(--t3); }
+    .fin-row.total .fin-k { font-weight:600; color:var(--t1); }
+    .fin-row.total .fin-v { font-weight:700; font-size:13px; }
+    .fin-section-label { font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:var(--t3); font-weight:600; padding:8px 0 4px; }
+
+    /* WEBHOOKS */
+    .wh-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--hover); flex-wrap:wrap; }
+    .wh-row:last-child { border-bottom:none; }
+
+    /* COPY BTN */
+    .copy-btn { display:inline-flex; align-items:center; gap:3px; padding:1px 5px; border-radius:2px; font-size:9.5px; font-family:var(--f-mono); border:1px solid var(--bdr); background:var(--surf2); color:var(--t3); cursor:pointer; transition:all 0.1s; }
+    .copy-btn:hover { background:var(--hover); color:var(--t2); }
+    .copy-btn.copied { background:var(--g-bg); color:var(--g); border-color:var(--g-bd); }
+
+    /* NOTE COMPOSER */
+    .note-composer { background:var(--inp); border:1px solid var(--bdr-mid); border-radius:var(--r); padding:8px 10px; display:flex; flex-direction:column; gap:7px; }
+    .note-success { display:flex; align-items:center; gap:7px; padding:7px 10px; background:var(--g-bg); border:1px solid var(--g-bd); border-radius:var(--r); font-size:11.5px; color:#14532d; }
+
+    /* SECTION LABEL */
+    .sec-label { font-size:9.5px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--t3); margin-bottom:6px; }
+
+    @media (max-width:1200px) { :root { --w-tl:220px; } }
+    @media (max-width:960px)  { .tl-rail { display:none; } }
+    @media (max-width:640px)  { .sidebar { display:none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useRef } = React;
+
+/* ── NAV ── */
+const NAV = [
+  { sec:'MERCHANT' },
+  { id:'MDB-UI-01', label:'Overview',    icon:'▤' },
+  { id:'MDB-UI-02', label:'Onboarding',  icon:'◎' },
+  { id:'MDB-UI-03', label:'API Keys',    icon:'⌗' },
+  { id:'MDB-UI-04', label:'Webhooks',    icon:'⇥' },
+  { id:'MDB-UI-05', label:'Payments',    icon:'⇅' },
+  { id:'MDB-UI-06', label:'Settlements', icon:'⊟' },
+  { id:'MDB-UI-07', label:'Disputes',    icon:'⊘', current:true },
+  { sec:'ACCOUNT' },
+  { id:'', label:'Team',     icon:'⊙' },
+  { id:'', label:'Settings', icon:'⊕' },
+];
+
+/* ── DISPUTES DATA ── */
+const DISPUTES = [
+  {
+    id:'DSP-40019', paymentId:'PI-89930', cbId:'CB-10042',
+    customer:'oliver.khan@example.com', customerName:'Oliver Khan',
+    amount:312.00, currency:'EUR',
+    reason:'fraudulent', reasonLabel:'Fraudulent',
+    status:'needs_response', holdState:'hold_active',
+    evidenceDue:'2026-05-25', dueSoon:true, overdue:false,
+    updated:'2026-05-17 09:14',
+    createdAt:'2026-05-14 11:22',
+    card:{ brand:'Visa', last4:'4242', expiry:'09/27', country:'DE' },
+    paymentStatus:'settled',
+    settlementId:'SETT-20260512',
+    payoutStatus:'payout_succeeded',
+    apiKeyPrefix:'mfp_test_7Kp…',
+    requestId:'req_4Ab1C2d3E4f',
+    idempotencyKey:'orbit_pi_20260510_oliver_001',
+    webhookStatus:'delivered',
+    chargebackFee: 15.00,
+    chargebackReserve: 0,
+    settlementImpact: -312.00,
+    payoutImpact: -312.00,
+    evidenceState:'missing_required',
+    notes:[],
+    webhookEvents:[
+      { event:'chargeback.opened',      status:'delivered', ts:'2026-05-14 11:23', reqId:'req_wh_4Ab1C' },
+      { event:'payment_intent.disputed', status:'delivered', ts:'2026-05-14 11:23', reqId:'req_wh_4Ab2D' },
+      { event:'settlement.hold_applied', status:'delivered', ts:'2026-05-14 11:24', reqId:'req_wh_4Ab3E' },
+      { event:'chargeback.updated',     status:'not_emitted', ts:'—', reqId:null },
+      { event:'chargeback.closed',      status:'not_emitted', ts:'—', reqId:null },
+    ],
+    evidence:[
+      { name:'Customer communication', req:'required', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Receipt / invoice',      req:'required', attached:true,  owner:'Merchant', updated:'2026-05-15' },
+      { name:'Shipping confirmation',  req:'required', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Service usage logs',     req:'recommended', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Refund policy',          req:'recommended', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Terms acceptance',       req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Duplicate charge explanation', req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Cancellation proof',     req:'optional', attached:false, owner:'Merchant', updated:'—' },
+    ],
+    timeline:[
+      { ts:'2026-05-14 11:22', actor:'Issuer Subsystem', type:'dispute.opened', desc:'Cardholder Oliver Khan initiated a dispute for fraudulent transaction.', auditKey:'chb.initiated.DSP-40019', dot:'bad', meta:'{ "reason": "fraudulent", "amount": 312.00, "currency": "EUR" }' },
+      { ts:'2026-05-14 11:23', actor:'Platform (Acquirer)', type:'hold.applied', desc:'Settlement hold applied. EUR 312.00 reserved from merchant settlement balance.', auditKey:'chb.hold_applied.DSP-40019', dot:'warn', meta:'{ "hold_amount": 312.00, "reserve_account": "acquirer_dispute_reserve" }' },
+      { ts:'2026-05-14 11:23', actor:'Platform (Webhook)', type:'webhook.emitted', desc:'chargeback.opened webhook dispatched to merchant endpoint.', auditKey:'wbh.dispatched.DSP-40019-1', dot:'pu', meta:'{ "event": "chargeback.opened", "delivery": "delivered", "attempt": 1 }' },
+      { ts:'2026-05-15 09:00', actor:'Nora Klein', type:'evidence.draft_started', desc:'Evidence draft initiated. Receipt/invoice uploaded.', auditKey:'chb.evidence_draft.DSP-40019', dot:'bl', meta:'{ "file": "invoice_89930.pdf", "size_kb": 128 }' },
+      { ts:'2026-05-17 09:14', actor:'Platform', type:'evidence.missing_required', desc:'Evidence deadline approaching. Required evidence items still missing.', auditKey:'chb.evidence_missing.DSP-40019', dot:'bad', meta:'{ "missing": ["customer_communication", "shipping_confirmation"] }' },
+    ],
+    lifecycleStage: 1,
+  },
+  {
+    id:'DSP-40018', paymentId:'PI-89844', cbId:'CB-10041',
+    customer:'lara.meier@example.com', customerName:'Lara Meier',
+    amount:89.90, currency:'EUR',
+    reason:'product_not_received', reasonLabel:'Product Not Received',
+    status:'under_review', holdState:'hold_active',
+    evidenceDue:'2026-05-22', dueSoon:true, overdue:false,
+    updated:'2026-05-16 15:30',
+    createdAt:'2026-05-09 08:44',
+    card:{ brand:'Mastercard', last4:'5100', expiry:'04/28', country:'AT' },
+    paymentStatus:'settled',
+    settlementId:'SETT-20260508',
+    payoutStatus:'payout_succeeded',
+    apiKeyPrefix:'mfp_test_7Kp…',
+    requestId:'req_3Bc2D3e4F5g',
+    idempotencyKey:'orbit_pi_20260507_lara_001',
+    webhookStatus:'delivered',
+    chargebackFee: 15.00,
+    chargebackReserve: 0,
+    settlementImpact: -89.90,
+    payoutImpact: -89.90,
+    evidenceState:'evidence_submitted',
+    notes:[],
+    webhookEvents:[
+      { event:'chargeback.opened',      status:'delivered', ts:'2026-05-09 08:45', reqId:'req_wh_3Bc2D' },
+      { event:'payment_intent.disputed', status:'delivered', ts:'2026-05-09 08:45', reqId:'req_wh_3Bc3E' },
+      { event:'settlement.hold_applied', status:'delivered', ts:'2026-05-09 08:46', reqId:'req_wh_3Bc4F' },
+      { event:'chargeback.updated',     status:'delivered', ts:'2026-05-12 10:00', reqId:'req_wh_3Bc5G' },
+      { event:'chargeback.closed',      status:'not_emitted', ts:'—', reqId:null },
+    ],
+    evidence:[
+      { name:'Customer communication', req:'required', attached:true,  owner:'Merchant', updated:'2026-05-11' },
+      { name:'Receipt / invoice',      req:'required', attached:true,  owner:'Merchant', updated:'2026-05-11' },
+      { name:'Shipping confirmation',  req:'required', attached:true,  owner:'Merchant', updated:'2026-05-11' },
+      { name:'Service usage logs',     req:'recommended', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Refund policy',          req:'recommended', attached:true, owner:'Merchant', updated:'2026-05-11' },
+      { name:'Terms acceptance',       req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Duplicate charge explanation', req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Cancellation proof',     req:'optional', attached:false, owner:'Merchant', updated:'—' },
+    ],
+    timeline:[
+      { ts:'2026-05-09 08:44', actor:'Issuer Subsystem', type:'dispute.opened', desc:'Cardholder Lara Meier initiated dispute: product not received.', auditKey:'chb.initiated.DSP-40018', dot:'bad', meta:'{ "reason": "product_not_received", "amount": 89.90 }' },
+      { ts:'2026-05-09 08:46', actor:'Platform (Acquirer)', type:'hold.applied', desc:'EUR 89.90 hold applied to merchant settlement balance.', auditKey:'chb.hold_applied.DSP-40018', dot:'warn', meta:'{ "hold_amount": 89.90 }' },
+      { ts:'2026-05-11 14:22', actor:'Nora Klein', type:'evidence.submitted', desc:'Evidence package submitted: 3 documents attached.', auditKey:'chb.evidence_submitted.DSP-40018', dot:'bl', meta:'{ "documents": 3, "submitted_by": "Nora Klein" }' },
+      { ts:'2026-05-12 10:00', actor:'Platform (Network)', type:'network_review.started', desc:'Dispute sent to network arbitration. Under review by card network.', auditKey:'chb.network_review.DSP-40018', dot:'pu', meta:'{ "network_ref": "NTW-CB-2026-40018" }' },
+    ],
+    lifecycleStage: 3,
+  },
+  {
+    id:'DSP-40012', paymentId:'PI-89770', cbId:'CB-10035',
+    customer:'max.wagner@example.com', customerName:'Max Wagner',
+    amount:54.00, currency:'EUR',
+    reason:'duplicate', reasonLabel:'Duplicate Charge',
+    status:'won', holdState:'hold_released',
+    evidenceDue:null, dueSoon:false, overdue:false,
+    updated:'2026-05-12 11:08',
+    createdAt:'2026-05-02 09:12',
+    card:{ brand:'Visa', last4:'3721', expiry:'11/26', country:'DE' },
+    paymentStatus:'settled',
+    settlementId:'SETT-20260501',
+    payoutStatus:'payout_succeeded',
+    apiKeyPrefix:'mfp_test_7Kp…',
+    requestId:'req_6De3E4f5G6h',
+    idempotencyKey:'orbit_pi_20260501_max_001',
+    webhookStatus:'delivered',
+    chargebackFee: 15.00,
+    chargebackReserve: 0,
+    settlementImpact: 0,
+    payoutImpact: 0,
+    evidenceState:'evidence_submitted',
+    notes:['Evidence accepted. Merchant won.'],
+    webhookEvents:[
+      { event:'chargeback.opened',      status:'delivered', ts:'2026-05-02 09:13', reqId:'req_wh_6De3E' },
+      { event:'payment_intent.disputed', status:'delivered', ts:'2026-05-02 09:13', reqId:'req_wh_6De4F' },
+      { event:'settlement.hold_applied', status:'delivered', ts:'2026-05-02 09:14', reqId:'req_wh_6De5G' },
+      { event:'chargeback.updated',     status:'delivered', ts:'2026-05-08 11:00', reqId:'req_wh_6De6H' },
+      { event:'chargeback.closed',      status:'delivered', ts:'2026-05-12 11:08', reqId:'req_wh_6De7I' },
+    ],
+    evidence:[
+      { name:'Customer communication', req:'required', attached:true,  owner:'Merchant', updated:'2026-05-04' },
+      { name:'Receipt / invoice',      req:'required', attached:true,  owner:'Merchant', updated:'2026-05-04' },
+      { name:'Shipping confirmation',  req:'required', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Duplicate charge explanation', req:'required', attached:true, owner:'Merchant', updated:'2026-05-04' },
+      { name:'Refund policy',          req:'recommended', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Terms acceptance',       req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Service usage logs',     req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Cancellation proof',     req:'optional', attached:false, owner:'Merchant', updated:'—' },
+    ],
+    timeline:[
+      { ts:'2026-05-02 09:12', actor:'Issuer Subsystem', type:'dispute.opened', desc:'Duplicate charge dispute opened by Max Wagner.', auditKey:'chb.initiated.DSP-40012', dot:'bad', meta:'{ "reason": "duplicate" }' },
+      { ts:'2026-05-04 14:00', actor:'Nora Klein', type:'evidence.submitted', desc:'Evidence package with duplicate charge explanation submitted.', auditKey:'chb.evidence_submitted.DSP-40012', dot:'bl', meta:'{ "documents": 3 }' },
+      { ts:'2026-05-08 11:00', actor:'Platform (Network)', type:'network_review.started', desc:'Network arbitration started.', auditKey:'chb.network_review.DSP-40012', dot:'pu', meta:'{}' },
+      { ts:'2026-05-12 11:08', actor:'Backoffice Operator', type:'dispute.won', desc:'Arbitration outcome: WON. Merchant evidence accepted. Hold released.', auditKey:'chb.won.DSP-40012', dot:'ok', meta:'{ "outcome": "won", "hold_released": true, "cardholder_credit_reversed": true }' },
+    ],
+    lifecycleStage: 5,
+  },
+  {
+    id:'DSP-40008', paymentId:'PI-89711', cbId:'CB-10031',
+    customer:'nina.rossi@example.com', customerName:'Nina Rossi',
+    amount:140.00, currency:'EUR',
+    reason:'subscription_canceled', reasonLabel:'Subscription Canceled',
+    status:'lost', holdState:'hold_captured',
+    evidenceDue:null, dueSoon:false, overdue:false,
+    updated:'2026-05-10 17:42',
+    createdAt:'2026-04-28 13:15',
+    card:{ brand:'Mastercard', last4:'9876', expiry:'03/29', country:'IT' },
+    paymentStatus:'charged_back',
+    settlementId:'SETT-20260427',
+    payoutStatus:'payout_succeeded',
+    apiKeyPrefix:'mfp_test_7Kp…',
+    requestId:'req_1Ef4F5g6H7i',
+    idempotencyKey:'orbit_pi_20260427_nina_001',
+    webhookStatus:'delivered',
+    chargebackFee: 15.00,
+    chargebackReserve: 0,
+    settlementImpact: -140.00,
+    payoutImpact: -140.00,
+    evidenceState:'evidence_submitted',
+    notes:[],
+    webhookEvents:[
+      { event:'chargeback.opened',      status:'delivered', ts:'2026-04-28 13:16', reqId:'req_wh_1Ef4F' },
+      { event:'payment_intent.disputed', status:'delivered', ts:'2026-04-28 13:16', reqId:'req_wh_1Ef5G' },
+      { event:'settlement.hold_applied', status:'delivered', ts:'2026-04-28 13:17', reqId:'req_wh_1Ef6H' },
+      { event:'chargeback.updated',     status:'delivered', ts:'2026-05-05 10:00', reqId:'req_wh_1Ef7I' },
+      { event:'chargeback.closed',      status:'delivered', ts:'2026-05-10 17:42', reqId:'req_wh_1Ef8J' },
+    ],
+    evidence:[
+      { name:'Customer communication', req:'required', attached:true,  owner:'Merchant', updated:'2026-04-30' },
+      { name:'Receipt / invoice',      req:'required', attached:true,  owner:'Merchant', updated:'2026-04-30' },
+      { name:'Cancellation proof',     req:'required', attached:true,  owner:'Merchant', updated:'2026-04-30' },
+      { name:'Refund policy',          req:'recommended', attached:true, owner:'Merchant', updated:'2026-04-30' },
+      { name:'Terms acceptance',       req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Service usage logs',     req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Shipping confirmation',  req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Duplicate charge explanation', req:'optional', attached:false, owner:'Merchant', updated:'—' },
+    ],
+    timeline:[
+      { ts:'2026-04-28 13:15', actor:'Issuer Subsystem', type:'dispute.opened', desc:'Subscription cancellation dispute opened by Nina Rossi.', auditKey:'chb.initiated.DSP-40008', dot:'bad', meta:'{ "reason": "subscription_canceled" }' },
+      { ts:'2026-04-30 11:00', actor:'Nora Klein', type:'evidence.submitted', desc:'Evidence submitted by merchant.', auditKey:'chb.evidence_submitted.DSP-40008', dot:'bl', meta:'{ "documents": 4 }' },
+      { ts:'2026-05-05 10:00', actor:'Platform (Network)', type:'network_review.started', desc:'Network review started.', auditKey:'chb.network_review.DSP-40008', dot:'pu', meta:'{}' },
+      { ts:'2026-05-10 17:42', actor:'Backoffice Operator', type:'dispute.lost', desc:'Arbitration outcome: LOST. Cardholder credit permanent. Merchant debited EUR 140.00.', auditKey:'chb.lost.DSP-40008', dot:'bad', meta:'{ "outcome": "lost", "merchant_debited": 140.00, "hold_captured": true }' },
+    ],
+    lifecycleStage: 6,
+  },
+  {
+    id:'DSP-39992', paymentId:'PI-89680', cbId:'CB-10022',
+    customer:'tim.schmidt@example.com', customerName:'Tim Schmidt',
+    amount:27.50, currency:'EUR',
+    reason:'unrecognized', reasonLabel:'Unrecognized',
+    status:'accepted', holdState:'hold_captured',
+    evidenceDue:null, dueSoon:false, overdue:false,
+    updated:'2026-05-08 10:05',
+    createdAt:'2026-04-22 15:30',
+    card:{ brand:'Visa', last4:'6011', expiry:'07/27', country:'DE' },
+    paymentStatus:'charged_back',
+    settlementId:'SETT-20260421',
+    payoutStatus:'payout_succeeded',
+    apiKeyPrefix:'mfp_test_7Kp…',
+    requestId:'req_9Fg5G6h7I8j',
+    idempotencyKey:'orbit_pi_20260421_tim_001',
+    webhookStatus:'delivered',
+    chargebackFee: 15.00,
+    chargebackReserve: 0,
+    settlementImpact: -27.50,
+    payoutImpact: -27.50,
+    evidenceState:'evidence_submitted',
+    notes:['Merchant accepted dispute on 2026-05-08.'],
+    webhookEvents:[
+      { event:'chargeback.opened',      status:'delivered', ts:'2026-04-22 15:31', reqId:'req_wh_9Fg5G' },
+      { event:'payment_intent.disputed', status:'delivered', ts:'2026-04-22 15:31', reqId:'req_wh_9Fg6H' },
+      { event:'settlement.hold_applied', status:'delivered', ts:'2026-04-22 15:32', reqId:'req_wh_9Fg7I' },
+      { event:'chargeback.updated',     status:'delivered', ts:'2026-05-08 10:05', reqId:'req_wh_9Fg8J' },
+      { event:'chargeback.closed',      status:'delivered', ts:'2026-05-08 10:05', reqId:'req_wh_9Fg9K' },
+    ],
+    evidence:[],
+    timeline:[
+      { ts:'2026-04-22 15:30', actor:'Issuer Subsystem', type:'dispute.opened', desc:'Unrecognized transaction dispute opened by Tim Schmidt.', auditKey:'chb.initiated.DSP-39992', dot:'bad', meta:'{ "reason": "unrecognized" }' },
+      { ts:'2026-05-08 10:05', actor:'Nora Klein', type:'dispute.accepted', desc:'Merchant accepted dispute. No contest. Hold captured; cardholder credit permanent.', auditKey:'chb.accepted.DSP-39992', dot:'warn', meta:'{ "accepted_by": "Nora Klein", "amount_forfeited": 27.50 }' },
+    ],
+    lifecycleStage: 6,
+  },
+  {
+    id:'DSP-39971', paymentId:'PI-89591', cbId:'CB-10019',
+    customer:'eva.mueller@example.com', customerName:'Eva Mueller',
+    amount:220.00, currency:'EUR',
+    reason:'credit_not_processed', reasonLabel:'Credit Not Processed',
+    status:'needs_response', holdState:'hold_active',
+    evidenceDue:'2026-05-20', dueSoon:true, overdue:true,
+    updated:'2026-05-06 13:22',
+    createdAt:'2026-05-03 10:00',
+    card:{ brand:'Mastercard', last4:'1111', expiry:'01/28', country:'CH' },
+    paymentStatus:'settled',
+    settlementId:'SETT-20260502',
+    payoutStatus:'payout_succeeded',
+    apiKeyPrefix:'mfp_test_7Kp…',
+    requestId:'req_7Gh6H7i8J9k',
+    idempotencyKey:'orbit_pi_20260502_eva_001',
+    webhookStatus:'retrying',
+    chargebackFee: 15.00,
+    chargebackReserve: 0,
+    settlementImpact: -220.00,
+    payoutImpact: -220.00,
+    evidenceState:'missing_required',
+    notes:[],
+    webhookEvents:[
+      { event:'chargeback.opened',      status:'delivered', ts:'2026-05-03 10:01', reqId:'req_wh_7Gh6H' },
+      { event:'payment_intent.disputed', status:'delivered', ts:'2026-05-03 10:01', reqId:'req_wh_7Gh7I' },
+      { event:'settlement.hold_applied', status:'retrying',  ts:'2026-05-03 10:02', reqId:'req_wh_7Gh8J' },
+      { event:'chargeback.updated',     status:'not_emitted', ts:'—', reqId:null },
+      { event:'chargeback.closed',      status:'not_emitted', ts:'—', reqId:null },
+    ],
+    evidence:[
+      { name:'Customer communication', req:'required', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Receipt / invoice',      req:'required', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Refund policy',          req:'required', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Service usage logs',     req:'recommended', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Shipping confirmation',  req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Terms acceptance',       req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Duplicate charge explanation', req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Cancellation proof',     req:'optional', attached:false, owner:'Merchant', updated:'—' },
+    ],
+    timeline:[
+      { ts:'2026-05-03 10:00', actor:'Issuer Subsystem', type:'dispute.opened', desc:'Credit not processed dispute opened by Eva Mueller.', auditKey:'chb.initiated.DSP-39971', dot:'bad', meta:'{ "reason": "credit_not_processed" }' },
+      { ts:'2026-05-03 10:02', actor:'Platform (Webhook)', type:'webhook.retry', desc:'settlement.hold_applied webhook delivery retrying — merchant endpoint returned 503.', auditKey:'wbh.retry.DSP-39971', dot:'warn', meta:'{ "attempts": 3, "next_retry": "2026-05-03 10:32" }' },
+    ],
+    lifecycleStage: 1,
+  },
+  {
+    id:'DSP-39945', paymentId:'PI-89502', cbId:'CB-10011',
+    customer:'jonas.fischer@example.com', customerName:'Jonas Fischer',
+    amount:68.75, currency:'EUR',
+    reason:'general', reasonLabel:'General',
+    status:'under_review', holdState:'hold_active',
+    evidenceDue:'2026-05-19', dueSoon:true, overdue:true,
+    updated:'2026-05-05 08:50',
+    createdAt:'2026-04-28 07:30',
+    card:{ brand:'Visa', last4:'8888', expiry:'06/28', country:'DE' },
+    paymentStatus:'settled',
+    settlementId:'SETT-20260427',
+    payoutStatus:'payout_succeeded',
+    apiKeyPrefix:'mfp_test_7Kp…',
+    requestId:'req_5Hi7I8j9K0l',
+    idempotencyKey:'orbit_pi_20260427_jonas_001',
+    webhookStatus:'delivered',
+    chargebackFee: 15.00,
+    chargebackReserve: 0,
+    settlementImpact: -68.75,
+    payoutImpact: -68.75,
+    evidenceState:'evidence_submitted',
+    notes:[],
+    webhookEvents:[
+      { event:'chargeback.opened',      status:'delivered', ts:'2026-04-28 07:31', reqId:'req_wh_5Hi7I' },
+      { event:'payment_intent.disputed', status:'delivered', ts:'2026-04-28 07:31', reqId:'req_wh_5Hi8J' },
+      { event:'settlement.hold_applied', status:'delivered', ts:'2026-04-28 07:32', reqId:'req_wh_5Hi9K' },
+      { event:'chargeback.updated',     status:'delivered', ts:'2026-05-01 09:00', reqId:'req_wh_5Hi0L' },
+      { event:'chargeback.closed',      status:'not_emitted', ts:'—', reqId:null },
+    ],
+    evidence:[
+      { name:'Customer communication', req:'required', attached:true,  owner:'Merchant', updated:'2026-04-30' },
+      { name:'Receipt / invoice',      req:'required', attached:true,  owner:'Merchant', updated:'2026-04-30' },
+      { name:'Service usage logs',     req:'recommended', attached:true, owner:'Merchant', updated:'2026-04-30' },
+      { name:'Refund policy',          req:'recommended', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Shipping confirmation',  req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Terms acceptance',       req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Duplicate charge explanation', req:'optional', attached:false, owner:'Merchant', updated:'—' },
+      { name:'Cancellation proof',     req:'optional', attached:false, owner:'Merchant', updated:'—' },
+    ],
+    timeline:[
+      { ts:'2026-04-28 07:30', actor:'Issuer Subsystem', type:'dispute.opened', desc:'General dispute opened by Jonas Fischer.', auditKey:'chb.initiated.DSP-39945', dot:'bad', meta:'{}' },
+      { ts:'2026-04-30 11:30', actor:'Nora Klein', type:'evidence.submitted', desc:'Evidence package submitted.', auditKey:'chb.evidence_submitted.DSP-39945', dot:'bl', meta:'{ "documents": 3 }' },
+      { ts:'2026-05-01 09:00', actor:'Platform (Network)', type:'network_review.started', desc:'Network arbitration started. Deadline 2026-05-19.', auditKey:'chb.network_review.DSP-39945', dot:'pu', meta:'{}' },
+    ],
+    lifecycleStage: 4,
+  },
+];
+
+/* ── AUDIT RAIL DATA ── */
+const AUDIT_EVENTS = [
+  { ts:'2026-05-17 09:14', actor:'Platform', type:'evidence.missing_required', desc:'DSP-40019: Required evidence items missing. Deadline in 8 days.', key:'chb.evidence_missing.DSP-40019', dot:'bad', meta:'{ "dispute": "DSP-40019", "missing": ["customer_communication","shipping_confirmation"] }' },
+  { ts:'2026-05-16 15:30', actor:'Platform (Network)', type:'network_review.update', desc:'DSP-40018: Under network review. No action required from merchant.', key:'chb.network_update.DSP-40018', dot:'pu', meta:'{ "dispute": "DSP-40018", "status": "under_review" }' },
+  { ts:'2026-05-15 09:00', actor:'Nora Klein', type:'evidence.draft_started', desc:'DSP-40019: Evidence draft started. Invoice uploaded.', key:'chb.evidence_draft.DSP-40019', dot:'bl', meta:'{ "dispute": "DSP-40019", "file": "invoice_89930.pdf" }' },
+  { ts:'2026-05-12 11:08', actor:'Backoffice Operator', type:'dispute.won', desc:'DSP-40012: Arbitration WON. Hold released EUR 54.00.', key:'chb.won.DSP-40012', dot:'ok', meta:'{ "dispute": "DSP-40012", "outcome": "won" }' },
+  { ts:'2026-05-10 17:42', actor:'Backoffice Operator', type:'dispute.lost', desc:'DSP-40008: Arbitration LOST. Merchant debited EUR 140.00.', key:'chb.lost.DSP-40008', dot:'bad', meta:'{ "dispute": "DSP-40008", "outcome": "lost" }' },
+  { ts:'2026-05-10 17:42', actor:'Platform (Ledger)', type:'hold.captured', desc:'DSP-40008: Hold EUR 140.00 captured. Settlement balance debited.', key:'chb.hold_captured.DSP-40008', dot:'bad', meta:'{ "amount": 140.00, "account": "merchant_settlement" }' },
+  { ts:'2026-05-12 11:08', actor:'Platform (Ledger)', type:'hold.released', desc:'DSP-40012: Hold EUR 54.00 released to settlement balance.', key:'chb.hold_released.DSP-40012', dot:'ok', meta:'{ "amount": 54.00 }' },
+  { ts:'2026-05-08 10:05', actor:'Nora Klein', type:'dispute.accepted', desc:'DSP-39992: Dispute accepted by merchant. EUR 27.50 forfeited.', key:'chb.accepted.DSP-39992', dot:'warn', meta:'{ "dispute": "DSP-39992", "amount": 27.50 }' },
+  { ts:'2026-05-06 13:22', actor:'Platform (Webhook)', type:'webhook.retry', desc:'DSP-39971: settlement.hold_applied retry scheduled after 503 response.', key:'wbh.retry.DSP-39971', dot:'warn', meta:'{ "event": "settlement.hold_applied", "attempt": 3 }' },
+  { ts:'2026-05-05 08:50', actor:'Nora Klein', type:'evidence.submitted', desc:'DSP-39945: Evidence package submitted. 3 documents.', key:'chb.evidence_submitted.DSP-39945', dot:'bl', meta:'{ "documents": 3 }' },
+  { ts:'2026-05-03 10:00', actor:'Platform', type:'webhook.emitted', desc:'DSP-39971: chargeback.opened webhook emitted.', key:'wbh.dispatched.DSP-39971-1', dot:'pu', meta:'{ "delivery": "delivered" }' },
+  { ts:'2026-05-02 09:12', actor:'Issuer Subsystem', type:'dispute.opened', desc:'DSP-40012: Duplicate charge dispute opened.', key:'chb.initiated.DSP-40012', dot:'bad', meta:'{}' },
+];
+
+const LIFECYCLE_STAGES = ['Opened','Needs Response','Evidence Draft','Submitted','Under Review','Resolved'];
+
+/* ── HELPERS ── */
+function statusBadge(s) {
+  const map = {
+    needs_response: <span className="badge b-needs-resp">NEEDS RESPONSE</span>,
+    under_review:   <span className="badge b-under-rev">UNDER REVIEW</span>,
+    won:            <span className="badge b-won">WON</span>,
+    lost:           <span className="badge b-lost">LOST</span>,
+    accepted:       <span className="badge b-accepted">ACCEPTED</span>,
+  };
+  return map[s] || <span className="badge b-disabled">{s}</span>;
+}
+function holdBadge(h) {
+  const map = {
+    hold_active:    <span className="badge b-hold-active">HOLD ACTIVE</span>,
+    hold_released:  <span className="badge b-hold-released">HOLD RELEASED</span>,
+    hold_captured:  <span className="badge b-hold-captured">HOLD CAPTURED</span>,
+  };
+  return map[h] || <span className="badge b-disabled">{h}</span>;
+}
+function dueBadge(d) {
+  if(!d) return <span className="b-none">—</span>;
+  return <span className={`badge ${d.overdue ? 'b-overdue' : 'b-due-soon'}`}>{d.overdue ? '⚠ OVERDUE' : d.label}</span>;
+}
+function whBadge(s) {
+  if(s==='delivered')  return <span className="badge b-delivered">DELIVERED</span>;
+  if(s==='retrying')   return <span className="badge b-retrying">RETRYING</span>;
+  if(s==='dlq')        return <span className="badge b-dlq">DLQ</span>;
+  return <span className="badge b-not-emit">NOT EMITTED</span>;
+}
+function evStateBadge(s) {
+  const map = {
+    missing_required: <span className="badge b-ev-missing">MISSING REQUIRED</span>,
+    evidence_draft:   <span className="badge b-ev-draft">DRAFT</span>,
+    evidence_submitted: <span className="badge b-ev-sub">SUBMITTED</span>,
+    under_network_review: <span className="badge b-ev-review">NETWORK REVIEW</span>,
+    expired:          <span className="badge b-ev-expired">EXPIRED</span>,
+  };
+  return map[s] || null;
+}
+
+/* ── SIDEBAR ── */
+function Sidebar() {
+  return (
+    <div className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-mark">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect width="22" height="22" rx="4" fill="#7c6ff7"/>
+            <path d="M6 16V8l5-3 5 3v8" stroke="#fff" strokeWidth="1.5" fill="none"/>
+            <rect x="9" y="12" width="4" height="4" fill="#fff"/>
+          </svg>
+          <div>
+            <div className="sb-name">MiniFin</div>
+            <div className="sb-sub">Merchant Dashboard</div>
+          </div>
+        </div>
+        <div className="sb-merchant">
+          <div className="sb-m-label">Merchant</div>
+          <div className="sb-m-name">Orbit Market</div>
+          <div className="sb-m-id">MRC-20491</div>
+        </div>
+      </div>
+      <div className="sb-nav">
+        {NAV.map((n,i) => n.sec
+          ? <div key={i} className="nav-sec">{n.sec}</div>
+          : <div key={i} className={`nav-item${n.current?' current':''}${n.locked?' locked':''}`}>
+              <span>{n.icon}</span>
+              <span>{n.label}</span>
+              {n.locked && <span className="nav-lock">🔒</span>}
+              {n.id && <span className="nav-id">{n.id}</span>}
+            </div>
+        )}
+      </div>
+      <div className="sb-footer">
+        <div className="env-chip"><div className="env-dot"/><span>Local Sandbox</span></div>
+        <div className="env-host">merchants.miniefin.local</div>
+        <div className="sb-user">
+          <div className="sb-avatar">NK</div>
+          <div>
+            <div className="sb-uname">Nora Klein</div>
+            <div className="sb-urole">Merchant Admin</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── LIFECYCLE PANEL ── */
+function LifecyclePanel({ dispute, onStepClick }) {
+  const [activeStep, setActiveStep] = useState(null);
+  const stage = dispute.lifecycleStage;
+  const steps = LIFECYCLE_STAGES;
+  const stepState = (i) => {
+    if(dispute.status==='lost'||dispute.status==='accepted') {
+      if(i<5) return 'lc-done';
+      return 'lc-fail';
+    }
+    if(dispute.status==='won') {
+      if(i<5) return 'lc-done';
+      return 'lc-done';
+    }
+    if(i < stage) return 'lc-done';
+    if(i === stage) return 'lc-curr';
+    return 'lc-pend';
+  };
+  const stepNum = (i) => {
+    const s = stepState(i);
+    if(s==='lc-done') return '✓';
+    if(s==='lc-fail') return '✕';
+    if(s==='lc-curr') return `${i+1}`;
+    return `${i+1}`;
+  };
+  const handleStep = (i) => {
+    setActiveStep(activeStep===i ? null : i);
+  };
+  const stepInfos = [
+    'Chargeback initiated by cardholder via issuer subsystem. Provisional credit applied to cardholder wallet.',
+    'Merchant notified via webhook. Evidence deadline active. Action required to contest or accept.',
+    'Evidence package being drafted. Documents attached but not yet submitted for review.',
+    'Evidence submitted by merchant. Awaiting card network / backoffice arbitration.',
+    'Under network review. No further merchant action possible at this stage.',
+    dispute.status==='won' ? 'Outcome: WON — Merchant evidence accepted. Hold released to settlement balance.' : dispute.status==='lost' ? 'Outcome: LOST — Cardholder prevailed. Merchant settlement debited.' : 'Outcome: ACCEPTED — Merchant conceded. No arbitration. Settlement debited.',
+  ];
+  return (
+    <div className="panel">
+      <div className="panel-hdr"><span className="panel-title">Dispute Lifecycle</span>
+        {dispute.overdue && <span className="badge b-overdue">⚠ DEADLINE OVERDUE</span>}
+      </div>
+      <div className="panel-body">
+        <div className="lc-flow">
+          {steps.map((s,i) => (
+            <React.Fragment key={i}>
+              <div className={`lc-step ${stepState(i)}`} onClick={()=>handleStep(i)}>
+                <div className="lc-icon">{stepNum(i)}</div>
+                <div className="lc-label">{s}</div>
+              </div>
+              {i<steps.length-1 && <div className="lc-arrow">›</div>}
+            </React.Fragment>
+          ))}
+        </div>
+        {activeStep!==null && (
+          <div className="lc-step-info" style={{marginTop:10}}>{stepInfos[activeStep]}</div>
+        )}
+        {dispute.evidenceDue && (
+          <div style={{marginTop:8,fontSize:11,color:dispute.overdue?'var(--rd)':'var(--am)',fontFamily:'var(--f-mono)'}}>
+            {dispute.overdue ? '⚠ Evidence deadline OVERDUE — ' : '⏱ Evidence due — '}{dispute.evidenceDue}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── EVIDENCE PANEL ── */
+function EvidencePanel({ dispute, onItemToggle, localEvidence, setLocalEvidence }) {
+  const isTerminal = ['won','lost','accepted'].includes(dispute.status);
+  const submitted = dispute.evidenceState === 'evidence_submitted';
+  const hasAllRequired = (localEvidence||dispute.evidence).filter(e=>e.req==='required').every(e=>e.attached);
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Evidence</span>
+        <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
+          {evStateBadge(dispute.evidenceState)}
+          {!isTerminal && !hasAllRequired && <span className="badge b-ev-missing">MISSING REQUIRED</span>}
+        </div>
+      </div>
+      <div className="panel-body" style={{padding:'8px 14px'}}>
+        {isTerminal && (
+          <div className="alert alert-info" style={{marginBottom:10,fontSize:11}}>
+            This dispute is in a terminal state. Evidence submission is closed.
+          </div>
+        )}
+        {!isTerminal && (
+          <div className="alert alert-pu" style={{marginBottom:10,fontSize:11}}>
+            <div><strong>Sandbox preview:</strong> Evidence submission (upload + submit) is a backoffice-only operation in the current implementation. Checklist reflects local draft state only.</div>
+          </div>
+        )}
+        {(localEvidence||dispute.evidence).map((ev,i) => (
+          <div key={i} className="ev-item">
+            <div
+              className={`ev-check${ev.attached?' checked':ev.req==='required'?' missing':''}`}
+              onClick={()=>{
+                if(isTerminal) return;
+                const updated = [...(localEvidence||dispute.evidence)];
+                updated[i] = {...updated[i], attached:!updated[i].attached, updated: updated[i].attached ? '—' : '2026-05-19'};
+                setLocalEvidence(updated);
+              }}
+            >{ev.attached ? '✓' : ''}</div>
+            <div className="ev-name">{ev.name}</div>
+            <div style={{display:'flex',gap:5,alignItems:'center'}}>
+              <span className={`ev-req ${ev.req}`}>{ev.req}</span>
+              {ev.attached && <span style={{fontSize:9.5,color:'var(--g)',fontFamily:'var(--f-mono)'}}>attached</span>}
+              {ev.updated!=='—' && <span style={{fontSize:9,color:'var(--t3)',fontFamily:'var(--f-mono)'}}>{ev.updated}</span>}
+            </div>
+          </div>
+        ))}
+        {!isTerminal && (
+          <div style={{marginTop:12,display:'flex',gap:8,flexWrap:'wrap'}}>
+            <button className="btn btn-ghost btn-sm btn-faux-dis" title="Upload document — backoffice-only in current implementation">
+              ↑ Upload Document
+            </button>
+            <button className="btn btn-primary btn-sm btn-faux-dis" title="Submit evidence — backoffice-only in current implementation">
+              Submit Evidence
+            </button>
+            <span style={{fontSize:10,color:'var(--t3)',alignSelf:'center',fontStyle:'italic'}}>Submit & Upload are backoffice-only in current build</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── FINANCIAL IMPACT PANEL ── */
+function FinancialPanel({ dispute }) {
+  const isWon = dispute.status==='won';
+  return (
+    <div className="panel">
+      <div className="panel-hdr"><span className="panel-title">Financial Impact</span></div>
+      <div className="panel-body">
+        <div className="fin-section-label">Current Position</div>
+        <div className="fin-row"><span className="fin-k">Disputed Amount</span><span className="fin-v">EUR {dispute.amount.toFixed(2)}</span></div>
+        <div className="fin-row"><span className="fin-k">Chargeback Fee (placeholder)</span><span className="fin-v warn">EUR {dispute.chargebackFee.toFixed(2)}</span></div>
+        <div className="fin-row"><span className="fin-k">Amount on Hold</span><span className={`fin-v ${dispute.holdState==='hold_active'?'warn':dispute.holdState==='hold_released'?'green':'red'}`}>{dispute.holdState==='hold_released'?'Released':dispute.holdState==='hold_captured'?'Captured':'EUR '+dispute.amount.toFixed(2)}</span></div>
+        <div className="fin-row"><span className="fin-k">Settlement Hold Status</span><span className="fin-v">{holdBadge(dispute.holdState)}</span></div>
+        <div className="fin-section-label" style={{marginTop:8}}>Possible Outcomes</div>
+        <div className="fin-row"><span className="fin-k">If Merchant Wins</span><span className="fin-v green">Hold released → EUR {dispute.amount.toFixed(2)} returned to settlement</span></div>
+        <div className="fin-row"><span className="fin-k">If Merchant Loses</span><span className="fin-v red">Hold captured → EUR {dispute.amount.toFixed(2)} + EUR {dispute.chargebackFee.toFixed(2)} fee lost</span></div>
+        <div className="fin-section-label" style={{marginTop:8}}>Settlement Impact</div>
+        <div className="fin-row"><span className="fin-k">Current Ledger Impact</span><span className={`fin-v ${dispute.settlementImpact<0?'red':''}`}>{dispute.settlementImpact===0?'None':'EUR '+dispute.settlementImpact.toFixed(2)}</span></div>
+        <div className="fin-row"><span className="fin-k">Payout Impact</span><span className={`fin-v ${dispute.payoutImpact<0?'red':''}`}>{dispute.payoutImpact===0?'None':'EUR '+dispute.payoutImpact.toFixed(2)}</span></div>
+        {isWon && <div className="alert alert-green" style={{marginTop:10,fontSize:11}}>Dispute WON. Hold has been released. Settlement balance restored.</div>}
+        {dispute.status==='lost' && <div className="alert alert-red" style={{marginTop:10,fontSize:11}}>Dispute LOST. Funds permanently captured. Settlement adjusted.</div>}
+        {dispute.status==='accepted' && <div className="alert alert-warn" style={{marginTop:10,fontSize:11}}>Dispute ACCEPTED by merchant. No arbitration. Settlement debited.</div>}
+      </div>
+    </div>
+  );
+}
+
+/* ── PAYMENT CONTEXT PANEL ── */
+function PaymentPanel({ dispute, onViewPayment }) {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Payment Context</span>
+        <button className="btn btn-ghost btn-xs" onClick={onViewPayment}>View Payment →</button>
+      </div>
+      <div className="panel-body" style={{padding:'10px 14px'}}>
+        <div className="kv-table">
+          <div className="kv-row"><span className="kv-k">Payment ID</span><span className="kv-v mono">{dispute.paymentId}</span></div>
+          <div className="kv-row"><span className="kv-k">Customer</span><span className="kv-v">{dispute.customerName} <span style={{color:'var(--t3)',fontSize:11}}>{dispute.customer}</span></span></div>
+          <div className="kv-row"><span className="kv-k">Amount</span><span className="kv-v mono">EUR {dispute.amount.toFixed(2)}</span></div>
+          <div className="kv-row"><span className="kv-k">Payment Status</span><span className="kv-v"><span className="badge b-disabled">{dispute.paymentStatus.toUpperCase()}</span></span></div>
+          <div className="kv-row"><span className="kv-k">Captured At</span><span className="kv-v mono" style={{fontSize:11}}>{dispute.createdAt}</span></div>
+          <div className="kv-row"><span className="kv-k">Settlement ID</span><span className="kv-v mono">{dispute.settlementId}</span></div>
+          <div className="kv-row"><span className="kv-k">Payout Status</span><span className="kv-v"><span className="badge b-won">{dispute.payoutStatus.replace(/_/g,' ').toUpperCase()}</span></span></div>
+          <div className="kv-row"><span className="kv-k">Card</span><span className="kv-v">{dispute.card.brand} •••• {dispute.card.last4} / {dispute.card.expiry} <span style={{fontSize:10,color:'var(--t3)'}}>{dispute.card.country}</span></span></div>
+          <div className="kv-row"><span className="kv-k">API Key Prefix</span><span className="kv-v mono">{dispute.apiKeyPrefix}</span></div>
+          <div className="kv-row"><span className="kv-k">Request ID</span><span className="kv-v mono">{dispute.requestId}</span></div>
+          <div className="kv-row"><span className="kv-k">Idempotency Key</span><span className="kv-v mono" style={{fontSize:10,wordBreak:'break-all'}}>{dispute.idempotencyKey}</span></div>
+          <div className="kv-row"><span className="kv-k">Webhook Status</span><span className="kv-v">{whBadge(dispute.webhookStatus)}</span></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── WEBHOOK EVENTS PANEL ── */
+function WebhookPanel({ dispute }) {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Webhook Events</span>
+        <button className="btn btn-ghost btn-xs btn-faux-dis">View in Webhooks</button>
+      </div>
+      <div className="panel-body" style={{padding:'8px 14px'}}>
+        {dispute.webhookEvents.map((w,i) => (
+          <div key={i} className="wh-row">
+            <span style={{fontFamily:'var(--f-mono)',fontSize:10.5,flex:1,color:'var(--t1)'}}>{w.event}</span>
+            {whBadge(w.status)}
+            <span style={{fontFamily:'var(--f-mono)',fontSize:9.5,color:'var(--t3)',marginLeft:'auto'}}>{w.ts}</span>
+            {w.reqId && <span style={{fontFamily:'var(--f-mono)',fontSize:9,color:'var(--t3)'}}>{w.reqId}</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── TIMELINE PANEL (drawer) ── */
+function TimelinePanel({ dispute }) {
+  const [expanded, setExpanded] = useState(null);
+  return (
+    <div className="panel">
+      <div className="panel-hdr"><span className="panel-title">Dispute Timeline</span></div>
+      <div style={{padding:'6px 14px'}}>
+        {dispute.timeline.map((ev,i) => (
+          <div key={i} className="tl-evt" style={{paddingLeft:0}} onClick={()=>setExpanded(expanded===i?null:i)}>
+            <div className="tl-spine">
+              <div className={`tl-dot ${ev.dot}`}/>
+              {i<dispute.timeline.length-1 && <div className="tl-line"/>}
+            </div>
+            <div className="tl-content">
+              <div className="tl-ts">{ev.ts}</div>
+              <div className="tl-name">{ev.type}</div>
+              <div className="tl-actor">{ev.actor}</div>
+              <div className="tl-desc">{ev.desc}</div>
+              <div className="tl-audit">{ev.auditKey}</div>
+              {expanded===i && ev.meta && <div className="tl-meta">{ev.meta}</div>}
+              {expanded!==i && <div className="tl-expand-hint">click to expand metadata</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── NOTE COMPOSER ── */
+function NoteComposer({ onSuccess, onCancel }) {
+  const [note, setNote] = useState('');
+  const [saved, setSaved] = useState(false);
+  const submit = () => {
+    if(!note.trim()) return;
+    setSaved(true);
+    setTimeout(()=>{ onSuccess(note); }, 1200);
+  };
+  if(saved) return (
+    <div className="note-success">
+      <span style={{fontSize:14}}>✓</span>
+      <span>Note saved successfully.</span>
+    </div>
+  );
+  return (
+    <div className="note-composer">
+      <div style={{fontSize:11,color:'var(--t2)',fontWeight:500}}>Add internal note</div>
+      <textarea className="inp-field" placeholder="Enter note…" value={note} onChange={e=>setNote(e.target.value)} style={{minHeight:64}} />
+      <div style={{display:'flex',gap:6}}>
+        <button className="btn btn-primary btn-sm" onClick={submit} disabled={!note.trim()}>Save Note</button>
+        <button className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── ACCEPT CONFIRM MODAL ── */
+function AcceptModal({ dispute, onClose, onConfirm }) {
+  const isActionable = dispute.status === 'needs_response';
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="modal-hdr">
+          <div>
+            <div className="modal-title">Accept Dispute — {dispute.id}</div>
+            <div className="modal-sub">This action cannot be undone in this prototype.</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          {!isActionable ? (
+            <div className="alert alert-info">
+              <div>
+                <strong>Action not available.</strong><br/>
+                Accepting a dispute is only available when the dispute status is <code>needs_response</code>. Current status: <strong>{dispute.status}</strong>.
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="alert alert-warn">
+                <div>
+                  <strong>You are about to accept this dispute.</strong><br/>
+                  Accepting means you concede the chargeback without submitting evidence. The held amount of <strong>EUR {dispute.amount.toFixed(2)}</strong> will be permanently captured and your settlement balance will be debited.
+                </div>
+              </div>
+              <div className="kv-table">
+                <div className="kv-row"><span className="kv-k">Dispute ID</span><span className="kv-v mono">{dispute.id}</span></div>
+                <div className="kv-row"><span className="kv-k">Reason</span><span className="kv-v">{dispute.reasonLabel}</span></div>
+                <div className="kv-row"><span className="kv-k">Amount to forfeit</span><span className="kv-v mono" style={{color:'var(--rd)'}}>EUR {dispute.amount.toFixed(2)}</span></div>
+                <div className="kv-row"><span className="kv-k">Chargeback fee</span><span className="kv-v mono" style={{color:'var(--rd)'}}>EUR {dispute.chargebackFee.toFixed(2)}</span></div>
+              </div>
+              <div className="alert alert-pu" style={{fontSize:11}}>
+                <div><strong>Sandbox note:</strong> In this prototype, accepting a dispute updates local state only. In production, this would trigger a ledger posting and webhook dispatch.</div>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="modal-footer">
+          {isActionable && <button className="btn btn-danger btn-sm" onClick={()=>onConfirm(dispute.id)}>Confirm Accept</button>}
+          <button className="btn btn-ghost btn-sm" onClick={onClose}>Close</button>
+          <span className="modal-note">sandbox-only simulation</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── DRAWER ── */
+function DisputeDrawer({ dispute, onClose, openTab, setOpenTab, localEvidence, setLocalEvidence, onAccept, onAddNote }) {
+  const [showNoteComposer, setShowNoteComposer] = useState(false);
+  const [savedNotes, setSavedNotes] = useState([]);
+
+  const tabs = ['Summary','Evidence','Payment','Financial','Timeline','Webhooks'];
+
+  const handleNoteSuccess = (text) => {
+    setSavedNotes(prev => [...prev, { text, ts:'2026-05-19 (now)', actor:'Nora Klein' }]);
+    setShowNoteComposer(false);
+  };
+
+  return (
+    <>
+      <div className="drawer-overlay" onClick={onClose}/>
+      <div className="drawer">
+        <div className="drawer-hdr">
+          <div>
+            <div className="drawer-title">{dispute.id}</div>
+            <div className="drawer-sub">{dispute.cbId} · {dispute.paymentId} · {dispute.customer}</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="drawer-tabs">
+          {tabs.map(t => (
+            <div key={t} className={`dt${openTab===t?' dt-on':''}`} onClick={()=>setOpenTab(t)}>{t}</div>
+          ))}
+        </div>
+        <div className="drawer-body">
+
+          {openTab==='Summary' && (
+            <>
+              <div className="panel">
+                <div className="panel-hdr">
+                  <span className="panel-title">Dispute Details</span>
+                  {statusBadge(dispute.status)}
+                </div>
+                <div className="panel-body" style={{padding:'10px 14px'}}>
+                  <div className="kv-table">
+                    <div className="kv-row"><span className="kv-k">Dispute ID</span><span className="kv-v mono">{dispute.id}</span></div>
+                    <div className="kv-row"><span className="kv-k">Chargeback ID</span><span className="kv-v mono">{dispute.cbId}</span></div>
+                    <div className="kv-row"><span className="kv-k">Payment ID</span><span className="kv-v mono">{dispute.paymentId}</span></div>
+                    <div className="kv-row"><span className="kv-k">Customer</span><span className="kv-v">{dispute.customerName}<br/><span className="kv-v mono" style={{fontSize:10,color:'var(--t3)'}}>{dispute.customer}</span></span></div>
+                    <div className="kv-row"><span className="kv-k">Amount</span><span className="kv-v mono">EUR {dispute.amount.toFixed(2)}</span></div>
+                    <div className="kv-row"><span className="kv-k">Currency</span><span className="kv-v mono">EUR</span></div>
+                    <div className="kv-row"><span className="kv-k">Reason</span><span className="kv-v">{dispute.reasonLabel} <span className="mono-cell" style={{fontSize:10,color:'var(--t3)'}}>{dispute.reason}</span></span></div>
+                    <div className="kv-row"><span className="kv-k">Status</span><span className="kv-v">{statusBadge(dispute.status)}</span></div>
+                    <div className="kv-row"><span className="kv-k">Evidence Due</span><span className="kv-v">{dispute.evidenceDue ? <><span className={`mono-cell`} style={{fontSize:11,color:dispute.overdue?'var(--rd)':'var(--am)'}}>{dispute.evidenceDue}</span>{dispute.overdue && <span className="badge b-overdue" style={{marginLeft:4}}>OVERDUE</span>}</> : <span className="b-none">—</span>}</span></div>
+                    <div className="kv-row"><span className="kv-k">Hold State</span><span className="kv-v">{holdBadge(dispute.holdState)}</span></div>
+                    <div className="kv-row"><span className="kv-k">Created At</span><span className="kv-v mono">{dispute.createdAt}</span></div>
+                    <div className="kv-row"><span className="kv-k">Updated At</span><span className="kv-v mono">{dispute.updated}</span></div>
+                  </div>
+                </div>
+              </div>
+              <LifecyclePanel dispute={dispute} />
+              {(savedNotes.length > 0 || dispute.notes.length > 0) && (
+                <div className="panel">
+                  <div className="panel-hdr"><span className="panel-title">Internal Notes</span></div>
+                  <div className="panel-body" style={{padding:'8px 14px'}}>
+                    {[...dispute.notes.map(n=>({text:n,ts:'—',actor:'System'})), ...savedNotes].map((n,i)=>(
+                      <div key={i} style={{padding:'6px 0',borderBottom:'1px solid var(--hover)',fontSize:11.5}}>
+                        <span style={{color:'var(--t3)',fontFamily:'var(--f-mono)',fontSize:10}}>{n.ts} · {n.actor}</span><br/>
+                        <span style={{color:'var(--t1)'}}>{n.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {showNoteComposer
+                ? <NoteComposer onSuccess={handleNoteSuccess} onCancel={()=>setShowNoteComposer(false)}/>
+                : null
+              }
+            </>
+          )}
+
+          {openTab==='Evidence' && (
+            <EvidencePanel dispute={dispute} localEvidence={localEvidence} setLocalEvidence={setLocalEvidence}/>
+          )}
+
+          {openTab==='Payment' && (
+            <PaymentPanel dispute={dispute} onViewPayment={()=>{}}/>
+          )}
+
+          {openTab==='Financial' && (
+            <FinancialPanel dispute={dispute}/>
+          )}
+
+          {openTab==='Timeline' && (
+            <TimelinePanel dispute={dispute}/>
+          )}
+
+          {openTab==='Webhooks' && (
+            <WebhookPanel dispute={dispute}/>
+          )}
+
+        </div>
+        <div className="drawer-footer">
+          <button className="btn btn-ghost btn-sm" onClick={()=>setOpenTab('Payment')}>View Payment</button>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setOpenTab('Evidence')}>Prepare Evidence</button>
+          {['needs_response'].includes(dispute.status)
+            ? <button className="btn btn-warn btn-sm" onClick={()=>onAccept(dispute)}>Accept Dispute</button>
+            : <button className="btn btn-ghost btn-sm btn-faux-dis" title={`Accept available only for needs_response disputes`}>Accept Dispute</button>
+          }
+          <button className="btn btn-ghost btn-sm" onClick={()=>{ setOpenTab('Summary'); setShowNoteComposer(true); }}>Add Note</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ── FILTER WORKBAR ── */
+function FilterBar({ statusFilter, setStatusFilter, reasonFilter, setReasonFilter, actionOnly, setActionOnly, dueSoon, setDueSoon, search, setSearch, onReset }) {
+  const statuses = ['all','needs_response','under_review','won','lost','accepted'];
+  const reasons  = ['all','fraudulent','product_not_received','duplicate','subscription_canceled','unrecognized','credit_not_processed','general'];
+  return (
+    <div className="panel">
+      <div className="panel-body" style={{padding:'10px 14px',display:'flex',gap:12,flexWrap:'wrap',alignItems:'center'}}>
+        <input
+          className="inp-field"
+          style={{width:200,flexShrink:0,fontSize:11.5}}
+          placeholder="Search dispute ID, payment, customer…"
+          value={search}
+          onChange={e=>setSearch(e.target.value)}
+        />
+        <div style={{display:'flex',gap:4,alignItems:'center',flexWrap:'wrap'}}>
+          <span style={{fontSize:10,color:'var(--t3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',marginRight:2}}>Status</span>
+          {statuses.map(s=>(
+            <div key={s} className={`fc${statusFilter===s?' fc-on':''}`} onClick={()=>setStatusFilter(s)}>
+              {s==='all'?'All':s.replace(/_/g,' ')}
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex',gap:4,alignItems:'center',flexWrap:'wrap'}}>
+          <span style={{fontSize:10,color:'var(--t3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',marginRight:2}}>Reason</span>
+          <select className="inp-field" style={{width:160,fontSize:11}} value={reasonFilter} onChange={e=>setReasonFilter(e.target.value)}>
+            {reasons.map(r=><option key={r} value={r}>{r==='all'?'All reasons':r.replace(/_/g,' ')}</option>)}
+          </select>
+        </div>
+        <div style={{display:'flex',gap:12,alignItems:'center'}}>
+          <label className="toggle-row" onClick={()=>setActionOnly(!actionOnly)}>
+            <div className={`toggle-track${actionOnly?' on':''}`}><div className="toggle-thumb"/></div>
+            <span className="toggle-label">Action needed only</span>
+          </label>
+          <label className="toggle-row" onClick={()=>setDueSoon(!dueSoon)}>
+            <div className={`toggle-track${dueSoon?' on':''}`}><div className="toggle-thumb"/></div>
+            <span className="toggle-label">Due within 7 days</span>
+          </label>
+        </div>
+        <button className="btn btn-ghost btn-xs" onClick={onReset}>Reset filters</button>
+      </div>
+    </div>
+  );
+}
+
+/* ── DISPUTES TABLE ── */
+function DisputesTable({ disputes, selected, onSelect }) {
+  return (
+    <div className="panel">
+      <div className="panel-hdr">
+        <span className="panel-title">Disputes</span>
+        <span style={{fontSize:11,color:'var(--t3)'}}>{disputes.length} dispute{disputes.length!==1?'s':''}</span>
+      </div>
+      <div>
+        <table className="data-table disputes-table">
+          <thead>
+            <tr>
+              <th className="dispute-id-col">Dispute ID</th>
+              <th className="payment-col">Payment ID</th>
+              <th className="customer-col">Customer</th>
+              <th className="amount-col">Amount</th>
+              <th className="reason-col">Reason</th>
+              <th className="status-col">Status</th>
+              <th className="due-col">Evidence Due</th>
+              <th className="hold-col">Hold</th>
+              <th className="updated-col">Updated</th>
+              <th className="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {disputes.map(d => (
+              <tr key={d.id} className={`row-hover${selected?.id===d.id?' row-selected':''}`} onClick={()=>onSelect(d)}>
+                <td><span className="mono-cell truncate" style={{color:'var(--bl)'}}>{d.id}</span></td>
+                <td><span className="mono-cell truncate">{d.paymentId}</span></td>
+                <td>
+                  <div className="truncate" style={{fontSize:12}}>{d.customerName}</div>
+                  <div className="truncate" style={{fontSize:10,color:'var(--t3)',fontFamily:'var(--f-mono)'}}>{d.customer}</div>
+                </td>
+                <td><span className="mono-cell" style={{fontWeight:500}}>EUR {d.amount.toFixed(2)}</span></td>
+                <td><span className="truncate" style={{fontSize:11,color:'var(--t2)'}}>{d.reasonLabel}</span></td>
+                <td>{statusBadge(d.status)}</td>
+                <td>
+                  {d.evidenceDue
+                    ? <span style={{fontSize:11,fontFamily:'var(--f-mono)',color:d.overdue?'var(--rd)':d.dueSoon?'var(--am)':'var(--t2)'}}>
+                        {d.overdue && '⚠ '}{d.evidenceDue}
+                      </span>
+                    : <span className="b-none">—</span>}
+                </td>
+                <td>{holdBadge(d.holdState)}</td>
+                <td><span className="mono-cell truncate" style={{fontSize:10.5,color:'var(--t3)'}}>{d.updated}</span></td>
+                <td>
+                  <div className="dispute-actions">
+                    <button className="btn btn-ghost btn-xs" onClick={e=>{e.stopPropagation();onSelect(d,'Summary');}}>Detail</button>
+                    <button className="btn btn-ghost btn-xs" onClick={e=>{e.stopPropagation();onSelect(d,'Payment');}} title="View Payment">Pay</button>
+                    <button className="btn btn-ghost btn-xs" onClick={e=>{e.stopPropagation();onSelect(d,'Evidence');}} title="Prepare evidence">Ev.</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {disputes.length===0 && (
+              <tr><td colSpan={10} style={{textAlign:'center',padding:28,color:'var(--t3)',fontSize:12}}>No disputes match the current filters.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ── AUDIT RAIL ── */
+function AuditRail() {
+  const [expanded, setExpanded] = useState(null);
+  return (
+    <div className="tl-rail">
+      <div className="tl-hdr">Activity &amp; Audit</div>
+      <div className="tl-body">
+        {AUDIT_EVENTS.map((ev,i) => (
+          <div key={i} className="tl-evt" onClick={()=>setExpanded(expanded===i?null:i)}>
+            <div className="tl-spine">
+              <div className={`tl-dot ${ev.dot}`}/>
+              {i<AUDIT_EVENTS.length-1 && <div className="tl-line"/>}
+            </div>
+            <div className="tl-content">
+              <div className="tl-ts">{ev.ts}</div>
+              <div className="tl-name">{ev.type}</div>
+              <div className="tl-actor">{ev.actor}</div>
+              <div className="tl-desc">{ev.desc}</div>
+              <div className="tl-audit">{ev.key}</div>
+              {expanded===i && ev.meta && <div className="tl-meta">{ev.meta}</div>}
+              {expanded!==i && <div className="tl-expand-hint">tap to expand</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App() {
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [reasonFilter, setReasonFilter] = useState('all');
+  const [actionOnly, setActionOnly] = useState(false);
+  const [dueSoon, setDueSoon] = useState(false);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState(null);
+  const [openTab, setOpenTab] = useState('Summary');
+  const [acceptModal, setAcceptModal] = useState(null);
+  const [localEvidence, setLocalEvidence] = useState(null);
+  const [acceptedIds, setAcceptedIds] = useState([]);
+
+  const handleSelect = (d, tab = 'Summary') => {
+    setSelected(d);
+    setOpenTab(tab);
+    setLocalEvidence(null);
+  };
+  const handleTabChange = (t) => setOpenTab(t);
+
+  const filtered = DISPUTES.filter(d => {
+    if(statusFilter!=='all' && d.status!==statusFilter) return false;
+    if(reasonFilter!=='all' && d.reason!==reasonFilter) return false;
+    if(actionOnly && d.status!=='needs_response') return false;
+    if(dueSoon && !d.dueSoon) return false;
+    if(search) {
+      const s = search.toLowerCase();
+      if(!d.id.toLowerCase().includes(s) && !d.paymentId.toLowerCase().includes(s) && !d.customer.toLowerCase().includes(s) && !d.cbId.toLowerCase().includes(s)) return false;
+    }
+    return true;
+  });
+
+  const needsResponse = DISPUTES.filter(d=>d.status==='needs_response').length;
+  const underReview   = DISPUTES.filter(d=>d.status==='under_review').length;
+  const won           = DISPUTES.filter(d=>d.status==='won').length;
+  const lost          = DISPUTES.filter(d=>d.status==='lost').length;
+  const accepted      = DISPUTES.filter(d=>d.status==='accepted').length;
+  const open          = needsResponse + underReview;
+  const holdAmt       = DISPUTES.filter(d=>d.holdState==='hold_active').reduce((a,d)=>a+d.amount,0);
+  const evidenceSoon  = DISPUTES.filter(d=>d.dueSoon && d.status==='needs_response').length;
+
+  const handleAcceptConfirm = (id) => {
+    setAcceptedIds(prev=>[...prev,id]);
+    setAcceptModal(null);
+  };
+
+  return (
+    <div id="root-inner" style={{display:'flex',width:'100%',height:'100%'}}>
+      <Sidebar/>
+      <div className="main-wrap">
+        {/* PAGE HEADER */}
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>Orbit Market</span>
+            <span className="sep">›</span>
+            <strong>Disputes</strong>
+          </div>
+          <div className="page-meta">
+            <div className="env-badge"><div className="env-badge-dot"/><span>Local Sandbox</span></div>
+            <span className="badge b-sandbox">KYB IN REVIEW</span>
+            <span className="badge b-disabled">LIVE LOCKED</span>
+            <div className="user-chip">
+              <div className="user-avatar">NK</div>
+              <span className="user-name">Nora Klein</span>
+            </div>
+            <span className="screen-id">MDB-UI-07</span>
+          </div>
+        </div>
+
+        <div className="content-area">
+          <div className="left-scroll">
+
+            {/* SANDBOX NOTICE */}
+            <div className="alert alert-pu">
+              <div>
+                <strong>Sandbox-only preview.</strong> Dispute data reflects local sandbox transactions. Live mode remains locked until KYB approval and Stripe Connect onboarding are complete. Evidence submission and dispute response actions that require backoffice coordination are indicated as unavailable in this environment.
+              </div>
+            </div>
+
+            {/* STATUS STRIP */}
+            <div className="status-strip">
+              <div className="stat-cell"><div className="stat-k">Open Disputes</div><div className="stat-v">{open}</div></div>
+              <div className="stat-cell"><div className="stat-k">Needs Response</div><div className="stat-v warn">{needsResponse}</div></div>
+              <div className="stat-cell"><div className="stat-k">Under Review</div><div className="stat-v bl">{underReview}</div></div>
+              <div className="stat-cell"><div className="stat-k">Won</div><div className="stat-v g">{won}</div></div>
+              <div className="stat-cell"><div className="stat-k">Lost</div><div className="stat-v red">{lost}</div></div>
+              <div className="stat-cell"><div className="stat-k">Accepted</div><div className="stat-v">{accepted}</div></div>
+              <div className="stat-cell"><div className="stat-k">On Hold</div><div className="stat-v warn mono">EUR {holdAmt.toFixed(2)}</div></div>
+              <div className="stat-cell"><div className="stat-k">Evidence Due Soon</div><div className="stat-v warn">{evidenceSoon}</div></div>
+              <div className="stat-cell"><div className="stat-k">Last Updated</div><div className="stat-v mono" style={{fontSize:11,fontWeight:400}}>2026-05-17 09:14</div></div>
+            </div>
+
+            {/* FILTER BAR */}
+            <FilterBar
+              statusFilter={statusFilter} setStatusFilter={setStatusFilter}
+              reasonFilter={reasonFilter} setReasonFilter={setReasonFilter}
+              actionOnly={actionOnly} setActionOnly={setActionOnly}
+              dueSoon={dueSoon} setDueSoon={setDueSoon}
+              search={search} setSearch={setSearch}
+              onReset={()=>{ setStatusFilter('all'); setReasonFilter('all'); setActionOnly(false); setDueSoon(false); setSearch(''); }}
+            />
+
+            {/* DISPUTES TABLE */}
+            <DisputesTable disputes={filtered} selected={selected} onSelect={handleSelect}/>
+
+            {/* LIVE MODE LOCKED NOTE */}
+            <div className="alert alert-info">
+              <div style={{fontSize:11.5}}>
+                <strong>Live mode locked.</strong> Completing KYB verification and Stripe Connect onboarding will unlock live payment acceptance and enable full dispute response workflows. <span style={{color:'var(--t3)'}}>MRC-20491 · KYB: In Review · Stripe Connect: Not Complete</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* AUDIT RAIL */}
+          <AuditRail/>
+        </div>
+      </div>
+
+      {/* DISPUTE DRAWER */}
+      {selected && (
+        <DisputeDrawer
+          dispute={selected}
+          onClose={()=>setSelected(null)}
+          openTab={openTab}
+          setOpenTab={handleTabChange}
+          localEvidence={localEvidence}
+          setLocalEvidence={setLocalEvidence}
+          onAccept={(d)=>setAcceptModal(d)}
+          onAddNote={()=>{}}
+        />
+      )}
+
+      {/* ACCEPT MODAL */}
+      {acceptModal && (
+        <AcceptModal
+          dispute={acceptModal}
+          onClose={()=>setAcceptModal(null)}
+          onConfirm={handleAcceptConfirm}
+        />
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

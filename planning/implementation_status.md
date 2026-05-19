@@ -159,6 +159,7 @@ Created:
 - `prototypes/ui/21_merchant_webhooks.html` — standalone `MDB-UI-04` merchant webhooks HTML prototype from UI/UX prototype workflow; minor root sizing and endpoint table overflow fixes applied locally; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-18.
 - `prototypes/ui/22_merchant_payments.html` — standalone `MDB-UI-05` merchant payments HTML prototype from UI/UX prototype workflow; minor root sizing and payment table overflow fixes applied locally; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-18.
 - `prototypes/ui/23_merchant_settlements.html` — standalone `MDB-UI-06` merchant settlements HTML prototype from UI/UX prototype workflow; minor root sizing, initial drawer state and settlement table overflow fixes applied locally; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-18.
+- `prototypes/ui/24_merchant_disputes.html` — standalone `MDB-UI-07` merchant disputes HTML prototype from UI/UX prototype workflow; minor root sizing and disputes table overflow fixes applied locally; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-19.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;
