@@ -90,10 +90,12 @@ kc_assign_realm_role() {
   kc_curl -fsS "${keycloak_url}/admin/realms/${realm}/roles/${role}" \
     -H "Authorization: Bearer ${token}" >"${role_body}"
 
-  kc_curl -fsS -X POST "${keycloak_url}/admin/realms/${realm}/users/${user_id}/role-mappings/realm" \
+  local status
+  status="$(kc_curl -sS -o /tmp/minifin-kc-role-assign.json -w "%{http_code}" -X POST "${keycloak_url}/admin/realms/${realm}/users/${user_id}/role-mappings/realm" \
     -H "Authorization: Bearer ${token}" \
     -H "Content-Type: application/json" \
-    -d "[$(cat "${role_body}")]"
+    -d "[$(cat "${role_body}")]")"
+  test "${status}" = "204" -o "${status}" = "409"
 }
 
 kc_seed_backoffice_realm() {

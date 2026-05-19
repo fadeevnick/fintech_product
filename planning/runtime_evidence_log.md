@@ -1706,3 +1706,99 @@ Result tags:
 Not claimed:
 - `KYC-01` full pass; real Sumsub sandbox credentials were not configured or used.
 - `AUD-03`, `SNX-*`, `AML-*`, frontend `UI-*`.
+
+
+---
+
+## 2026-05-19 — Phase 07 Slice 03 OpenSanctions Fail-Closed Runtime Verification
+
+Scope:
+- Platform backend/runtime implementation for `SNX-01`.
+- Sanctions hit persistence, OpenSanctions adapter boundary and narrow KYC manual approval fail-closed gate.
+- No `SNX-02`, sanctions queue UI, AML, permanent freeze/block, frontend or production watchlist ingestion work was added.
+
+Build/runtime evidence:
+- A fresh Platform jar was built from the current source using an offline Gradle cache recovered from a previous successful build container:
+  - `docker run --rm -e GRADLE_USER_HOME=/home/gradle/.gradle -v /tmp/mfp-build-copy-agent10snx:/workspace -v /tmp/gradle-home-from-kyc03:/home/gradle/.gradle -w /workspace gradle:8.14.3-jdk21 gradle --offline --no-daemon --console=plain --max-workers=1 :apps:platform:bootJar`
+  - Result: `BUILD SUCCESSFUL in 9s`.
+- The fresh jar was packaged into isolated runtime image `agent10snx-platform` and used only for the `agent10snx` compose project.
+- Platform started successfully in isolated Docker network `agent10snx_default`; `/actuator/health` returned `UP`.
+- Flyway applied `V20__opensanctions_fail_closed.sql`; Platform DB reached version `v20`.
+
+Runtime shape:
+- Used isolated resources with `COMPOSE_PROJECT_NAME=agent10snx` and non-default published ports.
+- Verification used compose-network curl runners:
+  - `PLATFORM_BASE_URL=http://platform:8080`
+  - `PLATFORM_CURL_CONTAINER_NETWORK=agent10snx_default`
+  - `KEYCLOAK_BASE_URL=http://keycloak:8080`
+  - `KEYCLOAK_CURL_CONTAINER_NETWORK=agent10snx_default`
+- OpenSanctions success/failure behavior used explicit local modes; no real OpenSanctions production ingestion was used.
+
+Target command run:
+
+```bash
+COMPOSE_PROJECT_NAME=agent10snx \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_2/product/deploy/docker-compose.yml \
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=agent10snx_default \
+KEYCLOAK_BASE_URL=http://keycloak:8080 \
+KEYCLOAK_CURL_CONTAINER_NETWORK=agent10snx_default \
+PLATFORM_HTTP_HOST_PORT=19081 \
+ACQUIRER_HTTP_HOST_PORT=19082 \
+NETWORK_HTTP_HOST_PORT=19083 \
+ISSUER_HTTP_HOST_PORT=19084 \
+VAULT_HTTP_HOST_PORT=19085 \
+PLATFORM_DB_HOST_PORT=15433 \
+ACQUIRER_DB_HOST_PORT=15434 \
+NETWORK_DB_HOST_PORT=15435 \
+ISSUER_DB_HOST_PORT=15436 \
+VAULT_DB_HOST_PORT=15437 \
+KEYCLOAK_HOST_PORT=19080 \
+/home/nickf/Documents/sre_projects/mini-fintech-platform_2/product/scripts/runtime/reg_phase07_opensanctions_fail_closed.sh
+```
+
+Actual output:
+
+```text
+SNX-01 OpenSanctions fail-closed pass
+```
+
+Runtime assertions passed:
+- local `unavailable` mode returned `503 sanctions_screening_unavailable`; KYC profile remained `IN_REVIEW`; one `sanctions.sanctions_hits` row existed with `reason = 'SCREENING_UNAVAILABLE'` and `status = 'OPEN'`; audit event `sanctions.opensanctions_screening_unavailable` existed with `outcome = 'FAIL_CLOSED'`.
+- local `match` mode returned `409 sanctions_possible_match`; KYC profile remained `IN_REVIEW`; one `sanctions.sanctions_hits` row existed with `reason = 'POSSIBLE_MATCH'`, `status = 'OPEN'` and `match_score >= 0.85`; audit event `sanctions.opensanctions_screening_blocked` existed with `outcome = 'BLOCKED'`.
+- local `no_match` mode allowed manual approval; KYC profile became `APPROVED`; no sanctions hit was created for that profile; audit event `sanctions.opensanctions_screening_passed` existed with `outcome = 'SUCCESS'`.
+
+Targeted regression command:
+
+```bash
+COMPOSE_PROJECT_NAME=agent10snx \
+COMPOSE_FILE=/home/nickf/Documents/sre_projects/mini-fintech-platform_2/product/deploy/docker-compose.yml \
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=agent10snx_default \
+KEYCLOAK_BASE_URL=http://keycloak:8080 \
+KEYCLOAK_CURL_CONTAINER_NETWORK=agent10snx_default \
+OPENSANCTIONS_LOCAL_MODE=no_match \
+/home/nickf/Documents/sre_projects/mini-fintech-platform_2/product/scripts/runtime/reg_phase07_kyc_manual_review.sh
+```
+
+Regression output:
+
+```text
+KYC-03 backoffice manual KYC review pass profile_id=0ef6eade-4156-4eff-8224-79311b710737 applicant_id=sumsub-applicant-manual-review-1779158406798852246
+```
+
+Result tags:
+- `SNX-01` — pass.
+- `KYC-03` — pass targeted regression.
+
+Runtime-driven fixes applied:
+- `KycBackofficeService.decide(...)` was changed to `noRollbackFor = [SanctionsException::class]` after runtime verification showed sanctions hits/audit rows were otherwise rolled back with fail-closed exceptions.
+- `product/scripts/runtime/lib_phase02_backoffice_keycloak.sh` role assignment was made idempotent for repeat local checks.
+- `product/scripts/runtime/reg_phase07_opensanctions_fail_closed.sh` suppresses `psql` insert command tags while generating seeded IDs.
+
+Not claimed:
+- `SNX-02`;
+- `AML-*`;
+- `AUD-03`;
+- frontend `UI-*`;
+- real OpenSanctions production watchlist ingestion.

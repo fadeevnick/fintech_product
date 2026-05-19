@@ -956,16 +956,33 @@ Not yet implemented:
 
 ## Phase 07 Slice 03 — OpenSanctions Fail-Closed Foundation
 
-Status: **APPROVED PLANNING ONLY — not implemented**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_07_slice_03_opensanctions_fail_closed_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Platform sanctions schema and OpenSanctions adapter boundary.
-- Fail-closed screening integrated narrowly with KYC manual approval.
-- Sanctions hit creation for unavailable screening or high-confidence match.
-- Target retained runtime check: `SNX-01`.
+Implemented backend/runtime scope:
+- Platform DB migration `V20__opensanctions_fail_closed.sql` for `sanctions.sanctions_hits`.
+- OpenSanctions adapter boundary with explicit local runtime modes: `disabled`, `unavailable`/`timeout`, `match` and `no_match`.
+- KYC manual approval gate: `APPROVE` runs sanctions screening before `APPROVED` is returned.
+- Screening unavailable/timeout creates an `OPEN` hit with `reason = 'SCREENING_UNAVAILABLE'`, keeps KYC `IN_REVIEW` and returns fail-closed error `sanctions_screening_unavailable`.
+- High-confidence match creates an `OPEN` hit with `reason = 'POSSIBLE_MATCH'`, keeps KYC `IN_REVIEW` and returns blocked error `sanctions_possible_match`.
+- No-match screening writes pass audit and allows manual approval to proceed.
+- Audit rows for OpenSanctions pass/block/unavailable outcomes.
+- Retained runtime script:
+  - `product/scripts/runtime/reg_phase07_opensanctions_fail_closed.sh`
 
-Not yet implemented:
-- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
+Explicitly not implemented:
+- `SNX-02` false-positive exception lifecycle;
+- sanctions queue/detail/decision UI;
+- permanent account freeze/blocking;
+- AML alerts;
+- wallet/card/payment sanctions gating beyond KYC manual approval;
+- document preview/read-audit;
+- frontend UI;
+- real production watchlist ingestion.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-19 — Phase 07 Slice 03 OpenSanctions Fail-Closed Runtime Verification`.
+- `SNX-01` — pass.
+- `KYC-03` — pass targeted regression.
