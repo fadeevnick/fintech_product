@@ -39,6 +39,8 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_07_slice_03_opensanctions_fail_closed_planning.md` — backend/runtime sub-scope executed; `SNX-01` passed.
 - `planning/implementation-slices/phase_06_slice_04_capture_to_settlement_foundation_planning.md` — backend/runtime sub-scope executed; `SET-01` passed.
 - `planning/implementation-slices/phase_07_slice_04_sanctions_false_positive_planning.md` — backend/runtime sub-scope executed; `SNX-02` passed.
+- `planning/implementation-slices/phase_06_slice_05_settlement_fee_split_planning.md` — **APPROVED v0.1**.
+- `planning/implementation-slices/phase_08_slice_01_aml_velocity_alert_planning.md` — **APPROVED v0.1**.
 
 Completed workstream — latest accepted state:
 - Phase 04 Slice 01 merchant API keys, public API authentication and hardened public/dashboard write idempotency primitive implemented in `platform`;
@@ -78,7 +80,7 @@ Latest accepted backend/runtime slices:
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`, `prototypes/ui/19_merchant_onboarding_status.html`, `prototypes/ui/20_merchant_api_keys.html`, `prototypes/ui/21_merchant_webhooks.html`, `prototypes/ui/22_merchant_payments.html`.**
 
 Next planned product step:
-- Choose and plan the next backend/runtime slice after owner review.
+- Implement Phase 06 Slice 05 settlement fee split for `SET-02` and Phase 08 Slice 01 AML velocity alert foundation for `AML-01` as the next parallel backend/runtime slices.
 - `KYC-01` full pass remains blocked on real Sumsub sandbox credentials. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
 
 05 v0.4 resolved stack:

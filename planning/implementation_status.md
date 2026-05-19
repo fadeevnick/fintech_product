@@ -1056,3 +1056,50 @@ Runtime evidence:
 
 Explicitly not implemented/claimed:
 - true-match permanent account block, freeze/unfreeze, AML, document preview/read-audit (`AUD-03`), sanctions frontend UI, wallet/card/payment sanctions gating beyond KYC approval gate, broad case-management abstraction, settlement/payment processing.
+
+---
+
+## Phase 06 Slice 05 — Settlement Fee Split
+
+Status: **APPROVED v0.1 — planning-only; no product code implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_06_slice_05_settlement_fee_split_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Add deterministic local fee split for settled card payments: merchant net, issuer interchange, network assessment and acquirer margin.
+- Persist fee components on settlement item or a narrow child table.
+- Update settlement ledger postings so `CARD_PAYMENT_SETTLEMENT` remains exactly balanced and exposes the fee destinations.
+- Retain idempotent settlement reruns with no duplicate settlement items, fee rows or ledger journals.
+- Add retained runtime script `product/scripts/runtime/reg_phase06_settlement_fee_split.sh`.
+
+Target runtime checks:
+- `SET-02` — settlement fee postings balance exactly.
+- Targeted regressions: `SET-01`, `PAY-06`, `PAY-01`, `LDG-05`.
+
+Explicitly not implemented/claimed:
+- acquirer settlement projection/reconciliation (`SET-03`), refunds (`SET-04`), payouts, chargebacks, merchant settlement frontend, tenant pricing engine.
+
+---
+
+## Phase 08 Slice 01 — AML Velocity Alert Foundation
+
+Status: **APPROVED v0.1 — planning-only; no product code implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_08_slice_01_aml_velocity_alert_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Add `aml` schema foundation for AML alerts.
+- Add Platform AML service/rule engine boundary.
+- Implement deterministic local velocity rule evaluation for synthetic completed money-moving activity.
+- Create one `OPEN` AML alert when the rule trips, with duplicate suppression for reruns.
+- Write audit event(s) for alert creation.
+- Add retained runtime script `product/scripts/runtime/reg_phase08_aml_velocity_alert.sh`.
+
+Target runtime checks:
+- `AML-01` — synthetic activity trips velocity rule and opens alert.
+- Targeted regressions: `RUN-01`; `LDG-05` only if ledger tables are touched directly.
+
+Explicitly not implemented/claimed:
+- structuring (`AML-02`), dormancy-break (`AML-03`), critical auto-freeze (`AML-04`), AML review decisions, SoF (`WLT-03`), two-eyes (`WLT-04`), frontend `UI-*`.
