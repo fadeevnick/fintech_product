@@ -1108,3 +1108,49 @@ Runtime verification:
 
 Explicitly not implemented/claimed:
 - structuring (`AML-02`), dormancy-break (`AML-03`), critical auto-freeze (`AML-04`), AML review decisions, SoF (`WLT-03`), two-eyes (`WLT-04`), frontend `UI-*`.
+
+---
+
+## Phase 06 Slice 06 — Acquirer Settlement Projection
+
+Status: **APPROVED v0.1 — planning-only; no product code implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_06_slice_06_acquirer_settlement_projection_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Add Acquirer merchant settlement projection persistence.
+- Add internal projection ingestion/publication path from Platform settlement state into Acquirer.
+- Project Platform settlement item id, batch id, merchant id, payment intent id, gross amount, merchant net, fee components and currency.
+- Keep ingestion idempotent by Platform settlement item id.
+- Add retained runtime script `product/scripts/runtime/reg_phase06_acquirer_settlement_projection.sh`.
+
+Target runtime checks:
+- `SET-03` — Acquirer settlement projection matches Platform settlement state.
+- Targeted regressions: `SET-02`, `SET-01`, `PAY-06`, `LDG-05`.
+
+Explicitly not implemented/claimed:
+- refunds (`SET-04`), payouts, chargebacks, merchant settlement frontend, bank file export, scheduled reconciliation jobs.
+
+---
+
+## Phase 08 Slice 02 — AML Structuring Alert
+
+Status: **APPROVED v0.1 — planning-only; no product code implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_08_slice_02_aml_structuring_alert_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Reuse AML alert/evaluation persistence from `AML-01`.
+- Add deterministic local structuring rule for repeated completed movements in the EUR 9,000.00-9,900.00 band.
+- Add internal `POST /internal/aml/evaluate-structuring` or equivalent local runtime trigger.
+- Create one `OPEN` alert with `rule_code = 'STRUCTURING'`, severity `HIGH`, duplicate suppression and audit row.
+- Add retained runtime script `product/scripts/runtime/reg_phase08_aml_structuring_alert.sh`.
+
+Target runtime checks:
+- `AML-02` — synthetic activity trips structuring rule and opens alert.
+- Targeted regressions: `AML-01`, `RUN-01`; `LDG-05` only if ledger tables are touched directly.
+
+Explicitly not implemented/claimed:
+- dormancy-break (`AML-03`), critical auto-freeze (`AML-04`), AML review decisions, account freeze/unfreeze, SoF (`WLT-03`), two-eyes (`WLT-04`), frontend `UI-*`.
