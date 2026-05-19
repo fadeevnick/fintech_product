@@ -2,6 +2,7 @@ package com.minifin.platform.settlement
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.minifin.platform.ledger.LedgerRepository
+import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -14,6 +15,11 @@ class SettlementService(
     private val ledgerRepository: LedgerRepository,
     private val objectMapper: ObjectMapper,
 ) {
+    private val oneHundred = BigDecimal("100.00")
+    private val interchangeRate = BigDecimal("1.20")
+    private val networkAssessmentRate = BigDecimal("0.15")
+    private val acquirerMarginRate = BigDecimal("0.65")
+
     @Transactional
     fun processCaptured(limit: Int): SettlementProcessResponse {
         val boundedLimit = limit.coerceIn(1, 200)
@@ -32,10 +38,14 @@ class SettlementService(
                     status = HttpStatus.INTERNAL_SERVER_ERROR,
                 )
             }
+        val issuerInterchangeAccountId = settlementRepository.accountByCode("ISSUER_INTERCHANGE_REVENUE")
+        val networkAssessmentAccountId = settlementRepository.accountByCode("NETWORK_ASSESSMENT_REVENUE")
+        val acquirerMarginAccountId = settlementRepository.accountByCode("ACQUIRER_MARGIN_REVENUE")
 
         val results = candidates.mapNotNull { candidate ->
             val merchantAccountId = settlementRepository.findOrCreateMerchantSettlementAccount(candidate.merchantId)
             val amount = settlementRepository.paymentAmount(candidate.paymentIntentId).setScale(4, RoundingMode.UNNECESSARY)
+            val feeSplit = calculateFeeSplit(amount)
             val journalId = UUID.randomUUID()
             val postings = listOf(
                 mapOf(
@@ -48,7 +58,25 @@ class SettlementService(
                     "postingId" to UUID.randomUUID().toString(),
                     "accountId" to merchantAccountId.toString(),
                     "side" to "CREDIT",
-                    "amount" to amount.toPlainString(),
+                    "amount" to feeSplit.merchantNetAmount.toPlainString(),
+                ),
+                mapOf(
+                    "postingId" to UUID.randomUUID().toString(),
+                    "accountId" to issuerInterchangeAccountId.toString(),
+                    "side" to "CREDIT",
+                    "amount" to feeSplit.interchangeAmount.toPlainString(),
+                ),
+                mapOf(
+                    "postingId" to UUID.randomUUID().toString(),
+                    "accountId" to networkAssessmentAccountId.toString(),
+                    "side" to "CREDIT",
+                    "amount" to feeSplit.networkAssessmentAmount.toPlainString(),
+                ),
+                mapOf(
+                    "postingId" to UUID.randomUUID().toString(),
+                    "accountId" to acquirerMarginAccountId.toString(),
+                    "side" to "CREDIT",
+                    "amount" to feeSplit.acquirerMarginAmount.toPlainString(),
                 ),
             )
             ledgerRepository.postJournal(
@@ -66,7 +94,11 @@ class SettlementService(
                     batchId = batchId,
                     paymentIntentId = candidate.paymentIntentId,
                     merchantId = candidate.merchantId,
-                    grossAmount = amount,
+                    grossAmount = feeSplit.grossAmount,
+                    merchantNetAmount = feeSplit.merchantNetAmount,
+                    interchangeAmount = feeSplit.interchangeAmount,
+                    networkAssessmentAmount = feeSplit.networkAssessmentAmount,
+                    acquirerMarginAmount = feeSplit.acquirerMarginAmount,
                     currency = "EUR",
                     ledgerJournalId = journalId,
                 ) == 0
@@ -85,4 +117,25 @@ class SettlementService(
             paymentIntentIds = results.map { it.paymentIntentId.toString() },
         )
     }
+
+    private fun calculateFeeSplit(grossAmount: BigDecimal): SettlementFeeSplit {
+        val interchange = fee(grossAmount, interchangeRate)
+        val networkAssessment = fee(grossAmount, networkAssessmentRate)
+        val acquirerMargin = fee(grossAmount, acquirerMarginRate)
+        val merchantNet = grossAmount.setScale(2, RoundingMode.HALF_UP)
+            .subtract(interchange)
+            .subtract(networkAssessment)
+            .subtract(acquirerMargin)
+        return SettlementFeeSplit(
+            grossAmount = grossAmount.setScale(4, RoundingMode.UNNECESSARY),
+            merchantNetAmount = merchantNet.setScale(4, RoundingMode.UNNECESSARY),
+            interchangeAmount = interchange.setScale(4, RoundingMode.UNNECESSARY),
+            networkAssessmentAmount = networkAssessment.setScale(4, RoundingMode.UNNECESSARY),
+            acquirerMarginAmount = acquirerMargin.setScale(4, RoundingMode.UNNECESSARY),
+        )
+    }
+
+    private fun fee(grossAmount: BigDecimal, rate: BigDecimal): BigDecimal =
+        grossAmount.multiply(rate)
+            .divide(oneHundred, 2, RoundingMode.HALF_UP)
 }

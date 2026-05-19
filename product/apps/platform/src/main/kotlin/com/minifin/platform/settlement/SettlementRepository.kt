@@ -95,6 +95,17 @@ class SettlementRepository(
             UUID::class.java,
         ) ?: throw IllegalStateException("CARD_SETTLEMENT_CLEARING ledger account is missing")
 
+    fun accountByCode(code: String): UUID =
+        jdbcTemplate.queryForObject(
+            """
+            select id
+            from ledger.accounts
+            where code = ?
+            """.trimIndent(),
+            UUID::class.java,
+            code,
+        ) ?: throw IllegalStateException("$code ledger account is missing")
+
     fun paymentAmount(paymentIntentId: UUID): BigDecimal =
         jdbcTemplate.queryForObject(
             """
@@ -112,6 +123,10 @@ class SettlementRepository(
         paymentIntentId: UUID,
         merchantId: UUID,
         grossAmount: BigDecimal,
+        merchantNetAmount: BigDecimal,
+        interchangeAmount: BigDecimal,
+        networkAssessmentAmount: BigDecimal,
+        acquirerMarginAmount: BigDecimal,
         currency: String,
         ledgerJournalId: UUID,
     ): Int =
@@ -123,11 +138,15 @@ class SettlementRepository(
                 payment_intent_id,
                 merchant_id,
                 gross_amount,
+                merchant_net_amount,
+                interchange_amount,
+                network_assessment_amount,
+                acquirer_margin_amount,
                 currency,
                 status,
                 ledger_journal_id
             )
-            values (?, ?, ?, ?, ?, ?, 'SETTLED', ?)
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'SETTLED', ?)
             on conflict (payment_intent_id) do nothing
             """.trimIndent(),
             id,
@@ -135,6 +154,10 @@ class SettlementRepository(
             paymentIntentId,
             merchantId,
             grossAmount,
+            merchantNetAmount,
+            interchangeAmount,
+            networkAssessmentAmount,
+            acquirerMarginAmount,
             currency,
             ledgerJournalId,
         )

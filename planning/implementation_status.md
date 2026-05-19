@@ -1061,21 +1061,22 @@ Explicitly not implemented/claimed:
 
 ## Phase 06 Slice 05 — Settlement Fee Split
 
-Status: **APPROVED v0.1 — planning-only; no product code implemented**.
+Status: **COMPLETE — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_06_slice_05_settlement_fee_split_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Add deterministic local fee split for settled card payments: merchant net, issuer interchange, network assessment and acquirer margin.
-- Persist fee components on settlement item or a narrow child table.
-- Update settlement ledger postings so `CARD_PAYMENT_SETTLEMENT` remains exactly balanced and exposes the fee destinations.
-- Retain idempotent settlement reruns with no duplicate settlement items, fee rows or ledger journals.
-- Add retained runtime script `product/scripts/runtime/reg_phase06_settlement_fee_split.sh`.
+Implemented backend/runtime scope:
+- Platform DB migration `V23__settlement_fee_split.sql` adds fee component columns to `settlement.settlement_items` and creates deterministic local fee destination ledger accounts.
+- Settlement processing now computes and persists merchant net, issuer interchange, network assessment and acquirer margin for each settled card payment.
+- `CARD_PAYMENT_SETTLEMENT` journals debit gross from `CARD_SETTLEMENT_CLEARING` and credit merchant net plus the three fee destination accounts, remaining exactly balanced.
+- Existing settlement item uniqueness keeps reruns idempotent: no duplicate settlement item, fee component row or settlement ledger journal for the same payment intent.
+- Retained runtime script: `product/scripts/runtime/reg_phase06_settlement_fee_split.sh`.
 
-Target runtime checks:
-- `SET-02` — settlement fee postings balance exactly.
-- Targeted regressions: `SET-01`, `PAY-06`, `PAY-01`, `LDG-05`.
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-19 — Phase 06 Slice 05 Settlement Fee Split Runtime Verification`.
+- `SET-02` — pass.
+- Targeted regressions passed: `SET-01`, `PAY-06`, `PAY-01`, `LDG-05`.
 
 Explicitly not implemented/claimed:
 - acquirer settlement projection/reconciliation (`SET-03`), refunds (`SET-04`), payouts, chargebacks, merchant settlement frontend, tenant pricing engine.

@@ -1,5 +1,6 @@
 package com.minifin.platform.settlement
 
+import java.math.BigDecimal
 import java.util.UUID
 import org.springframework.http.HttpStatus
 
@@ -18,6 +19,14 @@ data class SettlementCandidate(
 data class SettlementItemResult(
     val itemId: UUID,
     val paymentIntentId: UUID,
+)
+
+data class SettlementFeeSplit(
+    val grossAmount: BigDecimal,
+    val merchantNetAmount: BigDecimal,
+    val interchangeAmount: BigDecimal,
+    val networkAssessmentAmount: BigDecimal,
+    val acquirerMarginAmount: BigDecimal,
 )
 
 class SettlementException(

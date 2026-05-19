@@ -1,12 +1,12 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-19 (Phase 06 Slice 04 capture-to-settlement foundation and Phase 07 Slice 04 sanctions false-positive exception backend/runtime scopes implemented and runtime verified).
+Last updated: 2026-05-19 (Phase 06 Slice 05 settlement fee split backend/runtime scope implemented and runtime verified).
 
 ---
 
 ## Focus
 
-Phase 06 Slice 04 capture-to-settlement foundation and Phase 07 Slice 04 sanctions false-positive exception backend/runtime scopes are implemented and verified. UI prototype baseline continues in parallel.
+Phase 06 Slice 05 settlement fee split backend/runtime scope is implemented and verified. UI prototype baseline continues in parallel.
 
 ## Status
 
@@ -39,7 +39,7 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_07_slice_03_opensanctions_fail_closed_planning.md` — backend/runtime sub-scope executed; `SNX-01` passed.
 - `planning/implementation-slices/phase_06_slice_04_capture_to_settlement_foundation_planning.md` — backend/runtime sub-scope executed; `SET-01` passed.
 - `planning/implementation-slices/phase_07_slice_04_sanctions_false_positive_planning.md` — backend/runtime sub-scope executed; `SNX-02` passed.
-- `planning/implementation-slices/phase_06_slice_05_settlement_fee_split_planning.md` — **APPROVED v0.1**.
+- `planning/implementation-slices/phase_06_slice_05_settlement_fee_split_planning.md` — backend/runtime sub-scope executed; `SET-02` passed.
 - `planning/implementation-slices/phase_08_slice_01_aml_velocity_alert_planning.md` — **APPROVED v0.1**.
 
 Completed workstream — latest accepted state:
@@ -58,12 +58,13 @@ Completed workstream — latest accepted state:
 - Phase 06 Slice 02 backend/runtime scope is complete: failed outbound webhook deliveries now retry on persisted schedule, terminal retry exhaustion moves events to `DLQ`, HTTP failure metadata is retained, and `WBH-02` plus `WBH-01`/`MRC-05`/`PAY-01..PAY-03` targeted regressions passed in isolated runtime;
 - Phase 06 Slice 03 backend/runtime scope is complete: merchant dashboard DLQ event list/detail/replay APIs were added, manual replay reuses signed outbound delivery with current endpoint secret, successful replay moves `DLQ` events to `DELIVERED`, `merchant_member` replay and cross-merchant access are denied/hidden, and `WBH-03` plus `WBH-01`/`WBH-02`/`MRC-05`/`PAY-01..PAY-03` targeted regressions passed in isolated runtime;
 - Phase 06 Slice 04 backend/runtime scope is complete: `POST /internal/settlement/process-captured` settles captured payment intents into persisted settlement batches/items, marks payment intents `SETTLED`, posts minimal balanced `CARD_PAYMENT_SETTLEMENT` ledger journals, and idempotent reruns do not duplicate settlement items; `SET-01` plus targeted `PAY-06`/`PAY-04`/`PAY-05`/`PAY-01`/`LDG-05` regressions passed in isolated runtime;
+- Phase 06 Slice 05 backend/runtime scope is complete: settlement items persist merchant net, issuer interchange, network assessment and acquirer margin; `CARD_PAYMENT_SETTLEMENT` journals debit gross clearing and credit merchant net plus deterministic fee destination accounts exactly balanced; reruns do not duplicate settlement items or journals; `SET-02` plus targeted `SET-01`/`PAY-06`/`PAY-01`/`LDG-05` regressions passed in isolated runtime;
 - Phase 07 Slice 01 backend/runtime scope is complete: Platform now has `kyc` schema/profile/session/vendor-event persistence, `POST /api/v1/kyc/start`, Sumsub adapter boundary, and `POST /webhooks/sumsub/v1` with HMAC signature verification plus vendor event id idempotency. `KYC-01` is partial because real Sumsub sandbox credentials were absent; `KYC-02` passed with deterministic locally signed Sumsub-format fixtures.
 - Phase 07 Slice 02 backend/runtime scope is complete: backoffice KYC queue/detail/manual decision APIs, rationale validation, manual decision persistence and audit rows are implemented; `KYC-03` passed with retained runtime verification.
 - Phase 07 Slice 03 backend/runtime scope is complete: OpenSanctions fail-closed screening is integrated with KYC manual approval, unavailable and possible-match outcomes persist sanctions hits and audit rows while keeping KYC `IN_REVIEW`, no-match allows approval, and `SNX-01` plus `KYC-03` targeted regression passed in isolated runtime.
 - Phase 07 Slice 04 backend/runtime scope is complete: compliance-only sanctions hit list/detail/decision APIs, `CLEAR_FALSE_POSITIVE` decision persistence, false-positive exception persistence and same-user/OpenSanctions-entity suppression during later KYC manual approval are implemented; `SNX-02` and `SNX-01` targeted regression passed in isolated runtime.
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
-- isolated `agent11snx02` compose stack was used for SNX-02 verification and is cleaned up before handoff.
+- isolated `agent-set02` compose stack was used for SET-02 verification and is cleaned up before handoff.
 
 Latest accepted backend/runtime slices:
 - `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3.
@@ -80,7 +81,7 @@ Latest accepted backend/runtime slices:
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`, `prototypes/ui/19_merchant_onboarding_status.html`, `prototypes/ui/20_merchant_api_keys.html`, `prototypes/ui/21_merchant_webhooks.html`, `prototypes/ui/22_merchant_payments.html`.**
 
 Next planned product step:
-- Implement Phase 06 Slice 05 settlement fee split for `SET-02` and Phase 08 Slice 01 AML velocity alert foundation for `AML-01` as the next parallel backend/runtime slices.
+- Implement Phase 08 Slice 01 AML velocity alert foundation for `AML-01`, or choose the next approved backend/runtime slice after owner review.
 - `KYC-01` full pass remains blocked on real Sumsub sandbox credentials. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
 
 05 v0.4 resolved stack:

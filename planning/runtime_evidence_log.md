@@ -1984,6 +1984,105 @@ Not claimed:
 
 ---
 
+## 2026-05-19 — Phase 06 Slice 05 Settlement Fee Split Runtime Verification
+
+Scope:
+- Phase 06 Slice 05 backend/runtime implementation in `platform`.
+- Deterministic local fee split for settled card payments.
+- No acquirer settlement projection, refunds, payouts, chargebacks, scheduled batch orchestration or merchant settlement UI was implemented or claimed.
+
+Build evidence:
+- `bash -n product/scripts/runtime/reg_phase06_settlement_fee_split.sh` — pass.
+- Offline Docker Gradle `:apps:platform:compileKotlin` completed using cached Gradle home.
+- Offline Docker Gradle `:apps:platform:bootJar` completed; the multi-service `bootJar` command stalled after Platform jar rebuild, so the runtime used the freshly rebuilt Platform jar plus existing previously verified Acquirer/Network/Issuer/Vault jars.
+- Runtime images were assembled from local jars to avoid the known slow Dockerfile Gradle stage.
+
+Runtime environment:
+- Isolated Compose project: `agent-set02`.
+- Compose override: `/tmp/mfp-set02-override.yml` used local jar images for `platform`, `acquirer`, `network`, `issuer` and `vault`.
+- Runtime scripts used compose-network URLs:
+  - `PLATFORM_BASE_URL=http://platform:8080`
+  - `ACQUIRER_BASE_URL=http://acquirer:8080`
+  - `ISSUER_BASE_URL=http://issuer:8080`
+  - `VAULT_BASE_URL=http://vault:8080`
+  - `PLATFORM_CURL_CONTAINER_NETWORK=agent-set02_default`
+- Platform startup applied Flyway through `V23__settlement_fee_split.sql`.
+- The isolated compose project was stopped with `docker compose ... down -v --remove-orphans` after verification.
+
+Primary command:
+
+```bash
+COMPOSE_FILE=deploy/docker-compose.yml \
+COMPOSE_PROJECT_NAME=agent-set02 \
+PLATFORM_BASE_URL=http://platform:8080 \
+ISSUER_BASE_URL=http://issuer:8080 \
+VAULT_BASE_URL=http://vault:8080 \
+ACQUIRER_BASE_URL=http://acquirer:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=agent-set02_default \
+scripts/runtime/reg_phase06_settlement_fee_split.sh
+```
+
+Primary output:
+
+```text
+SET-02 settlement fee split pass intent_id=e52751ea-263e-4588-9c77-4231dd750f9f
+```
+
+Runtime assertions passed:
+- the script created a merchant API key, end-user card and funded wallet, then created, authorized and captured a public payment intent for EUR 18.25;
+- settlement processor created one settlement item and one `CARD_PAYMENT_SETTLEMENT` journal for the payment intent;
+- `settlement.settlement_items` persisted exact deterministic values:
+  - gross `18.2500`;
+  - merchant net `17.8800`;
+  - issuer interchange `0.2200`;
+  - network assessment `0.0300`;
+  - acquirer margin `0.1200`;
+- fee components sum exactly to gross;
+- ledger postings include:
+  - `CARD_SETTLEMENT_CLEARING` debit `18.2500`;
+  - merchant `MERCHANT_SETTLEMENT:<merchantId>` credit `17.8800`;
+  - `ISSUER_INTERCHANGE_REVENUE` credit `0.2200`;
+  - `NETWORK_ASSESSMENT_REVENUE` credit `0.0300`;
+  - `ACQUIRER_MARGIN_REVENUE` credit `0.1200`;
+- linked settlement journal is balanced and contains exactly five postings;
+- rerunning settlement processor does not create a duplicate settlement item or duplicate `CARD_PAYMENT_SETTLEMENT` journal for the same payment intent.
+
+Targeted regression command:
+
+```bash
+COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_PROJECT_NAME=agent-set02 PLATFORM_BASE_URL=http://platform:8080 ISSUER_BASE_URL=http://issuer:8080 VAULT_BASE_URL=http://vault:8080 ACQUIRER_BASE_URL=http://acquirer:8080 PLATFORM_CURL_CONTAINER_NETWORK=agent-set02_default scripts/runtime/reg_phase06_capture_to_settlement.sh
+COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_PROJECT_NAME=agent-set02 PLATFORM_BASE_URL=http://platform:8080 ISSUER_BASE_URL=http://issuer:8080 VAULT_BASE_URL=http://vault:8080 ACQUIRER_BASE_URL=http://acquirer:8080 PLATFORM_CURL_CONTAINER_NETWORK=agent-set02_default scripts/runtime/reg_phase05_payment_capture.sh
+COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_PROJECT_NAME=agent-set02 PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=agent-set02_default scripts/runtime/reg_phase04_public_api_response_shape.sh
+COMPOSE_FILE=deploy/docker-compose.yml COMPOSE_PROJECT_NAME=agent-set02 PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=agent-set02_default scripts/runtime/reg_phase03_ledger_reconciliation.sh
+```
+
+Regression output:
+
+```text
+SET-01 capture to settlement foundation pass intent_id=e6a3a094-aa44-4ed4-aef9-17d06e8c5057 batch_id=bc6ab45b-8122-4205-8eb9-14d048075a9d
+PAY-06 payment capture foundation pass intent_id=7e2901c4-2544-4290-9452-842b90a31eca
+PAY-01 public API response shape pass
+LDG-05 ledger reconciliation pass
+```
+
+Result tags:
+- `SET-02` — pass.
+- `SET-01` — pass targeted regression.
+- `PAY-06` — pass targeted regression.
+- `PAY-01` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Not claimed:
+- `SET-03`;
+- `SET-04`;
+- refunds;
+- payouts/Stripe Connect;
+- chargebacks;
+- merchant settlement frontend;
+- tenant pricing engine.
+
+---
+
 ## 2026-05-19 — Phase 07 Slice 04 Sanctions False-Positive Exception Runtime Verification
 
 Scope:
