@@ -158,6 +158,7 @@ Created:
 - `prototypes/ui/20_merchant_api_keys.html` — standalone `MDB-UI-03` merchant API keys HTML prototype from UI/UX prototype workflow; minor wide viewport root sizing fix applied locally; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-18.
 - `prototypes/ui/21_merchant_webhooks.html` — standalone `MDB-UI-04` merchant webhooks HTML prototype from UI/UX prototype workflow; minor root sizing and endpoint table overflow fixes applied locally; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-18.
 - `prototypes/ui/22_merchant_payments.html` — standalone `MDB-UI-05` merchant payments HTML prototype from UI/UX prototype workflow; minor root sizing and payment table overflow fixes applied locally; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-18.
+- `prototypes/ui/23_merchant_settlements.html` — standalone `MDB-UI-06` merchant settlements HTML prototype from UI/UX prototype workflow; minor root sizing, initial drawer state and settlement table overflow fixes applied locally; headless Chrome render checks passed at 1440px and 2048px widths on 2026-05-18.
 
 Explicitly not started:
 - `spa-merchant` frontend implementation checkpoint for `MDB-UI-01`;

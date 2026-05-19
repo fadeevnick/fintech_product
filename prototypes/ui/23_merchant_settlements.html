@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MiniFin — Settlements — MDB-UI-06</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#eceae5; --surface:#ffffff; --surf2:#f7f6f3; --inp:#faf9f7; --hover:#f0efe9;
+      --sb:#111114; --sb-bdr:#1e1e22; --sb-muted:#545460; --sb-active:#1e1e28;
+      --bdr:#dddad2; --bdr-mid:#c5c2ba; --bdr-focus:#1c1c1f;
+      --t1:#1c1c1f; --t2:#575763; --t3:#9898a6; --t4:#d0d0da;
+      --cta:#1c1c1f; --cta-hov:#2e2e35; --cta-t:#ffffff;
+      --g:#166534;  --g-bg:#f0fdf4;  --g-bd:#bbf7d0;
+      --am:#854d0e; --am-bg:#fffbeb; --am-bd:#fde68a;
+      --rd:#9b1c1c; --rd-bg:#fef2f2; --rd-bd:#fecaca;
+      --or:#b45309; --or-bg:#fff7ed; --or-bd:#fed7aa;
+      --pu:#5b21b6; --pu-bg:#f5f3ff; --pu-bd:#ddd6fe;
+      --bl:#1d4ed8; --bl-bg:#eff6ff; --bl-bd:#bfdbfe;
+      --sb-env-bg:#1a1030; --sb-env-t:#b39cf0; --sb-env-bd:#362566;
+      --f-ui:'IBM Plex Sans',sans-serif; --f-mono:'IBM Plex Mono',monospace;
+      --r:3px; --r-lg:5px; --w-sb:220px; --w-tl:252px;
+    }
+    html,body { height:100%; background:var(--bg); color:var(--t1); font-family:var(--f-ui); font-size:13px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+    #root { height:100vh; display:flex; overflow:hidden; }
+    ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:var(--bdr-mid); border-radius:2px; }
+
+    /* SIDEBAR */
+    .sidebar { width:var(--w-sb); flex-shrink:0; background:var(--sb); border-right:1px solid var(--sb-bdr); display:flex; flex-direction:column; overflow:hidden; }
+    .sb-brand { padding:14px 14px 12px; border-bottom:1px solid var(--sb-bdr); }
+    .sb-mark  { display:flex; align-items:center; gap:9px; }
+    .sb-name  { font-size:14.5px; font-weight:600; color:#eaeaf4; letter-spacing:-0.01em; }
+    .sb-sub   { font-size:9.5px; color:var(--sb-muted); text-transform:uppercase; letter-spacing:0.1em; margin-top:3px; }
+    .sb-merchant { margin-top:10px; padding:7px 9px; background:rgba(255,255,255,0.04); border-radius:var(--r); border:1px solid var(--sb-bdr); }
+    .sb-m-label { font-size:9px; color:var(--sb-muted); text-transform:uppercase; letter-spacing:0.09em; margin-bottom:3px; }
+    .sb-m-name  { font-size:12.5px; font-weight:600; color:#eaeaf4; }
+    .sb-m-id    { font-size:10px; color:var(--sb-muted); font-family:var(--f-mono); margin-top:1px; }
+    .sb-nav   { flex:1; padding:10px 7px; overflow-y:auto; }
+    .nav-sec  { font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:var(--sb-muted); padding:4px 9px 5px; margin-top:4px; }
+    .nav-item { display:flex; align-items:center; gap:8px; padding:6px 9px; border-radius:var(--r); color:var(--sb-muted); font-size:12px; cursor:default; user-select:none; transition:background 0.1s; }
+    .nav-item.locked  { opacity:0.35; }
+    .nav-item.current { background:var(--sb-active); color:#e0e0ec; }
+    .nav-lock { margin-left:auto; font-size:9px; opacity:0.6; }
+    .nav-id   { margin-left:auto; font-size:9px; font-family:var(--f-mono); color:var(--sb-muted); opacity:0.8; }
+    .nav-item.current .nav-id { color:#7c6ff7; opacity:1; }
+    .sb-footer { padding:10px 14px; border-top:1px solid var(--sb-bdr); }
+    .env-chip  { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:var(--r); background:var(--sb-env-bg); border:1px solid var(--sb-env-bd); font-size:10px; color:var(--sb-env-t); font-family:var(--f-mono); margin-bottom:4px; }
+    .env-dot   { width:5px; height:5px; border-radius:50%; background:var(--sb-env-t); opacity:0.7; }
+    .env-host  { font-size:10px; color:var(--sb-muted); font-family:var(--f-mono); }
+    .sb-user   { display:flex; align-items:center; gap:7px; margin-top:9px; }
+    .sb-avatar { width:24px; height:24px; border-radius:50%; background:#5b21b6; color:#fff; font-size:9px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .sb-uname  { font-size:11px; font-weight:500; color:#eaeaf4; }
+    .sb-urole  { font-size:9.5px; color:var(--sb-muted); text-transform:uppercase; letter-spacing:0.05em; }
+
+    /* MAIN */
+    .main-wrap { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+    .page-hdr  { display:flex; align-items:center; justify-content:space-between; padding:10px 22px; border-bottom:1px solid var(--bdr); background:var(--surface); flex-shrink:0; gap:10px; flex-wrap:wrap; }
+    .page-bc   { font-size:12.5px; color:var(--t2); display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+    .page-bc strong { color:var(--t1); font-weight:500; }
+    .page-bc .sep   { color:var(--t3); }
+    .page-meta { display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
+    .screen-id { font-size:10px; font-family:var(--f-mono); color:var(--t3); padding:2px 6px; border:1px solid var(--bdr); border-radius:var(--r); }
+    .env-badge { font-size:10px; font-family:var(--f-mono); color:var(--am); background:var(--am-bg); border:1px solid var(--am-bd); padding:2px 8px; border-radius:var(--r); display:flex; align-items:center; gap:5px; }
+    .env-badge-dot { width:5px; height:5px; border-radius:50%; background:var(--am); }
+    .user-chip { display:flex; align-items:center; gap:7px; padding:3px 9px 3px 3px; border:1px solid var(--bdr); border-radius:20px; background:var(--surf2); }
+    .user-avatar { width:22px; height:22px; border-radius:50%; background:#5b21b6; color:#fff; font-size:9px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .user-name { font-size:11.5px; color:var(--t2); font-weight:500; }
+
+    /* CONTENT */
+    .content-area { flex:1; display:flex; overflow:hidden; }
+    .left-scroll  { flex:1; overflow-y:auto; padding:14px 18px; background:var(--bg); display:flex; flex-direction:column; gap:11px; min-width:0; }
+
+    /* PANELS */
+    .panel    { background:var(--surface); border:1px solid var(--bdr); border-radius:var(--r-lg); overflow:hidden; flex-shrink:0; }
+    .panel-hdr{ display:flex; align-items:center; justify-content:space-between; padding:9px 14px; border-bottom:1px solid var(--bdr); background:var(--surf2); flex-shrink:0; flex-wrap:wrap; gap:8px; }
+    .panel-title { font-size:11.5px; font-weight:600; color:var(--t1); text-transform:uppercase; letter-spacing:0.04em; }
+    .panel-body  { padding:13px 16px; }
+
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; padding:2px 6px; border-radius:2px; font-size:9.5px; font-weight:600; letter-spacing:0.07em; font-family:var(--f-mono); border:1px solid transparent; white-space:nowrap; }
+    .b-active   { background:var(--g-bg);  color:var(--g);   border-color:var(--g-bd); }
+    .b-locked   { background:var(--hover); color:var(--t2);  border-color:var(--bdr); }
+    .b-disabled { background:var(--hover); color:var(--t3);  border-color:var(--bdr); }
+    .b-sandbox  { background:var(--pu-bg); color:var(--pu);  border-color:var(--pu-bd); }
+    .b-inreview { background:var(--pu-bg); color:var(--pu);  border-color:var(--pu-bd); }
+
+    /* Settlement-specific badges */
+    .b-pending   { background:var(--am-bg); color:var(--am);  border-color:var(--am-bd); }
+    .b-settled   { background:var(--g-bg);  color:var(--g);   border-color:var(--g-bd); }
+    .b-payout-ns { background:var(--hover); color:var(--t2);  border-color:var(--bdr-mid); }
+    .b-payout-pend { background:var(--bl-bg); color:var(--bl); border-color:var(--bl-bd); }
+    .b-payout-paid { background:var(--g-bg); color:var(--g);  border-color:var(--g-bd); }
+    .b-payout-fail { background:var(--rd-bg); color:var(--rd); border-color:var(--rd-bd); }
+    .b-matched   { background:var(--g-bg);  color:var(--g);   border-color:var(--g-bd); }
+    .b-exception { background:var(--rd-bg); color:var(--rd);  border-color:var(--rd-bd); }
+    .b-adjusted  { background:var(--or-bg); color:var(--or);  border-color:var(--or-bd); }
+    .b-held      { background:#fff7ed;      color:#c2410c;    border-color:#fed7aa; }
+    .b-captured  { background:var(--g-bg);  color:var(--g);   border-color:var(--g-bd); }
+    .b-refunded  { background:var(--pu-bg); color:var(--pu);  border-color:var(--pu-bd); }
+    .b-disputed  { background:#fff7ed;      color:#c2410c;    border-color:#fed7aa; }
+    .b-none      { color:var(--t4); font-family:var(--f-mono); font-size:11px; }
+
+    /* STATUS STRIP */
+    .status-strip { display:flex; flex-wrap:wrap; background:var(--surface); border:1px solid var(--bdr); border-radius:var(--r-lg); overflow:hidden; flex-shrink:0; }
+    .stat-cell { padding:11px 14px; border-right:1px solid var(--bdr); flex:1 1 110px; min-width:0; }
+    .stat-cell:last-child { border-right:none; }
+    .stat-k { font-size:9.5px; text-transform:uppercase; letter-spacing:0.07em; color:var(--t3); margin-bottom:4px; font-weight:600; }
+    .stat-v { font-size:12.5px; color:var(--t1); font-weight:500; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .stat-v.mono { font-family:var(--f-mono); font-size:11px; }
+    .stat-v.red { color:var(--rd); } .stat-v.warn { color:var(--am); } .stat-v.pu { color:var(--pu); } .stat-v.bl { color:var(--bl); }
+
+    /* KV */
+    .kv-table { display:flex; flex-direction:column; }
+    .kv-row   { display:flex; gap:10px; padding:5px 0; border-bottom:1px solid var(--hover); }
+    .kv-row:last-child { border-bottom:none; }
+    .kv-k { font-size:11px; color:var(--t3); min-width:164px; flex-shrink:0; padding-top:2px; }
+    .kv-v { font-size:12px; color:var(--t1); flex:1; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+    .kv-v.mono { font-family:var(--f-mono); font-size:11px; }
+
+    /* BUTTONS */
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:7px 14px; border-radius:var(--r); font-size:12.5px; font-weight:500; font-family:var(--f-ui); cursor:pointer; border:none; transition:background 0.1s; white-space:nowrap; }
+    .btn-primary { background:var(--cta); color:var(--cta-t); }
+    .btn-primary:hover { background:var(--cta-hov); }
+    .btn-ghost   { background:var(--surface); color:var(--t2); border:1px solid var(--bdr-mid); }
+    .btn-ghost:hover { background:var(--hover); color:var(--t1); }
+    .btn-danger  { background:var(--rd-bg); color:var(--rd); border:1px solid var(--rd-bd); }
+    .btn-sm { padding:4px 10px; font-size:11px; } .btn-xs { padding:2px 7px; font-size:10.5px; }
+    .btn:disabled { opacity:0.32; cursor:not-allowed; }
+    .btn-faux-dis { opacity:0.32; cursor:not-allowed; }
+
+    /* ALERTS */
+    .alert { display:flex; gap:10px; padding:9px 12px 9px 13px; font-size:12px; line-height:1.55; border-left-width:3px; border-left-style:solid; border-radius:var(--r); }
+    .alert-warn  { background:var(--am-bg); border-left-color:var(--am); color:#78350f; }
+    .alert-red   { background:var(--rd-bg); border-left-color:var(--rd); color:#7f1d1d; }
+    .alert-info  { background:var(--hover); border-left-color:var(--bdr-mid); color:var(--t2); }
+    .alert-green { background:var(--g-bg);  border-left-color:var(--g);  color:#14532d; }
+    .alert-pu    { background:var(--pu-bg); border-left-color:var(--pu); color:#3b0764; }
+    .alert-blue  { background:var(--bl-bg); border-left-color:var(--bl); color:#1e3a8a; }
+
+    /* TABLES */
+    .data-table { width:100%; border-collapse:collapse; }
+    .data-table th { font-size:10px; text-transform:uppercase; letter-spacing:0.07em; color:var(--t3); padding:6px 10px; text-align:left; border-bottom:1px solid var(--bdr); background:var(--surf2); font-weight:600; white-space:nowrap; }
+    .data-table td { padding:7px 10px; font-size:12px; border-bottom:1px solid var(--hover); vertical-align:middle; }
+    .data-table tr:last-child td { border-bottom:none; }
+    .data-table tr.row-hover:hover td { background:var(--surf2); cursor:pointer; }
+    .data-table tr.row-selected td { background:rgba(29,78,216,0.04); }
+    .mono-cell { font-family:var(--f-mono); font-size:11px; }
+
+    /* FORMS */
+    .inp-field { width:100%; padding:6px 9px; border:1px solid var(--bdr-mid); border-radius:var(--r); font-size:12px; color:var(--t1); background:var(--inp); outline:none; font-family:var(--f-ui); transition:border-color 0.12s; }
+    .inp-field:focus { border-color:var(--bdr-focus); }
+    select.inp-field { cursor:pointer; }
+
+    /* FILTER CHIPS */
+    .filter-chips { display:flex; gap:4px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:1px; }
+    .filter-chips::-webkit-scrollbar { height:2px; }
+    .fc { display:inline-flex; align-items:center; padding:3px 9px; border-radius:2px; font-size:10px; font-family:var(--f-mono); border:1px solid var(--bdr-mid); background:var(--surf2); color:var(--t2); cursor:pointer; transition:all 0.1s; white-space:nowrap; font-weight:500; user-select:none; }
+    .fc:hover { border-color:var(--bdr-focus); color:var(--t1); background:var(--hover); }
+    .fc.fc-on { background:var(--cta); color:var(--cta-t); border-color:var(--cta); }
+
+    /* TOGGLE */
+    .toggle-row { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+    .toggle-track { width:32px; height:17px; border-radius:9px; background:var(--bdr-mid); position:relative; transition:background 0.15s; flex-shrink:0; }
+    .toggle-track.on { background:#1d4ed8; }
+    .toggle-thumb { width:13px; height:13px; border-radius:50%; background:#fff; position:absolute; top:2px; left:2px; transition:left 0.15s; box-shadow:0 1px 2px rgba(0,0,0,0.15); }
+    .toggle-track.on .toggle-thumb { left:17px; }
+    .toggle-label { font-size:10.5px; color:var(--t2); }
+    .toggle-track.on + .toggle-label { color:var(--bl); font-weight:500; }
+
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; background:rgba(17,17,20,0.52); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+    .modal { background:var(--surface); border:1px solid var(--bdr); border-radius:var(--r-lg); width:480px; max-width:100%; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,0.18); }
+    .modal-hdr   { display:flex; align-items:flex-start; justify-content:space-between; padding:13px 16px; border-bottom:1px solid var(--bdr); flex-shrink:0; background:var(--surf2); }
+    .modal-title { font-size:13px; font-weight:600; color:var(--t1); }
+    .modal-sub   { font-size:11px; color:var(--t3); margin-top:2px; }
+    .modal-close { width:24px; height:24px; border-radius:var(--r); background:transparent; border:none; color:var(--t3); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px; transition:background 0.1s; }
+    .modal-close:hover { background:var(--hover); color:var(--t1); }
+    .modal-body  { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+    .modal-footer{ padding:12px 16px; border-top:1px solid var(--bdr); display:flex; gap:8px; align-items:center; flex-shrink:0; flex-wrap:wrap; }
+    .modal-note  { font-size:10.5px; color:var(--t3); margin-left:auto; font-style:italic; }
+
+    /* DRAWER */
+    .drawer-overlay { position:fixed; inset:0; background:rgba(17,17,20,0.35); z-index:90; }
+    .drawer { position:fixed; top:0; right:0; bottom:0; width:480px; max-width:95vw; background:var(--surface); border-left:1px solid var(--bdr); display:flex; flex-direction:column; z-index:91; box-shadow:-4px 0 24px rgba(0,0,0,0.12); }
+    .drawer-hdr  { padding:12px 16px; border-bottom:1px solid var(--bdr); flex-shrink:0; background:var(--surf2); display:flex; align-items:flex-start; justify-content:space-between; }
+    .drawer-title{ font-size:13px; font-weight:600; color:var(--t1); }
+    .drawer-sub  { font-size:10.5px; color:var(--t3); margin-top:2px; font-family:var(--f-mono); }
+    .drawer-body { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:12px; }
+    .drawer-footer{ padding:10px 16px; border-top:1px solid var(--bdr); flex-shrink:0; display:flex; gap:6px; flex-wrap:wrap; }
+    .drawer-tabs { display:flex; border-bottom:1px solid var(--bdr); background:var(--surf2); flex-shrink:0; overflow-x:auto; }
+    .drawer-tabs::-webkit-scrollbar { height:2px; }
+    .dt { padding:8px 12px; font-size:11px; font-weight:500; color:var(--t3); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.1s; white-space:nowrap; user-select:none; }
+    .dt:hover { color:var(--t1); }
+    .dt.dt-on { color:var(--t1); border-bottom-color:var(--cta); }
+
+    /* TIMELINE RAIL */
+    .tl-rail  { width:var(--w-tl); flex-shrink:0; background:var(--surface); border-left:1px solid var(--bdr); display:flex; flex-direction:column; overflow:hidden; }
+    .tl-hdr   { padding:10px 14px; border-bottom:1px solid var(--bdr); flex-shrink:0; font-size:9.5px; font-weight:600; color:var(--t3); text-transform:uppercase; letter-spacing:0.1em; }
+    .tl-body  { flex:1; overflow-y:auto; padding:10px 14px; }
+    .tl-evt   { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--hover); cursor:pointer; }
+    .tl-evt:last-child { border-bottom:none; }
+    .tl-evt:hover .tl-name { color:var(--cta); }
+    .tl-spine { display:flex; flex-direction:column; align-items:center; flex-shrink:0; }
+    .tl-dot   { width:8px; height:8px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+    .tl-dot.ok   { background:var(--g); } .tl-dot.pend { background:var(--or); }
+    .tl-dot.bad  { background:var(--rd); } .tl-dot.neu  { background:var(--t4); }
+    .tl-dot.pu   { background:var(--pu); } .tl-dot.bl   { background:var(--bl); }
+    .tl-line  { width:1px; flex:1; background:var(--bdr); margin:4px 0; min-height:12px; }
+    .tl-content { flex:1; min-width:0; }
+    .tl-ts    { font-size:9.5px; font-family:var(--f-mono); color:var(--t3); margin-bottom:1px; }
+    .tl-name  { font-size:11px; font-weight:600; color:var(--t1); margin-bottom:1px; text-transform:uppercase; letter-spacing:0.04em; transition:color 0.1s; }
+    .tl-actor { font-size:10px; color:var(--t3); margin-bottom:2px; }
+    .tl-desc  { font-size:10.5px; color:var(--t2); line-height:1.4; }
+    .tl-audit { font-size:9.5px; font-family:var(--f-mono); color:var(--pu); margin-top:4px; background:var(--pu-bg); border:1px solid var(--pu-bd); border-radius:var(--r); padding:2px 6px; display:inline-block; }
+    .tl-expand-hint { font-size:9px; color:var(--t4); margin-top:2px; font-style:italic; }
+    .tl-meta  { margin-top:6px; padding:7px 9px; background:var(--surf2); border:1px solid var(--bdr); border-radius:var(--r); font-size:10px; font-family:var(--f-mono); color:var(--t2); line-height:1.6; white-space:pre-wrap; }
+
+    /* LEDGER */
+    .ledger-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--hover); align-items:baseline; gap:10px; }
+    .ledger-row:last-child { border-bottom:none; }
+    .ledger-k { font-size:11px; color:var(--t3); flex-shrink:0; }
+    .ledger-v { font-size:11.5px; color:var(--t1); font-family:var(--f-mono); text-align:right; }
+    .ledger-row.ledger-total .ledger-k { font-weight:600; color:var(--t2); }
+    .ledger-row.ledger-total .ledger-v { font-weight:700; color:var(--t1); }
+    .ledger-row.ledger-hold .ledger-v  { color:var(--rd); }
+    .ledger-row.ledger-adj  .ledger-v  { color:var(--or); }
+    .ledger-row.ledger-fee  .ledger-v  { color:var(--t2); }
+
+    /* EXCEPTION CARD */
+    .exc-card { border:1px solid var(--rd-bd); border-radius:var(--r); background:var(--rd-bg); overflow:hidden; }
+    .exc-card-hdr { display:flex; align-items:center; justify-content:space-between; padding:8px 12px; border-bottom:1px solid var(--rd-bd); background:#fef9f9; cursor:pointer; }
+    .exc-card-body { padding:10px 12px; display:flex; flex-direction:column; gap:6px; }
+
+    /* PAYMENT COMP ROW */
+    .pcomp-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--hover); flex-wrap:wrap; }
+    .pcomp-row:last-child { border-bottom:none; }
+
+    /* COPY BTN */
+    .copy-btn { display:inline-flex; align-items:center; gap:3px; padding:1px 5px; border-radius:2px; font-size:9.5px; font-family:var(--f-mono); border:1px solid var(--bdr); background:var(--surf2); color:var(--t3); cursor:pointer; transition:all 0.1s; }
+    .copy-btn:hover { background:var(--hover); color:var(--t2); }
+    .copy-btn.copied { background:var(--g-bg); color:var(--g); border-color:var(--g-bd); }
+
+    /* TOOLTIP WRAPPER */
+    .rel { position:relative; display:inline-flex; }
+    .tip { position:absolute; bottom:calc(100% + 5px); left:50%; transform:translateX(-50%); background:var(--t1); color:#fff; font-size:10px; padding:4px 8px; border-radius:var(--r); white-space:nowrap; pointer-events:none; z-index:200; }
+
+    /* EXPORT SUCCESS BANNER */
+    .export-banner { display:flex; align-items:center; gap:10px; padding:8px 14px; background:var(--g-bg); border:1px solid var(--g-bd); border-radius:var(--r); font-size:11.5px; color:#14532d; }
+
+    @media (max-width:1100px) { :root { --w-tl:210px; } }
+    @media (max-width:960px)  { .tl-rail { display:none; } }
+    @media (max-width:640px)  { .sidebar { display:none; } }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useEffect } = React;
+
+/* ── NAV ── */
+const NAV = [
+  { sec:'MERCHANT' },
+  { id:'MDB-UI-01', label:'Overview',    icon:'▤' },
+  { id:'MDB-UI-02', label:'Onboarding',  icon:'◎' },
+  { id:'MDB-UI-03', label:'API Keys',    icon:'⌗' },
+  { id:'MDB-UI-04', label:'Webhooks',    icon:'⇥' },
+  { id:'MDB-UI-05', label:'Payments',    icon:'⇅' },
+  { id:'MDB-UI-06', label:'Settlements', icon:'⊟', current:true },
+  { id:'MDB-UI-07', label:'Disputes',    icon:'⊘', locked:true },
+  { sec:'ACCOUNT' },
+  { id:'', label:'Team',     icon:'⊙' },
+  { id:'', label:'Settings', icon:'⊕' },
+];
+
+/* ── SETTLEMENTS DATA ── */
+const SETTLEMENTS = [
+  {
+    id:'SETT-20260520',
+    period:'2026-05-18 – 2026-05-20',
+    currency:'EUR',
+    gross: 398.39,
+    fees:   12.42,
+    net:   385.97,
+    paymentCount: 12,
+    status:'pending',
+    payoutStatus:'payout_not_started',
+    reconciliation:'matched',
+    created:'2026-05-20 00:15',
+    settledAt:null,
+    payoutAt:null,
+    payoutId:null,
+    exceptionReason:null,
+    payoutDest:'Stripe Connect (sandbox preview)',
+    expectedPayoutDate:'2026-05-22',
+    retryEligible:false,
+    refundAdj: 0,
+    chargebackHold: 0,
+    payments:[
+      { id:'PI-90012', customer:'Emma Schulz',    capturedAt:'2026-05-18 10:38', amount:39.90,  fee:1.46, net:38.44, status:'captured',  recon:'matched' },
+      { id:'PI-90018', customer:'Leon Martin',    capturedAt:'—',               amount:145.00, fee:4.51, net:0,     status:'authorized', recon:'pending' },
+      { id:'PI-90021', customer:'Ava Ross',       capturedAt:'—',               amount:84.50,  fee:0,    net:0,     status:'rqpm',       recon:'pending' },
+      { id:'PI-89892', customer:'Sofia Moretti',  capturedAt:'—',               amount:64.00,  fee:0,    net:0,     status:'req_cap',    recon:'pending' },
+      { id:'PI-89851', customer:'Theo Bauer',     capturedAt:'2026-05-17 14:22', amount:27.50,  fee:0.98, net:26.52, status:'succeeded',  recon:'matched' },
+      { id:'PI-90009', customer:'Julia Weiss',    capturedAt:'2026-05-19 11:10', amount:52.00,  fee:1.90, net:50.10, status:'captured',   recon:'matched' },
+      { id:'PI-90005', customer:'Marco Ricci',    capturedAt:'2026-05-19 09:44', amount:29.49,  fee:1.15, net:28.34, status:'captured',   recon:'matched' },
+    ],
+    fees_detail:{ pct:2.90, fixed:0.30, pctLabel:'2.9%', refundReversal:0, chargebackHoldFee:0, subtotal:12.42 },
+    auditKey:'sett.created.SETT-20260520',
+    notes:'Batch in progress. Live payout not initiated — KYB review pending and Stripe Connect incomplete.',
+  },
+  {
+    id:'SETT-20260517',
+    period:'2026-05-15 – 2026-05-17',
+    currency:'EUR',
+    gross: 1842.10,
+    fees:    58.90,
+    net:   1783.20,
+    paymentCount: 47,
+    status:'settled',
+    payoutStatus:'payout_paid',
+    reconciliation:'matched',
+    created:'2026-05-17 00:12',
+    settledAt:'2026-05-17 01:00',
+    payoutAt:'2026-05-19 09:00',
+    payoutId:'PO-20260519-001',
+    exceptionReason:null,
+    payoutDest:'Stripe Connect (sandbox preview)',
+    expectedPayoutDate:'2026-05-19',
+    retryEligible:false,
+    refundAdj: 0,
+    chargebackHold: 0,
+    payments:[
+      { id:'PI-89851', customer:'Theo Bauer',    capturedAt:'2026-05-17 14:22', amount:27.50,  fee:0.98, net:26.52, status:'succeeded', recon:'matched' },
+      { id:'PI-89840', customer:'Lena Brandt',   capturedAt:'2026-05-16 10:15', amount:88.00,  fee:2.85, net:85.15, status:'succeeded', recon:'matched' },
+      { id:'PI-89825', customer:'Felix Müller',  capturedAt:'2026-05-15 14:30', amount:199.00, fee:6.07, net:192.93, status:'succeeded', recon:'matched' },
+    ],
+    fees_detail:{ pct:2.90, fixed:0.30, pctLabel:'2.9%', refundReversal:0, chargebackHoldFee:0, subtotal:58.90 },
+    auditKey:'sett.settled.SETT-20260517',
+    notes:'Fully reconciled. Payout PO-20260519-001 disbursed to sandbox account.',
+  },
+  {
+    id:'SETT-20260514',
+    period:'2026-05-12 – 2026-05-14',
+    currency:'EUR',
+    gross:  920.00,
+    fees:    29.75,
+    net:    890.25,
+    paymentCount: 21,
+    status:'settled',
+    payoutStatus:'payout_paid',
+    reconciliation:'exception',
+    created:'2026-05-14 00:09',
+    settledAt:'2026-05-14 01:04',
+    payoutAt:'2026-05-16 09:30',
+    payoutId:'PO-20260516-002',
+    exceptionReason:'Chargeback hold of EUR 312.00 applied after settlement calculation for PI-89930. Net disbursement reduced post-fact. External reconciliation file amount mismatch of EUR 312.00 vs expected EUR 890.25.',
+    payoutDest:'Stripe Connect (sandbox preview)',
+    expectedPayoutDate:'2026-05-16',
+    retryEligible:false,
+    refundAdj: 0,
+    chargebackHold: 312.00,
+    payments:[
+      { id:'PI-89930', customer:'Oliver Khan',   capturedAt:'2026-05-13 11:20', amount:312.00, fee:'HOLD', net:'HELD', status:'disputed', recon:'held' },
+      { id:'PI-89920', customer:'Anna Becker',   capturedAt:'2026-05-12 09:05', amount:145.00, fee:4.51, net:140.49, status:'succeeded', recon:'matched' },
+      { id:'PI-89910', customer:'David Schäfer', capturedAt:'2026-05-13 16:42', amount:88.00,  fee:2.85, net:85.15,  status:'succeeded', recon:'matched' },
+    ],
+    fees_detail:{ pct:2.90, fixed:0.30, pctLabel:'2.9%', refundReversal:0, chargebackHoldFee:312.00, subtotal:29.75 },
+    auditKey:'sett.exception.SETT-20260514',
+    notes:'Exception: chargeback hold applied post-settlement. Reconciliation file shows discrepancy.',
+    exceptions:[{
+      id:'EXC-40081', severity:'high', detectedAt:'2026-05-16 10:15',
+      amountDelta: -312.00, owner:'Risk Operations', resolution:'open',
+      description:'Chargeback CB-40019 for PI-89930 (EUR 312.00) applied after SETT-20260514 was finalized. Payout disbursed before hold could be deducted. Manual clawback required.',
+    }],
+  },
+  {
+    id:'SETT-20260510',
+    period:'2026-05-08 – 2026-05-10',
+    currency:'EUR',
+    gross:  674.55,
+    fees:    20.44,
+    net:    654.11,
+    paymentCount: 18,
+    status:'settled',
+    payoutStatus:'payout_pending',
+    reconciliation:'matched',
+    created:'2026-05-10 00:11',
+    settledAt:'2026-05-10 01:02',
+    payoutAt:null,
+    payoutId:'PO-20260512-003',
+    exceptionReason:null,
+    payoutDest:'Stripe Connect (sandbox preview)',
+    expectedPayoutDate:'2026-05-12',
+    retryEligible:false,
+    refundAdj: 0,
+    chargebackHold: 0,
+    payments:[
+      { id:'PI-89800', customer:'Petra Vogel',   capturedAt:'2026-05-09 14:12', amount:120.00, fee:3.78, net:116.22, status:'succeeded', recon:'matched' },
+      { id:'PI-89790', customer:'Klaus Richter', capturedAt:'2026-05-08 10:30', amount:220.00, fee:6.68, net:213.32, status:'succeeded', recon:'matched' },
+    ],
+    fees_detail:{ pct:2.90, fixed:0.30, pctLabel:'2.9%', refundReversal:0, chargebackHoldFee:0, subtotal:20.44 },
+    auditKey:'sett.payout_pending.SETT-20260510',
+    notes:'Settlement finalized. Payout initiated, awaiting bank confirmation.',
+  },
+  {
+    id:'SETT-20260507',
+    period:'2026-05-05 – 2026-05-07',
+    currency:'EUR',
+    gross:  1104.80,
+    fees:     35.10,
+    net:    1069.70,
+    paymentCount: 33,
+    status:'settled',
+    payoutStatus:'payout_failed',
+    reconciliation:'exception',
+    created:'2026-05-07 00:10',
+    settledAt:'2026-05-07 01:05',
+    payoutAt:null,
+    payoutId:'PO-20260509-004',
+    exceptionReason:'Payout failed — Stripe Connect account incomplete. Missing bank routing details. Payout PO-20260509-004 rejected by payment processor.',
+    payoutDest:'Stripe Connect (sandbox preview)',
+    expectedPayoutDate:'2026-05-09',
+    retryEligible:false,
+    refundAdj: 18.99,
+    chargebackHold: 0,
+    payments:[
+      { id:'PI-89965', customer:'Mia Fischer',   capturedAt:'2026-05-06 09:22', amount:18.99, fee:'REV', net:0.00, status:'refunded', recon:'adjusted' },
+      { id:'PI-89750', customer:'Hans Wagner',   capturedAt:'2026-05-05 11:44', amount:250.00, fee:7.55, net:242.45, status:'succeeded', recon:'matched' },
+      { id:'PI-89740', customer:'Greta Huber',   capturedAt:'2026-05-06 14:08', amount:180.00, fee:5.52, net:174.48, status:'succeeded', recon:'matched' },
+    ],
+    fees_detail:{ pct:2.90, fixed:0.30, pctLabel:'2.9%', refundReversal:18.99, chargebackHoldFee:0, subtotal:35.10 },
+    auditKey:'sett.payout_failed.SETT-20260507',
+    notes:'Payout failed due to incomplete Stripe Connect. Retry blocked until Connect onboarding completes.',
+    exceptions:[{
+      id:'EXC-40075', severity:'critical', detectedAt:'2026-05-09 12:00',
+      amountDelta: -1069.70, owner:'Payments Operations', resolution:'open',
+      description:'Payout PO-20260509-004 rejected by processor. Stripe Connect account MRC-20491 missing bank routing details. Funds held pending Connect completion.',
+    }],
+  },
+  {
+    id:'SETT-20260503',
+    period:'2026-05-01 – 2026-05-03',
+    currency:'EUR',
+    gross:  512.30,
+    fees:    16.24,
+    net:    496.06,
+    paymentCount: 14,
+    status:'settled',
+    payoutStatus:'payout_paid',
+    reconciliation:'matched',
+    created:'2026-05-03 00:08',
+    settledAt:'2026-05-03 01:01',
+    payoutAt:'2026-05-05 09:15',
+    payoutId:'PO-20260505-005',
+    exceptionReason:null,
+    payoutDest:'Stripe Connect (sandbox preview)',
+    expectedPayoutDate:'2026-05-05',
+    retryEligible:false,
+    refundAdj: 0,
+    chargebackHold: 0,
+    payments:[
+      { id:'PI-89700', customer:'Irene Koch',    capturedAt:'2026-05-02 10:30', amount:90.00,  fee:2.91, net:87.09,  status:'succeeded', recon:'matched' },
+      { id:'PI-89690', customer:'Stefan Braun',  capturedAt:'2026-05-01 14:20', amount:145.00, fee:4.51, net:140.49, status:'succeeded', recon:'matched' },
+      { id:'PI-89680', customer:'Monika Lange',  capturedAt:'2026-05-03 08:50', amount:60.00,  fee:2.04, net:57.96,  status:'succeeded', recon:'matched' },
+    ],
+    fees_detail:{ pct:2.90, fixed:0.30, pctLabel:'2.9%', refundReversal:0, chargebackHoldFee:0, subtotal:16.24 },
+    auditKey:'sett.settled.SETT-20260503',
+    notes:'Fully settled and reconciled.',
+  },
+];
+
+/* ── TIMELINE EVENTS ── */
+const TIMELINE_EVENTS = [
+  { ts:'2026-05-20 00:15', name:'BATCH CREATED',       actor:'Settlement Engine', dot:'neu',  desc:'SETT-20260520 batch created for period 2026-05-18 – 2026-05-20.',  key:'sett.batch.created', meta:'batch_id: SETT-20260520\npayment_count: 12\ngross: 398.39 EUR' },
+  { ts:'2026-05-20 00:15', name:'PAYMENTS ADDED',      actor:'Settlement Engine', dot:'neu',  desc:'12 captured payments assigned to SETT-20260520.',                   key:'sett.payments.assigned', meta:'payment_ids: [PI-90012, PI-89851, ...]\nbatch_total_captured: 398.39' },
+  { ts:'2026-05-20 00:16', name:'FEE CALCULATED',      actor:'Fee Engine',        dot:'neu',  desc:'Platform fee of EUR 12.42 calculated (2.9% + €0.30/txn × 12).',    key:'sett.fee.calculated', meta:'fee_rule: 2.9% + 0.30\ngross: 398.39\nfees: 12.42\nnet: 385.97' },
+  { ts:'2026-05-16 10:15', name:'RECON EXCEPTION',     actor:'Reconciliation Svc',dot:'bad',  desc:'Exception EXC-40081 detected on SETT-20260514: chargeback hold applied post-settlement.', key:'recon.exception.detected', meta:'exception_id: EXC-40081\namount_delta: -312.00 EUR\nbatch: SETT-20260514' },
+  { ts:'2026-05-19 09:00', name:'PAYOUT PAID',         actor:'Payment Processor', dot:'ok',   desc:'Payout PO-20260519-001 for SETT-20260517 disbursed. EUR 1,783.20 sent.', key:'payout.paid', meta:'payout_id: PO-20260519-001\namount: 1783.20 EUR\ndestination: Stripe Connect sandbox' },
+  { ts:'2026-05-17 01:00', name:'SETTLEMENT FINALIZED',actor:'Settlement Engine', dot:'ok',   desc:'SETT-20260517 finalized. Gross EUR 1,842.10 / Net EUR 1,783.20.',   key:'sett.finalized', meta:'batch_id: SETT-20260517\npayment_count: 47\nnet: 1783.20 EUR' },
+  { ts:'2026-05-14 01:04', name:'SETTLEMENT FINALIZED',actor:'Settlement Engine', dot:'ok',   desc:'SETT-20260514 finalized. Chargeback hold applied post-fact.',        key:'sett.finalized', meta:'batch_id: SETT-20260514\nchargeback_hold: 312.00 EUR' },
+  { ts:'2026-05-14 00:09', name:'REFUND ADJ APPLIED',  actor:'Refund Engine',     dot:'pu',   desc:'Refund adjustment for PI-89965 (EUR 18.99) posted to SETT-20260507.', key:'sett.refund.adjusted', meta:'payment_id: PI-89965\nrefund_amount: 18.99 EUR\nbatch: SETT-20260507' },
+  { ts:'2026-05-13 11:22', name:'CHARGEBACK HOLD',     actor:'Risk Operations',   dot:'bad',  desc:'CB-40019 hold applied to PI-89930. EUR 312.00 withheld from disbursement.', key:'chargeback.hold.applied', meta:'chargeback_id: CB-40019\npayment_id: PI-89930\nhold_amount: 312.00 EUR' },
+  { ts:'2026-05-09 12:00', name:'PAYOUT FAILED',       actor:'Payment Processor', dot:'bad',  desc:'Payout PO-20260509-004 rejected — Stripe Connect incomplete.',       key:'payout.failed', meta:'payout_id: PO-20260509-004\nreason: connect_account_incomplete\nbatch: SETT-20260507' },
+  { ts:'2026-05-18 11:30', name:'CSV EXPORT',          actor:'Nora Klein',        dot:'pu',   desc:'Settlement CSV export generated for SETT-20260517. Audit logged.',  key:'export.csv.generated', meta:'exported_by: nora.klein@orbitmarket.io\nbatch_id: SETT-20260517\nformat: csv' },
+];
+
+/* ── HELPERS ── */
+const fmt = n => typeof n === 'number' ? n.toFixed(2) : n;
+const fmtE = n => typeof n === 'number' ? `EUR ${n.toFixed(2)}` : n;
+
+function statusBadge(s, payoutStatus, recon) {
+  if (s === 'pending')  return <span className="badge b-pending">PENDING</span>;
+  if (s === 'settled')  return <span className="badge b-settled">SETTLED</span>;
+  return <span className="badge b-locked">{s}</span>;
+}
+function payoutBadge(ps) {
+  if (ps === 'payout_not_started') return <span className="badge b-payout-ns">NOT STARTED</span>;
+  if (ps === 'payout_pending')     return <span className="badge b-payout-pend">PENDING</span>;
+  if (ps === 'payout_paid')        return <span className="badge b-payout-paid">PAID</span>;
+  if (ps === 'payout_failed')      return <span className="badge b-payout-fail">FAILED</span>;
+  return <span className="badge b-locked">{ps}</span>;
+}
+function reconBadge(r) {
+  if (r === 'matched')   return <span className="badge b-matched">MATCHED</span>;
+  if (r === 'exception') return <span className="badge b-exception">EXCEPTION</span>;
+  if (r === 'adjusted')  return <span className="badge b-adjusted">ADJUSTED</span>;
+  if (r === 'held')      return <span className="badge b-held">HELD</span>;
+  if (r === 'pending')   return <span className="badge b-payout-pend">PENDING</span>;
+  return <span className="badge b-locked">{r}</span>;
+}
+function pmtStatusBadge(s) {
+  if (s === 'captured')   return <span className="badge b-captured">CAPTURED</span>;
+  if (s === 'succeeded')  return <span className="badge b-settled">SUCCEEDED</span>;
+  if (s === 'refunded')   return <span className="badge b-refunded">REFUNDED</span>;
+  if (s === 'disputed')   return <span className="badge b-disputed">DISPUTED</span>;
+  if (s === 'authorized') return <span className="badge b-payout-pend">AUTHORIZED</span>;
+  if (s === 'rqpm')       return <span className="badge b-pending">REQ. PM</span>;
+  if (s === 'req_cap')    return <span className="badge b-adjusted">REQ. CAPTURE</span>;
+  return <span className="badge b-locked">{s}</span>;
+}
+
+/* ── SIDEBAR ── */
+function Sidebar() {
+  return (
+    <div className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-mark">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <rect width="22" height="22" rx="5" fill="#5b21b6"/>
+            <rect x="5" y="5" width="5" height="12" rx="1.5" fill="white" opacity=".9"/>
+            <rect x="12" y="9" width="5" height="8" rx="1.5" fill="white" opacity=".6"/>
+          </svg>
+          <span className="sb-name">MiniFin</span>
+        </div>
+        <div className="sb-sub">Dashboard</div>
+        <div className="sb-merchant">
+          <div className="sb-m-label">Merchant</div>
+          <div className="sb-m-name">Orbit Market</div>
+          <div className="sb-m-id">MRC-20491</div>
+        </div>
+      </div>
+      <div className="sb-nav">
+        {NAV.map((item, i) => {
+          if (item.sec) return <div key={i} className="nav-sec">{item.sec}</div>;
+          return (
+            <div key={i} className={`nav-item${item.current ? ' current' : ''}${item.locked ? ' locked' : ''}`}>
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+              {item.locked && <span className="nav-lock">⊘</span>}
+              {item.id && <span className="nav-id">{item.id}</span>}
+            </div>
+          );
+        })}
+      </div>
+      <div className="sb-footer">
+        <div className="env-chip"><span className="env-dot"/><span>Local Sandbox</span></div>
+        <div className="env-host">api.minifin.local</div>
+        <div className="sb-user">
+          <div className="sb-avatar">NK</div>
+          <div>
+            <div className="sb-uname">Nora Klein</div>
+            <div className="sb-urole">Merchant Admin</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── STATUS STRIP ── */
+function StatusStrip({ settlements }) {
+  const allGross   = settlements.reduce((s,x)=>s+x.gross,0);
+  const allFees    = settlements.reduce((s,x)=>s+x.fees,0);
+  const allNet     = settlements.reduce((s,x)=>s+x.net,0);
+  const pending    = settlements.filter(x=>x.status==='pending').reduce((s,x)=>s+x.net,0);
+  const settled    = settlements.filter(x=>x.status==='settled').reduce((s,x)=>s+x.net,0);
+  const payPend    = settlements.filter(x=>x.payoutStatus==='payout_pending').reduce((s,x)=>s+x.net,0);
+  const payPaid    = settlements.filter(x=>x.payoutStatus==='payout_paid').reduce((s,x)=>s+x.net,0);
+  const excCount   = settlements.filter(x=>x.reconciliation==='exception').length;
+  return (
+    <div className="status-strip">
+      <div className="stat-cell"><div className="stat-k">Captured Gross</div><div className="stat-v mono">EUR {allGross.toFixed(2)}</div></div>
+      <div className="stat-cell"><div className="stat-k">Platform Fees</div><div className="stat-v mono">&minus;EUR {allFees.toFixed(2)}</div></div>
+      <div className="stat-cell"><div className="stat-k">Net Payable</div><div className="stat-v mono">EUR {allNet.toFixed(2)}</div></div>
+      <div className="stat-cell"><div className="stat-k">Pending Settlement</div><div className="stat-v warn mono">EUR {pending.toFixed(2)}</div></div>
+      <div className="stat-cell"><div className="stat-k">Settled</div><div className="stat-v mono">EUR {settled.toFixed(2)}</div></div>
+      <div className="stat-cell"><div className="stat-k">Payout Pending</div><div className="stat-v bl mono">EUR {payPend.toFixed(2)}</div></div>
+      <div className="stat-cell"><div className="stat-k">Payout Paid</div><div className="stat-v mono">EUR {payPaid.toFixed(2)}</div></div>
+      <div className="stat-cell"><div className="stat-k">Recon Exceptions</div><div className={`stat-v mono${excCount>0?' red':''}`}>{excCount}</div></div>
+      <div className="stat-cell"><div className="stat-k">Last Batch</div><div className="stat-v mono" style={{fontSize:'10.5px'}}>SETT-20260520<br/><span style={{color:'var(--t3)',fontSize:'9.5px'}}>2026-05-20 00:15</span></div></div>
+    </div>
+  );
+}
+
+/* ── FILTER WORKBAR ── */
+const STATUS_CHIPS = [
+  { key:'all', label:'All' },
+  { key:'pending',  label:'Pending' },
+  { key:'settled',  label:'Settled' },
+];
+const PAYOUT_CHIPS = [
+  { key:'all',               label:'Any Payout' },
+  { key:'payout_not_started',label:'Not Started' },
+  { key:'payout_pending',    label:'Pending' },
+  { key:'payout_paid',       label:'Paid' },
+  { key:'payout_failed',     label:'Failed' },
+];
+
+function FilterWorkbar({ filters, setFilters, onReset }) {
+  return (
+    <div className="panel" style={{flexShrink:0}}>
+      <div style={{padding:'9px 14px', display:'flex', flexDirection:'column', gap:'8px'}}>
+        <div style={{display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap'}}>
+          <input className="inp-field" style={{maxWidth:260}} placeholder="Search settlement ID, payout ID, payment ID…"
+            value={filters.search}
+            onChange={e=>setFilters(f=>({...f,search:e.target.value}))}/>
+          <select className="inp-field" style={{width:100}} value={filters.currency} onChange={e=>setFilters(f=>({...f,currency:e.target.value}))}>
+            <option value="all">All currencies</option>
+            <option value="eur">EUR</option>
+          </select>
+          <select className="inp-field" style={{width:130}} value={filters.dateRange} onChange={e=>setFilters(f=>({...f,dateRange:e.target.value}))}>
+            <option value="all">All dates</option>
+            <option value="last7">Last 7 days</option>
+            <option value="last30">Last 30 days</option>
+            <option value="may2026">May 2026</option>
+          </select>
+          <div className="toggle-row" onClick={()=>setFilters(f=>({...f,exceptionsOnly:!f.exceptionsOnly}))}>
+            <div className={`toggle-track${filters.exceptionsOnly?' on':''}`}><div className="toggle-thumb"/></div>
+            <span className="toggle-label">Only exceptions</span>
+          </div>
+          <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}} onClick={onReset}>Reset filters</button>
+        </div>
+        <div style={{display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap'}}>
+          <span style={{fontSize:'10px',color:'var(--t3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',flexShrink:0}}>Status</span>
+          <div className="filter-chips">
+            {STATUS_CHIPS.map(c=>(
+              <div key={c.key} className={`fc${filters.status===c.key?' fc-on':''}`}
+                onClick={()=>setFilters(f=>({...f,status:c.key}))}>{c.label}</div>
+            ))}
+          </div>
+          <span style={{fontSize:'10px',color:'var(--t3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',flexShrink:0}}>Payout</span>
+          <div className="filter-chips">
+            {PAYOUT_CHIPS.map(c=>(
+              <div key={c.key} className={`fc${filters.payout===c.key?' fc-on':''}`}
+                onClick={()=>setFilters(f=>({...f,payout:c.key}))}>{c.label}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── SETTLEMENTS TABLE ── */
+function SettlementsTable({ rows, selectedId, onSelect, onExport, exportedId }) {
+  const [tips, setTips] = useState({});
+  function showTip(id) {
+    setTips(t=>({...t,[id]:true}));
+    setTimeout(()=>setTips(t=>({...t,[id]:false})),2500);
+  }
+  return (
+    <div className="panel" style={{overflow:'auto'}}>
+      <div className="panel-hdr">
+        <span className="panel-title">Settlement Batches</span>
+        <span style={{fontSize:'11px',color:'var(--t3)'}}>{rows.length} batch{rows.length!==1?'es':''} shown</span>
+      </div>
+      <div style={{overflowX:'auto'}}>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Settlement ID</th>
+              <th>Period</th>
+              <th>CCY</th>
+              <th style={{textAlign:'right'}}>Gross</th>
+              <th style={{textAlign:'right'}}>Fees</th>
+              <th style={{textAlign:'right'}}>Net</th>
+              <th style={{textAlign:'right'}}>Pmts</th>
+              <th>Status</th>
+              <th>Payout</th>
+              <th>Reconciliation</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(s=>(
+              <tr key={s.id} className={`row-hover${selectedId===s.id?' row-selected':''}`} onClick={()=>onSelect(s.id)}>
+                <td className="mono-cell" style={{fontWeight:500,color:'var(--bl)'}}>{s.id}</td>
+                <td style={{fontSize:'10.5px',color:'var(--t2)',fontFamily:'var(--f-mono)',whiteSpace:'nowrap'}}>{s.period}</td>
+                <td className="mono-cell">{s.currency}</td>
+                <td className="mono-cell" style={{textAlign:'right'}}>{fmt(s.gross)}</td>
+                <td className="mono-cell" style={{textAlign:'right',color:'var(--t3)'}}>{fmt(s.fees)}</td>
+                <td className="mono-cell" style={{textAlign:'right',fontWeight:600}}>{fmt(s.net)}</td>
+                <td className="mono-cell" style={{textAlign:'right'}}>{s.paymentCount}</td>
+                <td>{statusBadge(s.status)}</td>
+                <td>{payoutBadge(s.payoutStatus)}</td>
+                <td>{reconBadge(s.reconciliation)}</td>
+                <td style={{fontSize:'10.5px',color:'var(--t3)',fontFamily:'var(--f-mono)',whiteSpace:'nowrap'}}>{s.created}</td>
+                <td onClick={e=>e.stopPropagation()}>
+                  <div style={{display:'flex',gap:'4px',flexWrap:'nowrap'}}>
+                    <button className="btn btn-ghost btn-xs" onClick={()=>onSelect(s.id)}>Detail</button>
+                    <button className="btn btn-ghost btn-xs" onClick={()=>onSelect(s.id)}>Payments</button>
+                    <div className="rel">
+                      <button
+                        className={`btn btn-xs${exportedId===s.id?' btn-primary':'btn-ghost'}`}
+                        onClick={()=>onExport(s.id)}
+                        style={s.reconciliation==='exception'?{background:'var(--am-bg)',color:'var(--am)',border:'1px solid var(--am-bd)'}:{}}
+                      >
+                        {exportedId===s.id ? '✓ Exported' : 'CSV'}
+                      </button>
+                      {tips[s.id] && <div className="tip">CSV export queued</div>}
+                    </div>
+                    {s.exceptions && s.exceptions.length>0
+                      ? <span className="btn btn-xs btn-faux-dis" onClick={()=>showTip('res_'+s.id)} style={{background:'var(--rd-bg)',color:'var(--rd)',border:'1px solid var(--rd-bd)'}}>Resolve</span>
+                      : null
+                    }
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ── SETTLEMENT DETAIL DRAWER ── */
+function SettlementDrawer({ sett, onClose, initialTab }) {
+  const [tab, setTab] = useState(initialTab || 'summary');
+  const [excExpanded, setExcExpanded] = useState(false);
+
+  useEffect(()=>{ if(initialTab) setTab(initialTab); },[initialTab]);
+
+  if(!sett) return null;
+  const TABS = ['summary','payments','fees','payout','reconciliation','audit'];
+
+  return (
+    <>
+      <div className="drawer-overlay" onClick={onClose}/>
+      <div className="drawer">
+        <div className="drawer-hdr">
+          <div>
+            <div className="drawer-title">{sett.id}</div>
+            <div className="drawer-sub">{sett.period} · {sett.currency} · {sett.paymentCount} payments</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="drawer-tabs">
+          {TABS.map(t=>(
+            <div key={t} className={`dt${tab===t?' dt-on':''}`} onClick={()=>setTab(t)}>
+              {t.charAt(0).toUpperCase()+t.slice(1)}
+            </div>
+          ))}
+        </div>
+        <div className="drawer-body">
+          {tab==='summary' && <SummaryTab sett={sett}/>}
+          {tab==='payments' && <PaymentsTab sett={sett}/>}
+          {tab==='fees' && <FeesTab sett={sett}/>}
+          {tab==='payout' && <PayoutTab sett={sett}/>}
+          {tab==='reconciliation' && <ReconTab sett={sett} excExpanded={excExpanded} setExcExpanded={setExcExpanded}/>}
+          {tab==='audit' && <AuditTab sett={sett}/>}
+        </div>
+        <div className="drawer-footer">
+          <button className="btn btn-ghost btn-sm" onClick={()=>setTab('payments')}>View Payments</button>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setTab('payout')}>View Payout</button>
+          <span className="btn btn-sm btn-faux-dis" style={{border:'1px solid var(--bdr-mid)',background:'var(--surf2)',color:'var(--t3)'}}>
+            Resolve Exception
+          </span>
+          <button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}} onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function SummaryTab({ sett }) {
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      {sett.status==='pending' && (
+        <div className="alert alert-warn">
+          <span>⚠</span>
+          <span>This settlement batch is still accumulating. Live payout is locked — KYB review in progress and Stripe Connect onboarding is incomplete. Sandbox preview only.</span>
+        </div>
+      )}
+      {sett.payoutStatus==='payout_failed' && (
+        <div className="alert alert-red">
+          <span>✕</span>
+          <span><strong>Payout failed.</strong> {sett.exceptionReason}</span>
+        </div>
+      )}
+      {sett.reconciliation==='exception' && sett.status==='settled' && (
+        <div className="alert alert-red">
+          <span>⚠</span>
+          <span><strong>Reconciliation exception detected.</strong> Manual review required. See Reconciliation tab.</span>
+        </div>
+      )}
+      <div className="kv-table">
+        <div className="kv-row"><span className="kv-k">Settlement ID</span><span className="kv-v mono">{sett.id}</span></div>
+        <div className="kv-row"><span className="kv-k">Merchant</span><span className="kv-v">Orbit Market <span style={{color:'var(--t3)',fontSize:'10.5px',fontFamily:'var(--f-mono)'}}>MRC-20491</span></span></div>
+        <div className="kv-row"><span className="kv-k">Period</span><span className="kv-v mono">{sett.period}</span></div>
+        <div className="kv-row"><span className="kv-k">Currency</span><span className="kv-v mono">{sett.currency}</span></div>
+        <div className="kv-row"><span className="kv-k">Gross captured</span><span className="kv-v mono">EUR {fmt(sett.gross)}</span></div>
+        <div className="kv-row"><span className="kv-k">Platform fees</span><span className="kv-v mono" style={{color:'var(--t2)'}}>– EUR {fmt(sett.fees)}</span></div>
+        <div className="kv-row"><span className="kv-k">Refund adjustments</span><span className="kv-v mono" style={{color:sett.refundAdj>0?'var(--or)':'var(--t3)'}}>{sett.refundAdj>0?`– EUR ${fmt(sett.refundAdj)}`:'—'}</span></div>
+        <div className="kv-row"><span className="kv-k">Chargeback holds</span><span className="kv-v mono" style={{color:sett.chargebackHold>0?'var(--rd)':'var(--t3)'}}>{sett.chargebackHold>0?`– EUR ${fmt(sett.chargebackHold)}`:'—'}</span></div>
+        <div className="kv-row"><span className="kv-k">Net payable</span><span className="kv-v mono" style={{fontWeight:700}}>EUR {fmt(sett.net)}</span></div>
+        <div className="kv-row"><span className="kv-k">Payment count</span><span className="kv-v mono">{sett.paymentCount}</span></div>
+        <div className="kv-row"><span className="kv-k">Status</span><span className="kv-v">{statusBadge(sett.status)}</span></div>
+        <div className="kv-row"><span className="kv-k">Payout status</span><span className="kv-v">{payoutBadge(sett.payoutStatus)}</span></div>
+        <div className="kv-row"><span className="kv-k">Payout ID</span><span className="kv-v mono">{sett.payoutId||<span style={{color:'var(--t4)'}}>—</span>}</span></div>
+        <div className="kv-row"><span className="kv-k">Reconciliation</span><span className="kv-v">{reconBadge(sett.reconciliation)}</span></div>
+        <div className="kv-row"><span className="kv-k">Created at</span><span className="kv-v mono">{sett.created}</span></div>
+        <div className="kv-row"><span className="kv-k">Settled at</span><span className="kv-v mono">{sett.settledAt||<span style={{color:'var(--t4)'}}>—</span>}</span></div>
+        <div className="kv-row"><span className="kv-k">Payout disbursed</span><span className="kv-v mono">{sett.payoutAt||<span style={{color:'var(--t4)'}}>—</span>}</span></div>
+      </div>
+      {sett.notes && (
+        <div className="alert alert-info"><span style={{color:'var(--t3)'}}>ℹ</span><span>{sett.notes}</span></div>
+      )}
+    </div>
+  );
+}
+
+function PaymentsTab({ sett }) {
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{fontSize:'11px',color:'var(--t3)',marginBottom:2}}>Payments included in this settlement batch.</div>
+      {sett.payments.map(p=>(
+        <div key={p.id} style={{border:'1px solid var(--bdr)',borderRadius:'var(--r)',padding:'8px 10px',background:'var(--surf2)',display:'flex',flexDirection:'column',gap:4}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:6}}>
+            <span style={{fontFamily:'var(--f-mono)',fontSize:'11.5px',fontWeight:600,color:'var(--bl)'}}>{p.id}</span>
+            <div style={{display:'flex',gap:5}}>
+              {pmtStatusBadge(p.status)}
+              {reconBadge(p.recon)}
+            </div>
+          </div>
+          <div style={{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:4}}>
+            <span style={{fontSize:'11px',color:'var(--t2)'}}>{p.customer}</span>
+            <span style={{fontSize:'10.5px',color:'var(--t3)',fontFamily:'var(--f-mono)'}}>Captured {p.capturedAt}</span>
+          </div>
+          <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
+            <span style={{fontSize:'11px'}}><span style={{color:'var(--t3)'}}>Amount </span><span style={{fontFamily:'var(--f-mono)'}}>{fmtE(p.amount)}</span></span>
+            <span style={{fontSize:'11px'}}>
+              <span style={{color:'var(--t3)'}}>Fee </span>
+              <span style={{fontFamily:'var(--f-mono)',color:p.fee==='REV'?'var(--or)':p.fee==='HOLD'?'var(--rd)':'var(--t2)'}}>
+                {p.fee==='REV'?'– reversal':p.fee==='HOLD'?'hold applied':p.fee===0?'—':`EUR ${fmt(p.fee)}`}
+              </span>
+            </span>
+            <span style={{fontSize:'11px'}}><span style={{color:'var(--t3)'}}>Net </span><span style={{fontFamily:'var(--f-mono)',fontWeight:600}}>{p.net==='HELD'?'HELD':p.net===0?'EUR 0.00':`EUR ${fmt(p.net)}`}</span></span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FeesTab({ sett }) {
+  const fd = sett.fees_detail;
+  const grossLessRef = sett.gross - (sett.refundAdj||0);
+  const grossLessAll = grossLessRef - (sett.chargebackHold||0);
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <div style={{fontSize:'11px',color:'var(--t2)',marginBottom:2}}>
+        Fee formula: <span style={{fontFamily:'var(--f-mono)',fontSize:'10.5px'}}>gross_captured − fees − refund_adj − chargeback_holds = net_payable</span>
+      </div>
+      <div className="panel" style={{overflow:'hidden'}}>
+        <div style={{padding:'2px 0'}}>
+          <div className="ledger-row"><span className="ledger-k">Gross captured</span><span className="ledger-v">EUR {fmt(sett.gross)}</span></div>
+          <div className="ledger-row ledger-fee"><span className="ledger-k">Percentage fee ({fd.pctLabel})</span><span className="ledger-v">– EUR {fmt((sett.gross*fd.pct/100).toFixed(2))}</span></div>
+          <div className="ledger-row ledger-fee"><span className="ledger-k">Fixed fee (€{fmt(fd.fixed)} × {sett.paymentCount} txns)</span><span className="ledger-v">– EUR {fmt((fd.fixed*sett.paymentCount).toFixed(2))}</span></div>
+          {fd.refundReversal>0 && <div className="ledger-row ledger-adj"><span className="ledger-k">Refund fee reversal</span><span className="ledger-v" style={{color:'var(--or)'}}>– EUR {fmt(fd.refundReversal)} (applied)</span></div>}
+          {fd.chargebackHoldFee>0 && <div className="ledger-row ledger-hold"><span className="ledger-k">Chargeback hold applied</span><span className="ledger-v" style={{color:'var(--rd)'}}>– EUR {fmt(fd.chargebackHoldFee)}</span></div>}
+          <div className="ledger-row" style={{paddingTop:4,marginTop:2,borderTop:'2px solid var(--bdr-mid)'}}><span className="ledger-k" style={{fontWeight:600,color:'var(--t2)'}}>Total fees deducted</span><span className="ledger-v" style={{fontWeight:600}}>EUR {fmt(fd.subtotal)}</span></div>
+          <div className="ledger-row ledger-total"><span className="ledger-k">Net payable to merchant</span><span className="ledger-v">EUR {fmt(sett.net)}</span></div>
+        </div>
+      </div>
+      <div className="alert alert-info">
+        <span style={{color:'var(--t3)'}}>ℹ</span>
+        <span>Fees are calculated at {fd.pctLabel} + €{fmt(fd.fixed)} per transaction. Refund fee reversals and chargeback holds are reflected in the net calculation.</span>
+      </div>
+    </div>
+  );
+}
+
+function PayoutTab({ sett }) {
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <div className="alert alert-pu">
+        <span>⊘</span>
+        <span><strong>Live payouts locked.</strong> KYB review is in progress and Stripe Connect onboarding is not complete. Payout actions are disabled for Orbit Market (MRC-20491). Sandbox preview only.</span>
+      </div>
+      {sett.payoutStatus==='payout_failed' && (
+        <div className="alert alert-red">
+          <span>✕</span>
+          <span><strong>Payout failed.</strong> {sett.exceptionReason}</span>
+        </div>
+      )}
+      <div className="kv-table">
+        <div className="kv-row"><span className="kv-k">Payout ID</span><span className="kv-v mono">{sett.payoutId||<span style={{color:'var(--t4)'}}>Not assigned</span>}</span></div>
+        <div className="kv-row"><span className="kv-k">Destination</span><span className="kv-v" style={{fontSize:'11px'}}>{sett.payoutDest}</span></div>
+        <div className="kv-row"><span className="kv-k">Payout status</span><span className="kv-v">{payoutBadge(sett.payoutStatus)}</span></div>
+        <div className="kv-row"><span className="kv-k">Expected date</span><span className="kv-v mono">{sett.expectedPayoutDate}</span></div>
+        <div className="kv-row"><span className="kv-k">Disbursed at</span><span className="kv-v mono">{sett.payoutAt||<span style={{color:'var(--t4)'}}>—</span>}</span></div>
+        <div className="kv-row"><span className="kv-k">Failure reason</span><span className="kv-v" style={{color:sett.exceptionReason?'var(--rd)':'var(--t4)',fontSize:'11px'}}>{sett.exceptionReason||'—'}</span></div>
+        <div className="kv-row"><span className="kv-k">Retry eligible</span><span className="kv-v">{sett.retryEligible?<span className="badge b-active">YES</span>:<span className="badge b-locked">NO</span>}</span></div>
+        <div className="kv-row"><span className="kv-k">Net amount</span><span className="kv-v mono" style={{fontWeight:700}}>EUR {fmt(sett.net)}</span></div>
+      </div>
+      <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+        <span className="btn btn-sm btn-faux-dis" style={{border:'1px solid var(--bdr-mid)',background:'var(--surf2)',color:'var(--t3)'}}>Retry Payout</span>
+        <span className="btn btn-sm btn-faux-dis" style={{border:'1px solid var(--bdr-mid)',background:'var(--surf2)',color:'var(--t3)'}}>Manual Override</span>
+      </div>
+      <div style={{fontSize:'10.5px',color:'var(--t3)',fontStyle:'italic'}}>
+        Payout retry and manual override are backoffice-only actions. Complete KYB + Stripe Connect to unlock live payouts.
+      </div>
+    </div>
+  );
+}
+
+function ReconTab({ sett, excExpanded, setExcExpanded }) {
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+      <div className="kv-table">
+        <div className="kv-row"><span className="kv-k">Reconciliation status</span><span className="kv-v">{reconBadge(sett.reconciliation)}</span></div>
+        <div className="kv-row"><span className="kv-k">Gross captured</span><span className="kv-v mono">EUR {fmt(sett.gross)}</span></div>
+        <div className="kv-row"><span className="kv-k">Fees deducted</span><span className="kv-v mono" style={{color:'var(--t2)'}}>EUR {fmt(sett.fees)}</span></div>
+        <div className="kv-row"><span className="kv-k">Refund adjustments</span><span className="kv-v mono" style={{color:sett.refundAdj>0?'var(--or)':'var(--t4)'}}>{sett.refundAdj>0?`EUR ${fmt(sett.refundAdj)}`:'—'}</span></div>
+        <div className="kv-row"><span className="kv-k">Chargeback holds</span><span className="kv-v mono" style={{color:sett.chargebackHold>0?'var(--rd)':'var(--t4)'}}>{sett.chargebackHold>0?`EUR ${fmt(sett.chargebackHold)}`:'—'}</span></div>
+        <div className="kv-row"><span className="kv-k">Expected net</span><span className="kv-v mono" style={{fontWeight:700}}>EUR {fmt(sett.net)}</span></div>
+        <div className="kv-row"><span className="kv-k">External file match</span><span className="kv-v">{sett.reconciliation==='matched'?<span className="badge b-active">MATCHED</span>:<span className="badge b-exception">MISMATCH</span>}</span></div>
+      </div>
+      {sett.exceptions && sett.exceptions.length>0 && (
+        <div>
+          <div style={{fontSize:'11.5px',fontWeight:600,marginBottom:8,color:'var(--rd)'}}>
+            ⚠ {sett.exceptions.length} reconciliation exception{sett.exceptions.length>1?'s':''}
+          </div>
+          {sett.exceptions.map(exc=>(
+            <div key={exc.id} className="exc-card">
+              <div className="exc-card-hdr" onClick={()=>setExcExpanded(!excExpanded)}>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <span className={`badge${exc.severity==='critical'?' b-exception':' b-adjusted'}`} style={{textTransform:'uppercase'}}>{exc.severity}</span>
+                  <span style={{fontFamily:'var(--f-mono)',fontSize:'11px',fontWeight:600,color:'var(--rd)'}}>{exc.id}</span>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <span style={{fontSize:'10.5px',color:'var(--t3)'}}>Delta: <span style={{fontFamily:'var(--f-mono)',color:'var(--rd)',fontWeight:600}}>EUR {fmt(Math.abs(exc.amountDelta))}</span></span>
+                  <span style={{color:'var(--t3)',fontSize:'12px'}}>{excExpanded?'▲':'▼'}</span>
+                </div>
+              </div>
+              {excExpanded && (
+                <div className="exc-card-body">
+                  <div className="kv-table">
+                    <div className="kv-row"><span className="kv-k">Exception ID</span><span className="kv-v mono">{exc.id}</span></div>
+                    <div className="kv-row"><span className="kv-k">Severity</span><span className="kv-v mono" style={{textTransform:'uppercase',color:exc.severity==='critical'?'var(--rd)':'var(--or)'}}>{exc.severity}</span></div>
+                    <div className="kv-row"><span className="kv-k">Detected at</span><span className="kv-v mono">{exc.detectedAt}</span></div>
+                    <div className="kv-row"><span className="kv-k">Amount delta</span><span className="kv-v mono" style={{color:'var(--rd)',fontWeight:600}}>EUR {fmt(Math.abs(exc.amountDelta))}</span></div>
+                    <div className="kv-row"><span className="kv-k">Owner</span><span className="kv-v">{exc.owner}</span></div>
+                    <div className="kv-row"><span className="kv-k">Resolution state</span><span className="kv-v"><span className="badge b-exception" style={{textTransform:'uppercase'}}>{exc.resolution}</span></span></div>
+                  </div>
+                  <div style={{fontSize:'11px',color:'var(--t2)',lineHeight:1.55,padding:'6px 0'}}>{exc.description}</div>
+                  <div style={{display:'flex',gap:6}}>
+                    <span className="btn btn-xs btn-faux-dis" style={{background:'var(--rd-bg)',color:'var(--rd)',border:'1px solid var(--rd-bd)'}}>Resolve Exception</span>
+                    <span className="btn btn-xs btn-faux-dis" style={{border:'1px solid var(--bdr-mid)',background:'var(--surf2)',color:'var(--t3)'}}>Assign to Ops</span>
+                  </div>
+                  <div style={{fontSize:'10px',color:'var(--t3)',fontStyle:'italic'}}>Exception resolution is a backoffice-only action.</div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {sett.reconciliation==='matched' && (
+        <div className="alert alert-green">
+          <span>✓</span>
+          <span>All payments in this batch reconcile with the external settlement file. No discrepancies detected.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AuditTab({ sett }) {
+  const events = [
+    { ts:sett.created,   label:'Batch Created',      actor:'Settlement Engine', desc:`${sett.id} batch opened for period ${sett.period}.` },
+    { ts:sett.created,   label:'Payments Assigned',   actor:'Settlement Engine', desc:`${sett.paymentCount} captured payments added to batch.` },
+    { ts:sett.created,   label:'Fee Calculated',      actor:'Fee Engine',        desc:`EUR ${fmt(sett.fees)} deducted. Net: EUR ${fmt(sett.net)}.` },
+    ...(sett.refundAdj>0?[{ ts:sett.settledAt||sett.created, label:'Refund Adjustment',  actor:'Refund Engine',     desc:`Refund adj EUR ${fmt(sett.refundAdj)} posted against batch.` }]:[]),
+    ...(sett.chargebackHold>0?[{ ts:sett.settledAt||sett.created, label:'Chargeback Hold',    actor:'Risk Operations',   desc:`CB hold EUR ${fmt(sett.chargebackHold)} applied after settlement.` }]:[]),
+    ...(sett.settledAt?[{ ts:sett.settledAt, label:'Settlement Finalized', actor:'Settlement Engine', desc:`Batch finalized. Gross EUR ${fmt(sett.gross)}.` }]:[]),
+    ...(sett.payoutStatus!=='payout_not_started'?[{ ts:sett.settledAt||sett.created, label:'Payout Initiated',   actor:'Payment Processor', desc:`Payout ${sett.payoutId||'(pending)'} queued.` }]:[]),
+    ...(sett.payoutAt?[{ ts:sett.payoutAt, label:'Payout Disbursed',   actor:'Payment Processor', desc:`EUR ${fmt(sett.net)} sent to ${sett.payoutDest}.` }]:[]),
+    ...(sett.payoutStatus==='payout_failed'?[{ ts:sett.expectedPayoutDate+' ~09:00', label:'Payout Failed',     actor:'Payment Processor', desc:sett.exceptionReason }]:[]),
+    ...(sett.reconciliation==='exception'?(sett.exceptions||[]).map(e=>({ ts:e.detectedAt, label:'Recon Exception',   actor:'Reconciliation Svc', desc:`Exception ${e.id} detected. Delta EUR ${fmt(Math.abs(e.amountDelta))}.` })):[]),
+  ].filter(Boolean);
+  return (
+    <div style={{display:'flex',flexDirection:'column',gap:0}}>
+      {events.map((e,i)=>(
+        <div key={i} style={{display:'flex',gap:10,padding:'8px 0',borderBottom:'1px solid var(--hover)'}}>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0}}>
+            <div style={{width:8,height:8,borderRadius:'50%',background:'var(--t4)',marginTop:3}}/>
+            {i<events.length-1 && <div style={{width:1,flex:1,background:'var(--bdr)',margin:'4px 0',minHeight:12}}/>}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:'9.5px',fontFamily:'var(--f-mono)',color:'var(--t3)',marginBottom:1}}>{e.ts}</div>
+            <div style={{fontSize:'11px',fontWeight:600,color:'var(--t1)',textTransform:'uppercase',letterSpacing:'0.04em',marginBottom:1}}>{e.label}</div>
+            <div style={{fontSize:'10px',color:'var(--t3)',marginBottom:2}}>{e.actor}</div>
+            <div style={{fontSize:'10.5px',color:'var(--t2)',lineHeight:1.4}}>{e.desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── TIMELINE RAIL ── */
+function TimelineRail({ expandedTl, setExpandedTl }) {
+  return (
+    <div className="tl-rail">
+      <div className="tl-hdr">Activity</div>
+      <div className="tl-body">
+        {TIMELINE_EVENTS.map((ev,i)=>(
+          <div key={i} className="tl-evt" onClick={()=>setExpandedTl(expandedTl===i?null:i)}>
+            <div className="tl-spine">
+              <div className={`tl-dot ${ev.dot}`}/>
+              {i<TIMELINE_EVENTS.length-1 && <div className="tl-line"/>}
+            </div>
+            <div className="tl-content">
+              <div className="tl-ts">{ev.ts}</div>
+              <div className="tl-name">{ev.name}</div>
+              <div className="tl-actor">{ev.actor}</div>
+              <div className="tl-desc">{ev.desc}</div>
+              <div className="tl-audit">{ev.key}</div>
+              {expandedTl!==i && <div className="tl-expand-hint">click to expand</div>}
+              {expandedTl===i && <div className="tl-meta">{ev.meta}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── EXPORT MODAL ── */
+function ExportModal({ settId, onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e=>e.stopPropagation()}>
+        <div className="modal-hdr">
+          <div>
+            <div className="modal-title">CSV Export — {settId}</div>
+            <div className="modal-sub">Export queued · Audit log entry created</div>
+          </div>
+          <button className="modal-close" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">
+          <div className="alert alert-green">
+            <span>✓</span>
+            <span><strong>Export generated.</strong> Settlement CSV for {settId} is ready. Download will start automatically in a production environment.</span>
+          </div>
+          <div className="kv-table">
+            <div className="kv-row"><span className="kv-k">Settlement ID</span><span className="kv-v mono">{settId}</span></div>
+            <div className="kv-row"><span className="kv-k">Format</span><span className="kv-v mono">CSV (UTF-8)</span></div>
+            <div className="kv-row"><span className="kv-k">Columns</span><span className="kv-v" style={{fontSize:'11px'}}>settlement_id, period, payment_id, captured_at, amount, fee, net, status, recon</span></div>
+            <div className="kv-row"><span className="kv-k">Exported by</span><span className="kv-v">Nora Klein <span style={{color:'var(--t3)',fontSize:'10.5px'}}>nora.klein@orbitmarket.io</span></span></div>
+            <div className="kv-row"><span className="kv-k">Exported at</span><span className="kv-v mono">2026-05-20 11:34</span></div>
+          </div>
+          <div className="alert alert-info">
+            <span style={{color:'var(--t3)'}}>ℹ</span>
+            <span>All CSV exports are audit logged and cannot be suppressed. The export event is recorded under <span style={{fontFamily:'var(--f-mono)',fontSize:'10.5px'}}>export.csv.generated</span>.</span>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-primary btn-sm" onClick={onClose}>✓ Done</button>
+          <span className="modal-note">Sandbox — no file produced</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ── */
+function App() {
+  const [filters, setFilters] = useState({ search:'', status:'all', currency:'all', dateRange:'all', payout:'all', exceptionsOnly:false });
+  const [selectedId, setSelectedId] = useState('SETT-20260520');
+  const [drawerTab, setDrawerTab] = useState('summary');
+  const [expandedTl, setExpandedTl] = useState(null);
+  const [exportedId, setExportedId] = useState(null);
+  const [exportModalId, setExportModalId] = useState(null);
+
+  const filtered = SETTLEMENTS.filter(s=>{
+    if(filters.status!=='all' && s.status!==filters.status) return false;
+    if(filters.payout!=='all' && s.payoutStatus!==filters.payout) return false;
+    if(filters.currency!=='all' && s.currency.toLowerCase()!==filters.currency) return false;
+    if(filters.exceptionsOnly && s.reconciliation!=='exception') return false;
+    if(filters.search){
+      const q=filters.search.toLowerCase();
+      return s.id.toLowerCase().includes(q)||(s.payoutId&&s.payoutId.toLowerCase().includes(q))||s.payments.some(p=>p.id.toLowerCase().includes(q));
+    }
+    return true;
+  });
+
+  const selectedSett = SETTLEMENTS.find(s=>s.id===selectedId)||null;
+
+  function handleExport(id) {
+    const s = SETTLEMENTS.find(x=>x.id===id);
+    if(s && s.reconciliation==='exception') {
+      setExportModalId(id);
+    } else {
+      setExportedId(id);
+      setExportModalId(id);
+      setTimeout(()=>setExportedId(null),4000);
+    }
+  }
+
+  function handleSelect(id) {
+    setSelectedId(id);
+    setDrawerTab('summary');
+  }
+
+  function handleReset() {
+    setFilters({ search:'', status:'all', currency:'all', dateRange:'all', payout:'all', exceptionsOnly:false });
+  }
+
+  return (
+    <>
+      <Sidebar/>
+      <div className="main-wrap">
+        <div className="page-hdr">
+          <div className="page-bc">
+            <span>Orbit Market</span><span className="sep">/</span>
+            <strong>Settlements</strong>
+          </div>
+          <div className="page-meta">
+            <span className="screen-id">MDB-UI-06</span>
+            <span className="env-badge"><span className="env-badge-dot"/>Local Sandbox</span>
+            <span className="badge b-inreview">KYB IN REVIEW</span>
+            <div className="user-chip">
+              <div className="user-avatar">NK</div>
+              <span className="user-name">Nora Klein</span>
+            </div>
+          </div>
+        </div>
+        <div className="content-area">
+          <div className="left-scroll">
+            <div className="alert alert-pu" style={{flexShrink:0}}>
+              <span>⊘</span>
+              <div>
+                <strong>Live payouts unavailable.</strong> Orbit Market (MRC-20491) has not completed KYB verification and Stripe Connect onboarding. Settlement calculations and reconciliation are available in sandbox preview. Live payout disbursements will be enabled once KYB is approved and Connect is complete.
+              </div>
+            </div>
+            <StatusStrip settlements={SETTLEMENTS}/>
+            <FilterWorkbar filters={filters} setFilters={setFilters} onReset={handleReset}/>
+            {exportedId && !exportModalId && (
+              <div className="export-banner">
+                <span>✓</span>
+                <span>CSV export queued for <strong>{exportedId}</strong>. Export event audit logged.</span>
+              </div>
+            )}
+            <SettlementsTable
+              rows={filtered}
+              selectedId={selectedId}
+              onSelect={handleSelect}
+              onExport={handleExport}
+              exportedId={exportedId}
+            />
+            <div className="alert alert-info" style={{flexShrink:0}}>
+              <span style={{color:'var(--t3)'}}>ℹ</span>
+              <span>Settlement batches run on a T+2 cycle. Payments are included when captured status is confirmed. Refund adjustments and chargeback holds are applied before net disbursement is calculated. All settlement and payout actions are audit logged.</span>
+            </div>
+          </div>
+          <TimelineRail expandedTl={expandedTl} setExpandedTl={setExpandedTl}/>
+        </div>
+      </div>
+      {selectedSett && (
+        <SettlementDrawer
+          sett={selectedSett}
+          onClose={()=>setSelectedId(null)}
+          initialTab={drawerTab}
+        />
+      )}
+      {exportModalId && (
+        <ExportModal settId={exportModalId} onClose={()=>{setExportModalId(null);setExportedId(null);}}/>
+      )}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
