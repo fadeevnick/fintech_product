@@ -1001,3 +1001,44 @@ Runtime evidence:
 - `planning/runtime_evidence_log.md` — `2026-05-19 — Phase 07 Slice 03 OpenSanctions Fail-Closed Runtime Verification`.
 - `SNX-01` — pass.
 - `KYC-03` — pass targeted regression.
+
+Next planned step:
+- Implement one of the next approved backend/runtime slices:
+  - Phase 06 Slice 04 capture-to-settlement foundation for `SET-01`.
+  - Phase 07 Slice 04 sanctions false-positive exception for `SNX-02`.
+
+---
+
+## Phase 06 Slice 04 — Capture to Settlement Foundation
+
+Status: **APPROVED PLANNING ONLY — not implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_06_slice_04_capture_to_settlement_foundation_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Durable settlement/clearing persistence for captured payment intents.
+- Internal runtime processor to settle eligible captured payments.
+- Minimal balanced settlement ledger movement without claiming fee split correctness.
+- Target retained runtime check: `SET-01`.
+
+Not yet implemented:
+- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
+
+---
+
+## Phase 07 Slice 04 — Sanctions False-Positive Exception
+
+Status: **APPROVED PLANNING ONLY — not implemented**.
+
+Planning contract:
+- `planning/implementation-slices/phase_07_slice_04_sanctions_false_positive_planning.md` — APPROVED v0.1.
+
+Planned backend/runtime scope:
+- Backoffice sanctions hit list/detail/decision APIs for compliance roles.
+- `CLEAR_FALSE_POSITIVE` decision with rationale and exception persistence.
+- Same future OpenSanctions match suppression for the same user/vendor entity.
+- Target retained runtime check: `SNX-02`.
+
+Not yet implemented:
+- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
