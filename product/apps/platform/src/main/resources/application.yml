@@ -36,6 +36,13 @@ minifin:
       secret-key: ${SUMSUB_SECRET_KEY:}
       webhook-secret: ${SUMSUB_WEBHOOK_SECRET:local-sumsub-webhook-secret}
       level-name: ${SUMSUB_LEVEL_NAME:basic-kyc-level}
+  sanctions:
+    opensanctions:
+      base-url: ${OPENSANCTIONS_BASE_URL:https://api.opensanctions.org}
+      api-key: ${OPENSANCTIONS_API_KEY:}
+      timeout-ms: ${OPENSANCTIONS_TIMEOUT_MS:3000}
+      local-mode: ${OPENSANCTIONS_LOCAL_MODE:disabled}
+      match-threshold: ${OPENSANCTIONS_MATCH_THRESHOLD:0.85}
   cards:
     issuer-base-url: ${ISSUER_BASE_URL:http://localhost:8084}
     acquirer-base-url: ${ACQUIRER_BASE_URL:http://localhost:8082}

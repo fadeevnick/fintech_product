@@ -4,6 +4,7 @@ import com.minifin.platform.backoffice.BackofficeException
 import com.minifin.platform.backoffice.BackofficeRoleMapper
 import com.minifin.platform.identity.ApiError
 import com.minifin.platform.identity.ApiResponse
+import com.minifin.platform.sanctions.SanctionsException
 import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -48,6 +49,10 @@ class KycBackofficeController(
 
     @ExceptionHandler(BackofficeException::class)
     fun handleBackofficeException(exception: BackofficeException): ResponseEntity<ApiResponse<Nothing>> =
+        ResponseEntity.status(exception.status).body(ApiResponse(errors = listOf(ApiError(exception.code, exception.message))))
+
+    @ExceptionHandler(SanctionsException::class)
+    fun handleSanctionsException(exception: SanctionsException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(exception.status).body(ApiResponse(errors = listOf(ApiError(exception.code, exception.message))))
 
     private fun requireUuid(value: String): UUID =

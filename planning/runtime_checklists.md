@@ -124,7 +124,7 @@ Result tags:
 | `VLT-03` | PAN log masking. | PAN does not appear in service logs. | pending |
 | `PAY-04` | Approved authorization hold. | Acquirer→Network→Issuer authorization places ledger hold. | pending |
 | `PAY-05` | Structured auth declines. | Insufficient funds/blocked/expired produce structured decline. | pending |
-| `PAY-06` | Payment capture foundation. | Authorized payment intent can be captured exactly once with idempotent public API behavior. | pending |
+| `PAY-06` | Payment capture foundation. | Authorized payment intent can be captured exactly once with idempotent public API behavior. | `product/scripts/runtime/reg_phase05_payment_capture.sh` |
 
 ## 9. Phase 06 — Clearing, Settlement, Refunds and Webhooks
 
@@ -145,7 +145,7 @@ Result tags:
 | `KYC-01` | Sumsub KYC start. | Email-verified user can start real Sumsub sandbox flow. | pending |
 | `KYC-02` | Sumsub webhook verification/idempotency. | Invalid signature rejected; duplicate event does not move state twice. | `product/scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh` |
 | `KYC-03` | Backoffice manual KYC review. | Operator can list an in-review KYC case and approve/reject/resubmit with rationale and audit. | `product/scripts/runtime/reg_phase07_kyc_manual_review.sh` |
-| `SNX-01` | OpenSanctions fail-closed. | Timeout/failure blocks dependent action and opens case. | pending |
+| `SNX-01` | OpenSanctions fail-closed. | Timeout/failure blocks dependent action and opens case. | `product/scripts/runtime/reg_phase07_opensanctions_fail_closed.sh` |
 | `SNX-02` | Sanctions false-positive exception. | Cleared exception suppresses same future match. | pending |
 | `AUD-03` | Compliance read-audit. | Sensitive read writes sync read-audit before returning data. | pending |
 

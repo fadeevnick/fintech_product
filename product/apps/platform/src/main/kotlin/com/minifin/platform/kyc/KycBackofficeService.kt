@@ -2,6 +2,8 @@ package com.minifin.platform.kyc
 
 import com.minifin.platform.backoffice.BackofficePrincipal
 import com.minifin.platform.identity.AuditRepository
+import com.minifin.platform.sanctions.SanctionsException
+import com.minifin.platform.sanctions.SanctionsService
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 class KycBackofficeService(
     private val repository: KycRepository,
     private val auditRepository: AuditRepository,
+    private val sanctionsService: SanctionsService,
 ) {
     fun listCases(): List<KycCaseResponse> =
         repository.listReviewCases().map { it.toResponse() }
@@ -19,7 +22,7 @@ class KycBackofficeService(
     fun getCase(id: UUID): KycCaseResponse =
         (repository.findCase(id) ?: throw KycException("not_found", "KYC case was not found.", HttpStatus.NOT_FOUND)).toResponse()
 
-    @Transactional
+    @Transactional(noRollbackFor = [SanctionsException::class])
     fun decide(id: UUID, request: KycManualDecisionRequest, principal: BackofficePrincipal): KycManualDecisionResponse {
         val case = repository.findCase(id)
             ?: throw KycException("not_found", "KYC case was not found.", HttpStatus.NOT_FOUND)
@@ -36,6 +39,9 @@ class KycBackofficeService(
         val rationale = request.rationale?.trim().orEmpty()
         if (rationale.length < 20) {
             throw KycException("invalid_rationale", "KYC decision rationale must be at least 20 characters.", HttpStatus.BAD_REQUEST)
+        }
+        if (decision == "APPROVE") {
+            sanctionsService.requireKycApprovalAllowed(case.endUserId, case.id, principal.subjectUuid)
         }
         if (!repository.applyManualDecision(case.id, "IN_REVIEW", resultingStatus)) {
             throw KycException("invalid_state", "KYC case is not in manual review.", HttpStatus.CONFLICT)

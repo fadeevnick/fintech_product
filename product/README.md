@@ -30,6 +30,7 @@ Implemented runtime behavior so far:
 - Phase 06 Slice 03 outbound merchant webhook DLQ replay in `platform`: merchant dashboard APIs list/detail retained webhook events and replay one `DLQ` event, replay reuses the signed outbound delivery path with current endpoint secret material, successful replay moves the event to `DELIVERED`, and retained `WBH-03` runtime verification passed.
 - Phase 07 Slice 01 KYC/Sumsub foundation in `platform`: end-user `POST /api/v1/kyc/start`, KYC profile/session/vendor-event persistence, Sumsub adapter boundary, inbound `POST /webhooks/sumsub/v1` signature verification and vendor event id idempotency. `KYC-02` has runtime evidence; `KYC-01` is partial until real Sumsub sandbox credentials are configured.
 - Phase 07 Slice 02 backoffice KYC manual review in `platform`: backoffice KYC queue/detail/manual decision APIs, rationale validation, `kyc.kyc_manual_decisions` persistence and `kyc.manual_decision_recorded` audit rows. `KYC-03` has runtime evidence.
+- Phase 07 Slice 03 OpenSanctions fail-closed foundation in `platform`: `sanctions.sanctions_hits`, OpenSanctions adapter boundary with explicit local modes, fail-closed screening before KYC manual approval, persisted hit/audit rows for unavailable and possible-match outcomes, and no-match approval pass-through. `SNX-01` has runtime evidence.
 
 ## Local Commands
 
@@ -245,6 +246,19 @@ Retained scripts:
 scripts/runtime/reg_phase07_kyc_start.sh
 scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
 scripts/runtime/reg_phase07_kyc_manual_review.sh
+scripts/runtime/reg_phase07_opensanctions_fail_closed.sh
 ```
 
-`reg_phase07_kyc_start.sh` records `KYC-01` as partial when real Sumsub credentials are absent. `reg_phase07_sumsub_webhook_signature_idempotency.sh` proves `KYC-02` locally with deterministic Sumsub-format signed fixtures. `reg_phase07_kyc_manual_review.sh` proves `KYC-03` for backoffice queue/detail/manual approval and audit. For isolated compose-network verification, set `PLATFORM_CURL_CONTAINER_NETWORK` and use a compose-network `PLATFORM_BASE_URL`.
+OpenSanctions local runtime defaults:
+
+```bash
+OPENSANCTIONS_BASE_URL=https://api.opensanctions.org
+OPENSANCTIONS_API_KEY=
+OPENSANCTIONS_TIMEOUT_MS=3000
+OPENSANCTIONS_LOCAL_MODE=disabled
+OPENSANCTIONS_MATCH_THRESHOLD=0.85
+```
+
+`OPENSANCTIONS_LOCAL_MODE` supports `disabled`, `unavailable`/`timeout`, `match` and `no_match`; real API success is not faked when local mode is disabled and no API key is configured.
+
+`reg_phase07_kyc_start.sh` records `KYC-01` as partial when real Sumsub credentials are absent. `reg_phase07_sumsub_webhook_signature_idempotency.sh` proves `KYC-02` locally with deterministic Sumsub-format signed fixtures. `reg_phase07_kyc_manual_review.sh` proves `KYC-03` for backoffice queue/detail/manual approval and audit. `reg_phase07_opensanctions_fail_closed.sh` proves `SNX-01` with deterministic OpenSanctions local modes. For isolated compose-network verification, set `PLATFORM_CURL_CONTAINER_NETWORK` and use a compose-network `PLATFORM_BASE_URL`.
