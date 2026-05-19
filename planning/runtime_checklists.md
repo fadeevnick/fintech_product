@@ -130,7 +130,7 @@ Result tags:
 
 | Check ID | What to verify | Expected result | Verification script |
 |---|---|---|---|
-| `SET-01` | Capture to settlement path. | Captured payment reaches settlement through outbox/Kafka path. | pending |
+| `SET-01` | Capture to settlement path. | Captured payment reaches settlement through outbox/Kafka path. | `product/scripts/runtime/reg_phase06_capture_to_settlement.sh` |
 | `SET-02` | Fee split balance. | Settlement fee postings balance exactly. | pending |
 | `SET-03` | Acquirer projection reconciliation. | Acquirer settlement projection matches Platform Ledger. | pending |
 | `SET-04` | Partial refund bounds. | Aggregate refunds cannot exceed original payment amount. | pending |
@@ -146,7 +146,7 @@ Result tags:
 | `KYC-02` | Sumsub webhook verification/idempotency. | Invalid signature rejected; duplicate event does not move state twice. | `product/scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh` |
 | `KYC-03` | Backoffice manual KYC review. | Operator can list an in-review KYC case and approve/reject/resubmit with rationale and audit. | `product/scripts/runtime/reg_phase07_kyc_manual_review.sh` |
 | `SNX-01` | OpenSanctions fail-closed. | Timeout/failure blocks dependent action and opens case. | `product/scripts/runtime/reg_phase07_opensanctions_fail_closed.sh` |
-| `SNX-02` | Sanctions false-positive exception. | Cleared exception suppresses same future match. | pending |
+| `SNX-02` | Sanctions false-positive exception. | Cleared exception suppresses same future match. | `product/scripts/runtime/reg_phase07_sanctions_false_positive.sh` |
 | `AUD-03` | Compliance read-audit. | Sensitive read writes sync read-audit before returning data. | pending |
 
 ## 11. Phase 08 — AML, Freezes, SoF and High-Value Controls

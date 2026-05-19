@@ -1035,16 +1035,24 @@ Not implemented / not claimed:
 
 ## Phase 07 Slice 04 — Sanctions False-Positive Exception
 
-Status: **APPROVED PLANNING ONLY — not implemented**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_07_slice_04_sanctions_false_positive_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Backoffice sanctions hit list/detail/decision APIs for compliance roles.
-- `CLEAR_FALSE_POSITIVE` decision with rationale and exception persistence.
-- Same future OpenSanctions match suppression for the same user/vendor entity.
-- Target retained runtime check: `SNX-02`.
+Implemented backend/runtime scope:
+- Platform DB migration `V22__sanctions_false_positive_exception.sql` for sanctions hit decisions and false-positive exceptions.
+- Compliance-only backoffice sanctions hit list/detail/decision APIs: `GET /api/v1/backoffice/sanctions-hits`, `GET /api/v1/backoffice/sanctions-hits/{id}`, `POST /api/v1/backoffice/sanctions-hits/{id}/decision`.
+- `CLEAR_FALSE_POSITIVE` decision requires compliance role (`compliance_officer` or `senior_compliance`) and rationale length >= 20 characters; `backoffice_operator` sanctions hit access/decision attempts are denied.
+- Open hits transition from `OPEN` to `CLEARED_FALSE_POSITIVE`; decision and exception rows are persisted and audit row `sanctions.hit_false_positive_cleared` is written.
+- Active false-positive exception suppresses the same OpenSanctions match for the same end user/vendor entity during later KYC manual approval; suppressed match writes audit row `sanctions.opensanctions_screening_suppressed` and does not create a new blocking hit.
+- Retained runtime script:
+  - `product/scripts/runtime/reg_phase07_sanctions_false_positive.sh`
 
-Not yet implemented:
-- Kotlin/API code, SQL migration, retained runtime script and runtime evidence.
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-19 — Phase 07 Slice 04 Sanctions False-Positive Exception Runtime Verification`.
+- `SNX-02` — pass.
+- `SNX-01` — pass targeted regression.
+
+Explicitly not implemented/claimed:
+- true-match permanent account block, freeze/unfreeze, AML, document preview/read-audit (`AUD-03`), sanctions frontend UI, wallet/card/payment sanctions gating beyond KYC approval gate, broad case-management abstraction, settlement/payment processing.
