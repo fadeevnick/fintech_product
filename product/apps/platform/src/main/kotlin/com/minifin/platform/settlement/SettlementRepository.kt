@@ -175,6 +175,43 @@ class SettlementRepository(
             paymentIntentId,
         )
 
+    fun projectionItems(limit: Int): List<SettlementProjectionItem> =
+        jdbcTemplate.query(
+            """
+            select si.id,
+                   si.batch_id,
+                   si.merchant_id,
+                   si.payment_intent_id,
+                   si.gross_amount,
+                   si.merchant_net_amount,
+                   si.interchange_amount,
+                   si.network_assessment_amount,
+                   si.acquirer_margin_amount,
+                   si.currency,
+                   sb.settled_at
+            from settlement.settlement_items si
+            join settlement.settlement_batches sb on sb.id = si.batch_id
+            order by si.created_at asc, si.id asc
+            limit ?
+            """.trimIndent(),
+            { rs, _ ->
+                SettlementProjectionItem(
+                    platformSettlementItemId = rs.getObject("id", UUID::class.java).toString(),
+                    platformBatchId = rs.getObject("batch_id", UUID::class.java).toString(),
+                    merchantId = rs.getObject("merchant_id", UUID::class.java).toString(),
+                    paymentIntentId = rs.getObject("payment_intent_id", UUID::class.java).toString(),
+                    grossAmount = rs.getBigDecimal("gross_amount").toPlainString(),
+                    merchantNetAmount = rs.getBigDecimal("merchant_net_amount").toPlainString(),
+                    interchangeAmount = rs.getBigDecimal("interchange_amount").toPlainString(),
+                    networkAssessmentAmount = rs.getBigDecimal("network_assessment_amount").toPlainString(),
+                    acquirerMarginAmount = rs.getBigDecimal("acquirer_margin_amount").toPlainString(),
+                    currency = rs.getString("currency"),
+                    platformSettledAt = rs.getObject("settled_at", java.time.OffsetDateTime::class.java)?.toString(),
+                )
+            },
+            limit,
+        )
+
     private fun ResultSet.toCandidate(): SettlementCandidate =
         SettlementCandidate(
             paymentIntentId = getObject("id", UUID::class.java),

@@ -18,6 +18,12 @@ class SettlementController(
     ): ApiResponse<SettlementProcessResponse> =
         ApiResponse(data = settlementService.processCaptured(limit))
 
+    @PostMapping("/internal/settlement/publish-projections")
+    fun publishProjections(
+        @RequestParam(defaultValue = "100") limit: Int,
+    ): ApiResponse<SettlementProjectionPublishResponse> =
+        ApiResponse(data = settlementService.publishProjections(limit))
+
     @ExceptionHandler(SettlementException::class)
     fun handleSettlementException(exception: SettlementException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(exception.status)

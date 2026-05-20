@@ -1,24 +1,31 @@
 package com.minifin.platform.settlement
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.minifin.platform.cards.CardProperties
 import com.minifin.platform.ledger.LedgerRepository
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.UUID
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.client.RestTemplate
 
 @Service
 class SettlementService(
     private val settlementRepository: SettlementRepository,
     private val ledgerRepository: LedgerRepository,
     private val objectMapper: ObjectMapper,
+    private val cardProperties: CardProperties,
 ) {
     private val oneHundred = BigDecimal("100.00")
     private val interchangeRate = BigDecimal("1.20")
     private val networkAssessmentRate = BigDecimal("0.15")
     private val acquirerMarginRate = BigDecimal("0.65")
+    private val restTemplate = RestTemplate()
 
     @Transactional
     fun processCaptured(limit: Int): SettlementProcessResponse {
@@ -116,6 +123,37 @@ class SettlementService(
             itemIds = results.map { it.itemId.toString() },
             paymentIntentIds = results.map { it.paymentIntentId.toString() },
         )
+    }
+
+    fun publishProjections(limit: Int): SettlementProjectionPublishResponse {
+        val items = settlementRepository.projectionItems(limit.coerceIn(1, 500))
+        if (items.isEmpty()) {
+            return SettlementProjectionPublishResponse(0, 0, 0)
+        }
+        val headers = HttpHeaders()
+        headers.set("X-Service-Name", "platform")
+        headers.set("X-Service-Secret", cardProperties.serviceAuthSecret)
+        val response = runCatching {
+            restTemplate.exchange(
+                "${cardProperties.acquirerBaseUrl}/internal/settlement/projections",
+                HttpMethod.POST,
+                HttpEntity(SettlementProjectionRequest(items), headers),
+                SettlementProjectionApiResponse::class.java,
+            )
+        }.getOrElse {
+            throw SettlementException(
+                code = "acquirer_projection_unavailable",
+                message = "Acquirer settlement projection service is unavailable.",
+                status = HttpStatus.BAD_GATEWAY,
+            )
+        }
+        val data = response.body?.data
+            ?: throw SettlementException(
+                code = "acquirer_projection_empty_response",
+                message = "Acquirer settlement projection service returned no data.",
+                status = HttpStatus.BAD_GATEWAY,
+            )
+        return SettlementProjectionPublishResponse(items.size, data.receivedCount, data.insertedCount)
     }
 
     private fun calculateFeeSplit(grossAmount: BigDecimal): SettlementFeeSplit {

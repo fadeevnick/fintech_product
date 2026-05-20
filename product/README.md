@@ -30,6 +30,7 @@ Implemented runtime behavior so far:
 - Phase 06 Slice 03 outbound merchant webhook DLQ replay in `platform`: merchant dashboard APIs list/detail retained webhook events and replay one `DLQ` event, replay reuses the signed outbound delivery path with current endpoint secret material, successful replay moves the event to `DELIVERED`, and retained `WBH-03` runtime verification passed.
 - Phase 06 Slice 04 capture-to-settlement foundation in `platform`: captured payment intents can be processed by `POST /internal/settlement/process-captured`, creating `settlement.settlement_batches` / `settlement.settlement_items`, marking payment intents `SETTLED`, and posting a minimal balanced `CARD_PAYMENT_SETTLEMENT` ledger journal from `CARD_SETTLEMENT_CLEARING` to a per-merchant settlement account. `SET-01` has runtime evidence.
 - Phase 06 Slice 05 settlement fee split in `platform`: settlement items now persist merchant net, issuer interchange, network assessment and acquirer margin; `CARD_PAYMENT_SETTLEMENT` journals credit merchant net plus deterministic fee destination accounts while remaining exactly balanced. `SET-02` has runtime evidence.
+- Phase 06 Slice 06 acquirer settlement projection across `platform` and `acquirer`: Acquirer stores `merchant_settlement.balance_projection`, Platform publishes settled item projections through `POST /internal/settlement/publish-projections`, and Acquirer ingests them idempotently by Platform settlement item id. `SET-03` has a retained runtime script.
 - Phase 07 Slice 01 KYC/Sumsub foundation in `platform`: end-user `POST /api/v1/kyc/start`, KYC profile/session/vendor-event persistence, Sumsub adapter boundary, inbound `POST /webhooks/sumsub/v1` signature verification and vendor event id idempotency. `KYC-02` has runtime evidence; `KYC-01` is partial until real Sumsub sandbox credentials are configured.
 - Phase 07 Slice 02 backoffice KYC manual review in `platform`: backoffice KYC queue/detail/manual decision APIs, rationale validation, `kyc.kyc_manual_decisions` persistence and `kyc.manual_decision_recorded` audit rows. `KYC-03` has runtime evidence.
 - Phase 07 Slice 03 OpenSanctions fail-closed foundation in `platform`: `sanctions.sanctions_hits`, OpenSanctions adapter boundary with explicit local modes, fail-closed screening before KYC manual approval, persisted hit/audit rows for unavailable and possible-match outcomes, and no-match approval pass-through. `SNX-01` has runtime evidence.
@@ -137,6 +138,7 @@ scripts/runtime/reg_phase05_payment_capture.sh
 scripts/runtime/reg_phase06_webhook_signing_delivery.sh
 scripts/runtime/reg_phase06_capture_to_settlement.sh
 scripts/runtime/reg_phase06_settlement_fee_split.sh
+scripts/runtime/reg_phase06_acquirer_settlement_projection.sh
 scripts/runtime/reg_phase07_kyc_start.sh
 scripts/runtime/reg_phase07_sumsub_webhook_signature_idempotency.sh
 scripts/runtime/reg_phase07_opensanctions_fail_closed.sh
@@ -230,7 +232,7 @@ scripts/runtime/reg_phase06_webhook_signing_delivery.sh
 
 ## Phase 06 Capture-to-Settlement Local Runtime
 
-Phase 06 Slice 04 adds the first captured-payment settlement path. Phase 06 Slice 05 adds deterministic local settlement fee splits:
+Phase 06 Slice 04 adds the first captured-payment settlement path. Phase 06 Slice 05 adds deterministic local settlement fee splits. Phase 06 Slice 06 adds an Acquirer-local settlement projection:
 
 - `POST /internal/settlement/process-captured?limit=50` processes eligible `CAPTURED` payment intents;
 - settlement batches/items are persisted under the `settlement` schema;
@@ -239,15 +241,20 @@ Phase 06 Slice 04 adds the first captured-payment settlement path. Phase 06 Slic
 - deterministic local fee rates are applied: issuer interchange `1.20%`, network assessment `0.15%`, acquirer margin `0.65%`;
 - settlement item stores gross, merchant net and fee component amounts;
 - settlement journal credits merchant net plus `ISSUER_INTERCHANGE_REVENUE`, `NETWORK_ASSESSMENT_REVENUE` and `ACQUIRER_MARGIN_REVENUE`.
+- `POST /internal/settlement/publish-projections?limit=100` publishes Platform settlement items into Acquirer;
+- Acquirer exposes service-auth-protected `POST /internal/settlement/projections`;
+- Acquirer persists one `merchant_settlement.balance_projection` row per Platform settlement item, including batch id, merchant id, payment intent id, gross, merchant net, fee components, currency and Platform settled timestamp;
+- projection ingestion is idempotent through `platform_settlement_item_id`.
 
 Retained script:
 
 ```bash
 scripts/runtime/reg_phase06_capture_to_settlement.sh
 scripts/runtime/reg_phase06_settlement_fee_split.sh
+scripts/runtime/reg_phase06_acquirer_settlement_projection.sh
 ```
 
-`SET-01` and `SET-02` are implemented and verified. Payouts, refunds, chargebacks, acquirer settlement projection/reconciliation and merchant dashboard settlement UI are not implemented in these slices.
+`SET-01`, `SET-02` and `SET-03` are implemented. Payouts, refunds, chargebacks, bank file export, scheduled reconciliation jobs and merchant dashboard settlement UI are not implemented in these slices.
 
 
 ## Phase 07 KYC/Sumsub Local Runtime

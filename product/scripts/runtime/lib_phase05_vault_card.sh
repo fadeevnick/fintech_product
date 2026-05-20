@@ -75,5 +75,6 @@ p05_psql() {
 }
 
 p05_platform_psql() { p05_psql platform-db platform platform "$1"; }
+p05_acquirer_psql() { p05_psql acquirer-db acquirer acquirer "$1"; }
 p05_issuer_psql() { p05_psql issuer-db issuer issuer "$1"; }
 p05_vault_psql() { p05_psql vault-db vault vault "$1"; }

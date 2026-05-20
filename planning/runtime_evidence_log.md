@@ -1,6 +1,6 @@
 # Runtime Evidence Log
 
-Last updated: 2026-05-19.
+Last updated: 2026-05-21.
 
 This file records factual verification only. A runtime check is not marked passed unless the corresponding runtime command actually ran.
 
@@ -2184,3 +2184,33 @@ Not run:
 
 Not claimed:
 - `AML-02`, `AML-03`, `AML-04`, AML review decisions, account freeze/unfreeze, SoF/two-eyes controls, AML frontend, SAR, settlement/refund/chargeback behavior.
+
+---
+
+## 2026-05-21 — Phase 06 Slice 06 Acquirer Settlement Projection Verification Attempt
+
+Scope:
+- Phase 06 Slice 06 acquirer settlement projection backend/runtime implementation.
+- Added Acquirer projection persistence/ingestion and Platform projection publication path.
+
+Commands attempted:
+- `docker run --rm -v /home/nickf/Documents/sre_projects/mini-fintech-platform_1/product:/workspace -w /workspace -e GRADLE_USER_HOME=/tmp/gradle-home -e GRADLE_OPTS='-Dorg.gradle.jvmargs=-Xmx1024m -XX:MaxMetaspaceSize=512m -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=2' gradle:8.14.3-jdk21 gradle --no-daemon :apps:acquirer:compileKotlin`
+- `docker run --rm --user root -v /home/nickf/Documents/sre_projects/mini-fintech-platform_1/product:/workspace -w /workspace -e GRADLE_USER_HOME=/tmp/gradle-home -e GRADLE_OPTS='-Dorg.gradle.jvmargs=-Xmx1024m -XX:MaxMetaspaceSize=512m -Dkotlin.compiler.execution.strategy=in-process -Dorg.gradle.workers.max=2' gradle:8.14.3-jdk21 gradle --no-daemon :apps:acquirer:compileKotlin --console=plain`
+- `docker run --rm --user root -v /home/nickf/Documents/sre_projects/mini-fintech-platform_1/product:/workspace -w /workspace -e GRADLE_USER_HOME=/tmp/gradle-home gradle:8.14.3-jdk21 gradle --no-daemon --project-cache-dir /tmp/project-cache :apps:acquirer:compileKotlin --console=plain --no-watch-fs`
+
+Observed result:
+- Each Gradle container printed the Gradle welcome text and `Daemon will be stopped at the end of the build`, then remained running without task progress or compiler output.
+- The hanging Gradle containers were stopped to avoid leaking runtime resources.
+- Host `gradle` is not installed and the repo has no Gradle wrapper, so a non-container host compile path was unavailable.
+
+Static evidence completed:
+- New retained script `product/scripts/runtime/reg_phase06_acquirer_settlement_projection.sh` exists and is executable.
+- Bracket/parenthesis balance check over changed Kotlin files passed.
+- `planning/runtime_checklists.md` maps `SET-03` to the retained script.
+
+Not claimed:
+- `SET-03` is not marked passed in this entry.
+- Targeted regressions (`SET-02`, `SET-01`, `PAY-06`, `LDG-05`) were not run in this session because compile/runtime startup could not be completed.
+
+Next verification step:
+- Re-run `product/scripts/runtime/reg_phase06_acquirer_settlement_projection.sh` and targeted regressions in an isolated compose slot once Gradle/Docker build progresses past daemon startup.

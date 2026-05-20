@@ -132,7 +132,7 @@ Result tags:
 |---|---|---|---|
 | `SET-01` | Capture to settlement path. | Captured payment reaches settlement through outbox/Kafka path. | `product/scripts/runtime/reg_phase06_capture_to_settlement.sh` |
 | `SET-02` | Fee split balance. | Settlement fee postings balance exactly. | `product/scripts/runtime/reg_phase06_settlement_fee_split.sh` |
-| `SET-03` | Acquirer projection reconciliation. | Acquirer settlement projection matches Platform Ledger. | pending |
+| `SET-03` | Acquirer projection reconciliation. | Acquirer settlement projection matches Platform Ledger. | `product/scripts/runtime/reg_phase06_acquirer_settlement_projection.sh` |
 | `SET-04` | Partial refund bounds. | Aggregate refunds cannot exceed original payment amount. | pending |
 | `WBH-01` | Webhook signing/delivery. | Merchant webhook payload is signed and delivered to test receiver. | `product/scripts/runtime/reg_phase06_webhook_signing_delivery.sh` |
 | `WBH-02` | Webhook retry/DLQ. | Failed delivery retries and moves to DLQ. | `product/scripts/runtime/reg_phase06_webhook_retry_dlq.sh` |

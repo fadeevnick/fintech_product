@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last updated: 2026-05-19.
+Last updated: 2026-05-21.
 
 ---
 
@@ -1115,17 +1115,21 @@ Explicitly not implemented/claimed:
 
 ## Phase 06 Slice 06 — Acquirer Settlement Projection
 
-Status: **APPROVED v0.1 — planning-only; no product code implemented**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — verification pending in this session**.
 
 Planning contract:
 - `planning/implementation-slices/phase_06_slice_06_acquirer_settlement_projection_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Add Acquirer merchant settlement projection persistence.
-- Add internal projection ingestion/publication path from Platform settlement state into Acquirer.
-- Project Platform settlement item id, batch id, merchant id, payment intent id, gross amount, merchant net, fee components and currency.
-- Keep ingestion idempotent by Platform settlement item id.
-- Add retained runtime script `product/scripts/runtime/reg_phase06_acquirer_settlement_projection.sh`.
+Implemented backend/runtime scope:
+- Acquirer DB migration `V3__merchant_settlement_projection.sql` creates `merchant_settlement.balance_projection`.
+- Acquirer exposes service-auth-protected `POST /internal/settlement/projections` for Platform-originated settlement projection ingestion.
+- Platform exposes `POST /internal/settlement/publish-projections?limit=100` to publish current settled Platform `settlement.settlement_items` into Acquirer.
+- Projection rows include Platform settlement item id, batch id, merchant id, payment intent id, gross amount, merchant net, issuer interchange, network assessment, acquirer margin, currency and Platform settled timestamp.
+- Acquirer ingestion is idempotent by `platform_settlement_item_id`.
+- Added retained runtime script `product/scripts/runtime/reg_phase06_acquirer_settlement_projection.sh`.
+
+Runtime evidence:
+- Pending in this session; do not mark `SET-03` passed until `planning/runtime_evidence_log.md` contains executed command output.
 
 Target runtime checks:
 - `SET-03` — Acquirer settlement projection matches Platform settlement state.
