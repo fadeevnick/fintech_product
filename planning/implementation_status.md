@@ -1115,7 +1115,7 @@ Explicitly not implemented/claimed:
 
 ## Phase 06 Slice 06 — Acquirer Settlement Projection
 
-Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — verification pending in this session**.
+Status: **COMPLETE — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_06_slice_06_acquirer_settlement_projection_planning.md` — APPROVED v0.1.
@@ -1129,7 +1129,9 @@ Implemented backend/runtime scope:
 - Added retained runtime script `product/scripts/runtime/reg_phase06_acquirer_settlement_projection.sh`.
 
 Runtime evidence:
-- Pending in this session; do not mark `SET-03` passed until `planning/runtime_evidence_log.md` contains executed command output.
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 06 Slice 06 Acquirer Settlement Projection Runtime Verification`.
+- `SET-03` — pass.
+- Targeted regressions passed: `SET-02`, `SET-01`, `PAY-06`, `LDG-05`.
 
 Target runtime checks:
 - `SET-03` — Acquirer settlement projection matches Platform settlement state.

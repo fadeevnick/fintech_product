@@ -2214,3 +2214,87 @@ Not claimed:
 
 Next verification step:
 - Re-run `product/scripts/runtime/reg_phase06_acquirer_settlement_projection.sh` and targeted regressions in an isolated compose slot once Gradle/Docker build progresses past daemon startup.
+
+---
+
+## 2026-05-21 — Phase 06 Slice 06 Acquirer Settlement Projection Runtime Verification
+
+Scope:
+- Phase 06 Slice 06 acquirer settlement projection backend/runtime implementation.
+- Target `SET-03` plus targeted settlement/payment/ledger regressions.
+
+Build evidence:
+- `docker compose -f product/deploy/docker-compose.yml build platform acquirer` — passed.
+- Isolated runtime slot build also passed for `platform`, `acquirer`, `network`, `issuer` and `vault` while starting the compose project.
+
+Runtime environment:
+- Isolated Compose project: `agent-set03`.
+- Compose file: `product/deploy/docker-compose.yml`.
+- Scripts used compose-network URLs:
+  - `PLATFORM_BASE_URL=http://platform:8080`
+  - `ACQUIRER_BASE_URL=http://acquirer:8080`
+  - `NETWORK_BASE_URL=http://network:8080`
+  - `ISSUER_BASE_URL=http://issuer:8080`
+  - `VAULT_BASE_URL=http://vault:8080`
+  - `PLATFORM_CURL_CONTAINER_NETWORK=agent-set03_default`
+
+Primary command:
+
+```bash
+COMPOSE_PROJECT_NAME=agent-set03 \
+COMPOSE_FILE=product/deploy/docker-compose.yml \
+PLATFORM_BASE_URL=http://platform:8080 \
+ACQUIRER_BASE_URL=http://acquirer:8080 \
+NETWORK_BASE_URL=http://network:8080 \
+ISSUER_BASE_URL=http://issuer:8080 \
+VAULT_BASE_URL=http://vault:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=agent-set03_default \
+product/scripts/runtime/reg_phase06_acquirer_settlement_projection.sh
+```
+
+Observed primary output:
+
+```text
+SET-03 acquirer settlement projection pass intent_id=d78b340c-a76a-4c5e-b964-89e95e4803a1 settlement_item_id=b142ebee-4445-4731-9b0d-6d456ac1d644
+```
+
+Runtime assertions passed:
+- created merchant, API key, funded end user, issued card and payment intent;
+- authorized, captured and settled the payment intent;
+- `POST /internal/settlement/publish-projections?limit=200` returned successful Acquirer projection counts;
+- Acquirer `merchant_settlement.balance_projection` contains exactly one row for the Platform settlement item;
+- Acquirer projection values match Platform settlement item values for merchant id, payment intent id, gross amount, merchant net amount, interchange amount, network assessment amount, acquirer margin amount and currency;
+- publishing projections again does not duplicate the projection row.
+
+Targeted regression commands:
+
+```bash
+COMPOSE_PROJECT_NAME=agent-set03 COMPOSE_FILE=product/deploy/docker-compose.yml PLATFORM_BASE_URL=http://platform:8080 ACQUIRER_BASE_URL=http://acquirer:8080 NETWORK_BASE_URL=http://network:8080 ISSUER_BASE_URL=http://issuer:8080 VAULT_BASE_URL=http://vault:8080 PLATFORM_CURL_CONTAINER_NETWORK=agent-set03_default product/scripts/runtime/reg_phase06_settlement_fee_split.sh
+COMPOSE_PROJECT_NAME=agent-set03 COMPOSE_FILE=product/deploy/docker-compose.yml PLATFORM_BASE_URL=http://platform:8080 ACQUIRER_BASE_URL=http://acquirer:8080 NETWORK_BASE_URL=http://network:8080 ISSUER_BASE_URL=http://issuer:8080 VAULT_BASE_URL=http://vault:8080 PLATFORM_CURL_CONTAINER_NETWORK=agent-set03_default product/scripts/runtime/reg_phase06_capture_to_settlement.sh
+COMPOSE_PROJECT_NAME=agent-set03 COMPOSE_FILE=product/deploy/docker-compose.yml PLATFORM_BASE_URL=http://platform:8080 ACQUIRER_BASE_URL=http://acquirer:8080 NETWORK_BASE_URL=http://network:8080 ISSUER_BASE_URL=http://issuer:8080 VAULT_BASE_URL=http://vault:8080 PLATFORM_CURL_CONTAINER_NETWORK=agent-set03_default product/scripts/runtime/reg_phase05_payment_capture.sh
+COMPOSE_PROJECT_NAME=agent-set03 COMPOSE_FILE=product/deploy/docker-compose.yml PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=agent-set03_default product/scripts/runtime/reg_phase03_ledger_reconciliation.sh
+```
+
+Regression output:
+
+```text
+SET-02 settlement fee split pass intent_id=c9309b72-9399-4076-8b08-4386b24576be
+SET-01 capture to settlement foundation pass intent_id=078b2d2f-51ca-46da-9261-77b77630fe17 batch_id=95217c4c-fcef-45e7-929e-3fbe18ceef84
+PAY-06 payment capture foundation pass intent_id=580f3d26-99e7-4ea9-b8ba-971dde5251be
+LDG-05 ledger reconciliation pass
+```
+
+Result tags:
+- `SET-03` — pass.
+- `SET-02` — pass targeted regression.
+- `SET-01` — pass targeted regression.
+- `PAY-06` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Not claimed:
+- refunds (`SET-04`);
+- payouts;
+- chargebacks;
+- merchant settlement frontend;
+- bank file export;
+- scheduled reconciliation jobs.
