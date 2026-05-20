@@ -18,6 +18,12 @@ open class AmlController(
     ): ApiResponse<AmlVelocityEvaluationResponse> =
         ApiResponse(data = amlService.evaluateVelocity(request))
 
+    @PostMapping("/internal/aml/evaluate-structuring")
+    open fun evaluateStructuring(
+        @RequestBody request: AmlStructuringEvaluationRequest,
+    ): ApiResponse<AmlStructuringEvaluationResponse> =
+        ApiResponse(data = amlService.evaluateStructuring(request))
+
     @ExceptionHandler(AmlException::class)
     open fun handleAmlException(exception: AmlException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(exception.status)

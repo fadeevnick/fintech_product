@@ -1144,21 +1144,23 @@ Explicitly not implemented/claimed:
 
 ## Phase 08 Slice 02 — AML Structuring Alert
 
-Status: **APPROVED v0.1 — planning-only; no product code implemented**.
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
 
 Planning contract:
 - `planning/implementation-slices/phase_08_slice_02_aml_structuring_alert_planning.md` — APPROVED v0.1.
 
-Planned backend/runtime scope:
-- Reuse AML alert/evaluation persistence from `AML-01`.
-- Add deterministic local structuring rule for repeated completed movements in the EUR 9,000.00-9,900.00 band.
-- Add internal `POST /internal/aml/evaluate-structuring` or equivalent local runtime trigger.
-- Create one `OPEN` alert with `rule_code = 'STRUCTURING'`, severity `HIGH`, duplicate suppression and audit row.
-- Add retained runtime script `product/scripts/runtime/reg_phase08_aml_structuring_alert.sh`.
+Implemented backend/runtime scope:
+- Reused AML alert/evaluation persistence from `AML-01`.
+- Added deterministic local structuring rule for repeated completed deposit/withdraw/transfer movements in the EUR 9,000.00-9,900.00 band over a 24-hour lookback.
+- Added internal `POST /internal/aml/evaluate-structuring`.
+- Creates one `OPEN` alert with `rule_code = 'STRUCTURING'`, severity `HIGH`, duplicate suppression and `aml.alert_created` audit row.
+- Added retained runtime script `product/scripts/runtime/reg_phase08_aml_structuring_alert.sh`.
 
-Target runtime checks:
-- `AML-02` — synthetic activity trips structuring rule and opens alert.
-- Targeted regressions: `AML-01`, `RUN-01`; `LDG-05` only if ledger tables are touched directly.
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 08 Slice 02 AML Structuring Alert Runtime Verification`.
+- `AML-02` — pass.
+- Targeted regressions passed: `AML-01`, `RUN-01`.
+- `LDG-05` not run because AML implementation reads completed wallet activity but does not write ledger tables directly.
 
 Explicitly not implemented/claimed:
 - dormancy-break (`AML-03`), critical auto-freeze (`AML-04`), AML review decisions, account freeze/unfreeze, SoF (`WLT-03`), two-eyes (`WLT-04`), frontend `UI-*`.

@@ -1,6 +1,7 @@
 package com.minifin.platform.aml
 
 import java.sql.Timestamp
+import java.math.BigDecimal
 import java.time.Instant
 import java.util.UUID
 import org.springframework.dao.DuplicateKeyException
@@ -62,6 +63,76 @@ open class AmlRepository(
             Timestamp.from(windowStartedAt),
             Timestamp.from(windowEndedAt),
             endUserId,
+            Timestamp.from(windowStartedAt),
+            Timestamp.from(windowEndedAt),
+        ) ?: 0
+
+    open fun countStructuringMoneyMovements(
+        endUserId: UUID,
+        windowStartedAt: Instant,
+        windowEndedAt: Instant,
+        minimumAmount: BigDecimal,
+        maximumAmount: BigDecimal,
+    ): Int =
+        jdbcTemplate.queryForObject(
+            """
+            select count(*) from (
+                select id
+                  from wallet.deposit_requests
+                 where user_id = ?
+                   and state = 'COMPLETED'
+                   and amount >= ?
+                   and amount <= ?
+                   and updated_at >= ?
+                   and updated_at < ?
+                union all
+                select id
+                  from wallet.withdraw_requests
+                 where user_id = ?
+                   and state = 'COMPLETED'
+                   and amount >= ?
+                   and amount <= ?
+                   and updated_at >= ?
+                   and updated_at < ?
+                union all
+                select id
+                  from wallet.internal_transfers
+                 where sender_user_id = ?
+                   and state = 'COMPLETED'
+                   and amount >= ?
+                   and amount <= ?
+                   and coalesce(completed_at, created_at) >= ?
+                   and coalesce(completed_at, created_at) < ?
+                union all
+                select id
+                  from wallet.internal_transfers
+                 where receiver_user_id = ?
+                   and state = 'COMPLETED'
+                   and amount >= ?
+                   and amount <= ?
+                   and coalesce(completed_at, created_at) >= ?
+                   and coalesce(completed_at, created_at) < ?
+            ) movements
+            """.trimIndent(),
+            Int::class.java,
+            endUserId,
+            minimumAmount,
+            maximumAmount,
+            Timestamp.from(windowStartedAt),
+            Timestamp.from(windowEndedAt),
+            endUserId,
+            minimumAmount,
+            maximumAmount,
+            Timestamp.from(windowStartedAt),
+            Timestamp.from(windowEndedAt),
+            endUserId,
+            minimumAmount,
+            maximumAmount,
+            Timestamp.from(windowStartedAt),
+            Timestamp.from(windowEndedAt),
+            endUserId,
+            minimumAmount,
+            maximumAmount,
             Timestamp.from(windowStartedAt),
             Timestamp.from(windowEndedAt),
         ) ?: 0

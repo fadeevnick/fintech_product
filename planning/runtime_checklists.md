@@ -154,7 +154,7 @@ Result tags:
 | Check ID | What to verify | Expected result | Verification script |
 |---|---|---|---|
 | `AML-01` | Velocity rule trip. | Synthetic activity trips velocity rule and opens alert. | `product/scripts/runtime/reg_phase08_aml_velocity_alert.sh` |
-| `AML-02` | Structuring rule trip. | Synthetic activity trips structuring rule and opens alert. | pending |
+| `AML-02` | Structuring rule trip. | Synthetic activity trips structuring rule and opens alert. | `product/scripts/runtime/reg_phase08_aml_structuring_alert.sh` |
 | `AML-03` | Dormancy-break rule trip. | Synthetic activity trips dormancy-break rule and opens alert. | pending |
 | `AML-04` | Critical auto-freeze. | Critical alert freezes account and blocks writes. | pending |
 | `WLT-03` | SoF deposit threshold. | Deposit > EUR 10k requires SoF before instructions. | pending |

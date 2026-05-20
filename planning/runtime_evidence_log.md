@@ -2298,3 +2298,87 @@ Not claimed:
 - merchant settlement frontend;
 - bank file export;
 - scheduled reconciliation jobs.
+
+---
+
+## 2026-05-21 — Phase 08 Slice 02 AML Structuring Alert Runtime Verification
+
+Scope:
+- Phase 08 Slice 02 AML structuring alert backend/runtime implementation.
+- Target `AML-02` plus targeted `AML-01` and `RUN-01` regressions.
+
+Build evidence:
+- `bash -n product/scripts/runtime/reg_phase08_aml_structuring_alert.sh product/scripts/runtime/reg_phase08_aml_velocity_alert.sh` — passed.
+- `git diff --check` — passed before documentation updates.
+- `docker compose -f product/deploy/docker-compose.yml build platform` — passed.
+
+Runtime environment:
+- Isolated Compose project: `mfp-aml02`.
+- Compose file: `product/deploy/docker-compose.yml`.
+- Scripts used compose-network URLs:
+  - `PLATFORM_BASE_URL=http://platform:8080`
+  - `PLATFORM_CURL_CONTAINER_NETWORK=mfp-aml02_default`
+
+Primary command:
+
+```bash
+COMPOSE_PROJECT_NAME=mfp-aml02 \
+COMPOSE_FILE=product/deploy/docker-compose.yml \
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp-aml02_default \
+product/scripts/runtime/reg_phase08_aml_structuring_alert.sh
+```
+
+Observed primary output:
+
+```text
+AML-02 structuring alert pass alert_id=a09e0ab4-9834-49f0-9af7-d0132e9dd285 end_user_id=e1febdfa-27dd-4fb2-8a71-a9dbfe8d5c7d
+```
+
+Runtime assertions passed:
+- synthetic completed wallet activity for one end user included three qualifying EUR 9,500.00 movements and one non-qualifying EUR 8,500.00 movement;
+- `POST /internal/aml/evaluate-structuring` returned `ruleCode = STRUCTURING`, `severity = HIGH`, `observedCount = 3` and `alertCreated = true`;
+- one `OPEN` `HIGH` AML alert was persisted for that end user/rule/window;
+- `aml.alert_created` audit row was persisted;
+- a second evaluation for the same user/rule/window returned the existing alert and did not create a duplicate open alert;
+- `aml.aml_rule_evaluations` retained both evaluations.
+
+Targeted regression command:
+
+```bash
+COMPOSE_PROJECT_NAME=mfp-aml02 COMPOSE_FILE=product/deploy/docker-compose.yml PLATFORM_BASE_URL=http://platform:8080 PLATFORM_CURL_CONTAINER_NETWORK=mfp-aml02_default product/scripts/runtime/reg_phase08_aml_velocity_alert.sh
+```
+
+Regression output:
+
+```text
+AML-01 velocity alert pass alert_id=024b328c-15a3-429b-a3a4-72de07323ac8 end_user_id=5f94f51c-2957-44a7-9a5c-26c62636a357
+```
+
+RUN-01 targeted health output:
+
+```text
+platform: {"service":"platform","status":"UP"}
+acquirer: {"service":"acquirer","status":"UP"}
+network: {"service":"network","status":"UP"}
+issuer: {"service":"issuer","status":"UP"}
+vault: {"service":"vault","status":"UP"}
+```
+
+Result tags:
+- `AML-02` — pass.
+- `AML-01` — pass targeted regression.
+- `RUN-01` — pass targeted regression.
+
+Not run:
+- `LDG-05`, because AML implementation reads completed wallet activity but does not write ledger tables directly.
+
+Not claimed:
+- `AML-03`;
+- `AML-04`;
+- AML review decisions;
+- account freeze/unfreeze;
+- SoF (`WLT-03`);
+- two-eyes (`WLT-04`);
+- frontend `UI-*`;
+- SAR.
