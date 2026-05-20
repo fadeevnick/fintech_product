@@ -2382,3 +2382,85 @@ Not claimed:
 - two-eyes (`WLT-04`);
 - frontend `UI-*`;
 - SAR.
+
+---
+
+## 2026-05-21 — Phase 08 Slice 03 AML Dormancy-Break Alert Runtime Verification
+
+Scope:
+- Phase 08 Slice 03 AML dormancy-break alert backend/runtime implementation.
+- Target `AML-03` plus targeted `AML-02`, `AML-01` and `RUN-01` regressions.
+
+Build/static evidence:
+- `bash -n product/scripts/runtime/reg_phase08_aml_dormancy_break_alert.sh product/scripts/runtime/reg_phase08_aml_structuring_alert.sh product/scripts/runtime/reg_phase08_aml_velocity_alert.sh` — passed.
+- `git diff --check` — passed before documentation updates.
+- `docker compose -f product/deploy/docker-compose.yml build platform` — passed.
+
+Runtime environment:
+- Isolated Compose project: `mfp-aml03`.
+- Compose file: `product/deploy/docker-compose.yml`.
+- Scripts used compose-network URLs:
+  - `PLATFORM_BASE_URL=http://platform:8080`
+  - `PLATFORM_CURL_CONTAINER_NETWORK=mfp-aml03_default`
+
+Primary command:
+
+```bash
+COMPOSE_PROJECT_NAME=mfp-aml03 \
+COMPOSE_FILE=product/deploy/docker-compose.yml \
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp-aml03_default \
+product/scripts/runtime/reg_phase08_aml_dormancy_break_alert.sh
+```
+
+Observed primary output:
+
+```text
+AML-03 dormancy-break alert pass alert_id=3b48877c-4898-472a-948e-70c87a890013 end_user_id=596adc34-1ac6-4dd9-b692-bc3bd85e6b49
+```
+
+Runtime assertions passed:
+- synthetic end user had one completed movement 45 days before evaluation;
+- synthetic end user had no completed movement during the 30-day dormant gap;
+- synthetic end user had two recent completed movements totaling EUR 1,300.00 in the latest 24-hour window;
+- `POST /internal/aml/evaluate-dormancy-break` returned `ruleCode = DORMANCY_BREAK`, `severity = HIGH`, `observedCount = 2`, `observedAmount = 1300.00`, `thresholdAmount = 1000.00`, previous activity found and zero dormant-gap activity;
+- one `OPEN` `HIGH` AML alert was persisted for that end user/rule/window;
+- alert metadata recorded `observedAmount = 1300.00` and `thresholdAmount = 1000.00`;
+- `aml.alert_created` audit row was persisted;
+- a second evaluation for the same user/rule/window returned the existing alert and did not create a duplicate open alert;
+- `aml.aml_rule_evaluations` retained both evaluations.
+
+Targeted regression outputs:
+
+```text
+AML-02 structuring alert pass alert_id=2d7dc6a9-cba7-431f-a1e9-9e19bdcc8709 end_user_id=7bdab49b-fcfb-4073-bf26-6dbbc52bdc2a
+AML-01 velocity alert pass alert_id=e7952bb7-16fc-47f8-a744-4480bbb42bc9 end_user_id=4a287aac-8596-48a8-aeee-b31d7a767ffe
+```
+
+RUN-01 health output:
+
+```text
+platform: {"service":"platform","status":"UP"}
+acquirer: {"service":"acquirer","status":"UP"}
+network: {"service":"network","status":"UP"}
+issuer: {"service":"issuer","status":"UP"}
+vault: {"service":"vault","status":"UP"}
+```
+
+Result tags:
+- `AML-03` — pass.
+- `AML-02` — pass targeted regression.
+- `AML-01` — pass targeted regression.
+- `RUN-01` — pass targeted regression.
+
+Not run:
+- `LDG-05`, because AML implementation reads completed wallet activity but does not write ledger tables directly.
+
+Not claimed:
+- `AML-04`;
+- AML review decisions;
+- account freeze/unfreeze;
+- SoF (`WLT-03`);
+- two-eyes (`WLT-04`);
+- frontend `UI-*`;
+- SAR.

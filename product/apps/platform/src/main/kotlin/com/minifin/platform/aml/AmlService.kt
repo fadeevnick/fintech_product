@@ -21,6 +21,8 @@ open class AmlService(
     private val severity = "MEDIUM"
     private val structuringRuleCode = "STRUCTURING"
     private val structuringSeverity = "HIGH"
+    private val dormancyBreakRuleCode = "DORMANCY_BREAK"
+    private val dormancyBreakSeverity = "HIGH"
 
     @Transactional
     open fun evaluateVelocity(request: AmlVelocityEvaluationRequest): AmlVelocityEvaluationResponse {
@@ -198,6 +200,111 @@ open class AmlService(
             severity = structuringSeverity,
             observedCount = observedCount,
             thresholdCount = thresholdCount,
+            windowStartedAt = windowStartedAt.toString(),
+            windowEndedAt = windowEndedAt.toString(),
+            duplicateSuppressed = duplicateSuppressed,
+        )
+    }
+
+    @Transactional
+    open fun evaluateDormancyBreak(request: AmlDormancyBreakEvaluationRequest): AmlDormancyBreakEvaluationResponse {
+        if (!amlRepository.endUserExists(request.endUserId)) {
+            throw AmlException("end_user_not_found", "End user was not found.", HttpStatus.NOT_FOUND)
+        }
+        val dormancyDays = request.dormancyDays ?: 30
+        val lookbackHours = request.lookbackHours ?: 24
+        if (dormancyDays <= 0 || dormancyDays > 3650) {
+            throw AmlException("invalid_dormancy_days", "dormancyDays must be between 1 and 3650.", HttpStatus.BAD_REQUEST)
+        }
+        if (lookbackHours <= 0 || lookbackHours > 24 * 30) {
+            throw AmlException("invalid_lookback_hours", "lookbackHours must be between 1 and 720.", HttpStatus.BAD_REQUEST)
+        }
+        val thresholdAmount = request.thresholdAmount
+            ?.let { runCatching { BigDecimal(it) }.getOrNull() }
+            ?: BigDecimal("1000.00")
+        if (thresholdAmount <= BigDecimal.ZERO) {
+            throw AmlException("invalid_threshold_amount", "thresholdAmount must be positive.", HttpStatus.BAD_REQUEST)
+        }
+
+        val normalizedThresholdAmount = thresholdAmount.setScale(2, RoundingMode.HALF_UP)
+        val windowEndedAt = Instant.now(clock).truncatedTo(ChronoUnit.HOURS).plus(1, ChronoUnit.HOURS)
+        val windowStartedAt = windowEndedAt.minus(lookbackHours, ChronoUnit.HOURS)
+        val dormantStartedAt = windowStartedAt.minus(dormancyDays, ChronoUnit.DAYS)
+        val summary = amlRepository.summarizeDormancyBreakActivity(
+            request.endUserId,
+            dormantStartedAt,
+            windowStartedAt,
+            windowEndedAt,
+        )
+        val observedAmount = summary.recentActivityAmount.setScale(2, RoundingMode.HALF_UP)
+        val previousActivityFound = summary.previousActivityCount > 0
+        val tripped = previousActivityFound &&
+            summary.dormantGapActivityCount == 0 &&
+            observedAmount > normalizedThresholdAmount
+        val metadataJson = """{"dormancyDays":$dormancyDays,"lookbackHours":$lookbackHours,"source":"local_dormancy_break_rule","previousActivityCount":${summary.previousActivityCount},"dormantGapActivityCount":${summary.dormantGapActivityCount},"observedAmount":"$observedAmount","thresholdAmount":"$normalizedThresholdAmount"}"""
+        var duplicateSuppressed = false
+        val alert = if (tripped) {
+            amlRepository.findOpenAlert(request.endUserId, dormancyBreakRuleCode, windowStartedAt, windowEndedAt)
+                ?.also { duplicateSuppressed = true }
+                ?: run {
+                    val alertId = UUID.randomUUID()
+                    val created = amlRepository.insertOpenAlert(
+                        alertId,
+                        request.endUserId,
+                        dormancyBreakRuleCode,
+                        dormancyBreakSeverity,
+                        windowStartedAt,
+                        windowEndedAt,
+                        summary.recentActivityCount,
+                        1,
+                        metadataJson,
+                    )
+                    if (created != null) {
+                        auditRepository.write(
+                            eventType = "aml.alert_created",
+                            actorType = "SYSTEM",
+                            actorId = null,
+                            subjectType = "AML_ALERT",
+                            subjectId = alertId,
+                            outcome = "SUCCESS",
+                            metadataJson = """{"endUserId":"${request.endUserId}","ruleCode":"$dormancyBreakRuleCode","severity":"$dormancyBreakSeverity","observedAmount":"$observedAmount","thresholdAmount":"$normalizedThresholdAmount"}""",
+                        )
+                        created
+                    } else {
+                        duplicateSuppressed = true
+                        amlRepository.findOpenAlert(request.endUserId, dormancyBreakRuleCode, windowStartedAt, windowEndedAt)
+                    }
+                }
+        } else {
+            null
+        }
+
+        amlRepository.insertEvaluation(
+            UUID.randomUUID(),
+            request.endUserId,
+            dormancyBreakRuleCode,
+            windowStartedAt,
+            windowEndedAt,
+            summary.recentActivityCount,
+            1,
+            tripped,
+            alert?.id,
+            metadataJson,
+        )
+
+        return AmlDormancyBreakEvaluationResponse(
+            endUserId = request.endUserId.toString(),
+            ruleCode = dormancyBreakRuleCode,
+            tripped = tripped,
+            alertId = alert?.id?.toString(),
+            status = alert?.status,
+            severity = dormancyBreakSeverity,
+            observedCount = summary.recentActivityCount,
+            thresholdCount = 1,
+            observedAmount = observedAmount.toPlainString(),
+            thresholdAmount = normalizedThresholdAmount.toPlainString(),
+            previousActivityFound = previousActivityFound,
+            dormantGapActivityCount = summary.dormantGapActivityCount,
             windowStartedAt = windowStartedAt.toString(),
             windowEndedAt = windowEndedAt.toString(),
             duplicateSuppressed = duplicateSuppressed,

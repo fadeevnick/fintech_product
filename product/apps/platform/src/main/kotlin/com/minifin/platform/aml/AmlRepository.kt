@@ -137,6 +137,63 @@ open class AmlRepository(
             Timestamp.from(windowEndedAt),
         ) ?: 0
 
+    open fun summarizeDormancyBreakActivity(
+        endUserId: UUID,
+        dormantStartedAt: Instant,
+        windowStartedAt: Instant,
+        windowEndedAt: Instant,
+    ): AmlDormancyBreakActivitySummary =
+        jdbcTemplate.queryForObject(
+            """
+            with movements as (
+                select amount, updated_at as occurred_at
+                  from wallet.deposit_requests
+                 where user_id = ?
+                   and state = 'COMPLETED'
+                union all
+                select amount, updated_at as occurred_at
+                  from wallet.withdraw_requests
+                 where user_id = ?
+                   and state = 'COMPLETED'
+                union all
+                select amount, coalesce(completed_at, created_at) as occurred_at
+                  from wallet.internal_transfers
+                 where sender_user_id = ?
+                   and state = 'COMPLETED'
+                union all
+                select amount, coalesce(completed_at, created_at) as occurred_at
+                  from wallet.internal_transfers
+                 where receiver_user_id = ?
+                   and state = 'COMPLETED'
+            )
+            select
+                count(*) filter (where occurred_at < ?) as previous_activity_count,
+                count(*) filter (where occurred_at >= ? and occurred_at < ?) as dormant_gap_activity_count,
+                count(*) filter (where occurred_at >= ? and occurred_at < ?) as recent_activity_count,
+                coalesce(sum(amount) filter (where occurred_at >= ? and occurred_at < ?), 0) as recent_activity_amount
+              from movements
+            """.trimIndent(),
+            { rs, _ ->
+                AmlDormancyBreakActivitySummary(
+                    previousActivityCount = rs.getInt("previous_activity_count"),
+                    dormantGapActivityCount = rs.getInt("dormant_gap_activity_count"),
+                    recentActivityCount = rs.getInt("recent_activity_count"),
+                    recentActivityAmount = rs.getBigDecimal("recent_activity_amount"),
+                )
+            },
+            endUserId,
+            endUserId,
+            endUserId,
+            endUserId,
+            Timestamp.from(dormantStartedAt),
+            Timestamp.from(dormantStartedAt),
+            Timestamp.from(windowStartedAt),
+            Timestamp.from(windowStartedAt),
+            Timestamp.from(windowEndedAt),
+            Timestamp.from(windowStartedAt),
+            Timestamp.from(windowEndedAt),
+        ) ?: AmlDormancyBreakActivitySummary(0, 0, 0, BigDecimal.ZERO)
+
     open fun findOpenAlert(endUserId: UUID, ruleCode: String, windowStartedAt: Instant, windowEndedAt: Instant): AmlAlert? =
         jdbcTemplate.query(
             """

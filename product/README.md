@@ -37,6 +37,7 @@ Implemented runtime behavior so far:
 - Phase 07 Slice 04 sanctions false-positive exception in `platform`: compliance-only backoffice sanctions hit list/detail/decision APIs, `CLEAR_FALSE_POSITIVE` decision with rationale, `sanctions.sanctions_hit_decisions`, `sanctions.sanctions_false_positive_exceptions`, audit rows, and suppression of the same future OpenSanctions match for the same end user/vendor entity during KYC manual approval. `SNX-02` has runtime evidence.
 - Phase 08 Slice 01 AML velocity alert foundation in `platform`: `aml.aml_alerts` / `aml.aml_rule_evaluations`, internal `POST /internal/aml/evaluate-velocity`, deterministic local completed-activity velocity rule, duplicate suppression for same user/rule/window open alerts, and `aml.alert_created` audit rows. `AML-01` has runtime evidence.
 - Phase 08 Slice 02 AML structuring alert in `platform`: internal `POST /internal/aml/evaluate-structuring`, deterministic local structuring rule for repeated completed deposit/withdraw/transfer movements in the EUR 9,000.00-9,900.00 band over a 24-hour lookback, `STRUCTURING` `HIGH` alerts, duplicate suppression and `aml.alert_created` audit rows. `AML-02` has runtime evidence.
+- Phase 08 Slice 03 AML dormancy-break alert in `platform`: internal `POST /internal/aml/evaluate-dormancy-break`, deterministic local rule for previously active users with no completed money-moving activity during a 30-day dormant gap and recent completed activity over EUR 1,000.00 in 24 hours, `DORMANCY_BREAK` `HIGH` alerts, duplicate suppression and `aml.alert_created` audit rows. `AML-03` has runtime evidence.
 
 ## Local Commands
 
@@ -146,6 +147,7 @@ scripts/runtime/reg_phase07_opensanctions_fail_closed.sh
 scripts/runtime/reg_phase07_sanctions_false_positive.sh
 scripts/runtime/reg_phase08_aml_velocity_alert.sh
 scripts/runtime/reg_phase08_aml_structuring_alert.sh
+scripts/runtime/reg_phase08_aml_dormancy_break_alert.sh
 ```
 
 ## Stripe Webhook Local Runtime

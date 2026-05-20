@@ -1164,3 +1164,28 @@ Runtime evidence:
 
 Explicitly not implemented/claimed:
 - dormancy-break (`AML-03`), critical auto-freeze (`AML-04`), AML review decisions, account freeze/unfreeze, SoF (`WLT-03`), two-eyes (`WLT-04`), frontend `UI-*`.
+
+---
+
+## Phase 08 Slice 03 — AML Dormancy-Break Alert
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
+
+Planning contract:
+- `planning/implementation-slices/phase_08_slice_03_aml_dormancy_break_planning.md` — APPROVED v0.1.
+
+Implemented backend/runtime scope:
+- Reused AML alert/evaluation persistence from `AML-01`.
+- Added deterministic local dormancy-break rule for users with previous completed money-moving activity, no completed activity during a 30-day dormant gap and recent completed activity over EUR 1,000.00 in a 24-hour lookback.
+- Added internal `POST /internal/aml/evaluate-dormancy-break`.
+- Creates one `OPEN` alert with `rule_code = 'DORMANCY_BREAK'`, severity `HIGH`, duplicate suppression and `aml.alert_created` audit row.
+- Added retained runtime script `product/scripts/runtime/reg_phase08_aml_dormancy_break_alert.sh`.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 08 Slice 03 AML Dormancy-Break Alert Runtime Verification`.
+- `AML-03` — pass.
+- Targeted regressions passed: `AML-02`, `AML-01`, `RUN-01`.
+- `LDG-05` not run because AML implementation reads completed wallet activity but does not write ledger tables directly.
+
+Explicitly not implemented/claimed:
+- critical auto-freeze (`AML-04`), AML review decisions, account freeze/unfreeze, SoF (`WLT-03`), two-eyes (`WLT-04`), frontend `UI-*`, SAR.

@@ -24,6 +24,12 @@ open class AmlController(
     ): ApiResponse<AmlStructuringEvaluationResponse> =
         ApiResponse(data = amlService.evaluateStructuring(request))
 
+    @PostMapping("/internal/aml/evaluate-dormancy-break")
+    open fun evaluateDormancyBreak(
+        @RequestBody request: AmlDormancyBreakEvaluationRequest,
+    ): ApiResponse<AmlDormancyBreakEvaluationResponse> =
+        ApiResponse(data = amlService.evaluateDormancyBreak(request))
+
     @ExceptionHandler(AmlException::class)
     open fun handleAmlException(exception: AmlException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(exception.status)
