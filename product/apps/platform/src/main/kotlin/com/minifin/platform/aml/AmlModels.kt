@@ -1,6 +1,7 @@
 package com.minifin.platform.aml
 
 import java.math.BigDecimal
+import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.http.HttpStatus
 
@@ -91,6 +92,51 @@ data class AmlDormancyBreakActivitySummary(
     val dormantGapActivityCount: Int,
     val recentActivityCount: Int,
     val recentActivityAmount: BigDecimal,
+)
+
+data class AmlAlertRecord(
+    val id: UUID,
+    val endUserId: UUID,
+    val ruleCode: String,
+    val severity: String,
+    val status: String,
+    val windowStartedAt: OffsetDateTime,
+    val windowEndedAt: OffsetDateTime,
+    val observedCount: Int,
+    val thresholdCount: Int,
+    val createdAt: OffsetDateTime,
+    val updatedAt: OffsetDateTime,
+)
+
+data class AmlAlertResponse(
+    val id: String,
+    val endUserId: String,
+    val ruleCode: String,
+    val severity: String,
+    val status: String,
+    val windowStartedAt: OffsetDateTime,
+    val windowEndedAt: OffsetDateTime,
+    val observedCount: Int,
+    val thresholdCount: Int,
+    val createdAt: OffsetDateTime,
+    val updatedAt: OffsetDateTime,
+)
+
+data class AmlAlertDecisionRequest(
+    val decision: String,
+    val rationale: String?,
+)
+
+data class AmlAlertDecisionResponse(
+    val alertId: String,
+    val endUserId: String,
+    val previousStatus: String,
+    val status: String,
+    val decision: String,
+    val decidedBySubject: String,
+    val decidedByRole: String?,
+    val unfrozeActor: Boolean,
+    val decidedAt: OffsetDateTime,
 )
 
 class AmlException(

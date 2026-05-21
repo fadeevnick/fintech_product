@@ -3571,3 +3571,79 @@ Not claimed:
 - `REC-05` final cut-register audit;
 - frontend `UI-*`;
 - real Stripe/Sumsub vendor calls.
+
+---
+
+## 2026-05-21 — Phase 08 Slice 07 AML Alert Review Decisions Runtime Verification
+
+Scope:
+- Phase 08 Slice 07 AML alert review decisions backend/runtime implementation.
+- Target `AML-05`.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase08_aml_review_decisions.sh
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+```
+
+Observed result:
+
+```text
+syntax ok
+BUILD SUCCESSFUL in 9s
+```
+
+Runtime commands:
+
+```text
+product/gradlew --no-daemon -p product :apps:platform:bootJar
+DOCKER_BUILDKIT=0 docker build -f /tmp/Dockerfile.mfp-aml05-platform -t mfp-aml05-platform:latest /tmp/mfp-aml05-build/
+
+COMPOSE_PROJECT_NAME=mfp-aml05
+COMPOSE_FILE=product/deploy/docker-compose.yml
+PLATFORM_BASE_URL=http://platform:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+KEYCLOAK_BASE_URL=http://keycloak:8080
+KEYCLOAK_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+product/scripts/runtime/reg_phase08_aml_review_decisions.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+AML-05 aml alert review decisions pass run_tag=1779395328502912502-3274802
+```
+
+Flyway migration confirmed:
+
+```text
+select version from flyway_schema_history order by installed_rank desc limit 3;
+→ 34, 33, 32
+```
+
+The runtime verification proved:
+- `GET /api/v1/backoffice/aml-alerts` lists reviewable alerts in queue for operator token;
+- `GET /api/v1/backoffice/aml-alerts/{id}` returns alert detail with `endUserId` and `OPEN` status;
+- Short rationale (< 20 chars) rejected with `400 invalid_rationale`;
+- `CLOSED_FALSE_POSITIVE` decision by operator succeeds: alert status `CLOSED_FALSE_POSITIVE`, `unfrozeActor=false`, `aml_alert_decisions` row, `aml.alert_reviewed` audit row;
+- Repeat decision on already-closed alert rejected with `409 invalid_state`;
+- `CLOSED_FALSE_POSITIVE` on `ACCOUNT_FROZEN_PERMANENT` alert with actor `FROZEN` (reason `aml_critical_alert`): `unfrozeActor=true`, `actor_controls.state` returns to `ACTIVE`, `identity.actor_control_changed` audit row written;
+- `ESCALATED` decision by operator succeeds: alert status `ESCALATED`;
+- `MARKED_FOR_SAR` by operator rejected with `403 forbidden_role`, alert stays `OPEN`;
+- `MARKED_FOR_SAR` by compliance officer succeeds: alert status `MARKED_FOR_SAR`, `aml.alert_reviewed` audit row;
+- Flyway migration `V34__aml_alert_review_decisions.sql` applied cleanly (latest version = 34).
+
+Result tags:
+- `AML-05` — pass.
+
+Runtime environment notes:
+- Isolated compose project `mfp-aml05` with external network `mini-fintech-platform-a2_default`; service host ports reset via compose override `!reset []`.
+- Platform image built from locally verified `bootJar` output (lean Dockerfile, no in-container Gradle build).
+- Other backend service images reused from `mini-fintech-platform-a1-*` and `mini-fintech-platform-a2-*` slot images.
+- Temporary compose stack `mfp-aml05` stopped with `down -v --remove-orphans` after runtime checks.
+
+Not claimed:
+- SAR filing workflow;
+- SoF backoffice review queue;
+- frontend `UI-*`.

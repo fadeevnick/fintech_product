@@ -1347,6 +1347,34 @@ Explicitly not implemented/claimed:
 
 ---
 
+## Phase 08 Slice 07 — AML Alert Review Decisions
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
+
+Planning contract:
+- Implemented from planning context; no separate planning doc created.
+
+Implemented backend/runtime scope:
+- Added Platform migration `V34__aml_alert_review_decisions.sql`: `aml.aml_alert_decisions` table with `id`, `alert_id`, `previous_status`, `resulting_status`, `decision`, `rationale`, `decided_by_subject`, `decided_by_role`, `created_at`.
+- Added `AmlAlertRecord`, `AmlAlertResponse`, `AmlAlertDecisionRequest`, `AmlAlertDecisionResponse` models in `AmlModels.kt`.
+- Added `listReviewableAlerts`, `findAlertById`, `transitionAlertStatus`, `insertAlertDecision`, and private `toAlertRecord()` mapper to `AmlRepository.kt`.
+- Added `listAlerts`, `getAlert`, and `decideAlert` to `AmlService.kt`:
+  - `decideAlert` validates decision (`CLOSED_FALSE_POSITIVE`, `ESCALATED`, `MARKED_FOR_SAR`), rationale length >= 20 chars, and `MARKED_FOR_SAR` compliance-only gate.
+  - CAS-style `transitionAlertStatus` prevents double-close race.
+  - `CLOSED_FALSE_POSITIVE` on a `ACCOUNT_FROZEN_PERMANENT` alert with a `FROZEN` actor (reason `aml_critical_alert`) unfreezes the actor to `ACTIVE` (reason `aml_false_positive_review`) and writes an `identity.actor_control_changed` audit row.
+  - Writes `aml.alert_reviewed` audit row on every completed decision.
+- Added `AmlBackofficeController.kt` with `GET /api/v1/backoffice/aml-alerts`, `GET /api/v1/backoffice/aml-alerts/{id}`, `POST /api/v1/backoffice/aml-alerts/{id}/decision`.
+- Added retained runtime script `product/scripts/runtime/reg_phase08_aml_review_decisions.sh` (7-part verification).
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 08 Slice 07 AML Alert Review Decisions Runtime Verification`.
+- `AML-05` — pass.
+
+Explicitly not implemented/claimed:
+- SAR filing workflow; SoF backoffice review queue; frontend `UI-*`; real SWIFT/FATF integrations.
+
+---
+
 ## 2026-05-21 — Phase 09 Slice 01 Chargeback Initiation (`CHB-01`)
 
 Planning note:

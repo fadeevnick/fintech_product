@@ -1,8 +1,10 @@
 package com.minifin.platform.aml
 
+import java.sql.ResultSet
 import java.sql.Timestamp
 import java.math.BigDecimal
 import java.time.Instant
+import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.jdbc.core.JdbcTemplate
@@ -330,4 +332,97 @@ open class AmlRepository(
             """.trimIndent(),
             alertId,
         ) == 1
+
+    open fun listReviewableAlerts(limit: Int = 100): List<AmlAlertRecord> =
+        jdbcTemplate.query(
+            """
+            select id, end_user_id, rule_code, severity, status,
+                   window_started_at, window_ended_at, observed_count, threshold_count,
+                   created_at, updated_at
+              from aml.aml_alerts
+             where status in ('OPEN', 'ACCOUNT_FROZEN_PERMANENT')
+             order by case severity
+                       when 'CRITICAL' then 1
+                       when 'HIGH'     then 2
+                       when 'MEDIUM'   then 3
+                       else 4
+                      end asc,
+                   created_at asc
+             limit ?
+            """.trimIndent(),
+            { rs, _ -> rs.toAlertRecord() },
+            limit,
+        )
+
+    open fun findAlertById(id: UUID): AmlAlertRecord? =
+        jdbcTemplate.query(
+            """
+            select id, end_user_id, rule_code, severity, status,
+                   window_started_at, window_ended_at, observed_count, threshold_count,
+                   created_at, updated_at
+              from aml.aml_alerts
+             where id = ?
+            """.trimIndent(),
+            { rs, _ -> rs.toAlertRecord() },
+            id,
+        ).firstOrNull()
+
+    open fun transitionAlertStatus(id: UUID, fromStatuses: Set<String>, toStatus: String): Boolean {
+        val placeholders = fromStatuses.joinToString(",") { "?" }
+        val params = mutableListOf<Any>(toStatus, id)
+        params.addAll(fromStatuses)
+        return jdbcTemplate.update(
+            """
+            update aml.aml_alerts
+               set status = ?,
+                   updated_at = now()
+             where id = ?
+               and status in ($placeholders)
+            """.trimIndent(),
+            *params.toTypedArray(),
+        ) == 1
+    }
+
+    open fun insertAlertDecision(
+        id: UUID,
+        alertId: UUID,
+        previousStatus: String,
+        resultingStatus: String,
+        decision: String,
+        rationale: String,
+        decidedBySubject: String,
+        decidedByRole: String?,
+    ) {
+        jdbcTemplate.update(
+            """
+            insert into aml.aml_alert_decisions (
+                id, alert_id, previous_status, resulting_status, decision, rationale, decided_by_subject, decided_by_role
+            )
+            values (?, ?, ?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+            id,
+            alertId,
+            previousStatus,
+            resultingStatus,
+            decision,
+            rationale,
+            decidedBySubject,
+            decidedByRole,
+        )
+    }
+
+    private fun ResultSet.toAlertRecord(): AmlAlertRecord =
+        AmlAlertRecord(
+            id = getObject("id", UUID::class.java),
+            endUserId = getObject("end_user_id", UUID::class.java),
+            ruleCode = getString("rule_code"),
+            severity = getString("severity"),
+            status = getString("status"),
+            windowStartedAt = getObject("window_started_at", OffsetDateTime::class.java),
+            windowEndedAt = getObject("window_ended_at", OffsetDateTime::class.java),
+            observedCount = getInt("observed_count"),
+            thresholdCount = getInt("threshold_count"),
+            createdAt = getObject("created_at", OffsetDateTime::class.java),
+            updatedAt = getObject("updated_at", OffsetDateTime::class.java),
+        )
 }

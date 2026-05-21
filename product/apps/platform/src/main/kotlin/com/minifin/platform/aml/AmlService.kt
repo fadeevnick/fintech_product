@@ -1,9 +1,11 @@
 package com.minifin.platform.aml
 
+import com.minifin.platform.backoffice.BackofficePrincipal
 import com.minifin.platform.controls.ActorControlRepository
 import com.minifin.platform.identity.AuditRepository
 import java.time.Clock
 import java.time.Instant
+import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -312,6 +314,126 @@ open class AmlService(
             duplicateSuppressed = duplicateSuppressed,
         )
     }
+
+    open fun listAlerts(): List<AmlAlertResponse> =
+        amlRepository.listReviewableAlerts().map { it.toResponse() }
+
+    open fun getAlert(id: UUID): AmlAlertResponse {
+        val record = amlRepository.findAlertById(id)
+            ?: throw AmlException("not_found", "AML alert was not found.", HttpStatus.NOT_FOUND)
+        return record.toResponse()
+    }
+
+    @Transactional
+    open fun decideAlert(id: UUID, request: AmlAlertDecisionRequest, principal: BackofficePrincipal): AmlAlertDecisionResponse {
+        val alert = amlRepository.findAlertById(id)
+            ?: throw AmlException("not_found", "AML alert was not found.", HttpStatus.NOT_FOUND)
+
+        val decision = request.decision.trim().uppercase()
+        if (decision !in setOf("CLOSED_FALSE_POSITIVE", "ESCALATED", "MARKED_FOR_SAR")) {
+            throw AmlException("invalid_decision", "Decision must be CLOSED_FALSE_POSITIVE, ESCALATED or MARKED_FOR_SAR.", HttpStatus.BAD_REQUEST)
+        }
+
+        val rationale = request.rationale?.trim().orEmpty()
+        if (rationale.length < 20) {
+            throw AmlException("invalid_rationale", "Decision rationale must be at least 20 characters.", HttpStatus.BAD_REQUEST)
+        }
+
+        if (decision == "MARKED_FOR_SAR" && principal.roles.none { it == "compliance_officer" || it == "senior_compliance" }) {
+            throw AmlException("forbidden_role", "MARKED_FOR_SAR requires compliance_officer or senior_compliance role.", HttpStatus.FORBIDDEN)
+        }
+
+        val (resultingStatus, allowedFromStatuses) = when (decision) {
+            "CLOSED_FALSE_POSITIVE" -> "CLOSED_FALSE_POSITIVE" to setOf("OPEN", "ACCOUNT_FROZEN_PERMANENT")
+            "ESCALATED" -> "ESCALATED" to setOf("OPEN")
+            "MARKED_FOR_SAR" -> "MARKED_FOR_SAR" to setOf("OPEN")
+            else -> throw AmlException("invalid_decision", "Unrecognized decision.", HttpStatus.BAD_REQUEST)
+        }
+
+        if (alert.status !in allowedFromStatuses) {
+            throw AmlException("invalid_state", "AML alert status '${alert.status}' does not allow decision '$decision'.", HttpStatus.CONFLICT)
+        }
+
+        val transitioned = amlRepository.transitionAlertStatus(id, allowedFromStatuses, resultingStatus)
+        if (!transitioned) {
+            throw AmlException("invalid_state", "AML alert could not be transitioned; it may have been updated concurrently.", HttpStatus.CONFLICT)
+        }
+
+        val role = principal.roles.firstOrNull { it == "senior_compliance" || it == "compliance_officer" || it == "backoffice_operator" }
+        amlRepository.insertAlertDecision(
+            UUID.randomUUID(),
+            id,
+            alert.status,
+            resultingStatus,
+            decision,
+            rationale,
+            principal.subject,
+            role,
+        )
+
+        var unfrozeActor = false
+        if (decision == "CLOSED_FALSE_POSITIVE") {
+            val control = actorControlRepository.find("END_USER", alert.endUserId)
+            if (control != null && control.state == "FROZEN" && control.reasonCode == "aml_critical_alert") {
+                actorControlRepository.upsert(
+                    actorType = "END_USER",
+                    actorId = alert.endUserId,
+                    state = "ACTIVE",
+                    reasonCode = "aml_false_positive_review",
+                    updatedByActorType = "BACKOFFICE",
+                    updatedByActorId = principal.subjectUuid,
+                    updatedByReference = principal.subject,
+                )
+                auditRepository.write(
+                    eventType = "identity.actor_control_changed",
+                    actorType = "BACKOFFICE",
+                    actorId = principal.subjectUuid,
+                    subjectType = "END_USER",
+                    subjectId = alert.endUserId,
+                    outcome = "SUCCESS",
+                    metadataJson = """{"state":"ACTIVE","reasonCode":"aml_false_positive_review","alertId":"$id","previousState":"FROZEN"}""",
+                )
+                unfrozeActor = true
+            }
+        }
+
+        auditRepository.write(
+            eventType = "aml.alert_reviewed",
+            actorType = "BACKOFFICE",
+            actorId = principal.subjectUuid,
+            subjectType = "AML_ALERT",
+            subjectId = id,
+            outcome = "SUCCESS",
+            metadataJson = """{"decision":"$decision","previousStatus":"${alert.status}","resultingStatus":"$resultingStatus","endUserId":"${alert.endUserId}","ruleCode":"${alert.ruleCode}","role":"${role ?: ""}","unfrozeActor":$unfrozeActor}""",
+        )
+
+        return AmlAlertDecisionResponse(
+            alertId = id.toString(),
+            endUserId = alert.endUserId.toString(),
+            previousStatus = alert.status,
+            status = resultingStatus,
+            decision = decision,
+            decidedBySubject = principal.subject,
+            decidedByRole = role,
+            unfrozeActor = unfrozeActor,
+            decidedAt = OffsetDateTime.now(),
+        )
+    }
+
+    private fun AmlAlertRecord.toResponse(): AmlAlertResponse =
+        AmlAlertResponse(
+            id = id.toString(),
+            endUserId = endUserId.toString(),
+            ruleCode = ruleCode,
+            severity = severity,
+            status = status,
+            windowStartedAt = windowStartedAt,
+            windowEndedAt = windowEndedAt,
+            observedCount = observedCount,
+            thresholdCount = thresholdCount,
+            createdAt = createdAt,
+            updatedAt = updatedAt,
+        )
 
     @Transactional
     open fun processCriticalAutoFreezes(): AmlCriticalAutoFreezeResponse {
