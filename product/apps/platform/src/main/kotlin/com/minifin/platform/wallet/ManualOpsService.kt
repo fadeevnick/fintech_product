@@ -9,6 +9,7 @@ import com.minifin.platform.ledger.LedgerJournalRequest
 import com.minifin.platform.ledger.LedgerPostingRequest
 import com.minifin.platform.ledger.LedgerRepository
 import com.minifin.platform.ledger.LedgerService
+import java.math.BigDecimal
 import java.math.RoundingMode
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -85,7 +86,7 @@ class ManualOpsService(
                 status = HttpStatus.NOT_FOUND,
             )
 
-        if (deposit.state !in setOf("REQUESTED", "PENDING_OPERATOR_REVIEW")) {
+        if (deposit.state !in setOf("REQUESTED", "PENDING_OPERATOR_REVIEW", "READY_FOR_SECOND_REVIEW")) {
             throw WalletException(
                 code = "deposit_already_decided",
                 message = "Deposit request is in a terminal state.",
@@ -120,7 +121,7 @@ class ManualOpsService(
                 status = HttpStatus.NOT_FOUND,
             )
 
-        if (withdrawal.state != "HELD") {
+        if (withdrawal.state !in setOf("HELD", "READY_FOR_SECOND_REVIEW")) {
             throw WalletException(
                 code = "withdrawal_already_decided",
                 message = "Withdrawal request is not held for operator decision.",
@@ -146,6 +147,46 @@ class ManualOpsService(
         principal: BackofficePrincipal,
     ): DepositRequestResponse {
         actorControlService.requireWriteAllowed("END_USER", deposit.userId)
+        if (deposit.state == "REQUESTED") {
+            throw WalletException(
+                code = "deposit_state_conflict",
+                message = "Deposit request is not ready for operator approval.",
+                status = HttpStatus.CONFLICT,
+            )
+        }
+        if (deposit.amount >= HIGH_VALUE_THRESHOLD && deposit.state == "PENDING_OPERATOR_REVIEW") {
+            val updated = walletRepository.markDepositReadyForSecondReview(
+                id = deposit.id,
+                reason = reason,
+                actorType = "BACKOFFICE",
+                actorId = principal.subjectUuid,
+                actorReference = principal.subject,
+            )
+            if (updated == 0) {
+                throw WalletException(
+                    code = "deposit_state_conflict",
+                    message = "Deposit request state changed concurrently.",
+                    status = HttpStatus.CONFLICT,
+                )
+            }
+            auditRepository.write(
+                eventType = "wallet.deposit_marked_for_second_review",
+                actorType = "BACKOFFICE",
+                actorId = principal.subjectUuid,
+                subjectType = "WALLET_DEPOSIT_REQUEST",
+                subjectId = deposit.id,
+                outcome = "SUCCESS",
+                metadataJson = """{"amount":"${deposit.amount.toPlainString()}"}""",
+            )
+            return walletRepository.findDepositRequest(deposit.id)!!.toResponse()
+        }
+        if (deposit.amount >= HIGH_VALUE_THRESHOLD && deposit.firstReviewActorId == principal.subjectUuid) {
+            throw WalletException(
+                code = "two_eyes_same_actor_denied",
+                message = "Second approval must be performed by a different backoffice actor.",
+                status = HttpStatus.FORBIDDEN,
+            )
+        }
 
         val clearing = ledgerRepository.findAccountByCode("EXTERNAL_DEPOSIT_CLEARING")
             ?: throw WalletException(
@@ -183,7 +224,14 @@ class ManualOpsService(
             ),
         )
 
-        val updated = walletRepository.markCompleted(
+        val updated = if (deposit.state == "READY_FOR_SECOND_REVIEW") walletRepository.markCompletedAfterSecondReview(
+            id = deposit.id,
+            journalEntryId = UUID.fromString(journal.journalId),
+            reason = reason,
+            decidedByActorType = "BACKOFFICE",
+            decidedByActorId = principal.subjectUuid,
+            decidedByReference = principal.subject,
+        ) else walletRepository.markCompleted(
             id = deposit.id,
             journalEntryId = UUID.fromString(journal.journalId),
             reason = reason,
@@ -249,6 +297,39 @@ class ManualOpsService(
         principal: BackofficePrincipal,
     ): WithdrawalRequestResponse {
         actorControlService.requireWriteAllowed("END_USER", withdrawal.userId)
+        if (withdrawal.amount >= HIGH_VALUE_THRESHOLD && withdrawal.state == "HELD") {
+            val updated = walletRepository.markWithdrawalReadyForSecondReview(
+                id = withdrawal.id,
+                reason = reason,
+                actorType = "BACKOFFICE",
+                actorId = principal.subjectUuid,
+                actorReference = principal.subject,
+            )
+            if (updated == 0) {
+                throw WalletException(
+                    code = "withdrawal_state_conflict",
+                    message = "Withdrawal request state changed concurrently.",
+                    status = HttpStatus.CONFLICT,
+                )
+            }
+            auditRepository.write(
+                eventType = "wallet.withdrawal_marked_for_second_review",
+                actorType = "BACKOFFICE",
+                actorId = principal.subjectUuid,
+                subjectType = "WALLET_WITHDRAW_REQUEST",
+                subjectId = withdrawal.id,
+                outcome = "SUCCESS",
+                metadataJson = """{"amount":"${withdrawal.amount.toPlainString()}"}""",
+            )
+            return walletRepository.findWithdrawalRequest(withdrawal.id)!!.toResponse()
+        }
+        if (withdrawal.amount >= HIGH_VALUE_THRESHOLD && withdrawal.firstReviewActorId == principal.subjectUuid) {
+            throw WalletException(
+                code = "two_eyes_same_actor_denied",
+                message = "Second completion must be performed by a different backoffice actor.",
+                status = HttpStatus.FORBIDDEN,
+            )
+        }
 
         val clearing = ledgerRepository.findAccountByCode("EXTERNAL_WITHDRAWAL_CLEARING")
             ?: throw WalletException(
@@ -286,7 +367,14 @@ class ManualOpsService(
             ),
         )
 
-        val updated = walletRepository.markWithdrawalCompleted(
+        val updated = if (withdrawal.state == "READY_FOR_SECOND_REVIEW") walletRepository.markWithdrawalCompletedAfterSecondReview(
+            id = withdrawal.id,
+            completionJournalEntryId = UUID.fromString(journal.journalId),
+            reason = reason,
+            decidedByActorType = "BACKOFFICE",
+            decidedByActorId = principal.subjectUuid,
+            decidedByReference = principal.subject,
+        ) else walletRepository.markWithdrawalCompleted(
             id = withdrawal.id,
             completionJournalEntryId = UUID.fromString(journal.journalId),
             reason = reason,
@@ -396,5 +484,9 @@ class ManualOpsService(
             )
         }
         return trimmed
+    }
+
+    companion object {
+        private val HIGH_VALUE_THRESHOLD = BigDecimal("10000.0000")
     }
 }

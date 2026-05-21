@@ -24,6 +24,7 @@ data class DepositRequestRecord(
     val reason: String?,
     val journalEntryId: UUID?,
     val sourceOfFundsSubmitted: Boolean,
+    val firstReviewActorId: UUID?,
     val createdAt: OffsetDateTime,
     val decidedAt: OffsetDateTime?,
 )
@@ -47,6 +48,7 @@ data class WithdrawalRequestRecord(
     val holdJournalEntryId: UUID?,
     val completionJournalEntryId: UUID?,
     val releaseJournalEntryId: UUID?,
+    val firstReviewActorId: UUID?,
     val createdAt: OffsetDateTime,
     val heldAt: OffsetDateTime?,
     val decidedAt: OffsetDateTime?,
@@ -129,7 +131,7 @@ class WalletRepository(
             """
             select d.id, d.user_id, d.wallet_account_id, d.amount, d.currency, d.state, d.reason,
                    d.journal_entry_id, exists(select 1 from wallet.source_of_funds_declarations s where s.deposit_request_id = d.id) as source_of_funds_submitted,
-                   d.created_at, d.decided_at
+                   d.first_review_actor_id, d.created_at, d.decided_at
             from wallet.deposit_requests d
             where d.id = ?
             """.trimIndent(),
@@ -142,7 +144,7 @@ class WalletRepository(
             """
             select d.id, d.user_id, d.wallet_account_id, d.amount, d.currency, d.state, d.reason,
                    d.journal_entry_id, exists(select 1 from wallet.source_of_funds_declarations s where s.deposit_request_id = d.id) as source_of_funds_submitted,
-                   d.created_at, d.decided_at
+                   d.first_review_actor_id, d.created_at, d.decided_at
             from wallet.deposit_requests d
             where d.user_id = ?
             order by d.created_at desc
@@ -158,9 +160,9 @@ class WalletRepository(
             """
             select d.id, d.user_id, d.wallet_account_id, d.amount, d.currency, d.state, d.reason,
                    d.journal_entry_id, exists(select 1 from wallet.source_of_funds_declarations s where s.deposit_request_id = d.id) as source_of_funds_submitted,
-                   d.created_at, d.decided_at
+                   d.first_review_actor_id, d.created_at, d.decided_at
             from wallet.deposit_requests d
-            where d.state = 'PENDING_OPERATOR_REVIEW'
+            where d.state in ('PENDING_OPERATOR_REVIEW', 'READY_FOR_SECOND_REVIEW')
             order by d.created_at asc
             limit ?
             """.trimIndent(),
@@ -249,6 +251,61 @@ class WalletRepository(
             id,
         )
 
+    fun markDepositReadyForSecondReview(
+        id: UUID,
+        reason: String,
+        actorType: String,
+        actorId: UUID?,
+        actorReference: String?,
+    ): Int =
+        jdbcTemplate.update(
+            """
+            update wallet.deposit_requests
+               set state = 'READY_FOR_SECOND_REVIEW',
+                   first_review_reason = ?,
+                   first_review_actor_type = ?,
+                   first_review_actor_id = ?,
+                   first_review_reference = ?,
+                   first_reviewed_at = now()
+             where id = ?
+               and state = 'PENDING_OPERATOR_REVIEW'
+            """.trimIndent(),
+            reason,
+            actorType,
+            actorId,
+            actorReference,
+            id,
+        )
+
+    fun markCompletedAfterSecondReview(
+        id: UUID,
+        journalEntryId: UUID,
+        reason: String,
+        decidedByActorType: String,
+        decidedByActorId: UUID?,
+        decidedByReference: String?,
+    ): Int =
+        jdbcTemplate.update(
+            """
+            update wallet.deposit_requests
+               set state = 'COMPLETED',
+                   journal_entry_id = ?,
+                   reason = ?,
+                   decided_by_actor_type = ?,
+                   decided_by_actor_id = ?,
+                   decided_by_reference = ?,
+                   decided_at = now()
+             where id = ?
+               and state = 'READY_FOR_SECOND_REVIEW'
+            """.trimIndent(),
+            journalEntryId,
+            reason,
+            decidedByActorType,
+            decidedByActorId,
+            decidedByReference,
+            id,
+        )
+
     fun markRejected(
         id: UUID,
         reason: String,
@@ -266,7 +323,7 @@ class WalletRepository(
                    decided_by_reference = ?,
                    decided_at = now()
              where id = ?
-               and state in ('REQUESTED', 'PENDING_OPERATOR_REVIEW')
+               and state in ('REQUESTED', 'PENDING_OPERATOR_REVIEW', 'READY_FOR_SECOND_REVIEW')
             """.trimIndent(),
             reason,
             decidedByActorType,
@@ -302,7 +359,7 @@ class WalletRepository(
         jdbcTemplate.query(
             """
             select id, user_id, wallet_account_id, amount, currency, state, reason,
-                   hold_journal_entry_id, completion_journal_entry_id, release_journal_entry_id,
+                   hold_journal_entry_id, completion_journal_entry_id, release_journal_entry_id, first_review_actor_id,
                    created_at, held_at, decided_at
             from wallet.withdraw_requests
             where id = ?
@@ -315,7 +372,7 @@ class WalletRepository(
         jdbcTemplate.query(
             """
             select id, user_id, wallet_account_id, amount, currency, state, reason,
-                   hold_journal_entry_id, completion_journal_entry_id, release_journal_entry_id,
+                   hold_journal_entry_id, completion_journal_entry_id, release_journal_entry_id, first_review_actor_id,
                    created_at, held_at, decided_at
             from wallet.withdraw_requests
             where user_id = ?
@@ -331,10 +388,10 @@ class WalletRepository(
         jdbcTemplate.query(
             """
             select id, user_id, wallet_account_id, amount, currency, state, reason,
-                   hold_journal_entry_id, completion_journal_entry_id, release_journal_entry_id,
+                   hold_journal_entry_id, completion_journal_entry_id, release_journal_entry_id, first_review_actor_id,
                    created_at, held_at, decided_at
             from wallet.withdraw_requests
-            where state = 'HELD'
+            where state in ('HELD', 'READY_FOR_SECOND_REVIEW')
             order by created_at asc
             limit ?
             """.trimIndent(),
@@ -388,6 +445,61 @@ class WalletRepository(
             id,
         )
 
+    fun markWithdrawalReadyForSecondReview(
+        id: UUID,
+        reason: String,
+        actorType: String,
+        actorId: UUID?,
+        actorReference: String?,
+    ): Int =
+        jdbcTemplate.update(
+            """
+            update wallet.withdraw_requests
+               set state = 'READY_FOR_SECOND_REVIEW',
+                   first_review_reason = ?,
+                   first_review_actor_type = ?,
+                   first_review_actor_id = ?,
+                   first_review_reference = ?,
+                   first_reviewed_at = now()
+             where id = ?
+               and state = 'HELD'
+            """.trimIndent(),
+            reason,
+            actorType,
+            actorId,
+            actorReference,
+            id,
+        )
+
+    fun markWithdrawalCompletedAfterSecondReview(
+        id: UUID,
+        completionJournalEntryId: UUID,
+        reason: String,
+        decidedByActorType: String,
+        decidedByActorId: UUID?,
+        decidedByReference: String?,
+    ): Int =
+        jdbcTemplate.update(
+            """
+            update wallet.withdraw_requests
+               set state = 'COMPLETED',
+                   completion_journal_entry_id = ?,
+                   reason = ?,
+                   decided_by_actor_type = ?,
+                   decided_by_actor_id = ?,
+                   decided_by_reference = ?,
+                   decided_at = now()
+             where id = ?
+               and state = 'READY_FOR_SECOND_REVIEW'
+            """.trimIndent(),
+            completionJournalEntryId,
+            reason,
+            decidedByActorType,
+            decidedByActorId,
+            decidedByReference,
+            id,
+        )
+
     fun markWithdrawalRejected(
         id: UUID,
         releaseJournalEntryId: UUID,
@@ -407,7 +519,7 @@ class WalletRepository(
                    decided_by_reference = ?,
                    decided_at = now()
              where id = ?
-               and state = 'HELD'
+               and state in ('HELD', 'READY_FOR_SECOND_REVIEW')
             """.trimIndent(),
             releaseJournalEntryId,
             reason,
@@ -541,6 +653,7 @@ class WalletRepository(
             reason = getString("reason"),
             journalEntryId = getObject("journal_entry_id", UUID::class.java),
             sourceOfFundsSubmitted = getBoolean("source_of_funds_submitted"),
+            firstReviewActorId = getObject("first_review_actor_id", UUID::class.java),
             createdAt = getObject("created_at", OffsetDateTime::class.java),
             decidedAt = getObject("decided_at", OffsetDateTime::class.java),
         )
@@ -557,6 +670,7 @@ class WalletRepository(
             holdJournalEntryId = getObject("hold_journal_entry_id", UUID::class.java),
             completionJournalEntryId = getObject("completion_journal_entry_id", UUID::class.java),
             releaseJournalEntryId = getObject("release_journal_entry_id", UUID::class.java),
+            firstReviewActorId = getObject("first_review_actor_id", UUID::class.java),
             createdAt = getObject("created_at", OffsetDateTime::class.java),
             heldAt = getObject("held_at", OffsetDateTime::class.java),
             decidedAt = getObject("decided_at", OffsetDateTime::class.java),

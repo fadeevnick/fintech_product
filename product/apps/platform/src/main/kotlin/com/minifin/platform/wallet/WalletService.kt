@@ -28,7 +28,7 @@ class WalletService(
 ) {
     @Transactional(noRollbackFor = [ActorControlException::class])
     fun createDeposit(user: EndUserRecord, request: DepositRequestCreate): DepositRequestResponse {
-        val amount = validateAmount(request.amount, allowHighValueDeposit = true)
+        val amount = validateAmount(request.amount, allowHighValue = true)
         validateCurrency(request.currency)
         actorControlService.requireWriteAllowed("END_USER", user.id)
 
@@ -150,7 +150,7 @@ class WalletService(
 
     @Transactional(noRollbackFor = [ActorControlException::class])
     fun createWithdrawal(user: EndUserRecord, request: WithdrawalRequestCreate): WithdrawalRequestResponse {
-        val amount = validateAmount(request.amount, "withdrawal")
+        val amount = validateAmount(request.amount, operation = "withdrawal", allowHighValue = true)
         validateCurrency(request.currency)
         actorControlService.requireWriteAllowed("END_USER", user.id)
 
@@ -382,7 +382,7 @@ class WalletService(
             ),
         )
 
-    private fun validateAmount(value: String, operation: String = "deposit", allowHighValueDeposit: Boolean = false): BigDecimal {
+    private fun validateAmount(value: String, operation: String = "deposit", allowHighValue: Boolean = false): BigDecimal {
         val amount = runCatching {
             BigDecimal(value.trim()).setScale(4, RoundingMode.UNNECESSARY)
         }
@@ -402,15 +402,15 @@ class WalletService(
                 field = "amount",
             )
         }
-        if (allowHighValueDeposit && amount > MAX_DEPOSIT_AMOUNT) {
+        if (allowHighValue && amount > MAX_WALLET_OPERATION_AMOUNT) {
             throw WalletException(
                 code = "invalid_amount",
-                message = "Deposit amount exceeds the supported local limit.",
+                message = "$operation amount exceeds the supported local limit.",
                 status = HttpStatus.BAD_REQUEST,
                 field = "amount",
             )
         }
-        if (amount >= HIGH_VALUE_THRESHOLD && !allowHighValueDeposit) {
+        if (amount >= HIGH_VALUE_THRESHOLD && !allowHighValue) {
             throw WalletException(
                 code = "unsupported_high_value",
                 message = "High-value $operation requires SoF and two-eyes approval, not supported in this slice.",
@@ -513,7 +513,7 @@ class WalletService(
 
     companion object {
         private val HIGH_VALUE_THRESHOLD = BigDecimal("10000.0000")
-        private val MAX_DEPOSIT_AMOUNT = BigDecimal("1000000.0000")
+        private val MAX_WALLET_OPERATION_AMOUNT = BigDecimal("1000000.0000")
     }
 }
 

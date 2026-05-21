@@ -2618,3 +2618,90 @@ Not claimed:
 - document upload/storage;
 - high-value withdrawals/transfers;
 - frontend `UI-*`.
+
+---
+
+## 2026-05-21 — Phase 08 Slice 06 Two-Eyes Enforcement Runtime Verification
+
+Scope:
+- Phase 08 Slice 06 two-eyes enforcement backend/runtime implementation.
+- Target `WLT-04` plus targeted `WLT-03` and `LDG-05` regressions.
+
+Build/static evidence:
+- `bash -n product/scripts/runtime/reg_phase08_two_eyes_enforcement.sh product/scripts/runtime/reg_phase08_sof_deposit_threshold.sh product/scripts/runtime/reg_phase03_wallet_deposit_happy_path.sh product/scripts/runtime/reg_phase03_wallet_withdraw_hold_complete.sh` — passed.
+- `git diff --check` — passed before documentation updates.
+- `cd product && ./gradlew --version` — Gradle Wrapper `8.14.3` passed.
+- `cd product && ./gradlew --no-daemon :apps:platform:compileKotlin` — passed.
+- `cd product && ./gradlew --no-daemon :apps:platform:bootJar` — passed and produced `product/apps/platform/build/libs/platform-0.1.0-SNAPSHOT.jar`.
+
+Runtime environment:
+- Isolated Compose project: `mfp-wlt04`.
+- Compose file: `product/deploy/docker-compose.yml` plus local no-host-port/external-network override for this runtime slot.
+- Docker bridge network reused for compose-network-only access: `mfp_agent8_kyc03_default`.
+- Scripts used compose-network URLs:
+  - `PLATFORM_BASE_URL=http://platform:8080`
+  - `KEYCLOAK_BASE_URL=http://keycloak:8080`
+  - `PLATFORM_CURL_CONTAINER_NETWORK=mfp_agent8_kyc03_default`
+  - `KEYCLOAK_CURL_CONTAINER_NETWORK=mfp_agent8_kyc03_default`
+
+Runtime setup note:
+- Docker Compose bridge network creation and host-port programming failed in this local Docker daemon with missing iptables chains (`DOCKER-FORWARD` / `DOCKER`), so host-published ports were reset and an existing bridge network was reused.
+- The Platform runtime image was built from the locally verified `bootJar` output because the Dockerfile's in-container Gradle build path was blocked by dependency/plugin resolution behavior in this environment.
+- Platform Flyway applied migration `V26__two_eyes_enforcement.sql` and reported schema version `v26` at startup.
+
+Primary command:
+
+```bash
+COMPOSE_PROJECT_NAME=mfp-wlt04 \
+COMPOSE_FILE=deploy/docker-compose.yml \
+KEYCLOAK_BASE_URL=http://keycloak:8080 \
+PLATFORM_BASE_URL=http://platform:8080 \
+KEYCLOAK_CURL_CONTAINER_NETWORK=mfp_agent8_kyc03_default \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp_agent8_kyc03_default \
+scripts/runtime/reg_phase08_two_eyes_enforcement.sh
+```
+
+Observed primary output:
+
+```text
+WLT-04 two-eyes enforcement pass deposit_id=bb19df8a-0e21-4734-998e-396c26dd8c86 withdrawal_id=4a17f619-8b2d-408c-88f3-056bcf647441 user_id=a4edcac8-2ac3-46b2-9952-5bf67c4f95a4
+```
+
+Runtime assertions passed:
+- high-value EUR 15,000.00 deposit was created and remained `REQUESTED` until Source-of-Funds declaration;
+- SoF declaration moved the high-value deposit to `PENDING_OPERATOR_REVIEW`;
+- first backoffice actor approval moved the deposit to `READY_FOR_SECOND_REVIEW`;
+- no `WALLET_DEPOSIT` ledger journal existed after the first deposit approval;
+- same actor second deposit approval returned `403 two_eyes_same_actor_denied`;
+- second distinct backoffice actor approval moved the deposit to `COMPLETED`;
+- exactly one `WALLET_DEPOSIT` ledger journal existed for the high-value deposit;
+- `wallet.deposit_marked_for_second_review` and `wallet.deposit_approved` audit rows were persisted;
+- high-value EUR 12,000.00 withdrawal was accepted and posted the existing hold journal;
+- first backoffice actor completion moved the withdrawal to `READY_FOR_SECOND_REVIEW`;
+- no `WALLET_WITHDRAW_COMPLETE` ledger journal existed after the first withdrawal completion mark;
+- same actor second withdrawal completion returned `403 two_eyes_same_actor_denied`;
+- second distinct backoffice actor completion moved the withdrawal to `COMPLETED`;
+- exactly one `WALLET_WITHDRAW_COMPLETE` ledger journal existed for the high-value withdrawal;
+- `wallet.withdrawal_marked_for_second_review` and `wallet.withdrawal_completed` audit rows were persisted;
+- internal ledger reconciliation endpoint reported balanced journals.
+
+Targeted regression outputs:
+
+```text
+WLT-03 source-of-funds deposit threshold pass deposit_id=2f630d5e-59c5-497b-b427-6e0ea9373a12 user_id=91797391-ecec-428e-bbb3-6250448ad5ea
+LDG-05 ledger reconciliation pass
+```
+
+Result tags:
+- `WLT-04` — pass.
+- `WLT-03` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Not claimed:
+- senior compliance override / bypass;
+- dedicated SoF backoffice review queue;
+- object-storage document upload;
+- frontend `UI-*`;
+- high-value internal transfers;
+- chargebacks (`CHB-*`);
+- refunds (`SET-04`).

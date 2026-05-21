@@ -1242,3 +1242,50 @@ Runtime evidence:
 
 Explicitly not implemented/claimed:
 - two-eyes approval (`WLT-04`), SoF backoffice review queue, document upload/storage, high-value withdrawals/transfers, frontend `UI-*`.
+
+---
+
+## Phase 08 Slice 06 — Two-Eyes Enforcement
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
+
+Planning contract:
+- `planning/implementation-slices/phase_08_slice_06_two_eyes_enforcement_planning.md` — backend/runtime sub-scope executed v0.1.
+
+Implemented backend/runtime scope:
+- Added Platform migration `V26__two_eyes_enforcement.sql`.
+- Added `READY_FOR_SECOND_REVIEW` state support for wallet deposit and withdrawal requests.
+- Added durable first-review actor metadata to `wallet.deposit_requests` and `wallet.withdraw_requests`.
+- High-value deposits `>= EUR 10,000.00` now require first backoffice approval to mark the request for second review before any deposit ledger journal is posted.
+- Same backoffice actor attempting the second high-value deposit approval is rejected with `403 two_eyes_same_actor_denied`.
+- A second distinct backoffice actor completes the high-value deposit and posts exactly one existing `WALLET_DEPOSIT` ledger journal.
+- High-value withdrawals `>= EUR 10,000.00` are now accepted up to the local wallet operation maximum, with the existing hold posted at request time.
+- First backoffice completion decision on a high-value withdrawal marks it for second review without posting the final withdrawal completion journal.
+- Same backoffice actor attempting the second high-value withdrawal completion is rejected with `403 two_eyes_same_actor_denied`.
+- A second distinct backoffice actor completes the high-value withdrawal and posts exactly one existing `WALLET_WITHDRAW_COMPLETE` ledger journal.
+- Manual-ops queues include `READY_FOR_SECOND_REVIEW` records so second-review items stay visible.
+- Added audit rows `wallet.deposit_marked_for_second_review` and `wallet.withdrawal_marked_for_second_review` while retaining existing final approval/completion/rejection audit semantics.
+- Added retained runtime script `product/scripts/runtime/reg_phase08_two_eyes_enforcement.sh`.
+- Added Gradle Wrapper under `product/` to allow local `./gradlew` verification without a system Gradle install.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 08 Slice 06 Two-Eyes Enforcement Runtime Verification`.
+- `WLT-04` — pass.
+- `LDG-05` — pass targeted regression.
+- `WLT-03` — pass targeted regression.
+- Platform `compileKotlin` and `bootJar` passed via `product/gradlew`.
+
+Verification notes:
+- Docker Compose bridge network creation/host port publishing was blocked by a local Docker iptables chain issue, so runtime verification reused an existing Docker bridge network with service host ports reset and compose-network URLs.
+- Platform image for the runtime pass was built from the locally verified `bootJar` output because the Dockerfile's in-container Gradle build path was blocked by dependency/plugin resolution behavior in this environment.
+
+Explicitly not implemented/claimed:
+- senior compliance override / bypass;
+- dedicated SoF backoffice review queue;
+- object-storage document upload;
+- frontend UI;
+- wider unified case-management refactor;
+- banking statement upload threshold;
+- high-value internal transfers;
+- chargebacks (`CHB-*`);
+- refunds (`SET-04`).
