@@ -3399,3 +3399,77 @@ Not claimed:
 - bank files;
 - scheduled jobs;
 - frontend `UI-*`.
+
+---
+
+## 2026-05-21 — Phase 07 Slice 05 Compliance Read Audit Runtime Verification
+
+Scope:
+- `AUD-03` backend/runtime implementation for compliance-sensitive sanctions hit detail reads.
+- Retained runtime script `product/scripts/runtime/reg_phase07_compliance_read_audit.sh` was added.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase07_compliance_read_audit.sh
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+product/gradlew --no-daemon -p product :apps:platform:bootJar :apps:acquirer:bootJar :apps:network:bootJar :apps:issuer:bootJar :apps:vault:bootJar
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime command:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-aud03
+PLATFORM_BASE_URL=http://platform:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+KEYCLOAK_BASE_URL=http://keycloak:8080
+KEYCLOAK_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+product/scripts/runtime/reg_phase07_compliance_read_audit.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+AUD-03 compliance sanctions detail read audit pass hit_id=ad85a2cb-3c0d-404d-9543-9920dc7de552 end_user_id=3c75c6e4-4903-406e-b34b-4acb8344f8da
+```
+
+The runtime verification proved:
+- sanctions hit list read as compliance does not create a detail read-audit row for the hit;
+- sanctions hit detail read as compliance returns the hit and creates exactly one `audit.read_audit_log` ALLOW row;
+- the row is for `subject_type/resource_type = SANCTIONS_HIT`, the same hit id, and `purpose = compliance_sanctions_hit_detail`;
+- the row records a backoffice actor and compliance role metadata;
+- sanctions hit detail read as `backoffice_operator` returns `403 forbidden_role` and does not create another ALLOW row.
+
+Targeted regression outputs:
+
+```text
+SNX-01 OpenSanctions fail-closed pass
+SNX-02 sanctions false-positive exception pass hit_id=e57fb69b-5d73-42e0-8c6c-2dcc19a8ea25 end_user_id=3987baf1-6b26-4c42-9b03-c3d017eae51f
+KYC-03 backoffice manual KYC review pass profile_id=5c03e318-9673-430e-a40e-af7435874c81 applicant_id=sumsub-applicant-manual-review-1779392810596114989
+```
+
+Result tags:
+- `AUD-03` — pass.
+- `SNX-01` — pass targeted regression.
+- `SNX-02` — pass targeted regression.
+- `KYC-03` — pass targeted regression.
+
+Runtime environment notes:
+- Docker Compose network/host-port conflicts were avoided by using temporary compose project `mfp-aud03`, resetting host ports with compose `!reset []`, and reusing existing Docker bridge network `mini-fintech-platform-a2_default`.
+- Dockerfile network dependency resolution failed inside Gradle build containers, so the platform runtime image was built from locally verified `bootJar` output; unchanged issuer/vault images were retagged from local verified images.
+- `KYC-03` targeted regression was run with `OPENSANCTIONS_LOCAL_MODE=no_match`; `disabled` mode attempts external OpenSanctions access and fail-closes without sandbox credentials.
+- Temporary compose stack `mfp-aud03` was stopped with `down -v --remove-orphans` after runtime checks.
+
+Not claimed:
+- AML alert backoffice APIs;
+- frozen-account viewer;
+- audit-log viewer;
+- full PAN reveal;
+- KYC document preview;
+- frontend `UI-*`.

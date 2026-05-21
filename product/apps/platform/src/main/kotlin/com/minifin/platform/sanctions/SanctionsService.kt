@@ -2,6 +2,7 @@ package com.minifin.platform.sanctions
 
 import com.minifin.platform.identity.AuditRepository
 import com.minifin.platform.backoffice.BackofficePrincipal
+import com.minifin.platform.controls.ReadAuditRepository
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.http.HttpStatus
@@ -13,6 +14,7 @@ open class SanctionsService(
     private val client: OpenSanctionsClient,
     private val repository: SanctionsRepository,
     private val auditRepository: AuditRepository,
+    private val readAuditRepository: ReadAuditRepository,
 ) {
     open fun requireKycApprovalAllowed(endUserId: UUID, kycProfileId: UUID, actorId: UUID?) {
         val result = client.screenEndUser(endUserId)
@@ -73,8 +75,24 @@ open class SanctionsService(
     open fun listHits(): List<SanctionsHitResponse> =
         repository.listHits().map { it.toResponse() }
 
-    open fun getHit(id: UUID): SanctionsHitResponse =
-        (repository.findHit(id) ?: throw SanctionsException("not_found", "Sanctions hit was not found.", HttpStatus.NOT_FOUND)).toResponse()
+    @Transactional
+    open fun getHit(id: UUID, principal: BackofficePrincipal): SanctionsHitResponse {
+        val hit = repository.findHit(id)
+            ?: throw SanctionsException("not_found", "Sanctions hit was not found.", HttpStatus.NOT_FOUND)
+        readAuditRepository.write(
+            actorType = "BACKOFFICE",
+            actorId = principal.subjectUuid,
+            actorReference = principal.subject,
+            subjectType = "SANCTIONS_HIT",
+            subjectId = hit.id,
+            resourceType = "SANCTIONS_HIT",
+            resourceId = hit.id,
+            purpose = "compliance_sanctions_hit_detail",
+            decision = "ALLOW",
+            metadataJson = """{"roles":${principal.roles.toJsonArray()},"endUserId":"${hit.endUserId}"}""",
+        )
+        return hit.toResponse()
+    }
 
     @Transactional
     open fun decideHit(id: UUID, request: SanctionsHitDecisionRequest, principal: BackofficePrincipal): SanctionsHitDecisionResponse {
@@ -140,4 +158,7 @@ open class SanctionsService(
             createdAt = createdAt,
             updatedAt = updatedAt,
         )
+
+    private fun List<String>.toJsonArray(): String =
+        joinToString(prefix = "[", postfix = "]") { "\"$it\"" }
 }

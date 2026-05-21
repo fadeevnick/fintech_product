@@ -1,6 +1,7 @@
 package com.minifin.platform.sanctions
 
 import com.minifin.platform.backoffice.BackofficeException
+import com.minifin.platform.backoffice.BackofficePrincipal
 import com.minifin.platform.backoffice.BackofficeRoleMapper
 import com.minifin.platform.identity.ApiError
 import com.minifin.platform.identity.ApiResponse
@@ -28,8 +29,8 @@ open class SanctionsBackofficeController(
 
     @GetMapping("/api/v1/backoffice/sanctions-hits/{id}")
     open fun detail(authentication: JwtAuthenticationToken, @PathVariable id: String): ApiResponse<SanctionsHitResponse> {
-        requireCompliancePrincipal(authentication)
-        return ApiResponse(data = service.getHit(requireUuid(id)))
+        val principal = requireCompliancePrincipal(authentication)
+        return ApiResponse(data = service.getHit(requireUuid(id), principal))
     }
 
     @PostMapping("/api/v1/backoffice/sanctions-hits/{id}/decision")
@@ -54,10 +55,11 @@ open class SanctionsBackofficeController(
         runCatching { UUID.fromString(value) }
             .getOrElse { throw SanctionsException("invalid_uuid", "Invalid UUID.", HttpStatus.BAD_REQUEST) }
 
-    private fun requireCompliancePrincipal(authentication: JwtAuthenticationToken) {
+    private fun requireCompliancePrincipal(authentication: JwtAuthenticationToken): BackofficePrincipal {
         val principal = roleMapper.requireBackofficePrincipal(authentication.token)
         if (principal.roles.none { it == "compliance_officer" || it == "senior_compliance" }) {
             throw SanctionsException("forbidden_role", "Compliance role is required.", HttpStatus.FORBIDDEN)
         }
+        return principal
     }
 }

@@ -147,7 +147,7 @@ Result tags:
 | `KYC-03` | Backoffice manual KYC review. | Operator can list an in-review KYC case and approve/reject/resubmit with rationale and audit. | `product/scripts/runtime/reg_phase07_kyc_manual_review.sh` |
 | `SNX-01` | OpenSanctions fail-closed. | Timeout/failure blocks dependent action and opens case. | `product/scripts/runtime/reg_phase07_opensanctions_fail_closed.sh` |
 | `SNX-02` | Sanctions false-positive exception. | Cleared exception suppresses same future match. | `product/scripts/runtime/reg_phase07_sanctions_false_positive.sh` |
-| `AUD-03` | Compliance read-audit. | Sensitive read writes sync read-audit before returning data. | pending |
+| `AUD-03` | Compliance read-audit. | Sensitive read writes sync read-audit before returning data. | `product/scripts/runtime/reg_phase07_compliance_read_audit.sh` |
 
 ## 11. Phase 08 — AML, Freezes, SoF and High-Value Controls
 

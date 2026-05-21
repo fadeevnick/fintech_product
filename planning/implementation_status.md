@@ -1061,6 +1061,32 @@ Explicitly not implemented/claimed:
 
 ---
 
+## Phase 07 Slice 05 — Compliance Read Audit
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
+
+Planning contract:
+- `planning/implementation-slices/phase_07_slice_05_compliance_read_audit_planning.md` — EXECUTED v0.1.
+
+Implemented backend/runtime scope:
+- `GET /api/v1/backoffice/sanctions-hits/{id}` now passes the compliance backoffice principal into `SanctionsService`.
+- Sanctions hit detail reads synchronously write one `audit.read_audit_log` row before returning data.
+- Read-audit rows use `actor_type = BACKOFFICE`, principal subject UUID/reference, `subject_type/resource_type = SANCTIONS_HIT`, hit id as subject/resource id, `purpose = compliance_sanctions_hit_detail`, `decision = ALLOW`, and metadata with roles plus end user id.
+- Compliance role guard remains before read-audit write; forbidden operator detail reads do not create ALLOW rows.
+- `GET /api/v1/backoffice/sanctions-hits` list behavior remains unchanged and does not create detail read-audit rows.
+- Retained runtime script:
+  - `product/scripts/runtime/reg_phase07_compliance_read_audit.sh`
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 07 Slice 05 Compliance Read Audit Runtime Verification`.
+- `AUD-03` — pass.
+- Targeted regressions passed: `SNX-01`, `SNX-02`, `KYC-03`.
+
+Explicitly not implemented/claimed:
+- AML alert backoffice APIs, frozen-account viewer, audit-log viewer, full PAN reveal, KYC document preview, frontend UI.
+
+---
+
 ## Phase 06 Slice 05 — Settlement Fee Split
 
 Status: **COMPLETE — runtime verified**.
