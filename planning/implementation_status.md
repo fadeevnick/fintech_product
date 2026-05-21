@@ -1116,6 +1116,35 @@ Explicitly not implemented/claimed:
 
 ---
 
+## Phase 11 Slice 02 — Full Demo Path (REC-02)
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
+
+Implemented backend/runtime scope:
+- Retained end-to-end demo script `product/scripts/runtime/reg_phase11_demo_path.sh`.
+- Script walks the seeded demo card (`tok_demo_approved_card`) and a freshly registered merchant through:
+  - seed state pre-check (wallet balance ≥ 30, card `ACTIVE`);
+  - fresh merchant + live API key registration;
+  - payment intent creation (EUR 30.00);
+  - card authorization (`CARD_AUTHORIZATION_HOLD` ledger hold);
+  - capture;
+  - settlement (`process-captured` internal job, intent state → `SETTLED`, `settlement_items` row);
+  - acquirer balance projection (`publish-projections`, `merchant_settlement.balance_projection` row);
+  - partial refund EUR 10.00 (`CARD_PAYMENT_REFUND` journal, intent state → `PARTIALLY_REFUNDED`);
+  - wallet balance delta assertion (−20.00 net from initial);
+  - `LDG-05` reconciliation assertion (balanced journals, zero imbalanced).
+- No new Flyway migrations (all schemas pre-exist from prior slices).
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-22 — Phase 11 Slice 02 Full Demo Path Runtime Verification`.
+- `REC-02` — pass.
+- `LDG-05` — pass targeted regression.
+
+Explicitly not implemented/claimed:
+- `REC-03` vendor reconciliation, `REC-04` dashboards, `REC-05` final cut-register audit, frontend `UI-*`, real Stripe/Sumsub vendor calls.
+
+---
+
 ## Phase 06 Slice 05 — Settlement Fee Split
 
 Status: **COMPLETE — runtime verified**.

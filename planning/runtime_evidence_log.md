@@ -3647,3 +3647,75 @@ Not claimed:
 - SAR filing workflow;
 - SoF backoffice review queue;
 - frontend `UI-*`.
+
+---
+
+## 2026-05-22 — Phase 11 Slice 02 Full Demo Path Runtime Verification
+
+Scope:
+- Phase 11 Slice 02 end-to-end demo path using seeded demo data.
+- Target `REC-02`.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase11_demo_path.sh
+```
+
+Runtime commands:
+
+```text
+product/gradlew --no-daemon -p product :apps:platform:bootJar
+DOCKER_BUILDKIT=0 docker build -f /tmp/Dockerfile.mfp-rec02-platform -t mfp-aml05-platform:latest /tmp/mfp-rec02-build/
+
+COMPOSE_PROJECT_NAME=mfp-rec02
+COMPOSE_FILE=product/deploy/docker-compose.yml:/tmp/mfp-rec02-compose.override.yml
+PLATFORM_BASE_URL=http://platform:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+KEYCLOAK_BASE_URL=http://keycloak:8080
+KEYCLOAK_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+product/scripts/runtime/reg_phase11_demo_path.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+REC-02 full demo path pass run_tag=1779398176588864745-3372160 intent_id=cf71d6cb-ed11-49e1-ab4e-486d16a3aa4c initial_balance=75.0000 final_balance=55.0000
+```
+
+The runtime verification proved:
+- Seed state pre-check: wallet balance 75.0000 ≥ 30, card `tok_demo_approved_card` in `ACTIVE` state;
+- Fresh merchant + live API key registered successfully;
+- Payment intent `POST /v1/payment_intents` EUR 30.00 → HTTP 201, state `REQUIRES_PAYMENT_METHOD`;
+- Authorization with seeded card → HTTP 200, state `AUTHORIZED`, `CARD_AUTHORIZATION_HOLD` journal created, Platform DB state `AUTHORIZED`;
+- Capture `POST /v1/payment_intents/{id}/capture` (with `Idempotency-Key`) → HTTP 200, state `CAPTURED`;
+- Settlement `POST /internal/settlement/process-captured?limit=10` → HTTP 200, intent state `SETTLED`, `settlement_items` row confirmed in DB;
+- Acquirer projection `POST /internal/settlement/publish-projections?limit=200` → HTTP 200, exactly one `merchant_settlement.balance_projection` row for the `settlement_item_id`;
+- Partial refund `POST /v1/payment_intents/{id}/refund` EUR 10.00 → HTTP 200, refund `state=SUCCEEDED`, `ledgerJournalId` present, intent DB state `PARTIALLY_REFUNDED`;
+- Wallet balance delta = −20.00 (initial 75.0000 → final 55.0000, tolerance 0.001);
+- `LDG-05` reconciliation: `balancedJournals=true`, `journalCount ≥ 1`, zero imbalanced journals via DB cross-check.
+
+Result tags:
+- `REC-02` — pass.
+- `LDG-05` — pass (targeted regression).
+
+Runtime environment notes:
+- Isolated compose project `mfp-rec02` with external network `mini-fintech-platform-a2_default`; service host ports reset via compose override `!reset []`.
+- Platform image: `mfp-aml05-platform:latest` (built from current `bootJar`).
+- Acquirer image: `mfp-rec02-acquirer:latest` (fresh bootJar build required — old `mini-fintech-platform-a1-acquirer:latest` predated `merchant_settlement` schema from Phase 06 Slice 06).
+- Issuer image: `mfp-rec02-issuer:latest` (fresh bootJar build required — old `mini-fintech-platform-a2-issuer:latest` predated `issuer.holds` table from Phase 05 Slice 02).
+- Other service images reused from `mini-fintech-platform-a1-*` and `mini-fintech-platform-a2-*` slot images.
+- Temporary compose stack `mfp-rec02` stopped with `down -v --remove-orphans` after runtime checks.
+
+Runtime-discovered fixes applied to script before final pass:
+- HTTP 201 (not 200) for `POST /v1/payment_intents` — payment intent creation is `201 Created`.
+- Capture endpoint requires `Idempotency-Key` header — added `-H "Idempotency-Key: cap-rec02-${run_tag}"`.
+- Old issuer image missing `issuer.holds` table — built fresh `mfp-rec02-issuer:latest`.
+- Old acquirer image missing `merchant_settlement` schema — built fresh `mfp-rec02-acquirer:latest`.
+- Refund response shape: endpoint returns refund object (state `SUCCEEDED`, `ledgerJournalId`) not the payment intent object — fixed node check accordingly.
+
+Not claimed:
+- `REC-03` vendor reconciliation;
+- `REC-04` dashboards;
+- `REC-05` final cut-register audit;
+- frontend `UI-*`.

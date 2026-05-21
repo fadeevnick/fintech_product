@@ -1,10 +1,10 @@
 # CURRENT
 
-Last updated: 2026-05-21.
+Last updated: 2026-05-22.
 
 ## Current State
 
-`AML-05` is complete: Phase 08 Slice 07 AML alert review decisions is implemented, runtime-verified and documented.
+`REC-02` is complete: Phase 11 Slice 02 full demo path is implemented, runtime-verified and documented.
 
 Read first:
 - `README.md`
@@ -14,16 +14,14 @@ Read first:
 
 ## Latest Verified Evidence
 
-Runtime checks completed on temporary compose project `mfp-aml05`:
-- `AML-05` — pass: all 7 verification parts passed (list/detail, short-rationale rejection, CLOSED_FALSE_POSITIVE, repeat-decision 409, unfreeze on false-positive of frozen alert, ESCALATED, MARKED_FOR_SAR compliance gate and allowed).
-- Flyway migration V34 applied cleanly.
+Runtime checks completed on temporary compose project `mfp-rec02`:
+- `REC-02` — pass: full demo path ran through merchant registration, payment intent, authorization, capture, settlement, acquirer projection, partial refund, wallet balance delta (−20.00) and `LDG-05` reconciliation.
+- Final output: `REC-02 full demo path pass run_tag=1779398176588864745-3372160 intent_id=cf71d6cb-ed11-49e1-ab4e-486d16a3aa4c initial_balance=75.0000 final_balance=55.0000`
 
-Static/backend checks completed:
-- `bash -n product/scripts/runtime/reg_phase08_aml_review_decisions.sh`
-- `product/gradlew --no-daemon -p product :apps:platform:compileKotlin`
-- `product/gradlew --no-daemon -p product :apps:platform:bootJar`
+Retained script:
+- `product/scripts/runtime/reg_phase11_demo_path.sh`
 
-Temporary Docker stack `mfp-aml05` was stopped with volumes removed.
+Temporary Docker stack `mfp-rec02` was stopped with volumes removed.
 
 ## Next Planned Step
 
