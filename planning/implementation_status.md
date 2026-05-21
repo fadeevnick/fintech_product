@@ -1087,6 +1087,35 @@ Explicitly not implemented/claimed:
 
 ---
 
+## Phase 11 Slice 01 — Reset and Seed
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
+
+Planning contract:
+- `planning/implementation-slices/phase_11_slice_01_reset_seed_planning.md` — EXECUTED v0.1.
+
+Implemented backend/runtime scope:
+- Retained destructive reset script `product/scripts/runtime/reg_phase11_reset_dev.sh`.
+- Reset script requires `MINIFIN_RESET_CONFIRM=reset-dev`, uses active `COMPOSE_FILE` / `COMPOSE_PROJECT_NAME`, removes compose volumes and starts backend/runtime services with existing images.
+- Retained idempotent seed script `product/scripts/runtime/reg_phase11_seed_dev.sh`.
+- Seed script creates deterministic demo data:
+  - three end users with approved, in-review and rejected KYC profiles;
+  - two merchants with verified/onboarded and pending KYB states;
+  - one approved-user wallet ledger account and balanced demo funding journal;
+  - one approved-user issued card record in Platform, Issuer and Vault;
+  - one sample merchant payment intent.
+- Seed script asserts expected row counts and can run repeatedly without duplicate-key failure.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 11 Slice 01 Reset and Seed Runtime Verification`.
+- `REC-01` — pass.
+- `LDG-05` — pass targeted regression after seeded data.
+
+Explicitly not implemented/claimed:
+- `REC-02` full demo path, `REC-03` vendor reconciliation, `REC-04` dashboards, `REC-05` final cut-register audit, frontend `UI-*`, real Stripe/Sumsub vendor calls.
+
+---
+
 ## Phase 06 Slice 05 — Settlement Fee Split
 
 Status: **COMPLETE — runtime verified**.

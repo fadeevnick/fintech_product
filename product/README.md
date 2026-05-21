@@ -51,6 +51,7 @@ Implemented runtime behavior so far:
 - Phase 09 Slice 06 merchant accept in `platform`: merchant admin can accept a merchant-notified dispute, terminal state becomes `MERCHANT_ACCEPTED`, external outcome is `LOST`, cardholder provisional credit remains in place, and merchant settlement is debited to `ACQUIRER_DISPUTE_RESERVE`. `CHB-06` has runtime evidence.
 - Phase 09 Slice 07 merchant deadline expiry in `platform`: internal `POST /internal/chargebacks/process-deadlines` expires due merchant-notified disputes into `MERCHANT_DEADLINE_EXPIRED`, keeps cardholder provisional credit in place, and debits merchant settlement to `ACQUIRER_DISPUTE_RESERVE`. `CHB-07` has runtime evidence.
 - Phase 09 Slice 08 evidence object storage in `platform`: merchant evidence attachments now require inline `contentBase64`, decoded size must match `sizeBytes`, and object bytes are written to local SeaweedFS S3-compatible storage before evidence metadata is accepted. `CHB-08` has runtime evidence.
+- Phase 11 Slice 01 reset/seed runtime: `reg_phase11_reset_dev.sh` performs an explicit-confirmation destructive local compose reset, and `reg_phase11_seed_dev.sh` idempotently creates deterministic demo end users, KYC profiles, merchants, one approved-user card, wallet funding journal and sample payment intent. `REC-01` has runtime evidence.
 
 ## Local Commands
 

@@ -186,7 +186,7 @@ Result tags:
 
 | Check ID | What to verify | Expected result | Verification script |
 |---|---|---|---|
-| `REC-01` | Reset and seed. | Full stack can reset and seed deterministic demo data. | pending |
+| `REC-01` | Reset and seed. | Full stack can reset and seed deterministic demo data. | `product/scripts/runtime/reg_phase11_reset_dev.sh` + `product/scripts/runtime/reg_phase11_seed_dev.sh` |
 | `REC-02` | Full demo path. | Demo runs merchant payment to settlement and optional chargeback. | pending |
 | `REC-03` | Vendor reconciliation. | Sumsub/Stripe retained reconciliation scripts pass or report honest gaps. | pending |
 | `REC-04` | Dashboards. | Grafana dashboards show expected service/business metrics. | pending |

@@ -3473,3 +3473,101 @@ Not claimed:
 - full PAN reveal;
 - KYC document preview;
 - frontend `UI-*`.
+
+---
+
+## 2026-05-21 — Phase 11 Slice 01 Reset and Seed Runtime Verification
+
+Scope:
+- `REC-01` backend/runtime implementation for retained local reset and deterministic demo seed scripts.
+- Retained scripts:
+  - `product/scripts/runtime/reg_phase11_reset_dev.sh`
+  - `product/scripts/runtime/reg_phase11_seed_dev.sh`
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase11_reset_dev.sh
+bash -n product/scripts/runtime/reg_phase11_seed_dev.sh
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime commands:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-rec01
+COMPOSE_FILE=product/deploy/docker-compose.yml
+COMPOSE_OVERRIDE_FILE=/tmp/mfp-rec01-compose.override.yml
+MINIFIN_RESET_CONFIRM=reset-dev
+product/scripts/runtime/reg_phase11_reset_dev.sh
+
+COMPOSE_PROJECT_NAME=mfp-rec01
+COMPOSE_FILE=product/deploy/docker-compose.yml
+COMPOSE_OVERRIDE_FILE=/tmp/mfp-rec01-compose.override.yml
+product/scripts/runtime/reg_phase11_seed_dev.sh
+
+COMPOSE_PROJECT_NAME=mfp-rec01
+COMPOSE_FILE=product/deploy/docker-compose.yml
+COMPOSE_OVERRIDE_FILE=/tmp/mfp-rec01-compose.override.yml
+product/scripts/runtime/reg_phase11_seed_dev.sh
+
+COMPOSE_PROJECT_NAME=mfp-rec01
+COMPOSE_FILE=product/deploy/docker-compose.yml
+COMPOSE_OVERRIDE_FILE=/tmp/mfp-rec01-compose.override.yml
+PLATFORM_BASE_URL=http://platform:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+product/scripts/runtime/reg_phase03_ledger_reconciliation.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+REC-01 reset dev stack started project=mfp-rec01
+REC-01 seed dev data pass approved_user=10000000-0000-0000-0000-000000000001 merchant=20000000-0000-0000-0000-000000000001 payment_intent=51000000-0000-0000-0000-000000000001
+REC-01 seed dev data pass approved_user=10000000-0000-0000-0000-000000000001 merchant=20000000-0000-0000-0000-000000000001 payment_intent=51000000-0000-0000-0000-000000000001
+LDG-05 ledger reconciliation pass
+```
+
+Additional guard check:
+
+```text
+product/scripts/runtime/reg_phase11_reset_dev.sh
+```
+
+without `MINIFIN_RESET_CONFIRM=reset-dev` refused to run:
+
+```text
+Refusing destructive reset: set MINIFIN_RESET_CONFIRM=reset-dev
+```
+
+The runtime verification proved:
+- destructive reset is guarded by an explicit confirmation environment variable;
+- reset removes volumes and starts backend/runtime services for a clean compose project;
+- seed creates three deterministic demo end users with approved/in-review/rejected KYC profiles;
+- seed creates two deterministic demo merchants with verified and pending KYB states;
+- seed creates an approved-user wallet, balanced demo funding journal, Platform/Issuer/Vault card records and a sample payment intent;
+- seed can run twice without duplicate-key failure;
+- ledger reconciliation passes after seeded data.
+
+Result tags:
+- `REC-01` — pass.
+- `LDG-05` — pass targeted regression.
+
+Runtime environment notes:
+- Runtime verification used temporary compose project `mfp-rec01`, reset service host ports with compose `!reset []`, and reused existing Docker bridge network `mini-fintech-platform-a2_default`.
+- `mfp-rec01-*` images were local tags of previously verified backend images; this slice changed scripts/docs only and did not require application image rebuild.
+- Temporary compose stack `mfp-rec01` was stopped with `down -v --remove-orphans` after runtime checks.
+
+Not claimed:
+- `REC-02` full demo path;
+- `REC-03` vendor reconciliation;
+- `REC-04` dashboards;
+- `REC-05` final cut-register audit;
+- frontend `UI-*`;
+- real Stripe/Sumsub vendor calls.
