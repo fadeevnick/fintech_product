@@ -19,5 +19,6 @@ data class ChargebackDisputeDto(
     val narrative: String?,
     val state: String,
     val merchantResponseDeadline: String,
+    val provisionalCreditJournalId: String? = null,
     val createdAt: String,
 )

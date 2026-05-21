@@ -1338,3 +1338,44 @@ Explicitly not implemented/claimed:
 - backoffice/merchant/end-user frontend UI;
 - chargeback rate dashboard/metric;
 - chargeback ledger movement correctness.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 02 Provisional Cardholder Credit (`CHB-02`)
+
+Planning note:
+- `planning/implementation-slices/phase_09_slice_02_provisional_credit_planning.md` — backend/runtime sub-scope executed v0.1.
+
+Implemented:
+- Added platform-level `ACQUIRER_DISPUTE_RESERVE` ledger account.
+- Added `chargeback.disputes.provisional_credit_journal_id`.
+- Successful cardholder dispute initiation now posts exactly one `CARDHOLDER_PROVISIONAL_CREDIT` journal in the same transaction:
+  - reference type `CHARGEBACK`;
+  - reference id = dispute id;
+  - debit `ACQUIRER_DISPUTE_RESERVE`;
+  - credit cardholder wallet ledger account;
+  - amount = dispute amount.
+- Dispute responses now include `provisionalCreditJournalId`.
+- Duplicate same-cardholder initiation still returns the existing dispute and does not post a second provisional-credit journal.
+- Denied initiation paths remain before value movement and do not post provisional-credit journals.
+- Retained runtime script `product/scripts/runtime/reg_phase09_chargeback_initiation.sh` now verifies both `CHB-01` and `CHB-02`.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 09 Slice 02 Provisional Cardholder Credit Runtime Verification`.
+- `CHB-02` — pass.
+- `CHB-01` — pass regression within the same retained script.
+- `LDG-05` — pass targeted regression.
+- `SET-01` — pass targeted regression.
+
+Verification notes:
+- Docker Compose bridge network creation/host port publishing remained blocked by a local Docker iptables chain issue, so runtime verification reused an existing Docker bridge network with service host ports reset via `!reset []` and compose-network URLs.
+- Platform runtime image was built from the locally verified `bootJar` output.
+
+Explicitly not implemented/claimed:
+- merchant evidence submission (`CHB-03`);
+- arbitration `WON`/`LOST` (`CHB-04`, `CHB-05`);
+- reversal of provisional credit on `WON`;
+- permanent merchant debit / reserve release on `LOST`;
+- attachment storage;
+- frontend UI;
+- chargeback rate dashboard/metric.

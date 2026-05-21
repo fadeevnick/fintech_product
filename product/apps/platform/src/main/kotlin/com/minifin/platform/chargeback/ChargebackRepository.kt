@@ -16,6 +16,7 @@ data class DisputablePaymentRecord(
     val capturedAt: OffsetDateTime?,
     val settledAt: OffsetDateTime?,
     val cardholderUserId: UUID?,
+    val cardholderWalletLedgerAccountId: UUID?,
 )
 
 data class ChargebackDisputeRecord(
@@ -29,6 +30,7 @@ data class ChargebackDisputeRecord(
     val narrative: String?,
     val state: String,
     val merchantResponseDeadline: OffsetDateTime,
+    val provisionalCreditJournalId: UUID?,
     val createdAt: OffsetDateTime,
 )
 
@@ -40,10 +42,12 @@ class ChargebackRepository(
         jdbcTemplate.query(
             """
             select pi.id, pi.merchant_id, pi.amount, pi.currency, pi.state, pi.captured_at,
-                   si.created_at as settled_at, ic.end_user_id as cardholder_user_id
+                   si.created_at as settled_at, ic.end_user_id as cardholder_user_id,
+                   wa.ledger_account_id as cardholder_wallet_ledger_account_id
               from merchant.payment_intents pi
               left join settlement.settlement_items si on si.payment_intent_id = pi.id
               left join cards.issued_cards ic on ic.card_token = pi.card_token
+              left join wallet.wallet_accounts wa on wa.id = ic.wallet_account_id
              where pi.id = ?
             """.trimIndent(),
             { rs, _ -> rs.toPaymentRecord() },
@@ -54,7 +58,7 @@ class ChargebackRepository(
         jdbcTemplate.query(
             """
             select id, payment_intent_id, merchant_id, cardholder_user_id, amount, currency, reason_code,
-                   narrative, state, merchant_response_deadline, created_at
+                   narrative, state, merchant_response_deadline, provisional_credit_journal_id, created_at
               from chargeback.disputes
              where payment_intent_id = ?
             """.trimIndent(),
@@ -102,6 +106,30 @@ class ChargebackRepository(
         paymentIntentId,
     )
 
+    fun markProvisionalCreditJournal(id: UUID, journalId: UUID): Int = jdbcTemplate.update(
+        """
+        update chargeback.disputes
+           set provisional_credit_journal_id = ?,
+               updated_at = now(),
+               version = version + 1
+         where id = ?
+           and provisional_credit_journal_id is null
+        """.trimIndent(),
+        journalId,
+        id,
+    )
+
+    fun accountByCode(code: String): UUID? =
+        jdbcTemplate.query(
+            """
+            select id
+            from ledger.accounts
+            where code = ?
+            """.trimIndent(),
+            { rs, _ -> rs.getObject("id", UUID::class.java) },
+            code,
+        ).firstOrNull()
+
     private fun ResultSet.toPaymentRecord(): DisputablePaymentRecord =
         DisputablePaymentRecord(
             id = getObject("id", UUID::class.java),
@@ -112,6 +140,7 @@ class ChargebackRepository(
             capturedAt = getObject("captured_at", OffsetDateTime::class.java),
             settledAt = getObject("settled_at", OffsetDateTime::class.java),
             cardholderUserId = getObject("cardholder_user_id", UUID::class.java),
+            cardholderWalletLedgerAccountId = getObject("cardholder_wallet_ledger_account_id", UUID::class.java),
         )
 
     private fun ResultSet.toDisputeRecord(): ChargebackDisputeRecord =
@@ -126,6 +155,7 @@ class ChargebackRepository(
             narrative = getString("narrative"),
             state = getString("state"),
             merchantResponseDeadline = getObject("merchant_response_deadline", OffsetDateTime::class.java),
+            provisionalCreditJournalId = getObject("provisional_credit_journal_id", UUID::class.java),
             createdAt = getObject("created_at", OffsetDateTime::class.java),
         )
 }

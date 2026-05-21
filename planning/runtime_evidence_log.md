@@ -2773,3 +2773,79 @@ Not claimed:
 - arbitration (`CHB-04`, `CHB-05`);
 - chargeback ledger/reserve settlement movements;
 - frontend `UI-*`.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 02 Provisional Cardholder Credit Runtime Verification
+
+Scope:
+- `CHB-02` backend/runtime implementation for provisional cardholder credit on successful dispute initiation.
+- Retained runtime script `product/scripts/runtime/reg_phase09_chargeback_initiation.sh` now verifies both `CHB-01` and `CHB-02`.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase09_chargeback_initiation.sh
+git diff --check
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+product/gradlew --no-daemon -p product :apps:platform:bootJar
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime command:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-chb02
+PLATFORM_BASE_URL=http://platform:8080
+ISSUER_BASE_URL=http://issuer:8080
+VAULT_BASE_URL=http://vault:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+bash product/scripts/runtime/reg_phase09_chargeback_initiation.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+dispute=1
+journal=1
+postings=2
+dupe_journals=1
+CHB-01/CHB-02 chargeback initiation provisional credit pass dispute_id=342bd75c-66ff-4dd6-a152-97237540e881 payment_intent_id=6a78dd0b-a029-4488-9b77-cb1d27de9fe1 user_id=2e9e8250-9973-4cf1-8d51-fadbcceeb2fa provisional_journal_id=99401ed1-9667-4280-be7d-dee31041791d
+```
+
+The runtime verification proved:
+- successful dispute initiation still creates one `MERCHANT_NOTIFIED` dispute and marks the payment intent `DISPUTED`;
+- `chargeback.disputes.provisional_credit_journal_id` points to the provisional credit journal;
+- exactly one `CARDHOLDER_PROVISIONAL_CREDIT` journal exists for the dispute;
+- the journal debits `ACQUIRER_DISPUTE_RESERVE` and credits `WALLET_USER:<cardholder>` for EUR 18.2500;
+- duplicate same-cardholder initiation does not create a second dispute or provisional-credit journal;
+- denied initiation paths do not post provisional-credit journals.
+
+Targeted regression outputs:
+
+```text
+LDG-05 ledger reconciliation pass
+SET-01 capture to settlement foundation pass intent_id=09636051-f55b-4a65-bcb1-8c690ea2c4e9
+```
+
+Result tags:
+- `CHB-02` — pass.
+- `CHB-01` — pass regression.
+- `LDG-05` — pass targeted regression.
+- `SET-01` — pass targeted regression.
+
+Runtime environment notes:
+- Docker Compose bridge network creation/host port publishing was blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Platform image was built from the locally verified `bootJar` output.
+
+Not claimed:
+- merchant evidence (`CHB-03`);
+- arbitration (`CHB-04`, `CHB-05`);
+- provisional credit reversal on `WON`;
+- permanent merchant debit / reserve release on `LOST`;
+- frontend `UI-*`.

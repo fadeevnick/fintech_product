@@ -67,15 +67,19 @@ pa_curl -fsS -o "${settlement_body}" -X POST "${auth_base_url}/internal/settleme
 test "$(p05_platform_psql "select state from merchant.payment_intents where id='${intent_id}'::uuid;")" = "SETTLED"
 
 test "$(pa_curl -sS -b "${enduser_cookie}" -o "${dispute_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/card-payments/${intent_id}/disputes" -H "Content-Type: application/json" -d '{"reasonCode":"goods_not_received","narrative":"Runtime CHB-01 dispute"}')" = "201"
-dispute_id="$(node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); if(j.data?.state!=='MERCHANT_NOTIFIED'||j.data?.paymentIntentId!==process.argv[2]||j.data?.reasonCode!=='goods_not_received') process.exit(1); console.log(j.data.id);" "${dispute_body}" "${intent_id}")"
+dispute_id="$(node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); if(j.data?.state!=='MERCHANT_NOTIFIED'||j.data?.paymentIntentId!==process.argv[2]||j.data?.reasonCode!=='goods_not_received'||!j.data?.provisionalCreditJournalId) process.exit(1); console.log(j.data.id);" "${dispute_body}" "${intent_id}")"
+provisional_journal_id="$(node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); console.log(j.data.provisionalCreditJournalId);" "${dispute_body}")"
 test "$(p05_platform_psql "select state from merchant.payment_intents where id='${intent_id}'::uuid;")" = "DISPUTED"
-test "$(p05_platform_psql "select count(*) from chargeback.disputes where id='${dispute_id}'::uuid and payment_intent_id='${intent_id}'::uuid and merchant_id='${PA_MERCHANT_ID}'::uuid and cardholder_user_id='${user_id}'::uuid and amount=18.2500 and state='MERCHANT_NOTIFIED';")" = "1"
+test "$(p05_platform_psql "select count(*) from chargeback.disputes where id='${dispute_id}'::uuid and payment_intent_id='${intent_id}'::uuid and merchant_id='${PA_MERCHANT_ID}'::uuid and cardholder_user_id='${user_id}'::uuid and amount=18.2500 and state='MERCHANT_NOTIFIED' and provisional_credit_journal_id='${provisional_journal_id}'::uuid;")" = "1"
 test "$(p05_platform_psql "select count(*) from audit.audit_log where event_type='chargeback.initiated' and subject_id='${dispute_id}'::uuid and actor_id='${user_id}'::uuid;")" = "1"
 test "$(p05_platform_psql "select count(*) from merchant.webhook_events where event_type='dispute.created' and aggregate_id='${dispute_id}'::uuid;")" = "1"
+test "$(p05_platform_psql "select count(*) from ledger.journal_entries where id='${provisional_journal_id}'::uuid and journal_type='CARDHOLDER_PROVISIONAL_CREDIT' and reference_type='CHARGEBACK' and reference_id='${dispute_id}'::uuid;")" = "1"
+test "$(p05_platform_psql "select count(*) from ledger.postings p join ledger.accounts a on a.id=p.account_id where p.journal_entry_id='${provisional_journal_id}'::uuid and ((a.code='ACQUIRER_DISPUTE_RESERVE' and p.side='DEBIT' and p.amount=18.2500) or (a.code='WALLET_USER:${user_id}' and p.side='CREDIT' and p.amount=18.2500));")" = "2"
 
 test "$(pa_curl -sS -b "${enduser_cookie}" -o "${dispute_replay_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/card-payments/${intent_id}/disputes" -H "Content-Type: application/json" -d '{"reasonCode":"goods_not_received"}')" = "201"
 test "$(node -e "const a=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); const b=JSON.parse(require('fs').readFileSync(process.argv[2],'utf8')); console.log(a.data.id===b.data.id ? 'true' : 'false');" "${dispute_body}" "${dispute_replay_body}")" = "true"
 test "$(p05_platform_psql "select count(*) from chargeback.disputes where payment_intent_id='${intent_id}'::uuid;")" = "1"
+test "$(p05_platform_psql "select count(*) from ledger.journal_entries where journal_type='CARDHOLDER_PROVISIONAL_CREDIT' and reference_type='CHARGEBACK' and reference_id='${dispute_id}'::uuid;")" = "1"
 
 other_user_id="$(p05_register_enduser "${tag}-other" "${other_cookie}")"
 approve_kyc "${other_user_id}"
@@ -85,18 +89,21 @@ unapproved_user_id="$(p05_register_enduser "${tag}-unapproved" "${unapproved_coo
 unapproved_intent_id="$(create_settled_payment "${tag}-unapproved" "${unapproved_cookie}" "/tmp/minifin-${tag}-unapproved-intent.json")"
 test "$(pa_curl -sS -b "${unapproved_cookie}" -o "${not_kyc_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/card-payments/${unapproved_intent_id}/disputes" -H "Content-Type: application/json" -d '{"reasonCode":"goods_not_received"}')" = "403"
 test "$(node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); if(j.errors?.[0]?.code!=='kyc_not_approved') process.exit(1);" "${not_kyc_body}"; echo ok)" = "ok"
+test "$(p05_platform_psql "select count(*) from ledger.journal_entries j join chargeback.disputes d on d.id=j.reference_id where d.payment_intent_id='${unapproved_intent_id}'::uuid and j.journal_type='CARDHOLDER_PROVISIONAL_CREDIT';")" = "0"
 
 test "$(pa_public_post_payment_intent "${api_key}" "pi-${tag}-unsettled" '{"amount":"12.00","currency":"EUR"}' "/tmp/minifin-${tag}-unsettled-intent.json")" = "201"
 unsettled_intent_id="$(auth_extract_payment_intent_id "/tmp/minifin-${tag}-unsettled-intent.json")"
 test "$(auth_public_authorize "${api_key}" "${unsettled_intent_id}" "auth-${tag}-unsettled" "{\"cardToken\":\"${card_token}\",\"amount\":\"12.00\",\"currency\":\"EUR\"}" "/tmp/minifin-${tag}-unsettled-auth.json")" = "200"
 test "$(pa_curl -sS -b "${enduser_cookie}" -o "${unsettled_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/card-payments/${unsettled_intent_id}/disputes" -H "Content-Type: application/json" -d '{"reasonCode":"goods_not_received"}')" = "409"
 test "$(node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); if(j.errors?.[0]?.code!=='invalid_payment_state') process.exit(1);" "${unsettled_body}"; echo ok)" = "ok"
+test "$(p05_platform_psql "select count(*) from ledger.journal_entries j join chargeback.disputes d on d.id=j.reference_id where d.payment_intent_id='${unsettled_intent_id}'::uuid and j.journal_type='CARDHOLDER_PROVISIONAL_CREDIT';")" = "0"
 
 expired_intent_id="$(create_settled_payment "${tag}-expired" "${enduser_cookie}" "/tmp/minifin-${tag}-expired-intent.json")"
 p05_platform_psql "update settlement.settlement_items set created_at = now() - interval '61 days' where payment_intent_id='${expired_intent_id}'::uuid; update merchant.payment_intents set captured_at = now() - interval '61 days' where id='${expired_intent_id}'::uuid;" >/dev/null
 test "$(pa_curl -sS -b "${enduser_cookie}" -o "${expired_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/card-payments/${expired_intent_id}/disputes" -H "Content-Type: application/json" -d '{"reasonCode":"goods_not_received"}')" = "409"
 test "$(node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); if(j.errors?.[0]?.code!=='dispute_window_expired') process.exit(1);" "${expired_body}"; echo ok)" = "ok"
+test "$(p05_platform_psql "select count(*) from ledger.journal_entries j join chargeback.disputes d on d.id=j.reference_id where d.payment_intent_id='${expired_intent_id}'::uuid and j.journal_type='CARDHOLDER_PROVISIONAL_CREDIT';")" = "0"
 
 test "$(pa_curl -sS -b "${enduser_cookie}" -o "${bad_reason_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/card-payments/${expired_intent_id}/disputes" -H "Content-Type: application/json" -d '{"reasonCode":"not_real"}')" = "400"
 
-printf 'CHB-01 chargeback initiation pass dispute_id=%s payment_intent_id=%s user_id=%s\n' "${dispute_id}" "${intent_id}" "${user_id}"
+printf 'CHB-01/CHB-02 chargeback initiation provisional credit pass dispute_id=%s payment_intent_id=%s user_id=%s provisional_journal_id=%s\n' "${dispute_id}" "${intent_id}" "${user_id}" "${provisional_journal_id}"

@@ -2,6 +2,7 @@ package com.minifin.platform.chargeback
 
 import com.minifin.platform.identity.AuditRepository
 import com.minifin.platform.identity.EndUserRecord
+import com.minifin.platform.ledger.LedgerRepository
 import com.minifin.platform.merchant.webhooks.OutboundWebhookService
 import java.math.RoundingMode
 import java.time.OffsetDateTime
@@ -25,6 +26,7 @@ class ChargebackService(
     private val repository: ChargebackRepository,
     private val auditRepository: AuditRepository,
     private val outboundWebhookService: OutboundWebhookService,
+    private val ledgerRepository: LedgerRepository,
     private val jdbcTemplate: JdbcTemplate,
     private val properties: ChargebackProperties,
 ) {
@@ -59,6 +61,8 @@ class ChargebackService(
         if (payment.cardholderUserId != user.id) {
             throw ChargebackException("payment_not_found", "Payment was not found.", HttpStatus.NOT_FOUND)
         }
+        val walletLedgerAccountId = payment.cardholderWalletLedgerAccountId
+            ?: throw ChargebackException("wallet_missing", "Cardholder wallet is missing.", HttpStatus.INTERNAL_SERVER_ERROR)
         if (!isKycApproved(user.id)) {
             throw ChargebackException("kyc_not_approved", "KYC approval is required to dispute a payment.", HttpStatus.FORBIDDEN)
         }
@@ -88,7 +92,10 @@ class ChargebackService(
             merchantResponseDeadline = now.plus(properties.merchantResponseDeadline),
         )
         repository.markPaymentDisputed(payment.id)
-        val dispute = repository.findDisputeByPaymentIntent(payment.id) ?: error("Dispute disappeared after insert")
+        val insertedDispute = repository.findDisputeByPaymentIntent(payment.id) ?: error("Dispute disappeared after insert")
+        val provisionalCreditJournalId = postProvisionalCredit(insertedDispute, walletLedgerAccountId)
+        repository.markProvisionalCreditJournal(insertedDispute.id, provisionalCreditJournalId)
+        val dispute = repository.findDisputeByPaymentIntent(payment.id) ?: error("Dispute disappeared after provisional credit")
         auditRepository.write(
             eventType = "chargeback.initiated",
             actorType = "END_USER",
@@ -96,7 +103,7 @@ class ChargebackService(
             subjectType = "CHARGEBACK",
             subjectId = dispute.id,
             outcome = "SUCCESS",
-            metadataJson = """{"paymentIntentId":"${payment.id}","reasonCode":"$reasonCode"}""",
+            metadataJson = """{"paymentIntentId":"${payment.id}","reasonCode":"$reasonCode","provisionalCreditJournalId":"$provisionalCreditJournalId"}""",
         )
         val dto = dispute.toDto()
         outboundWebhookService.publishDisputeCreated(
@@ -119,6 +126,30 @@ class ChargebackService(
             { rs, _ -> rs.getString("status") },
             userId,
         ).firstOrNull() == "APPROVED"
+
+    private fun postProvisionalCredit(dispute: ChargebackDisputeRecord, walletLedgerAccountId: UUID): UUID {
+        val reserveAccountId = repository.accountByCode("ACQUIRER_DISPUTE_RESERVE")
+            ?: throw ChargebackException(
+                code = "dispute_reserve_account_missing",
+                message = "Acquirer dispute reserve ledger account is missing.",
+                status = HttpStatus.INTERNAL_SERVER_ERROR,
+            )
+        val amountText = dispute.amount.setScale(4, RoundingMode.UNNECESSARY).toPlainString()
+        return ledgerRepository.postJournal(
+            journalId = UUID.randomUUID(),
+            journalType = "CARDHOLDER_PROVISIONAL_CREDIT",
+            referenceType = "CHARGEBACK",
+            referenceId = dispute.id,
+            currency = dispute.currency,
+            description = "Cardholder provisional credit",
+            postingsJson = """
+                [
+                  {"accountId":"$reserveAccountId","side":"DEBIT","amount":"$amountText"},
+                  {"accountId":"$walletLedgerAccountId","side":"CREDIT","amount":"$amountText"}
+                ]
+            """.trimIndent(),
+        )
+    }
 }
 
 fun ChargebackDisputeRecord.toDto(): ChargebackDisputeDto =
@@ -133,5 +164,6 @@ fun ChargebackDisputeRecord.toDto(): ChargebackDisputeDto =
         narrative = narrative,
         state = state,
         merchantResponseDeadline = merchantResponseDeadline.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        provisionalCreditJournalId = provisionalCreditJournalId?.toString(),
         createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
     )
