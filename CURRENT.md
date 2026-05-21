@@ -1,12 +1,12 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-21 (Phase 08 Slice 04 AML critical auto-freeze backend/runtime scope implemented and runtime verified).
+Last updated: 2026-05-21 (Phase 08 Slice 05 Source-of-Funds deposit threshold backend/runtime scope implemented and runtime verified).
 
 ---
 
 ## Focus
 
-Phase 08 Slice 04 AML critical auto-freeze backend/runtime scope is implemented and verified. UI prototype baseline continues in parallel.
+Phase 08 Slice 05 Source-of-Funds deposit threshold backend/runtime scope is implemented and verified. UI prototype baseline continues in parallel.
 
 ## Status
 
@@ -45,6 +45,7 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_08_slice_02_aml_structuring_alert_planning.md` — backend/runtime sub-scope executed; `AML-02` passed.
 - `planning/implementation-slices/phase_08_slice_03_aml_dormancy_break_planning.md` — backend/runtime sub-scope executed; `AML-03` passed.
 - `planning/implementation-slices/phase_08_slice_04_aml_critical_auto_freeze_planning.md` — backend/runtime sub-scope executed; `AML-04` passed.
+- `planning/implementation-slices/phase_08_slice_05_sof_deposit_threshold_planning.md` — backend/runtime sub-scope executed; `WLT-03` passed.
 
 Completed workstream — latest accepted state:
 - Phase 04 Slice 01 merchant API keys, public API authentication and hardened public/dashboard write idempotency primitive implemented in `platform`;
@@ -72,8 +73,9 @@ Completed workstream — latest accepted state:
 - Phase 08 Slice 02 backend/runtime scope is complete: Platform internal `POST /internal/aml/evaluate-structuring`, deterministic local structuring rule for repeated completed movements in the EUR 9,000.00-9,900.00 band, `STRUCTURING` `HIGH` AML alerts, duplicate open-alert suppression, rule evaluations and `aml.alert_created` audit rows are implemented; `AML-02` plus targeted `AML-01`/`RUN-01` regressions passed in isolated runtime.
 - Phase 08 Slice 03 backend/runtime scope is complete: Platform internal `POST /internal/aml/evaluate-dormancy-break`, deterministic local dormancy-break rule for previously active users with a clean dormant gap and recent aggregate activity over EUR 1,000.00, `DORMANCY_BREAK` `HIGH` AML alerts, duplicate open-alert suppression, rule evaluations and `aml.alert_created` audit rows are implemented; `AML-03` plus targeted `AML-02`/`AML-01`/`RUN-01` regressions passed in isolated runtime.
 - Phase 08 Slice 04 backend/runtime scope is complete: Platform internal `POST /internal/aml/process-critical-auto-freezes` freezes end users for `OPEN` `CRITICAL` AML alerts by setting `identity.actor_controls` to `FROZEN`, marks processed alerts `ACCOUNT_FROZEN_PERMANENT`, writes audit rows and proves wallet writes are blocked after freeze; `AML-04` plus targeted `AML-03`/`AML-02`/`AML-01`/`RUN-01` regressions passed in isolated runtime.
+- Phase 08 Slice 05 backend/runtime scope is complete: high-value deposits over EUR 10,000 now remain `REQUESTED` until end-user Source-of-Funds declaration is submitted through `POST /api/v1/deposits/{depositId}/source-of-funds`, then move to `PENDING_OPERATOR_REVIEW`; low-value deposit path remains unchanged; `WLT-03` plus targeted deposit regressions passed in isolated runtime.
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
-- isolated `mfp-aml04` compose stack was used for AML-04 verification and is cleaned up before handoff.
+- isolated `mfp-wlt03` compose stack was used for WLT-03 verification and is cleaned up before handoff.
 
 Latest accepted backend/runtime slices:
 - `planning/implementation-slices/phase_04_slice_01_api_keys_idempotency_planning.md` — backend/runtime sub-scope executed v0.3.
@@ -90,7 +92,7 @@ Latest accepted backend/runtime slices:
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`, `prototypes/ui/19_merchant_onboarding_status.html`, `prototypes/ui/20_merchant_api_keys.html`, `prototypes/ui/21_merchant_webhooks.html`, `prototypes/ui/22_merchant_payments.html`, `prototypes/ui/23_merchant_settlements.html`, `prototypes/ui/24_merchant_disputes.html`.**
 
 Next planned product step:
-- Draft and implement the next approved backend/runtime slice after owner review. Likely candidates: Phase 08 Source-of-Funds threshold (`WLT-03`) or Phase 09 chargeback lifecycle start.
+- Draft and implement the next approved backend/runtime slice after owner review. Likely candidates: Phase 08 two-eyes enforcement (`WLT-04`) or Phase 09 chargeback lifecycle start.
 - `KYC-01` full pass remains blocked on real Sumsub sandbox credentials. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
 
 05 v0.4 resolved stack:

@@ -157,7 +157,7 @@ Result tags:
 | `AML-02` | Structuring rule trip. | Synthetic activity trips structuring rule and opens alert. | `product/scripts/runtime/reg_phase08_aml_structuring_alert.sh` |
 | `AML-03` | Dormancy-break rule trip. | Synthetic activity trips dormancy-break rule and opens alert. | `product/scripts/runtime/reg_phase08_aml_dormancy_break_alert.sh` |
 | `AML-04` | Critical auto-freeze. | Critical alert freezes account and blocks writes. | `product/scripts/runtime/reg_phase08_aml_critical_auto_freeze.sh` |
-| `WLT-03` | SoF deposit threshold. | Deposit > EUR 10k requires SoF before instructions. | pending |
+| `WLT-03` | SoF deposit threshold. | Deposit > EUR 10k requires SoF before instructions. | `product/scripts/runtime/reg_phase08_sof_deposit_threshold.sh` |
 | `WLT-04` | Two-eyes enforcement. | Same operator cannot complete both approvals. | pending |
 
 ## 12. Phase 09 — Chargeback Lifecycle

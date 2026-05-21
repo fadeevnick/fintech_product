@@ -1215,3 +1215,30 @@ Runtime evidence:
 
 Explicitly not implemented/claimed:
 - AML alert review decisions, account unfreeze workflow, SoF (`WLT-03`), two-eyes (`WLT-04`), frontend `UI-*`, SAR.
+
+---
+
+## Phase 08 Slice 05 — Source-of-Funds Deposit Threshold
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
+
+Planning contract:
+- `planning/implementation-slices/phase_08_slice_05_sof_deposit_threshold_planning.md` — APPROVED v0.1.
+
+Implemented backend/runtime scope:
+- Added Platform migration `V25__source_of_funds_deposit_threshold.sql`.
+- Deposit requests over EUR 10,000 are now accepted into `REQUESTED` state instead of being refused as unsupported high-value deposits.
+- Low-value deposits continue to move directly to `PENDING_OPERATOR_REVIEW`.
+- Added `wallet.source_of_funds_declarations`.
+- Added end-user `POST /api/v1/deposits/{depositId}/source-of-funds`.
+- SoF submission requires deposit ownership, high-value amount and `REQUESTED` state; accepted declaration moves the deposit to `PENDING_OPERATOR_REVIEW`.
+- Added retained runtime script `product/scripts/runtime/reg_phase08_sof_deposit_threshold.sh`.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 08 Slice 05 Source-of-Funds Deposit Threshold Runtime Verification`.
+- `WLT-03` — pass.
+- Targeted regressions passed: low-value deposit happy path and deposit amount validation.
+- Platform health endpoint passed.
+
+Explicitly not implemented/claimed:
+- two-eyes approval (`WLT-04`), SoF backoffice review queue, document upload/storage, high-value withdrawals/transfers, frontend `UI-*`.

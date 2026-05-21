@@ -28,7 +28,7 @@ class WalletService(
 ) {
     @Transactional(noRollbackFor = [ActorControlException::class])
     fun createDeposit(user: EndUserRecord, request: DepositRequestCreate): DepositRequestResponse {
-        val amount = validateAmount(request.amount)
+        val amount = validateAmount(request.amount, allowHighValueDeposit = true)
         validateCurrency(request.currency)
         actorControlService.requireWriteAllowed("END_USER", user.id)
 
@@ -41,7 +41,9 @@ class WalletService(
             amount = amount,
             state = "REQUESTED",
         )
-        walletRepository.transitionToPendingReview(depositId)
+        if (!requiresSourceOfFunds(amount)) {
+            walletRepository.transitionToPendingReview(depositId)
+        }
         val record = walletRepository.findDepositRequest(depositId)
             ?: error("Deposit request disappeared after transition")
 
@@ -55,6 +57,74 @@ class WalletService(
             metadataJson = """{"state":"${record.state}","amount":"${record.amount.toPlainString()}"}""",
         )
         return record.toResponse()
+    }
+
+    @Transactional(noRollbackFor = [ActorControlException::class])
+    fun submitSourceOfFunds(
+        user: EndUserRecord,
+        depositId: UUID,
+        request: SourceOfFundsDeclarationCreate,
+    ): SourceOfFundsDeclarationResponse {
+        actorControlService.requireWriteAllowed("END_USER", user.id)
+        val deposit = walletRepository.findDepositRequest(depositId)
+            ?: throw WalletException(
+                code = "deposit_not_found",
+                message = "Deposit request was not found.",
+                status = HttpStatus.NOT_FOUND,
+            )
+        if (deposit.userId != user.id) {
+            throw WalletException(
+                code = "deposit_not_found",
+                message = "Deposit request was not found.",
+                status = HttpStatus.NOT_FOUND,
+            )
+        }
+        if (!requiresSourceOfFunds(deposit.amount)) {
+            throw WalletException(
+                code = "source_of_funds_not_required",
+                message = "Source of Funds is not required for this deposit.",
+                status = HttpStatus.BAD_REQUEST,
+            )
+        }
+        if (deposit.state != "REQUESTED") {
+            throw WalletException(
+                code = "deposit_state_conflict",
+                message = "Deposit request is not awaiting Source of Funds.",
+                status = HttpStatus.CONFLICT,
+            )
+        }
+        val sourceCategory = validateSourceCategory(request.sourceCategory)
+        val description = validateSofDescription(request.description)
+        val declarationId = UUID.randomUUID()
+        walletRepository.insertSourceOfFundsDeclaration(
+            id = declarationId,
+            depositRequestId = deposit.id,
+            userId = user.id,
+            sourceCategory = sourceCategory,
+            description = description,
+        )
+        walletRepository.transitionToPendingReview(deposit.id)
+        val declaration = walletRepository.findSourceOfFundsDeclaration(deposit.id)
+            ?: error("Source of Funds declaration disappeared after insert")
+        val updatedDeposit = walletRepository.findDepositRequest(deposit.id)
+            ?: error("Deposit request disappeared after SoF transition")
+        auditRepository.write(
+            eventType = "wallet.source_of_funds_submitted",
+            actorType = "END_USER",
+            actorId = user.id,
+            subjectType = "WALLET_DEPOSIT_REQUEST",
+            subjectId = deposit.id,
+            outcome = "SUCCESS",
+            metadataJson = """{"declarationId":"${declaration.id}","sourceCategory":"$sourceCategory","amount":"${deposit.amount.toPlainString()}"}""",
+        )
+        return SourceOfFundsDeclarationResponse(
+            declarationId = declaration.id.toString(),
+            depositId = deposit.id.toString(),
+            userId = user.id.toString(),
+            sourceCategory = declaration.sourceCategory,
+            submittedAt = declaration.submittedAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+            depositState = updatedDeposit.state,
+        )
     }
 
     @Transactional
@@ -312,7 +382,7 @@ class WalletService(
             ),
         )
 
-    private fun validateAmount(value: String, operation: String = "deposit"): BigDecimal {
+    private fun validateAmount(value: String, operation: String = "deposit", allowHighValueDeposit: Boolean = false): BigDecimal {
         val amount = runCatching {
             BigDecimal(value.trim()).setScale(4, RoundingMode.UNNECESSARY)
         }
@@ -332,7 +402,15 @@ class WalletService(
                 field = "amount",
             )
         }
-        if (amount >= HIGH_VALUE_THRESHOLD) {
+        if (allowHighValueDeposit && amount > MAX_DEPOSIT_AMOUNT) {
+            throw WalletException(
+                code = "invalid_amount",
+                message = "Deposit amount exceeds the supported local limit.",
+                status = HttpStatus.BAD_REQUEST,
+                field = "amount",
+            )
+        }
+        if (amount >= HIGH_VALUE_THRESHOLD && !allowHighValueDeposit) {
             throw WalletException(
                 code = "unsupported_high_value",
                 message = "High-value $operation requires SoF and two-eyes approval, not supported in this slice.",
@@ -341,6 +419,35 @@ class WalletService(
             )
         }
         return amount
+    }
+
+    private fun requiresSourceOfFunds(amount: BigDecimal): Boolean =
+        amount > HIGH_VALUE_THRESHOLD
+
+    private fun validateSourceCategory(value: String): String {
+        val normalized = value.trim().uppercase()
+        if (normalized !in setOf("SALARY", "BUSINESS_INCOME", "SAVINGS", "INVESTMENT", "OTHER")) {
+            throw WalletException(
+                code = "invalid_source_category",
+                message = "Source category is invalid.",
+                status = HttpStatus.BAD_REQUEST,
+                field = "sourceCategory",
+            )
+        }
+        return normalized
+    }
+
+    private fun validateSofDescription(value: String): String {
+        val trimmed = value.trim()
+        if (trimmed.length < 20 || trimmed.length > 1000) {
+            throw WalletException(
+                code = "invalid_source_description",
+                message = "Source description must be between 20 and 1000 characters.",
+                status = HttpStatus.BAD_REQUEST,
+                field = "description",
+            )
+        }
+        return trimmed
     }
 
     private fun validateCurrency(value: String) {
@@ -406,6 +513,7 @@ class WalletService(
 
     companion object {
         private val HIGH_VALUE_THRESHOLD = BigDecimal("10000.0000")
+        private val MAX_DEPOSIT_AMOUNT = BigDecimal("1000000.0000")
     }
 }
 
@@ -418,6 +526,8 @@ internal fun DepositRequestRecord.toResponse(): DepositRequestResponse =
         state = state,
         reason = reason,
         journalEntryId = journalEntryId?.toString(),
+        sourceOfFundsRequired = amount > BigDecimal("10000.0000"),
+        sourceOfFundsSubmitted = sourceOfFundsSubmitted,
         createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
         decidedAt = decidedAt?.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
     )

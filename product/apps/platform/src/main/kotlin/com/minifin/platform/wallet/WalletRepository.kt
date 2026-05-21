@@ -23,8 +23,17 @@ data class DepositRequestRecord(
     val state: String,
     val reason: String?,
     val journalEntryId: UUID?,
+    val sourceOfFundsSubmitted: Boolean,
     val createdAt: OffsetDateTime,
     val decidedAt: OffsetDateTime?,
+)
+
+data class SourceOfFundsDeclarationRecord(
+    val id: UUID,
+    val depositRequestId: UUID,
+    val userId: UUID,
+    val sourceCategory: String,
+    val submittedAt: OffsetDateTime,
 )
 
 data class WithdrawalRequestRecord(
@@ -118,10 +127,11 @@ class WalletRepository(
     fun findDepositRequest(id: UUID): DepositRequestRecord? =
         jdbcTemplate.query(
             """
-            select id, user_id, wallet_account_id, amount, currency, state, reason,
-                   journal_entry_id, created_at, decided_at
-            from wallet.deposit_requests
-            where id = ?
+            select d.id, d.user_id, d.wallet_account_id, d.amount, d.currency, d.state, d.reason,
+                   d.journal_entry_id, exists(select 1 from wallet.source_of_funds_declarations s where s.deposit_request_id = d.id) as source_of_funds_submitted,
+                   d.created_at, d.decided_at
+            from wallet.deposit_requests d
+            where d.id = ?
             """.trimIndent(),
             { rs, _ -> rs.toDepositRequestRecord() },
             id,
@@ -130,11 +140,12 @@ class WalletRepository(
     fun listDepositsForUser(userId: UUID, limit: Int): List<DepositRequestRecord> =
         jdbcTemplate.query(
             """
-            select id, user_id, wallet_account_id, amount, currency, state, reason,
-                   journal_entry_id, created_at, decided_at
-            from wallet.deposit_requests
-            where user_id = ?
-            order by created_at desc
+            select d.id, d.user_id, d.wallet_account_id, d.amount, d.currency, d.state, d.reason,
+                   d.journal_entry_id, exists(select 1 from wallet.source_of_funds_declarations s where s.deposit_request_id = d.id) as source_of_funds_submitted,
+                   d.created_at, d.decided_at
+            from wallet.deposit_requests d
+            where d.user_id = ?
+            order by d.created_at desc
             limit ?
             """.trimIndent(),
             { rs, _ -> rs.toDepositRequestRecord() },
@@ -145,11 +156,12 @@ class WalletRepository(
     fun listPendingDeposits(limit: Int): List<DepositRequestRecord> =
         jdbcTemplate.query(
             """
-            select id, user_id, wallet_account_id, amount, currency, state, reason,
-                   journal_entry_id, created_at, decided_at
-            from wallet.deposit_requests
-            where state = 'PENDING_OPERATOR_REVIEW'
-            order by created_at asc
+            select d.id, d.user_id, d.wallet_account_id, d.amount, d.currency, d.state, d.reason,
+                   d.journal_entry_id, exists(select 1 from wallet.source_of_funds_declarations s where s.deposit_request_id = d.id) as source_of_funds_submitted,
+                   d.created_at, d.decided_at
+            from wallet.deposit_requests d
+            where d.state = 'PENDING_OPERATOR_REVIEW'
+            order by d.created_at asc
             limit ?
             """.trimIndent(),
             { rs, _ -> rs.toDepositRequestRecord() },
@@ -166,6 +178,47 @@ class WalletRepository(
             """.trimIndent(),
             id,
         )
+
+    fun insertSourceOfFundsDeclaration(
+        id: UUID,
+        depositRequestId: UUID,
+        userId: UUID,
+        sourceCategory: String,
+        description: String,
+    ): Int =
+        jdbcTemplate.update(
+            """
+            insert into wallet.source_of_funds_declarations (
+                id, deposit_request_id, user_id, source_category, description
+            )
+            values (?, ?, ?, ?, ?)
+            on conflict (deposit_request_id) do nothing
+            """.trimIndent(),
+            id,
+            depositRequestId,
+            userId,
+            sourceCategory,
+            description,
+        )
+
+    fun findSourceOfFundsDeclaration(depositRequestId: UUID): SourceOfFundsDeclarationRecord? =
+        jdbcTemplate.query(
+            """
+            select id, deposit_request_id, user_id, source_category, submitted_at
+            from wallet.source_of_funds_declarations
+            where deposit_request_id = ?
+            """.trimIndent(),
+            { rs, _ ->
+                SourceOfFundsDeclarationRecord(
+                    id = rs.getObject("id", UUID::class.java),
+                    depositRequestId = rs.getObject("deposit_request_id", UUID::class.java),
+                    userId = rs.getObject("user_id", UUID::class.java),
+                    sourceCategory = rs.getString("source_category"),
+                    submittedAt = rs.getObject("submitted_at", OffsetDateTime::class.java),
+                )
+            },
+            depositRequestId,
+        ).firstOrNull()
 
     fun markCompleted(
         id: UUID,
@@ -487,6 +540,7 @@ class WalletRepository(
             state = getString("state"),
             reason = getString("reason"),
             journalEntryId = getObject("journal_entry_id", UUID::class.java),
+            sourceOfFundsSubmitted = getBoolean("source_of_funds_submitted"),
             createdAt = getObject("created_at", OffsetDateTime::class.java),
             decidedAt = getObject("decided_at", OffsetDateTime::class.java),
         )

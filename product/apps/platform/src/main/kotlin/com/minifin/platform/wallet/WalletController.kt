@@ -40,6 +40,18 @@ class WalletController(
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse(data = deposit))
     }
 
+    @PostMapping("/api/v1/deposits/{depositId}/source-of-funds")
+    fun submitSourceOfFunds(
+        @CookieValue(name = SESSION_COOKIE, required = false) sessionToken: String?,
+        @PathVariable depositId: String,
+        @RequestBody request: SourceOfFundsDeclarationCreate,
+    ): ResponseEntity<ApiResponse<SourceOfFundsDeclarationResponse>> {
+        val user = identityService.currentUser(sessionToken)
+        val depositUuid = requireUuid(depositId)
+        val declaration = walletService.submitSourceOfFunds(user, depositUuid, request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse(data = declaration))
+    }
+
     @PostMapping("/api/v1/withdrawals")
     fun createWithdrawal(
         @CookieValue(name = SESSION_COOKIE, required = false) sessionToken: String?,

@@ -26,7 +26,7 @@ probe_invalid_amount "scale-overflow" "1.12345" "invalid_amount"
 probe_invalid_amount "non-numeric" "abc" "invalid_amount"
 probe_invalid_amount "zero" "0" "invalid_amount"
 probe_invalid_amount "negative" "-1.0000" "invalid_amount"
-probe_invalid_amount "high-value" "10000.0000" "unsupported_high_value"
+probe_invalid_amount "too-large" "1000000.0001" "invalid_amount"
 
 deposit_count="$(wd_psql "select count(*) from wallet.deposit_requests where user_id = '${user_id}'::uuid;")"
 test "${deposit_count}" = "0"

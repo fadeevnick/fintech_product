@@ -15,8 +15,24 @@ data class DepositRequestResponse(
     val state: String,
     val reason: String?,
     val journalEntryId: String?,
+    val sourceOfFundsRequired: Boolean,
+    val sourceOfFundsSubmitted: Boolean,
     val createdAt: String,
     val decidedAt: String?,
+)
+
+data class SourceOfFundsDeclarationCreate(
+    val sourceCategory: String,
+    val description: String,
+)
+
+data class SourceOfFundsDeclarationResponse(
+    val declarationId: String,
+    val depositId: String,
+    val userId: String,
+    val sourceCategory: String,
+    val submittedAt: String,
+    val depositState: String,
 )
 
 data class WithdrawalRequestCreate(

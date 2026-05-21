@@ -2547,3 +2547,74 @@ Not claimed:
 - two-eyes (`WLT-04`);
 - frontend `UI-*`;
 - SAR.
+
+---
+
+## 2026-05-21 — Phase 08 Slice 05 Source-of-Funds Deposit Threshold Runtime Verification
+
+Scope:
+- Phase 08 Slice 05 Source-of-Funds deposit threshold backend/runtime implementation.
+- Target `WLT-03` plus targeted low-value deposit regressions.
+
+Build/static evidence:
+- `bash -n product/scripts/runtime/reg_phase08_sof_deposit_threshold.sh product/scripts/runtime/reg_phase03_wallet_deposit_amount_validation.sh product/scripts/runtime/reg_phase03_wallet_deposit_happy_path.sh` — passed.
+- `git diff --check` — passed before documentation updates.
+- `docker compose -f product/deploy/docker-compose.yml build platform` — passed.
+
+Runtime environment:
+- Isolated Compose project: `mfp-wlt03`.
+- Compose file: `product/deploy/docker-compose.yml`.
+- Primary WLT-03 script used compose-network URL:
+  - `PLATFORM_BASE_URL=http://platform:8080`
+  - `PLATFORM_CURL_CONTAINER_NETWORK=mfp-wlt03_default`
+
+Primary command:
+
+```bash
+COMPOSE_PROJECT_NAME=mfp-wlt03 \
+COMPOSE_FILE=product/deploy/docker-compose.yml \
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp-wlt03_default \
+product/scripts/runtime/reg_phase08_sof_deposit_threshold.sh
+```
+
+Observed primary output:
+
+```text
+WLT-03 source-of-funds deposit threshold pass deposit_id=fbe86008-ad5d-4c77-a7bc-6067affb8ce3 user_id=93f5f570-f6c3-4406-a9f1-1db90fcf25e8
+```
+
+Runtime assertions passed:
+- end user registered, verified and logged in;
+- high-value EUR 15,000.00 deposit was accepted in `REQUESTED` state;
+- high-value deposit response returned `sourceOfFundsRequired = true` and `sourceOfFundsSubmitted = false`;
+- no SoF declaration existed immediately after deposit creation;
+- `POST /api/v1/deposits/{depositId}/source-of-funds` persisted one `wallet.source_of_funds_declarations` row;
+- deposit moved to `PENDING_OPERATOR_REVIEW` after SoF declaration;
+- `wallet.source_of_funds_submitted` audit row was persisted;
+- duplicate SoF submission after transition returned `409 deposit_state_conflict`.
+
+Targeted regression outputs:
+
+```text
+WLT deposit happy path pass
+WLT deposit amount validation pass
+```
+
+Platform health output:
+
+```text
+{"service":"platform","status":"UP"}
+```
+
+Result tags:
+- `WLT-03` — pass.
+- Low-value deposit happy path — pass targeted regression.
+- Deposit amount validation — pass targeted regression.
+
+Not claimed:
+- two-eyes approval (`WLT-04`);
+- SoF backoffice review queue;
+- document upload/storage;
+- high-value withdrawals/transfers;
+- frontend `UI-*`.

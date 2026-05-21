@@ -39,6 +39,7 @@ Implemented runtime behavior so far:
 - Phase 08 Slice 02 AML structuring alert in `platform`: internal `POST /internal/aml/evaluate-structuring`, deterministic local structuring rule for repeated completed deposit/withdraw/transfer movements in the EUR 9,000.00-9,900.00 band over a 24-hour lookback, `STRUCTURING` `HIGH` alerts, duplicate suppression and `aml.alert_created` audit rows. `AML-02` has runtime evidence.
 - Phase 08 Slice 03 AML dormancy-break alert in `platform`: internal `POST /internal/aml/evaluate-dormancy-break`, deterministic local rule for previously active users with no completed money-moving activity during a 30-day dormant gap and recent completed activity over EUR 1,000.00 in 24 hours, `DORMANCY_BREAK` `HIGH` alerts, duplicate suppression and `aml.alert_created` audit rows. `AML-03` has runtime evidence.
 - Phase 08 Slice 04 AML critical auto-freeze in `platform`: internal `POST /internal/aml/process-critical-auto-freezes`, automatic `END_USER` actor-control `FROZEN` state for `OPEN` `CRITICAL` AML alerts, processed alert status `ACCOUNT_FROZEN_PERMANENT`, audit rows and wallet-write block proof. `AML-04` has runtime evidence.
+- Phase 08 Slice 05 Source-of-Funds deposit threshold in `platform`: deposits over EUR 10,000 stay `REQUESTED` until `POST /api/v1/deposits/{depositId}/source-of-funds` persists a Source-of-Funds declaration and moves the deposit to `PENDING_OPERATOR_REVIEW`; low-value deposits still move directly to manual review. `WLT-03` has runtime evidence.
 
 ## Local Commands
 
@@ -150,6 +151,7 @@ scripts/runtime/reg_phase08_aml_velocity_alert.sh
 scripts/runtime/reg_phase08_aml_structuring_alert.sh
 scripts/runtime/reg_phase08_aml_dormancy_break_alert.sh
 scripts/runtime/reg_phase08_aml_critical_auto_freeze.sh
+scripts/runtime/reg_phase08_sof_deposit_threshold.sh
 ```
 
 ## Stripe Webhook Local Runtime
