@@ -2926,3 +2926,89 @@ Not claimed:
 - arbitration (`CHB-04`, `CHB-05`);
 - provisional credit reversal or merchant debit;
 - frontend `UI-*`.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 04 Arbitration WON Reversal Runtime Verification
+
+Scope:
+- `CHB-04` backend/runtime implementation for backoffice arbitration `WON`.
+- Retained runtime script `product/scripts/runtime/reg_phase09_arbitration_won.sh` was added.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase09_arbitration_won.sh
+git diff --check
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+product/gradlew --no-daemon -p product :apps:platform:bootJar
+product/gradlew --no-daemon -p product :apps:platform:bootJar :apps:acquirer:bootJar :apps:network:bootJar :apps:issuer:bootJar :apps:vault:bootJar
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime command:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-chb04
+PLATFORM_BASE_URL=http://platform:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+KEYCLOAK_BASE_URL=http://keycloak:8080
+KEYCLOAK_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+bash product/scripts/runtime/reg_phase09_arbitration_won.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+CHB-04 arbitration WON pass dispute_id=e586d972-a5f9-4d95-9d1e-438229776f1f provisional_journal_id=6f636bdd-5f93-4f99-8dfc-0114973e0f86 reversal_journal_id=5ad1601f-12bb-4d68-8f80-140106fa3296 user_id=ccfa3039-149a-414f-a26f-8f5073389deb
+```
+
+Additional database confirmation:
+
+```text
+e586d972-a5f9-4d95-9d1e-438229776f1f|WON|WON|5ad1601f-12bb-4d68-8f80-140106fa3296
+CARDHOLDER_PROVISIONAL_CREDIT_REVERSAL|CHARGEBACK|e586d972-a5f9-4d95-9d1e-438229776f1f
+ACQUIRER_DISPUTE_RESERVE|CREDIT|18.2500
+WALLET_USER:ccfa3039-149a-414f-a26f-8f5073389deb|DEBIT|18.2500
+audit=1
+webhook=1
+```
+
+The runtime verification proved:
+- a dispute can move `EVIDENCE_SUBMITTED -> WON` through the backoffice arbitration endpoint;
+- one `CARDHOLDER_PROVISIONAL_CREDIT_REVERSAL` journal is posted for the dispute;
+- the reversal debits the cardholder wallet and credits `ACQUIRER_DISPUTE_RESERVE` for EUR 18.2500;
+- the provisional credit and reversal net cardholder wallet impact back to zero;
+- arbitration metadata and reversal journal id are persisted on `chargeback.disputes`;
+- `chargeback.arbitration_won` audit row is written;
+- `dispute.won` webhook outbox event is persisted;
+- repeated `WON`, unsupported `LOST`, and deciding before evidence submission are rejected.
+
+Targeted regression outputs:
+
+```text
+LDG foundation balanced posting and derived balances pass
+CHB-03 merchant evidence submission pass dispute_id=5195d205-66e2-45a1-a56c-f28d308466ee evidence_id=3d58573a-6cc2-444b-a86e-5dd4433efdf2
+```
+
+Result tags:
+- `CHB-04` — pass.
+- `CHB-03` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Runtime environment notes:
+- Docker Compose bridge network creation/host port publishing was blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs because Gradle-in-Docker hung in this environment.
+- Keycloak runtime helper used `KEYCLOAK_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default` for admin/token calls.
+
+Not claimed:
+- arbitration `LOST` (`CHB-05`);
+- merchant debit finalization;
+- reserve release beyond provisional credit reversal;
+- merchant deadline expiry;
+- frontend `UI-*`.

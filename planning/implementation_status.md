@@ -1416,3 +1416,37 @@ Explicitly not implemented/claimed:
 - provisional credit reversal or merchant debit;
 - frontend UI;
 - chargeback rate metrics.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 04 Arbitration WON Reversal (`CHB-04`)
+
+Planning note:
+- `planning/implementation-slices/phase_09_slice_04_arbitration_won_planning.md` — backend/runtime sub-scope executed v0.1.
+
+Implemented:
+- Added arbitration metadata to `chargeback.disputes`: outcome, rationale, decided-by subject/role, decided timestamp and arbitration journal id.
+- Added backoffice endpoint `POST /api/v1/backoffice/disputes/{disputeId}/arbitration`.
+- The endpoint supports only `outcome=WON` in this slice, requires a valid backoffice principal, requires rationale, and only accepts `EVIDENCE_SUBMITTED` disputes with an existing provisional credit journal.
+- Successful `WON` decisions post one `CARDHOLDER_PROVISIONAL_CREDIT_REVERSAL` ledger journal with reference type `CHARGEBACK`, debit the cardholder wallet and credit `ACQUIRER_DISPUTE_RESERVE` for the dispute amount.
+- Successful `WON` decisions transition the dispute to terminal `WON`, persist arbitration metadata/journal id, write `chargeback.arbitration_won` audit, and persist `dispute.won` webhook outbox event.
+- Added retained runtime script `product/scripts/runtime/reg_phase09_arbitration_won.sh`.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 09 Slice 04 Arbitration WON Reversal Runtime Verification`.
+- `CHB-04` — pass.
+- `CHB-03` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Verification notes:
+- Docker Compose bridge network creation/host port publishing remained blocked by a local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs to avoid the Gradle-in-Docker hang seen in this environment.
+- Keycloak runtime helper was run with `KEYCLOAK_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default` so admin/token calls could resolve the compose service name.
+
+Explicitly not implemented/claimed:
+- arbitration `LOST` (`CHB-05`);
+- merchant accept / terminal `LOST`;
+- merchant deadline expiry;
+- reserve release/permanent merchant debit;
+- frontend UI;
+- chargeback rate metrics.

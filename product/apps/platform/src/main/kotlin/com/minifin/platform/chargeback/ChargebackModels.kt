@@ -51,3 +51,15 @@ data class EvidenceAttachmentDto(
     val storageKey: String,
     val sizeBytes: Long,
 )
+
+data class ArbitrationDecisionRequest(
+    val outcome: String? = null,
+    val rationale: String? = null,
+)
+
+data class ArbitrationDecisionDto(
+    val disputeId: String,
+    val state: String,
+    val outcome: String,
+    val arbitrationJournalId: String,
+)

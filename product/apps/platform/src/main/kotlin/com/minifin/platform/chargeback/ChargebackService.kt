@@ -4,6 +4,8 @@ import com.minifin.platform.identity.AuditRepository
 import com.minifin.platform.identity.EndUserRecord
 import com.minifin.platform.identity.MerchantEmployeeRecord
 import com.minifin.platform.ledger.LedgerRepository
+import com.minifin.platform.backoffice.BackofficePrincipal
+import com.minifin.platform.backoffice.BackofficeException
 import com.minifin.platform.merchant.dashboard.MerchantDashboardException
 import com.minifin.platform.merchant.webhooks.OutboundWebhookService
 import java.math.RoundingMode
@@ -187,6 +189,51 @@ class ChargebackService(
         return dto
     }
 
+    @Transactional
+    fun decideArbitration(disputeId: UUID, request: ArbitrationDecisionRequest, principal: BackofficePrincipal): ArbitrationDecisionDto {
+        val outcome = request.outcome?.trim()?.uppercase()
+            ?: throw BackofficeException("invalid_outcome", "Arbitration outcome is required.", HttpStatus.BAD_REQUEST)
+        if (outcome != "WON") {
+            throw BackofficeException("unsupported_outcome", "Only WON arbitration is supported in this slice.", HttpStatus.BAD_REQUEST)
+        }
+        val rationale = request.rationale?.trim()?.takeIf { it.isNotEmpty() }
+            ?: throw BackofficeException("invalid_rationale", "Arbitration rationale is required.", HttpStatus.BAD_REQUEST)
+        if (rationale.length < 20 || rationale.length > 4000) {
+            throw BackofficeException("invalid_rationale", "Arbitration rationale must be between 20 and 4000 characters.", HttpStatus.BAD_REQUEST)
+        }
+        val dispute = repository.findDisputeById(disputeId)
+            ?: throw BackofficeException("dispute_not_found", "Dispute was not found.", HttpStatus.NOT_FOUND)
+        if (dispute.state != "EVIDENCE_SUBMITTED") {
+            throw BackofficeException("invalid_state", "Only evidence-submitted disputes can be decided as WON.", HttpStatus.CONFLICT)
+        }
+        if (dispute.provisionalCreditJournalId == null) {
+            throw BackofficeException("provisional_credit_missing", "Dispute has no provisional credit to reverse.", HttpStatus.CONFLICT)
+        }
+        val walletLedgerAccountId = repository.cardholderWalletLedgerAccountId(dispute.id)
+            ?: throw BackofficeException("wallet_missing", "Cardholder wallet is missing.", HttpStatus.INTERNAL_SERVER_ERROR)
+        val reversalJournalId = postProvisionalCreditReversal(dispute, walletLedgerAccountId)
+        val role = principal.roles.firstOrNull()
+        if (repository.markArbitrationWon(dispute.id, rationale, principal.subject, role, reversalJournalId) == 0) {
+            throw BackofficeException("invalid_state", "Only evidence-submitted disputes can be decided as WON.", HttpStatus.CONFLICT)
+        }
+        auditRepository.write(
+            eventType = "chargeback.arbitration_won",
+            actorType = "BACKOFFICE",
+            actorId = principal.subjectUuid,
+            subjectType = "CHARGEBACK",
+            subjectId = dispute.id,
+            outcome = "SUCCESS",
+            metadataJson = """{"arbitrationJournalId":"$reversalJournalId","role":"${role ?: ""}"}""",
+        )
+        outboundWebhookService.publishDisputeWon(
+            disputeId = dispute.id,
+            merchantId = dispute.merchantId,
+            paymentIntentId = dispute.paymentIntentId,
+            arbitrationJournalId = reversalJournalId,
+        )
+        return ArbitrationDecisionDto(dispute.id.toString(), "WON", "WON", reversalJournalId.toString())
+    }
+
     private fun isKycApproved(userId: UUID): Boolean =
         jdbcTemplate.query(
             "select status from kyc.kyc_profiles where end_user_id = ?",
@@ -234,6 +281,30 @@ class ChargebackService(
                 [
                   {"accountId":"$reserveAccountId","side":"DEBIT","amount":"$amountText"},
                   {"accountId":"$walletLedgerAccountId","side":"CREDIT","amount":"$amountText"}
+                ]
+            """.trimIndent(),
+        )
+    }
+
+    private fun postProvisionalCreditReversal(dispute: ChargebackDisputeRecord, walletLedgerAccountId: UUID): UUID {
+        val reserveAccountId = repository.accountByCode("ACQUIRER_DISPUTE_RESERVE")
+            ?: throw BackofficeException(
+                code = "dispute_reserve_account_missing",
+                message = "Acquirer dispute reserve ledger account is missing.",
+                status = HttpStatus.INTERNAL_SERVER_ERROR,
+            )
+        val amountText = dispute.amount.setScale(4, RoundingMode.UNNECESSARY).toPlainString()
+        return ledgerRepository.postJournal(
+            journalId = UUID.randomUUID(),
+            journalType = "CARDHOLDER_PROVISIONAL_CREDIT_REVERSAL",
+            referenceType = "CHARGEBACK",
+            referenceId = dispute.id,
+            currency = dispute.currency,
+            description = "Cardholder provisional credit reversal",
+            postingsJson = """
+                [
+                  {"accountId":"$walletLedgerAccountId","side":"DEBIT","amount":"$amountText"},
+                  {"accountId":"$reserveAccountId","side":"CREDIT","amount":"$amountText"}
                 ]
             """.trimIndent(),
         )

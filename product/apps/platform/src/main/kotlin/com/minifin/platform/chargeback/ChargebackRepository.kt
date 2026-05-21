@@ -31,6 +31,7 @@ data class ChargebackDisputeRecord(
     val state: String,
     val merchantResponseDeadline: OffsetDateTime,
     val provisionalCreditJournalId: UUID?,
+    val arbitrationJournalId: UUID?,
     val createdAt: OffsetDateTime,
 )
 
@@ -76,7 +77,7 @@ class ChargebackRepository(
         jdbcTemplate.query(
             """
             select id, payment_intent_id, merchant_id, cardholder_user_id, amount, currency, reason_code,
-                   narrative, state, merchant_response_deadline, provisional_credit_journal_id, created_at
+                   narrative, state, merchant_response_deadline, provisional_credit_journal_id, arbitration_journal_id, created_at
               from chargeback.disputes
              where payment_intent_id = ?
             """.trimIndent(),
@@ -88,7 +89,7 @@ class ChargebackRepository(
         jdbcTemplate.query(
             """
             select id, payment_intent_id, merchant_id, cardholder_user_id, amount, currency, reason_code,
-                   narrative, state, merchant_response_deadline, provisional_credit_journal_id, created_at
+                   narrative, state, merchant_response_deadline, provisional_credit_journal_id, arbitration_journal_id, created_at
               from chargeback.disputes
              where id = ?
             """.trimIndent(),
@@ -160,6 +161,20 @@ class ChargebackRepository(
             code,
         ).firstOrNull()
 
+    fun cardholderWalletLedgerAccountId(disputeId: UUID): UUID? =
+        jdbcTemplate.query(
+            """
+            select wa.ledger_account_id
+              from chargeback.disputes d
+              join cards.issued_cards ic on ic.end_user_id = d.cardholder_user_id
+              join merchant.payment_intents pi on pi.id = d.payment_intent_id and pi.card_token = ic.card_token
+              join wallet.wallet_accounts wa on wa.id = ic.wallet_account_id
+             where d.id = ?
+            """.trimIndent(),
+            { rs, _ -> rs.getObject("ledger_account_id", UUID::class.java) },
+            disputeId,
+        ).firstOrNull()
+
     fun insertEvidenceSubmission(id: UUID, disputeId: UUID, merchantId: UUID, employeeId: UUID, narrative: String): Int =
         jdbcTemplate.update(
             """
@@ -212,6 +227,35 @@ class ChargebackRepository(
         disputeId,
     )
 
+    fun markArbitrationWon(
+        disputeId: UUID,
+        rationale: String,
+        decidedBySubject: String,
+        decidedByRole: String?,
+        journalId: UUID,
+    ): Int = jdbcTemplate.update(
+        """
+        update chargeback.disputes
+           set state = 'WON',
+               arbitration_outcome = 'WON',
+               arbitration_rationale = ?,
+               arbitration_decided_by_subject = ?,
+               arbitration_decided_by_role = ?,
+               arbitration_decided_at = now(),
+               arbitration_journal_id = ?,
+               updated_at = now(),
+               version = version + 1
+         where id = ?
+           and state = 'EVIDENCE_SUBMITTED'
+           and arbitration_journal_id is null
+        """.trimIndent(),
+        rationale,
+        decidedBySubject,
+        decidedByRole,
+        journalId,
+        disputeId,
+    )
+
     fun findEvidenceSubmission(disputeId: UUID): EvidenceSubmissionRecord? =
         jdbcTemplate.query(
             """
@@ -261,6 +305,7 @@ class ChargebackRepository(
             state = getString("state"),
             merchantResponseDeadline = getObject("merchant_response_deadline", OffsetDateTime::class.java),
             provisionalCreditJournalId = getObject("provisional_credit_journal_id", UUID::class.java),
+            arbitrationJournalId = getObject("arbitration_journal_id", UUID::class.java),
             createdAt = getObject("created_at", OffsetDateTime::class.java),
         )
 
