@@ -1589,3 +1589,41 @@ Explicitly not implemented/claimed:
 - KYC/SoF document storage;
 - chargeback rate metrics;
 - frontend UI.
+
+---
+
+## 2026-05-21 — Phase 06 Slice 07 Refund Bounds (`SET-04`)
+
+Planning note:
+- `planning/implementation-slices/phase_06_slice_07_refund_bounds_planning.md` — backend/runtime sub-scope executed v0.1.
+
+Implemented:
+- Added public endpoint `POST /v1/payment_intents/{id}/refund`.
+- Refund endpoint uses the existing public API-key auth and idempotency primitive.
+- Added durable `merchant.refunds` table and payment intent states `PARTIALLY_REFUNDED` / `REFUNDED`.
+- Implemented settled-payment partial refunds with aggregate successful refund bound `<= captured_amount`.
+- Accepted refund posts one balanced `CARD_PAYMENT_REFUND` ledger journal with reference type `REFUND`, debiting `MERCHANT_SETTLEMENT:<merchantId>` and crediting `WALLET_USER:<cardholderUserId>`.
+- Successful refund persists refund ledger journal id, updates payment state, writes `payment.refund_succeeded` audit and persists `payment_intent.refunded` webhook outbox event.
+- Added retained runtime script `product/scripts/runtime/reg_phase06_refund_bounds.sh`.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 06 Slice 07 Refund Bounds Runtime Verification`.
+- `SET-04` — pass.
+- `SET-01` — pass targeted regression.
+- `PAY-06` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Verification notes:
+- Docker Compose bridge network creation/host port publishing remained blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs.
+- Temporary `mfp-set04` compose stack was stopped with volumes removed after runtime checks.
+
+Explicitly not implemented/claimed:
+- merchant dashboard refund route or UI;
+- refund-before-settlement netting;
+- issuer/network refund rails;
+- Acquirer projection refund adjustments;
+- payout adjustments;
+- bank files;
+- scheduled jobs;
+- frontend UI.

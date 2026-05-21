@@ -3321,3 +3321,81 @@ Not claimed:
 - KYC/SoF document storage;
 - frontend `UI-*`;
 - chargeback rate metrics.
+
+---
+
+## 2026-05-21 — Phase 06 Slice 07 Refund Bounds Runtime Verification
+
+Scope:
+- `SET-04` backend/runtime implementation for settled-payment partial refunds with aggregate refund bounds.
+- Retained runtime script `product/scripts/runtime/reg_phase06_refund_bounds.sh` was added.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase06_refund_bounds.sh
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+product/gradlew --no-daemon -p product :apps:platform:bootJar :apps:acquirer:bootJar :apps:network:bootJar :apps:issuer:bootJar :apps:vault:bootJar
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime command:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-set04
+PLATFORM_BASE_URL=http://platform:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+scripts/runtime/reg_phase06_refund_bounds.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+SET-04 refund bounds pass intent_id=155f72e9-9da6-4247-805f-6f7441791665 refund_one_id=ace2a936-bc22-4a2f-98a6-9343325bdb64 refund_two_id=fd6f5c81-33f2-40c3-a2f7-1082cba91df5 user_id=0eb87234-0c4e-4c21-9add-203c25d90b29
+```
+
+The runtime verification proved:
+- a settled payment accepts a first partial refund and moves to `PARTIALLY_REFUNDED`;
+- idempotent replay of the first refund returns the same refund id;
+- an over-refund attempt before full refund is rejected with `refund_amount_exceeds_payment`;
+- a second partial refund can bring total successful refunds exactly to the captured amount and moves payment to `REFUNDED`;
+- additional refund after full refund is rejected;
+- refund rows are persisted under `merchant.refunds`;
+- each accepted refund posts balanced `CARD_PAYMENT_REFUND` ledger journal;
+- refund journal debits `MERCHANT_SETTLEMENT:<merchantId>` and credits `WALLET_USER:<userId>`;
+- `payment.refund_succeeded` audit row is written;
+- `payment_intent.refunded` webhook outbox event is persisted.
+
+Targeted regression outputs:
+
+```text
+SET-01 capture to settlement foundation pass intent_id=a244a958-cb15-4e3b-bfda-99be9e510dfd batch_id=3253369e-a9d5-409a-96b0-d5a3e87dd1b9
+PAY-06 payment capture foundation pass intent_id=7d0d0a4d-000a-46d9-8422-6fe60e0492cf
+LDG-05 ledger reconciliation pass
+```
+
+Result tags:
+- `SET-04` — pass.
+- `SET-01` — pass targeted regression.
+- `PAY-06` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Runtime environment notes:
+- Docker Compose bridge network creation/host port publishing was blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs.
+- Temporary compose stack `mfp-set04` was stopped with `down -v --remove-orphans` after runtime checks.
+
+Not claimed:
+- merchant dashboard refund route or UI;
+- refund-before-settlement netting;
+- issuer/network refund rails;
+- Acquirer projection refund adjustments;
+- payouts or payout adjustments;
+- bank files;
+- scheduled jobs;
+- frontend `UI-*`.

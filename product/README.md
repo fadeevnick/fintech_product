@@ -31,6 +31,7 @@ Implemented runtime behavior so far:
 - Phase 06 Slice 04 capture-to-settlement foundation in `platform`: captured payment intents can be processed by `POST /internal/settlement/process-captured`, creating `settlement.settlement_batches` / `settlement.settlement_items`, marking payment intents `SETTLED`, and posting a minimal balanced `CARD_PAYMENT_SETTLEMENT` ledger journal from `CARD_SETTLEMENT_CLEARING` to a per-merchant settlement account. `SET-01` has runtime evidence.
 - Phase 06 Slice 05 settlement fee split in `platform`: settlement items now persist merchant net, issuer interchange, network assessment and acquirer margin; `CARD_PAYMENT_SETTLEMENT` journals credit merchant net plus deterministic fee destination accounts while remaining exactly balanced. `SET-02` has runtime evidence.
 - Phase 06 Slice 06 acquirer settlement projection across `platform` and `acquirer`: Acquirer stores `merchant_settlement.balance_projection`, Platform publishes settled item projections through `POST /internal/settlement/publish-projections`, and Acquirer ingests them idempotently by Platform settlement item id. `SET-03` has runtime evidence.
+- Phase 06 Slice 07 refund bounds in `platform`: public `POST /v1/payment_intents/{id}/refund` supports settled-payment partial refunds with idempotency, durable `merchant.refunds`, aggregate successful refund bounds, balanced `CARD_PAYMENT_REFUND` ledger journal, audit row and `payment_intent.refunded` webhook outbox event. `SET-04` has runtime evidence.
 - Phase 07 Slice 01 KYC/Sumsub foundation in `platform`: end-user `POST /api/v1/kyc/start`, KYC profile/session/vendor-event persistence, Sumsub adapter boundary, inbound `POST /webhooks/sumsub/v1` signature verification and vendor event id idempotency. `KYC-02` has runtime evidence; `KYC-01` is partial until real Sumsub sandbox credentials are configured.
 - Phase 07 Slice 02 backoffice KYC manual review in `platform`: backoffice KYC queue/detail/manual decision APIs, rationale validation, `kyc.kyc_manual_decisions` persistence and `kyc.manual_decision_recorded` audit rows. `KYC-03` has runtime evidence.
 - Phase 07 Slice 03 OpenSanctions fail-closed foundation in `platform`: `sanctions.sanctions_hits`, OpenSanctions adapter boundary with explicit local modes, fail-closed screening before KYC manual approval, persisted hit/audit rows for unavailable and possible-match outcomes, and no-match approval pass-through. `SNX-01` has runtime evidence.
@@ -277,9 +278,10 @@ Retained script:
 scripts/runtime/reg_phase06_capture_to_settlement.sh
 scripts/runtime/reg_phase06_settlement_fee_split.sh
 scripts/runtime/reg_phase06_acquirer_settlement_projection.sh
+scripts/runtime/reg_phase06_refund_bounds.sh
 ```
 
-`SET-01`, `SET-02` and `SET-03` are implemented and verified. Payouts, refunds, chargebacks, bank file export, scheduled reconciliation jobs and merchant dashboard settlement UI are not implemented in these slices.
+`SET-01`, `SET-02`, `SET-03` and `SET-04` are implemented and verified. Payouts, refund-before-settlement netting, bank file export, scheduled reconciliation jobs and merchant dashboard settlement UI are not implemented in these slices.
 
 
 ## Phase 07 KYC/Sumsub Local Runtime

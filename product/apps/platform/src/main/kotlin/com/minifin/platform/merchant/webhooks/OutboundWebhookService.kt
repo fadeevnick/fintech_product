@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.minifin.platform.identity.MerchantEmployeeRecord
 import com.minifin.platform.merchant.dashboard.MerchantDashboardException
 import com.minifin.platform.publicapi.PaymentIntentRecord
+import com.minifin.platform.publicapi.RefundRecord
 import com.minifin.platform.publicapi.toDto
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -50,6 +51,35 @@ class OutboundWebhookService(
             eventType = "payment_intent.created",
             aggregateType = "payment_intent",
             aggregateId = record.id,
+            payloadJson = objectMapper.writeValueAsString(payload),
+        )
+        if (inserted) {
+            repository.findEvent(eventId)?.let { deliver(it) }
+        }
+    }
+
+    fun publishPaymentIntentRefunded(refund: RefundRecord, paymentState: String) {
+        val eventId = UUID.randomUUID()
+        val payload = linkedMapOf(
+            "id" to "evt_$eventId",
+            "type" to "payment_intent.refunded",
+            "createdAt" to refund.createdAt.toString(),
+            "merchantId" to refund.merchantId.toString(),
+            "data" to mapOf(
+                "object" to mapOf(
+                    "id" to refund.paymentIntentId.toString(),
+                    "object" to "payment_intent",
+                    "state" to paymentState,
+                    "refund" to refund.toDto(),
+                ),
+            ),
+        )
+        val inserted = repository.insertEvent(
+            id = eventId,
+            merchantId = refund.merchantId,
+            eventType = "payment_intent.refunded",
+            aggregateType = "payment_intent",
+            aggregateId = refund.paymentIntentId,
             payloadJson = objectMapper.writeValueAsString(payload),
         )
         if (inserted) {

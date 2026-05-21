@@ -88,6 +88,26 @@ class PublicApiController(
         return jsonResponse(cached.httpStatus, cached.body)
     }
 
+    @PostMapping("/v1/payment_intents/{id}/refund", produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun refundPaymentIntent(
+        request: HttpServletRequest,
+        @PathVariable id: String,
+        @RequestHeader(name = "Idempotency-Key", required = false) idempotencyKey: String?,
+    ): ResponseEntity<String> {
+        val principal = requirePrincipal(request)
+        val uuid = parsePaymentIntentId(id)
+        val key = idempotencyService.validateKey(idempotencyKey)
+        val rawBody = request.inputStream.readAllBytes().toString(StandardCharsets.UTF_8)
+        val route = "/v1/payment_intents/$id/refund"
+        val fingerprint = idempotencyService.fingerprint("POST", route, rawBody)
+        val cached = idempotencyService.runWriteOnce(principal.merchantId, key, "POST", route, fingerprint) {
+            val parsedRequest = parseRefundBody(rawBody)
+            val dto = paymentIntentService.refund(principal, uuid, parsedRequest)
+            IdempotentOutcome.of(HttpStatus.OK.value(), idempotencyService.writeJson(PublicApiResponse(data = dto)))
+        }
+        return jsonResponse(cached.httpStatus, cached.body)
+    }
+
     @GetMapping("/v1/payment_intents/{id}", produces = [MediaType.APPLICATION_JSON_VALUE])
     fun getPaymentIntent(
         request: HttpServletRequest,
@@ -133,6 +153,14 @@ class PublicApiController(
     private fun parseCaptureBody(rawBody: String): CapturePaymentIntentRequest {
         if (rawBody.isBlank()) return CapturePaymentIntentRequest()
         return runCatching { objectMapper.readValue(rawBody, CapturePaymentIntentRequest::class.java) }
+            .getOrElse { throw PublicApiException("invalid_request_body", "Request body is invalid JSON.", HttpStatus.BAD_REQUEST) }
+    }
+
+    private fun parseRefundBody(rawBody: String): RefundPaymentIntentRequest {
+        if (rawBody.isBlank()) {
+            throw PublicApiException("invalid_request_body", "Request body is required.", HttpStatus.BAD_REQUEST)
+        }
+        return runCatching { objectMapper.readValue(rawBody, RefundPaymentIntentRequest::class.java) }
             .getOrElse { throw PublicApiException("invalid_request_body", "Request body is invalid JSON.", HttpStatus.BAD_REQUEST) }
     }
 

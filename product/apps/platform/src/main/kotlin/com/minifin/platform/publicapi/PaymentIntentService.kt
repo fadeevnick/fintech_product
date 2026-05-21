@@ -1,6 +1,8 @@
 package com.minifin.platform.publicapi
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.minifin.platform.identity.AuditRepository
+import com.minifin.platform.ledger.LedgerRepository
 import com.minifin.platform.merchant.webhooks.OutboundWebhookService
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -30,6 +32,12 @@ data class CapturePaymentIntentRequest(
     val currency: String? = null,
 )
 
+data class RefundPaymentIntentRequest(
+    val amount: String? = null,
+    val currency: String? = null,
+    val reason: String? = null,
+)
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class PaymentAuthorizationDto(
     val id: String? = null,
@@ -53,11 +61,26 @@ data class PaymentIntentDto(
     val authorization: PaymentAuthorizationDto? = null,
 )
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class RefundDto(
+    val id: String,
+    val `object`: String,
+    val paymentIntentId: String,
+    val amount: String,
+    val currency: String,
+    val state: String,
+    val reason: String?,
+    val ledgerJournalId: String?,
+    val createdAt: String,
+)
+
 @Service
 class PaymentIntentService(
     private val repository: PaymentIntentRepository,
     private val properties: com.minifin.platform.cards.CardProperties,
     private val outboundWebhookService: OutboundWebhookService,
+    private val ledgerRepository: LedgerRepository,
+    private val auditRepository: AuditRepository,
 ) {
     private val restTemplate = org.springframework.web.client.RestTemplate()
 
@@ -161,6 +184,98 @@ class PaymentIntentService(
         }
 
         return repository.findById(record.id)!!.toDto()
+    }
+
+    @Transactional
+    fun refund(principal: PublicApiPrincipal, id: UUID, request: RefundPaymentIntentRequest): RefundDto {
+        val record = repository.findByIdForUpdate(id)
+            ?: throw PublicApiException("payment_intent_not_found", "Payment intent was not found.", HttpStatus.NOT_FOUND)
+        if (record.merchantId != principal.merchantId) {
+            throw PublicApiException("payment_intent_not_found", "Payment intent was not found.", HttpStatus.NOT_FOUND)
+        }
+        if (record.state !in setOf("SETTLED", "PARTIALLY_REFUNDED", "REFUNDED")) {
+            throw PublicApiException(
+                code = "invalid_state",
+                message = "Only settled payment intents can be refunded.",
+                status = HttpStatus.CONFLICT,
+            )
+        }
+        if (record.state == "REFUNDED") {
+            throw PublicApiException(
+                code = "payment_already_refunded",
+                message = "Payment intent is already fully refunded.",
+                status = HttpStatus.CONFLICT,
+            )
+        }
+        val amount = validateAmount(request.amount)
+        val currency = validateCurrency(request.currency ?: record.currency)
+        if (currency != record.currency) {
+            throw PublicApiException("currency_mismatch", "Refund currency must match the payment currency.", HttpStatus.UNPROCESSABLE_ENTITY, "currency")
+        }
+        val reason = request.reason?.trim()?.takeIf { it.isNotEmpty() }?.also {
+            if (it.length > 500) {
+                throw PublicApiException("invalid_reason", "Refund reason must be at most 500 characters.", HttpStatus.BAD_REQUEST, "reason")
+            }
+        }
+        val refundableAmount = (record.capturedAmount ?: record.amount).setScale(4, RoundingMode.UNNECESSARY)
+        val refundedBefore = repository.successfulRefundTotal(record.id).setScale(4, RoundingMode.UNNECESSARY)
+        val refundedAfter = refundedBefore.add(amount).setScale(4, RoundingMode.UNNECESSARY)
+        if (refundedAfter > refundableAmount) {
+            throw PublicApiException(
+                code = "refund_amount_exceeds_payment",
+                message = "Aggregate refunds cannot exceed the captured payment amount.",
+                status = HttpStatus.UNPROCESSABLE_ENTITY,
+                field = "amount",
+            )
+        }
+
+        val merchantSettlementAccountId = repository.ledgerAccountByCode("MERCHANT_SETTLEMENT:${record.merchantId}")
+            ?: throw PublicApiException("merchant_settlement_account_missing", "Merchant settlement ledger account is missing.", HttpStatus.INTERNAL_SERVER_ERROR)
+        val cardholderWalletAccountId = repository.cardholderWalletLedgerAccountId(record.id)
+            ?: throw PublicApiException("cardholder_wallet_missing", "Cardholder wallet ledger account is missing.", HttpStatus.INTERNAL_SERVER_ERROR)
+
+        val refundId = UUID.randomUUID()
+        val amountText = amount.toPlainString()
+        val journalId = ledgerRepository.postJournal(
+            journalId = UUID.randomUUID(),
+            journalType = "CARD_PAYMENT_REFUND",
+            referenceType = "REFUND",
+            referenceId = refundId,
+            currency = currency,
+            description = "Card payment refund",
+            postingsJson = """
+                [
+                  {"accountId":"$merchantSettlementAccountId","side":"DEBIT","amount":"$amountText"},
+                  {"accountId":"$cardholderWalletAccountId","side":"CREDIT","amount":"$amountText"}
+                ]
+            """.trimIndent(),
+        )
+        repository.insertRefund(
+            id = refundId,
+            paymentIntentId = record.id,
+            merchantId = record.merchantId,
+            apiKeyId = principal.apiKeyId,
+            amount = amount,
+            currency = currency,
+            reason = reason,
+            ledgerJournalId = journalId,
+        )
+        val nextState = if (refundedAfter.compareTo(refundableAmount) == 0) "REFUNDED" else "PARTIALLY_REFUNDED"
+        if (repository.updateRefundedState(record.id, nextState) == 0) {
+            throw PublicApiException("invalid_state", "Only settled payment intents can be refunded.", HttpStatus.CONFLICT)
+        }
+        auditRepository.write(
+            eventType = "payment.refund_succeeded",
+            actorType = "API_KEY",
+            actorId = principal.apiKeyId,
+            subjectType = "REFUND",
+            subjectId = refundId,
+            outcome = "SUCCESS",
+            metadataJson = """{"paymentIntentId":"${record.id}","amount":"$amountText","currency":"$currency"}""",
+        )
+        val refund = repository.findRefundById(refundId) ?: error("Refund disappeared after insert")
+        outboundWebhookService.publishPaymentIntentRefunded(refund, nextState)
+        return refund.toDto()
     }
 
     @Transactional(readOnly = true)
@@ -271,6 +386,19 @@ private fun PaymentIntentRecord.declineAuthorization(): PaymentAuthorizationDto?
     "FAILED" -> PaymentAuthorizationDto(status = "AUTH_DECLINED", declineCode = declineCode, declineMessage = declineMessage)
     else -> null
 }
+
+fun RefundRecord.toDto(): RefundDto =
+    RefundDto(
+        id = id.toString(),
+        `object` = "refund",
+        paymentIntentId = paymentIntentId.toString(),
+        amount = amount.setScale(2, RoundingMode.HALF_UP).toPlainString(),
+        currency = currency,
+        state = state,
+        reason = reason,
+        ledgerJournalId = ledgerJournalId?.toString(),
+        createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+    )
 
 data class AcquirerAuthorizeRequest(
     val paymentIntentId: String,
