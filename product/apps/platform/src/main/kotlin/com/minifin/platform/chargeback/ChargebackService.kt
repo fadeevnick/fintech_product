@@ -193,8 +193,8 @@ class ChargebackService(
     fun decideArbitration(disputeId: UUID, request: ArbitrationDecisionRequest, principal: BackofficePrincipal): ArbitrationDecisionDto {
         val outcome = request.outcome?.trim()?.uppercase()
             ?: throw BackofficeException("invalid_outcome", "Arbitration outcome is required.", HttpStatus.BAD_REQUEST)
-        if (outcome != "WON") {
-            throw BackofficeException("unsupported_outcome", "Only WON arbitration is supported in this slice.", HttpStatus.BAD_REQUEST)
+        if (outcome !in setOf("WON", "LOST")) {
+            throw BackofficeException("unsupported_outcome", "Only WON or LOST arbitration is supported.", HttpStatus.BAD_REQUEST)
         }
         val rationale = request.rationale?.trim()?.takeIf { it.isNotEmpty() }
             ?: throw BackofficeException("invalid_rationale", "Arbitration rationale is required.", HttpStatus.BAD_REQUEST)
@@ -211,27 +211,49 @@ class ChargebackService(
         }
         val walletLedgerAccountId = repository.cardholderWalletLedgerAccountId(dispute.id)
             ?: throw BackofficeException("wallet_missing", "Cardholder wallet is missing.", HttpStatus.INTERNAL_SERVER_ERROR)
-        val reversalJournalId = postProvisionalCreditReversal(dispute, walletLedgerAccountId)
         val role = principal.roles.firstOrNull()
-        if (repository.markArbitrationWon(dispute.id, rationale, principal.subject, role, reversalJournalId) == 0) {
-            throw BackofficeException("invalid_state", "Only evidence-submitted disputes can be decided as WON.", HttpStatus.CONFLICT)
+        if (outcome == "WON") {
+            val reversalJournalId = postProvisionalCreditReversal(dispute, walletLedgerAccountId)
+            if (repository.markArbitrationWon(dispute.id, rationale, principal.subject, role, reversalJournalId) == 0) {
+                throw BackofficeException("invalid_state", "Only evidence-submitted disputes can be decided as WON.", HttpStatus.CONFLICT)
+            }
+            auditRepository.write(
+                eventType = "chargeback.arbitration_won",
+                actorType = "BACKOFFICE",
+                actorId = principal.subjectUuid,
+                subjectType = "CHARGEBACK",
+                subjectId = dispute.id,
+                outcome = "SUCCESS",
+                metadataJson = """{"arbitrationJournalId":"$reversalJournalId","role":"${role ?: ""}"}""",
+            )
+            outboundWebhookService.publishDisputeWon(
+                disputeId = dispute.id,
+                merchantId = dispute.merchantId,
+                paymentIntentId = dispute.paymentIntentId,
+                arbitrationJournalId = reversalJournalId,
+            )
+            return ArbitrationDecisionDto(dispute.id.toString(), "WON", "WON", reversalJournalId.toString())
+        }
+        val merchantDebitJournalId = postMerchantChargebackDebit(dispute)
+        if (repository.markArbitrationLost(dispute.id, rationale, principal.subject, role, merchantDebitJournalId) == 0) {
+            throw BackofficeException("invalid_state", "Only evidence-submitted disputes can be decided as LOST.", HttpStatus.CONFLICT)
         }
         auditRepository.write(
-            eventType = "chargeback.arbitration_won",
+            eventType = "chargeback.arbitration_lost",
             actorType = "BACKOFFICE",
             actorId = principal.subjectUuid,
             subjectType = "CHARGEBACK",
             subjectId = dispute.id,
             outcome = "SUCCESS",
-            metadataJson = """{"arbitrationJournalId":"$reversalJournalId","role":"${role ?: ""}"}""",
+            metadataJson = """{"arbitrationJournalId":"$merchantDebitJournalId","role":"${role ?: ""}"}""",
         )
-        outboundWebhookService.publishDisputeWon(
+        outboundWebhookService.publishDisputeLost(
             disputeId = dispute.id,
             merchantId = dispute.merchantId,
             paymentIntentId = dispute.paymentIntentId,
-            arbitrationJournalId = reversalJournalId,
+            arbitrationJournalId = merchantDebitJournalId,
         )
-        return ArbitrationDecisionDto(dispute.id.toString(), "WON", "WON", reversalJournalId.toString())
+        return ArbitrationDecisionDto(dispute.id.toString(), "LOST", "LOST", merchantDebitJournalId.toString())
     }
 
     private fun isKycApproved(userId: UUID): Boolean =
@@ -304,6 +326,36 @@ class ChargebackService(
             postingsJson = """
                 [
                   {"accountId":"$walletLedgerAccountId","side":"DEBIT","amount":"$amountText"},
+                  {"accountId":"$reserveAccountId","side":"CREDIT","amount":"$amountText"}
+                ]
+            """.trimIndent(),
+        )
+    }
+
+    private fun postMerchantChargebackDebit(dispute: ChargebackDisputeRecord): UUID {
+        val merchantSettlementAccountId = repository.accountByCode("MERCHANT_SETTLEMENT:${dispute.merchantId}")
+            ?: throw BackofficeException(
+                code = "merchant_settlement_account_missing",
+                message = "Merchant settlement ledger account is missing.",
+                status = HttpStatus.INTERNAL_SERVER_ERROR,
+            )
+        val reserveAccountId = repository.accountByCode("ACQUIRER_DISPUTE_RESERVE")
+            ?: throw BackofficeException(
+                code = "dispute_reserve_account_missing",
+                message = "Acquirer dispute reserve ledger account is missing.",
+                status = HttpStatus.INTERNAL_SERVER_ERROR,
+            )
+        val amountText = dispute.amount.setScale(4, RoundingMode.UNNECESSARY).toPlainString()
+        return ledgerRepository.postJournal(
+            journalId = UUID.randomUUID(),
+            journalType = "CHARGEBACK_MERCHANT_DEBIT",
+            referenceType = "CHARGEBACK",
+            referenceId = dispute.id,
+            currency = dispute.currency,
+            description = "Chargeback merchant debit after lost arbitration",
+            postingsJson = """
+                [
+                  {"accountId":"$merchantSettlementAccountId","side":"DEBIT","amount":"$amountText"},
                   {"accountId":"$reserveAccountId","side":"CREDIT","amount":"$amountText"}
                 ]
             """.trimIndent(),

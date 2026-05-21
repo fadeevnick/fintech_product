@@ -3012,3 +3012,82 @@ Not claimed:
 - reserve release beyond provisional credit reversal;
 - merchant deadline expiry;
 - frontend `UI-*`.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 05 Arbitration LOST Merchant Debit Runtime Verification
+
+Scope:
+- `CHB-05` backend/runtime implementation for backoffice arbitration `LOST`.
+- Retained runtime script `product/scripts/runtime/reg_phase09_arbitration_lost.sh` was added.
+- Existing `reg_phase09_arbitration_won.sh` was updated because `LOST` is now a supported outcome.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase09_arbitration_lost.sh product/scripts/runtime/reg_phase09_arbitration_won.sh
+git diff --check
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+product/gradlew --no-daemon -p product :apps:platform:bootJar :apps:acquirer:bootJar :apps:network:bootJar :apps:issuer:bootJar :apps:vault:bootJar
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime command:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-chb05
+COMPOSE_FILE=deploy/docker-compose.yml
+PLATFORM_BASE_URL=http://platform:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+KEYCLOAK_BASE_URL=http://keycloak:8080
+KEYCLOAK_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+bash scripts/runtime/reg_phase09_arbitration_lost.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+CHB-05 arbitration LOST pass dispute_id=d0f8daf2-511a-4053-bd63-5c96862bf418 provisional_journal_id=45c855c2-b2a3-475c-83c7-4e16b73c1f0d merchant_debit_journal_id=50c5a103-ded6-4ed7-ac49-6f0efd6a6586 user_id=9a6e8555-b77e-406f-b142-2083fc3a5aff
+```
+
+The runtime verification proved:
+- a dispute can move `EVIDENCE_SUBMITTED -> LOST` through the backoffice arbitration endpoint;
+- one `CHARGEBACK_MERCHANT_DEBIT` journal is posted for the dispute;
+- the merchant debit journal debits `MERCHANT_SETTLEMENT:<merchantId>` and credits `ACQUIRER_DISPUTE_RESERVE` for EUR 18.2500;
+- no `CARDHOLDER_PROVISIONAL_CREDIT_REVERSAL` journal is posted for `LOST`;
+- the original cardholder provisional credit remains in place;
+- arbitration metadata and merchant debit journal id are persisted on `chargeback.disputes`;
+- `chargeback.arbitration_lost` audit row is written;
+- `dispute.lost` webhook outbox event is persisted;
+- repeated `LOST` decision is rejected.
+
+Targeted regression outputs:
+
+```text
+CHB-04 arbitration WON pass dispute_id=8fe6c26c-3f94-4909-bf22-1ea1d112e827 provisional_journal_id=932737cb-87fa-4ba5-a091-40b442d845d6 reversal_journal_id=d3139e28-8bcf-46d8-9101-0ce2afb4d512 user_id=28f2658b-f75f-48c0-a0fa-b329e04c1c6d
+CHB-03 merchant evidence submission pass dispute_id=1c64c9ee-9709-4522-8e0d-8fba1e517871 evidence_id=0e234a24-c1ae-47ca-832a-48586fffa278 user_id=b266071c-6acb-40cc-96fc-b58c73e893ee
+LDG-05 ledger reconciliation pass
+```
+
+Result tags:
+- `CHB-05` — pass.
+- `CHB-04` — pass targeted regression.
+- `CHB-03` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Runtime environment notes:
+- Docker Compose bridge network creation/host port publishing was blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs because Gradle-in-Docker hung in this environment.
+- Temporary compose stack `mfp-chb05` was stopped with `down -v --remove-orphans` after runtime checks.
+
+Not claimed:
+- merchant accept / terminal `LOST` outside arbitration;
+- merchant deadline expiry;
+- actual evidence object upload/download;
+- frontend `UI-*`;
+- chargeback rate metrics.

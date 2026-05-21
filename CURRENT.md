@@ -1,12 +1,12 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-21 (Phase 09 Slice 04 Arbitration WON reversal backend/runtime scope implemented and runtime verified).
+Last updated: 2026-05-21 (Phase 09 Slice 05 Arbitration LOST merchant debit backend/runtime scope implemented and runtime verified).
 
 ---
 
 ## Focus
 
-Phase 09 Slice 04 Arbitration WON reversal (`CHB-04`) backend/runtime scope is implemented and verified. UI prototype baseline continues in parallel.
+Phase 09 Slice 05 Arbitration LOST merchant debit (`CHB-05`) backend/runtime scope is implemented and verified. UI prototype baseline continues in parallel.
 
 ## Status
 
@@ -51,6 +51,7 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_09_slice_02_provisional_credit_planning.md` — backend/runtime sub-scope executed; `CHB-02` passed.
 - `planning/implementation-slices/phase_09_slice_03_merchant_evidence_planning.md` — backend/runtime sub-scope executed; `CHB-03` passed.
 - `planning/implementation-slices/phase_09_slice_04_arbitration_won_planning.md` — backend/runtime sub-scope executed; `CHB-04` passed.
+- `planning/implementation-slices/phase_09_slice_05_arbitration_lost_planning.md` — backend/runtime sub-scope executed; `CHB-05` passed.
 
 Completed workstream — latest accepted state:
 - Phase 04 Slice 01 merchant API keys, public API authentication and hardened public/dashboard write idempotency primitive implemented in `platform`;
@@ -84,8 +85,9 @@ Completed workstream — latest accepted state:
 - Phase 09 Slice 02 backend/runtime scope is complete: successful dispute initiation now posts exactly one `CARDHOLDER_PROVISIONAL_CREDIT` ledger journal, debiting `ACQUIRER_DISPUTE_RESERVE` and crediting the cardholder wallet, persists `provisional_credit_journal_id` on the dispute, returns `provisionalCreditJournalId` in the API response, and duplicate/denied initiation paths do not create duplicate provisional-credit journals; `CHB-02` plus targeted `CHB-01`/`LDG-05`/`SET-01` regressions passed in isolated runtime.
 - Phase 09 Slice 03 backend/runtime scope is complete: merchant dashboard endpoint `POST /api/v1/merchant/disputes/{disputeId}/evidence` persists one evidence submission and attachment metadata per dispute, enforces merchant ownership/state/deadline/narrative/attachment constraints, transitions `MERCHANT_NOTIFIED -> EVIDENCE_SUBMITTED`, writes `chargeback.evidence_submitted` audit and persists `dispute.evidence_received` webhook outbox event; `CHB-03` plus targeted `CHB-01`/`CHB-02`/`LDG-05` regressions passed in isolated runtime.
 - Phase 09 Slice 04 backend/runtime scope is complete: backoffice endpoint `POST /api/v1/backoffice/disputes/{disputeId}/arbitration` supports `WON` decisions from `EVIDENCE_SUBMITTED`, posts exactly one `CARDHOLDER_PROVISIONAL_CREDIT_REVERSAL` journal debiting the cardholder wallet and crediting `ACQUIRER_DISPUTE_RESERVE`, persists arbitration metadata/journal id, transitions disputes to terminal `WON`, writes `chargeback.arbitration_won` audit and persists `dispute.won` webhook outbox event; `CHB-04` plus targeted `CHB-03`/`LDG-05` regressions passed in isolated runtime.
+- Phase 09 Slice 05 backend/runtime scope is complete: backoffice arbitration now supports `LOST` decisions from `EVIDENCE_SUBMITTED`, keeps the cardholder provisional credit in place, posts exactly one `CHARGEBACK_MERCHANT_DEBIT` journal debiting `MERCHANT_SETTLEMENT:<merchantId>` and crediting `ACQUIRER_DISPUTE_RESERVE`, persists arbitration metadata/journal id, transitions disputes to terminal `LOST`, writes `chargeback.arbitration_lost` audit and persists `dispute.lost` webhook outbox event; `CHB-05` plus targeted `CHB-04`/`CHB-03`/`LDG-05` regressions passed in isolated runtime.
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
-- isolated `mfp-chb04` compose stack was used for CHB-04 verification with compose-network URLs and should be cleaned up before handoff if no further runtime checks are needed.
+- isolated `mfp-chb05` compose stack was used for CHB-05 verification with compose-network URLs and was stopped with volumes removed after runtime checks.
 
 Latest accepted backend/runtime slices:
 - `planning/implementation-slices/phase_08_slice_01_aml_velocity_alert_planning.md` — backend/runtime sub-scope executed; `AML-01` passed.
@@ -98,13 +100,14 @@ Latest accepted backend/runtime slices:
 - `planning/implementation-slices/phase_09_slice_02_provisional_credit_planning.md` — backend/runtime sub-scope executed; `CHB-02` passed.
 - `planning/implementation-slices/phase_09_slice_03_merchant_evidence_planning.md` — backend/runtime sub-scope executed; `CHB-03` passed.
 - `planning/implementation-slices/phase_09_slice_04_arbitration_won_planning.md` — backend/runtime sub-scope executed; `CHB-04` passed.
+- `planning/implementation-slices/phase_09_slice_05_arbitration_lost_planning.md` — backend/runtime sub-scope executed; `CHB-05` passed.
 
 ## Next
 
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`, `prototypes/ui/19_merchant_onboarding_status.html`, `prototypes/ui/20_merchant_api_keys.html`, `prototypes/ui/21_merchant_webhooks.html`, `prototypes/ui/22_merchant_payments.html`, `prototypes/ui/23_merchant_settlements.html`, `prototypes/ui/24_merchant_disputes.html`.**
 
 Next planned product step:
-- Continue Phase 09 with `CHB-05` arbitration `LOST` merchant debit/permanent credit, or another approved chargeback lifecycle slice.
+- Continue with the next approved backend/runtime slice. Likely candidates are remaining chargeback lifecycle gaps such as merchant accept, deadline expiry, evidence object storage or chargeback metrics; frontend implementation remains gated by accepted UI prototypes.
 - `KYC-01` full pass remains blocked on real Sumsub sandbox credentials. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
 
 05 v0.4 resolved stack:
@@ -182,15 +185,14 @@ Latest accepted Phase 04 slice planning notes:
 9. `planning/design-details/` — approved implementation-near planning pack.
 10. `planning/runtime_checklists.md` — approved runtime check registry.
 11. `planning/implementation_status.md` and `planning/runtime_evidence_log.md` — factual implementation/evidence state.
-12. Latest executed Phase 08 slice notes:
-    `planning/implementation-slices/phase_08_slice_01_aml_velocity_alert_planning.md`;
-    `planning/implementation-slices/phase_08_slice_02_aml_structuring_alert_planning.md`;
-    `planning/implementation-slices/phase_08_slice_03_aml_dormancy_break_planning.md`;
-    `planning/implementation-slices/phase_08_slice_04_aml_critical_auto_freeze_planning.md`;
-    `planning/implementation-slices/phase_08_slice_05_sof_deposit_threshold_planning.md`;
-    `planning/implementation-slices/phase_08_slice_06_two_eyes_enforcement_planning.md`.
+12. Latest executed Phase 09 slice notes:
+    `planning/implementation-slices/phase_09_slice_01_chargeback_initiation_planning.md`;
+    `planning/implementation-slices/phase_09_slice_02_provisional_credit_planning.md`;
+    `planning/implementation-slices/phase_09_slice_03_merchant_evidence_planning.md`;
+    `planning/implementation-slices/phase_09_slice_04_arbitration_won_planning.md`;
+    `planning/implementation-slices/phase_09_slice_05_arbitration_lost_planning.md`.
 
-После прочтения — implement the approved `WLT-04` two-eyes enforcement backend/runtime slice; Phase 09 chargeback lifecycle is the next large phase candidate after Phase 08 high-value controls.
+После прочтения — continue from the factual state in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`; `CHB-05` is complete, so choose/draft the next narrow backend/runtime slice before implementation.
 
 ## Do-not-do-yet rules
 

@@ -256,6 +256,35 @@ class ChargebackRepository(
         disputeId,
     )
 
+    fun markArbitrationLost(
+        disputeId: UUID,
+        rationale: String,
+        decidedBySubject: String,
+        decidedByRole: String?,
+        journalId: UUID,
+    ): Int = jdbcTemplate.update(
+        """
+        update chargeback.disputes
+           set state = 'LOST',
+               arbitration_outcome = 'LOST',
+               arbitration_rationale = ?,
+               arbitration_decided_by_subject = ?,
+               arbitration_decided_by_role = ?,
+               arbitration_decided_at = now(),
+               arbitration_journal_id = ?,
+               updated_at = now(),
+               version = version + 1
+         where id = ?
+           and state = 'EVIDENCE_SUBMITTED'
+           and arbitration_journal_id is null
+        """.trimIndent(),
+        rationale,
+        decidedBySubject,
+        decidedByRole,
+        journalId,
+        disputeId,
+    )
+
     fun findEvidenceSubmission(disputeId: UUID): EvidenceSubmissionRecord? =
         jdbcTemplate.query(
             """

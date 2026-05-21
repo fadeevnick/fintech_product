@@ -11,7 +11,6 @@ enduser_cookie="/tmp/minifin-${tag}-enduser-cookies.txt"
 evidence_body="/tmp/minifin-${tag}-evidence.json"
 won_body="/tmp/minifin-${tag}-won.json"
 won_replay_body="/tmp/minifin-${tag}-won-replay.json"
-lost_body="/tmp/minifin-${tag}-lost.json"
 before_evidence_body="/tmp/minifin-${tag}-before-evidence.json"
 
 approve_kyc() {
@@ -75,11 +74,6 @@ test "$(p05_platform_psql "select count(*) from merchant.webhook_events where ev
 
 test "$(pa_curl -sS -o "${won_replay_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/backoffice/disputes/${dispute_id}/arbitration" -H "Authorization: Bearer ${operator_token}" -H "Content-Type: application/json" -d "{\"outcome\":\"WON\",\"rationale\":\"${rationale}\"}")" = "409"
 test "$(node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); if(j.errors?.[0]?.code!=='invalid_state') process.exit(1);" "${won_replay_body}"; echo ok)" = "ok"
-
-lost_dispute_id="$(create_dispute "${tag}-lost" "/tmp/minifin-${tag}-lost-dispute.json")"
-submit_evidence "${lost_dispute_id}" "/tmp/minifin-${tag}-lost-evidence.json"
-test "$(pa_curl -sS -o "${lost_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/backoffice/disputes/${lost_dispute_id}/arbitration" -H "Authorization: Bearer ${operator_token}" -H "Content-Type: application/json" -d "{\"outcome\":\"LOST\",\"rationale\":\"${rationale}\"}")" = "400"
-test "$(node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); if(j.errors?.[0]?.code!=='unsupported_outcome') process.exit(1);" "${lost_body}"; echo ok)" = "ok"
 
 before_evidence_dispute_id="$(create_dispute "${tag}-before-evidence" "/tmp/minifin-${tag}-before-evidence-dispute.json")"
 test "$(pa_curl -sS -o "${before_evidence_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/backoffice/disputes/${before_evidence_dispute_id}/arbitration" -H "Authorization: Bearer ${operator_token}" -H "Content-Type: application/json" -d "{\"outcome\":\"WON\",\"rationale\":\"${rationale}\"}")" = "409"

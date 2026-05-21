@@ -40,6 +40,12 @@ Implemented runtime behavior so far:
 - Phase 08 Slice 03 AML dormancy-break alert in `platform`: internal `POST /internal/aml/evaluate-dormancy-break`, deterministic local rule for previously active users with no completed money-moving activity during a 30-day dormant gap and recent completed activity over EUR 1,000.00 in 24 hours, `DORMANCY_BREAK` `HIGH` alerts, duplicate suppression and `aml.alert_created` audit rows. `AML-03` has runtime evidence.
 - Phase 08 Slice 04 AML critical auto-freeze in `platform`: internal `POST /internal/aml/process-critical-auto-freezes`, automatic `END_USER` actor-control `FROZEN` state for `OPEN` `CRITICAL` AML alerts, processed alert status `ACCOUNT_FROZEN_PERMANENT`, audit rows and wallet-write block proof. `AML-04` has runtime evidence.
 - Phase 08 Slice 05 Source-of-Funds deposit threshold in `platform`: deposits over EUR 10,000 stay `REQUESTED` until `POST /api/v1/deposits/{depositId}/source-of-funds` persists a Source-of-Funds declaration and moves the deposit to `PENDING_OPERATOR_REVIEW`; low-value deposits still move directly to manual review. `WLT-03` has runtime evidence.
+- Phase 08 Slice 06 two-eyes enforcement in `platform`: high-value deposit approval requires maker/checker separation; the same operator cannot complete both approvals. `WLT-04` has runtime evidence.
+- Phase 09 Slice 01 chargeback initiation in `platform`: eligible settled card payments can be disputed by the cardholder within the configured window, creating a merchant-notified dispute and audit/webhook records. `CHB-01` has runtime evidence.
+- Phase 09 Slice 02 provisional credit in `platform`: dispute initiation posts one `CARDHOLDER_PROVISIONAL_CREDIT` ledger journal from `ACQUIRER_DISPUTE_RESERVE` to the cardholder wallet. `CHB-02` has runtime evidence.
+- Phase 09 Slice 03 merchant evidence in `platform`: merchant dashboard evidence submission persists narrative/attachment metadata, moves disputes to `EVIDENCE_SUBMITTED`, and writes audit/webhook records. `CHB-03` has runtime evidence.
+- Phase 09 Slice 04 arbitration WON in `platform`: backoffice arbitration `WON` reverses the provisional credit through `CARDHOLDER_PROVISIONAL_CREDIT_REVERSAL`, persists arbitration metadata and writes audit/webhook records. `CHB-04` has runtime evidence.
+- Phase 09 Slice 05 arbitration LOST in `platform`: backoffice arbitration `LOST` keeps the cardholder provisional credit in place and posts `CHARGEBACK_MERCHANT_DEBIT` from merchant settlement to `ACQUIRER_DISPUTE_RESERVE`. `CHB-05` has runtime evidence.
 
 ## Local Commands
 
@@ -152,6 +158,11 @@ scripts/runtime/reg_phase08_aml_structuring_alert.sh
 scripts/runtime/reg_phase08_aml_dormancy_break_alert.sh
 scripts/runtime/reg_phase08_aml_critical_auto_freeze.sh
 scripts/runtime/reg_phase08_sof_deposit_threshold.sh
+scripts/runtime/reg_phase08_two_eyes_enforcement.sh
+scripts/runtime/reg_phase09_chargeback_initiation.sh
+scripts/runtime/reg_phase09_merchant_evidence.sh
+scripts/runtime/reg_phase09_arbitration_won.sh
+scripts/runtime/reg_phase09_arbitration_lost.sh
 ```
 
 ## Stripe Webhook Local Runtime

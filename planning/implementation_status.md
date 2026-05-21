@@ -1450,3 +1450,38 @@ Explicitly not implemented/claimed:
 - reserve release/permanent merchant debit;
 - frontend UI;
 - chargeback rate metrics.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 05 Arbitration LOST Merchant Debit (`CHB-05`)
+
+Planning note:
+- `planning/implementation-slices/phase_09_slice_05_arbitration_lost_planning.md` — backend/runtime sub-scope executed v0.1.
+
+Implemented:
+- Extended backoffice arbitration endpoint `POST /api/v1/backoffice/disputes/{disputeId}/arbitration` to support `outcome=LOST`.
+- `LOST` decisions require the same eligibility boundary as `WON`: valid backoffice principal, rationale, `EVIDENCE_SUBMITTED` dispute and existing provisional credit journal.
+- Successful `LOST` decisions post one `CHARGEBACK_MERCHANT_DEBIT` ledger journal with reference type `CHARGEBACK`, debiting `MERCHANT_SETTLEMENT:<merchantId>` and crediting `ACQUIRER_DISPUTE_RESERVE` for the dispute amount.
+- The cardholder provisional credit remains unreversed, making it permanent for the cardholder.
+- Successful `LOST` decisions transition the dispute to terminal `LOST`, persist arbitration metadata/journal id, write `chargeback.arbitration_lost` audit, and persist `dispute.lost` webhook outbox event.
+- Added retained runtime script `product/scripts/runtime/reg_phase09_arbitration_lost.sh`.
+- Updated `reg_phase09_arbitration_won.sh` because `LOST` is now supported by the arbitration endpoint.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 09 Slice 05 Arbitration LOST Merchant Debit Runtime Verification`.
+- `CHB-05` — pass.
+- `CHB-04` — pass targeted regression.
+- `CHB-03` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Verification notes:
+- Docker Compose bridge network creation remained blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs to avoid the Gradle-in-Docker hang seen in this environment.
+- Temporary `mfp-chb05` compose stack was stopped with volumes removed after runtime checks.
+
+Explicitly not implemented/claimed:
+- merchant accept / terminal `LOST` outside arbitration;
+- merchant deadline expiry;
+- actual evidence object storage upload/download;
+- frontend UI;
+- chargeback rate metrics.
