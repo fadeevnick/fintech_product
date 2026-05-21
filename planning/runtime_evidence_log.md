@@ -2705,3 +2705,71 @@ Not claimed:
 - high-value internal transfers;
 - chargebacks (`CHB-*`);
 - refunds (`SET-04`).
+
+---
+
+## 2026-05-21 — Phase 09 Slice 01 Chargeback Initiation Runtime Verification
+
+Scope:
+- `CHB-01` backend/runtime implementation for cardholder dispute initiation was added.
+- Retained runtime script `product/scripts/runtime/reg_phase09_chargeback_initiation.sh` was added.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase09_chargeback_initiation.sh
+git diff --check
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+product/gradlew --no-daemon -p product :apps:platform:bootJar
+product/gradlew --no-daemon -p product :apps:acquirer:bootJar :apps:network:bootJar :apps:issuer:bootJar :apps:vault:bootJar
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime command:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-chb01
+PLATFORM_BASE_URL=http://platform:8080
+ISSUER_BASE_URL=http://issuer:8080
+VAULT_BASE_URL=http://vault:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+bash product/scripts/runtime/reg_phase09_chargeback_initiation.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+dispute=1
+payment_state=DISPUTED
+audit=1
+webhook=1
+CHB-01 chargeback initiation pass dispute_id=027ee472-890a-4234-b734-bb321f144839 payment_intent_id=eb0fbc47-45d2-4839-8ef3-3682beab75c1 user_id=8bec44e7-361e-4ecc-8e6a-b79ee4d98b96
+```
+
+Targeted regression outputs:
+
+```text
+LDG-05 ledger reconciliation pass
+SET-01 capture to settlement foundation pass intent_id=e7b4a495-62c3-4ad0-aaa7-5e2fd43efe00
+```
+
+Result tags:
+- `CHB-01` — pass.
+- `LDG-05` — pass targeted regression.
+- `SET-01` — pass targeted regression.
+
+Runtime environment notes:
+- Docker Compose bridge network creation/host port publishing was blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Service images were built from locally verified `bootJar` outputs.
+
+Not claimed:
+- provisional cardholder credit (`CHB-02`);
+- merchant evidence (`CHB-03`);
+- arbitration (`CHB-04`, `CHB-05`);
+- chargeback ledger/reserve settlement movements;
+- frontend `UI-*`.

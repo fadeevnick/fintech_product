@@ -57,6 +57,49 @@ class OutboundWebhookService(
         }
     }
 
+    fun publishDisputeCreated(
+        disputeId: UUID,
+        merchantId: UUID,
+        paymentIntentId: UUID,
+        amount: String,
+        currency: String,
+        reasonCode: String,
+        state: String,
+        merchantResponseDeadline: String,
+        createdAt: String,
+    ) {
+        val eventId = UUID.randomUUID()
+        val payload = linkedMapOf(
+            "id" to "evt_$eventId",
+            "type" to "dispute.created",
+            "createdAt" to createdAt,
+            "merchantId" to merchantId.toString(),
+            "data" to mapOf(
+                "object" to mapOf(
+                    "id" to disputeId.toString(),
+                    "object" to "dispute",
+                    "paymentIntentId" to paymentIntentId.toString(),
+                    "amount" to amount,
+                    "currency" to currency,
+                    "reasonCode" to reasonCode,
+                    "state" to state,
+                    "merchantResponseDeadline" to merchantResponseDeadline,
+                ),
+            ),
+        )
+        val inserted = repository.insertEvent(
+            id = eventId,
+            merchantId = merchantId,
+            eventType = "dispute.created",
+            aggregateType = "dispute",
+            aggregateId = disputeId,
+            payloadJson = objectMapper.writeValueAsString(payload),
+        )
+        if (inserted) {
+            repository.findEvent(eventId)?.let { deliver(it) }
+        }
+    }
+
     fun deliver(event: OutboundWebhookEventRecord) {
         deliver(event, manualReplay = false)
     }

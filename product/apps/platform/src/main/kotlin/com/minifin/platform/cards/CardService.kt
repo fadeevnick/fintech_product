@@ -21,6 +21,7 @@ class CardService(
     private val walletService: WalletService,
     private val actorControlService: ActorControlService,
     private val auditRepository: AuditRepository,
+    private val cardRepository: CardRepository,
     private val properties: CardProperties,
 ) {
     private val restTemplate = RestTemplate()
@@ -31,6 +32,17 @@ class CardService(
         val wallet = walletService.provisionWallet(user)
         val requestId = UUID.randomUUID().toString()
         val issuerCard = callIssuer(user.id, wallet.id, requestId)
+        cardRepository.insertIssuedCard(
+            id = UUID.fromString(issuerCard.cardId),
+            endUserId = user.id,
+            walletAccountId = wallet.id,
+            cardToken = issuerCard.cardToken,
+            state = issuerCard.state,
+            last4 = issuerCard.last4,
+            bin = issuerCard.bin,
+            expirationMonth = issuerCard.expirationMonth,
+            expirationYear = issuerCard.expirationYear,
+        )
         auditRepository.write(
             eventType = "card.issued",
             actorType = "END_USER",

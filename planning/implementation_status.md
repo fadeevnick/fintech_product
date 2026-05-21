@@ -1289,3 +1289,52 @@ Explicitly not implemented/claimed:
 - high-value internal transfers;
 - chargebacks (`CHB-*`);
 - refunds (`SET-04`).
+
+---
+
+## 2026-05-21 — Phase 09 Slice 01 Chargeback Initiation (`CHB-01`)
+
+Planning note:
+- `planning/implementation-slices/phase_09_slice_01_chargeback_initiation_planning.md` — backend/runtime sub-scope executed v0.1.
+
+Implemented:
+- Added `cards.issued_cards` Platform-side cardholder mapping persisted at card issuance so later card-payment disputes can resolve `card_token` to the end user.
+- Added `chargeback.disputes` persistence with unique one-dispute-per-payment-intent constraint, MVP reason-code validation, merchant deadline and `MERCHANT_NOTIFIED` state.
+- Extended `merchant.payment_intents` state constraint to include `DISPUTED`.
+- Added authenticated end-user endpoint `POST /api/v1/card-payments/{paymentIntentId}/disputes`.
+- Enforced CHB-01 eligibility:
+  - caller must be the original cardholder;
+  - cardholder KYC must be `APPROVED`;
+  - original payment must be `SETTLED`;
+  - payment must be within the configured 60-day default dispute window;
+  - currency must be EUR;
+  - duplicate initiation returns the existing same-cardholder dispute rather than inserting a second row.
+- Successful initiation inserts a `MERCHANT_NOTIFIED` dispute, marks the payment intent `DISPUTED`, writes `chargeback.initiated` audit, and persists `dispute.created` through the existing outbound webhook outbox path.
+- Added retained runtime script `product/scripts/runtime/reg_phase09_chargeback_initiation.sh`.
+
+Verification:
+- `bash -n product/scripts/runtime/reg_phase09_chargeback_initiation.sh` — pass.
+- `git diff --check` — pass.
+- `product/gradlew --no-daemon -p product :apps:platform:compileKotlin` — pass.
+- `product/gradlew --no-daemon -p product :apps:platform:bootJar` — pass.
+- `product/gradlew --no-daemon -p product :apps:acquirer:bootJar :apps:network:bootJar :apps:issuer:bootJar :apps:vault:bootJar` — pass for local runtime images.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 09 Slice 01 Chargeback Initiation Runtime Verification`.
+- `CHB-01` — pass.
+- `LDG-05` — pass targeted regression.
+- `SET-01` — pass targeted regression.
+
+Verification notes:
+- Docker Compose bridge network creation/host port publishing remained blocked by a local Docker iptables chain issue, so runtime verification reused an existing Docker bridge network with service host ports reset via `!reset []` and compose-network URLs.
+- Service images for runtime verification were built from locally verified `bootJar` outputs because the Dockerfile's in-container Gradle build path was unstable in this environment.
+
+Explicitly not implemented/claimed:
+- provisional cardholder credit (`CHB-02`);
+- merchant evidence submission (`CHB-03`);
+- arbitration `WON`/`LOST` (`CHB-04`, `CHB-05`);
+- merchant reserve or settlement balance debit/hold;
+- attachment storage;
+- backoffice/merchant/end-user frontend UI;
+- chargeback rate dashboard/metric;
+- chargeback ledger movement correctness.

@@ -1,12 +1,12 @@
 # CURRENT — Mini Fintech Platform handoff state
 
-Last updated: 2026-05-21 (Phase 08 Slice 06 Two-Eyes enforcement backend/runtime scope implemented and runtime verified).
+Last updated: 2026-05-21 (Phase 09 Slice 01 Chargeback initiation backend/runtime scope implemented and runtime verified).
 
 ---
 
 ## Focus
 
-Phase 08 Slice 06 Two-Eyes enforcement backend/runtime scope is implemented and verified. UI prototype baseline continues in parallel.
+Phase 09 Slice 01 Chargeback initiation (`CHB-01`) backend/runtime scope is implemented and verified. UI prototype baseline continues in parallel.
 
 ## Status
 
@@ -47,6 +47,7 @@ Baseline approved до 06 включительно:
 - `planning/implementation-slices/phase_08_slice_04_aml_critical_auto_freeze_planning.md` — backend/runtime sub-scope executed; `AML-04` passed.
 - `planning/implementation-slices/phase_08_slice_05_sof_deposit_threshold_planning.md` — backend/runtime sub-scope executed; `WLT-03` passed.
 - `planning/implementation-slices/phase_08_slice_06_two_eyes_enforcement_planning.md` — backend/runtime sub-scope executed; `WLT-04` passed.
+- `planning/implementation-slices/phase_09_slice_01_chargeback_initiation_planning.md` — backend/runtime sub-scope executed; `CHB-01` passed.
 
 Completed workstream — latest accepted state:
 - Phase 04 Slice 01 merchant API keys, public API authentication and hardened public/dashboard write idempotency primitive implemented in `platform`;
@@ -76,8 +77,9 @@ Completed workstream — latest accepted state:
 - Phase 08 Slice 04 backend/runtime scope is complete: Platform internal `POST /internal/aml/process-critical-auto-freezes` freezes end users for `OPEN` `CRITICAL` AML alerts by setting `identity.actor_controls` to `FROZEN`, marks processed alerts `ACCOUNT_FROZEN_PERMANENT`, writes audit rows and proves wallet writes are blocked after freeze; `AML-04` plus targeted `AML-03`/`AML-02`/`AML-01`/`RUN-01` regressions passed in isolated runtime.
 - Phase 08 Slice 05 backend/runtime scope is complete: high-value deposits over EUR 10,000 now remain `REQUESTED` until end-user Source-of-Funds declaration is submitted through `POST /api/v1/deposits/{depositId}/source-of-funds`, then move to `PENDING_OPERATOR_REVIEW`; low-value deposit path remains unchanged; `WLT-03` plus targeted deposit regressions passed in isolated runtime.
 - Phase 08 Slice 06 backend/runtime scope is complete: high-value deposits and withdrawals `>= EUR 10,000.00` now require two distinct backoffice actors before value is released, first review moves requests to `READY_FOR_SECOND_REVIEW` without final ledger posting, same-actor second approval/completion returns `403 two_eyes_same_actor_denied`, second distinct actor completes with exactly one final ledger journal, and `WLT-04` plus targeted `WLT-03`/`LDG-05` regressions passed in isolated runtime.
+- Phase 09 Slice 01 backend/runtime scope is complete: cardholder dispute initiation endpoint `POST /api/v1/card-payments/{paymentIntentId}/disputes`, Platform-side issued-card mapping, `chargeback.disputes` persistence, `DISPUTED` payment-intent state, KYC/cardholder/settled/window/reason-code eligibility gates, duplicate initiation idempotence by payment-intent uniqueness, `chargeback.initiated` audit and `dispute.created` webhook outbox event are implemented; `CHB-01` plus targeted `LDG-05`/`SET-01` regressions passed in isolated runtime.
 - factual state recorded in `planning/implementation_status.md` and `planning/runtime_evidence_log.md`;
-- isolated `mfp-wlt04` compose stack was used for WLT-04 verification with compose-network URLs and should be cleaned up before handoff if no further runtime checks are needed.
+- isolated `mfp-chb01` compose stack was used for CHB-01 verification with compose-network URLs and should be cleaned up before handoff if no further runtime checks are needed.
 
 Latest accepted backend/runtime slices:
 - `planning/implementation-slices/phase_08_slice_01_aml_velocity_alert_planning.md` — backend/runtime sub-scope executed; `AML-01` passed.
@@ -86,13 +88,14 @@ Latest accepted backend/runtime slices:
 - `planning/implementation-slices/phase_08_slice_04_aml_critical_auto_freeze_planning.md` — backend/runtime sub-scope executed; `AML-04` passed.
 - `planning/implementation-slices/phase_08_slice_05_sof_deposit_threshold_planning.md` — backend/runtime sub-scope executed; `WLT-03` passed.
 - `planning/implementation-slices/phase_08_slice_06_two_eyes_enforcement_planning.md` — backend/runtime sub-scope executed; `WLT-04` passed.
+- `planning/implementation-slices/phase_09_slice_01_chargeback_initiation_planning.md` — backend/runtime sub-scope executed; `CHB-01` passed.
 
 ## Next
 
 **Continue standalone UI prototypes in parallel. Product work should stop only at frontend implementation points that need a missing accepted HTML prototype. Current received artifacts: `prototypes/ui/01_app_shell_cross_surface.html`, `prototypes/ui/02_merchant_auth.html`, `prototypes/ui/03_enduser_auth.html`, `prototypes/ui/04_backoffice_oidc_login.html`, `prototypes/ui/05_backoffice_work_queue_home.html`, `prototypes/ui/06_backoffice_manual_deposits.html`, `prototypes/ui/07_backoffice_manual_withdrawals.html`, `prototypes/ui/08_backoffice_kyc_queue.html`, `prototypes/ui/09_backoffice_aml_alerts.html`, `prototypes/ui/10_backoffice_sanctions_hits.html`, `prototypes/ui/11_backoffice_chargeback_arbitration.html`, `prototypes/ui/12_backoffice_audit_log.html`, `prototypes/ui/13_enduser_kyc_status.html`, `prototypes/ui/14_enduser_wallet_home.html`, `prototypes/ui/15_enduser_deposit_request.html`, `prototypes/ui/16_enduser_transfer.html`, `prototypes/ui/17_enduser_cards.html`, `prototypes/ui/18_enduser_transaction_detail.html`, `prototypes/ui/19_merchant_onboarding_status.html`, `prototypes/ui/20_merchant_api_keys.html`, `prototypes/ui/21_merchant_webhooks.html`, `prototypes/ui/22_merchant_payments.html`, `prototypes/ui/23_merchant_settlements.html`, `prototypes/ui/24_merchant_disputes.html`.**
 
 Next planned product step:
-- Choose and plan the next backend/runtime slice. Likely candidates: Phase 08 senior override / AML review follow-up, Phase 06 refund bounds (`SET-04`), or Phase 09 chargeback lifecycle start (`CHB-01`).
+- Continue Phase 09 with `CHB-02` provisional cardholder credit, or implement `CHB-03` merchant evidence after deciding whether to add ledger movement first.
 - `KYC-01` full pass remains blocked on real Sumsub sandbox credentials. `MRC-01` remains blocked on real Stripe Connect sandbox credentials.
 
 05 v0.4 resolved stack:
