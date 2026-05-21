@@ -169,6 +169,7 @@ Result tags:
 | `CHB-03` | Merchant evidence. | Merchant can submit evidence with attachment. | `product/scripts/runtime/reg_phase09_merchant_evidence.sh` |
 | `CHB-04` | Arbitration WON. | WON reverses provisional credit and releases merchant funds correctly. | `product/scripts/runtime/reg_phase09_arbitration_won.sh` |
 | `CHB-05` | Arbitration LOST. | LOST makes cardholder credit permanent and debits merchant correctly. | `product/scripts/runtime/reg_phase09_arbitration_lost.sh` |
+| `CHB-06` | Merchant accepted chargeback. | Merchant accept makes cardholder credit permanent and debits merchant correctly. | `product/scripts/runtime/reg_phase09_merchant_accept.sh` |
 
 ## 13. Phase 10 — Three SPAs Completion Pass
 

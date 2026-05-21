@@ -32,6 +32,15 @@ class MerchantDisputeController(
         return ApiResponse(data = chargebackService.submitEvidence(employee, parseUuid(disputeId), request))
     }
 
+    @PostMapping("/api/v1/merchant/disputes/{disputeId}/accept")
+    fun acceptDispute(
+        @CookieValue(name = MERCHANT_SESSION_COOKIE, required = false) sessionToken: String?,
+        @PathVariable disputeId: String,
+    ): ApiResponse<MerchantAcceptChargebackDto> {
+        val employee = identityService.currentMerchant(sessionToken)
+        return ApiResponse(data = chargebackService.acceptDispute(employee, parseUuid(disputeId)))
+    }
+
     @ExceptionHandler(MerchantDashboardException::class)
     fun handleDashboardException(exception: MerchantDashboardException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(exception.status).body(ApiResponse(errors = listOf(ApiError(exception.code, exception.message, exception.field))))

@@ -3091,3 +3091,81 @@ Not claimed:
 - actual evidence object upload/download;
 - frontend `UI-*`;
 - chargeback rate metrics.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 06 Merchant Accepts Chargeback Runtime Verification
+
+Scope:
+- `CHB-06` backend/runtime implementation for merchant accepted chargeback.
+- Retained runtime script `product/scripts/runtime/reg_phase09_merchant_accept.sh` was added.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase09_merchant_accept.sh
+git diff --check
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+product/gradlew --no-daemon -p product :apps:platform:bootJar :apps:acquirer:bootJar :apps:network:bootJar :apps:issuer:bootJar :apps:vault:bootJar
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime command:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-chb06
+COMPOSE_FILE=deploy/docker-compose.yml
+PLATFORM_BASE_URL=http://platform:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+bash scripts/runtime/reg_phase09_merchant_accept.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+CHB-06 merchant accept pass dispute_id=0fae4be5-d262-431b-a2b6-0770608c906d provisional_journal_id=e63ea832-e4f5-4480-9d88-a78b7084bb84 merchant_debit_journal_id=88db304d-28b5-46db-9584-2b3a56c20833 user_id=b46d1433-87b8-4b4b-b34d-9adf001258c4
+```
+
+The runtime verification proved:
+- owning `merchant_admin` can move a dispute `MERCHANT_NOTIFIED -> MERCHANT_ACCEPTED`;
+- one `CHARGEBACK_MERCHANT_DEBIT` journal is posted for the dispute;
+- the merchant debit journal debits `MERCHANT_SETTLEMENT:<merchantId>` and credits `ACQUIRER_DISPUTE_RESERVE` for EUR 18.2500;
+- no `CARDHOLDER_PROVISIONAL_CREDIT_REVERSAL` journal is posted for merchant acceptance;
+- the original cardholder provisional credit remains in place;
+- merchant acceptance metadata and merchant debit journal id are persisted on `chargeback.disputes`;
+- `chargeback.merchant_accepted` audit row is written;
+- `dispute.lost` webhook outbox event is persisted;
+- repeated accept is rejected;
+- evidence submission after merchant accept is rejected;
+- another merchant cannot accept the dispute.
+
+Targeted regression outputs:
+
+```text
+CHB-05 arbitration LOST pass dispute_id=e1e88e05-8fc1-4bfc-ba4f-d39b2b0dcb29 provisional_journal_id=356c44c6-bb4d-4a28-961c-5488531152b1 merchant_debit_journal_id=3406f535-fd4b-4063-9f9d-808a3bfeb21c user_id=25d1e1d5-aaf2-46c5-8006-dacb7c845921
+CHB-04 arbitration WON pass dispute_id=96bbf155-2699-42b3-905e-26caa6f12e12 provisional_journal_id=08b7e5fb-c477-42a0-a216-a753a56c1a05 reversal_journal_id=1d71a2f3-fb97-444d-83df-a42c8ddde08a user_id=8e6dd854-0c53-43a6-8c59-d7db2c70c04b
+LDG-05 ledger reconciliation pass
+```
+
+Result tags:
+- `CHB-06` — pass.
+- `CHB-05` — pass targeted regression.
+- `CHB-04` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Runtime environment notes:
+- Docker Compose bridge network creation/host port publishing was blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs because Gradle-in-Docker hung in this environment.
+- Initial parallel targeted regression execution produced one transient script failure on the shared temporary stack; `CHB-04` and `LDG-05` passed when rerun sequentially.
+- Temporary compose stack `mfp-chb06` was stopped with `down -v --remove-orphans` after runtime checks.
+
+Not claimed:
+- merchant deadline expiry;
+- actual evidence object upload/download;
+- frontend `UI-*`;
+- chargeback rate metrics.

@@ -190,6 +190,53 @@ class ChargebackService(
     }
 
     @Transactional
+    fun acceptDispute(employee: MerchantEmployeeRecord, disputeId: UUID): MerchantAcceptChargebackDto {
+        requireActiveMerchant(employee)
+        if (employee.role != "merchant_admin") {
+            throw MerchantDashboardException("forbidden_role", "merchant_admin role is required to accept chargebacks.", HttpStatus.FORBIDDEN)
+        }
+        val dispute = repository.findDisputeById(disputeId)
+            ?: throw MerchantDashboardException("dispute_not_found", "Dispute was not found.", HttpStatus.NOT_FOUND)
+        if (dispute.merchantId != employee.merchantId) {
+            throw MerchantDashboardException("dispute_not_found", "Dispute was not found.", HttpStatus.NOT_FOUND)
+        }
+        if (dispute.state != "MERCHANT_NOTIFIED") {
+            throw MerchantDashboardException("invalid_state", "Only merchant-notified disputes can be accepted.", HttpStatus.CONFLICT)
+        }
+        if (dispute.provisionalCreditJournalId == null) {
+            throw MerchantDashboardException("provisional_credit_missing", "Dispute has no provisional credit to finalize.", HttpStatus.CONFLICT)
+        }
+        val merchantDebitJournalId = postMerchantChargebackDebit(
+            dispute = dispute,
+            missingAccount = { code, message -> MerchantDashboardException(code, message, HttpStatus.INTERNAL_SERVER_ERROR) },
+        )
+        if (repository.markMerchantAccepted(dispute.id, employee.id, merchantDebitJournalId) == 0) {
+            throw MerchantDashboardException("invalid_state", "Only merchant-notified disputes can be accepted.", HttpStatus.CONFLICT)
+        }
+        auditRepository.write(
+            eventType = "chargeback.merchant_accepted",
+            actorType = "MERCHANT_EMPLOYEE",
+            actorId = employee.id,
+            subjectType = "CHARGEBACK",
+            subjectId = dispute.id,
+            outcome = "SUCCESS",
+            metadataJson = """{"merchantDebitJournalId":"$merchantDebitJournalId","role":"${employee.role}"}""",
+        )
+        outboundWebhookService.publishDisputeLost(
+            disputeId = dispute.id,
+            merchantId = dispute.merchantId,
+            paymentIntentId = dispute.paymentIntentId,
+            arbitrationJournalId = merchantDebitJournalId,
+        )
+        return MerchantAcceptChargebackDto(
+            disputeId = dispute.id.toString(),
+            state = "MERCHANT_ACCEPTED",
+            externalState = "LOST",
+            merchantDebitJournalId = merchantDebitJournalId.toString(),
+        )
+    }
+
+    @Transactional
     fun decideArbitration(disputeId: UUID, request: ArbitrationDecisionRequest, principal: BackofficePrincipal): ArbitrationDecisionDto {
         val outcome = request.outcome?.trim()?.uppercase()
             ?: throw BackofficeException("invalid_outcome", "Arbitration outcome is required.", HttpStatus.BAD_REQUEST)
@@ -234,7 +281,10 @@ class ChargebackService(
             )
             return ArbitrationDecisionDto(dispute.id.toString(), "WON", "WON", reversalJournalId.toString())
         }
-        val merchantDebitJournalId = postMerchantChargebackDebit(dispute)
+        val merchantDebitJournalId = postMerchantChargebackDebit(
+            dispute = dispute,
+            missingAccount = { code, message -> BackofficeException(code, message, HttpStatus.INTERNAL_SERVER_ERROR) },
+        )
         if (repository.markArbitrationLost(dispute.id, rationale, principal.subject, role, merchantDebitJournalId) == 0) {
             throw BackofficeException("invalid_state", "Only evidence-submitted disputes can be decided as LOST.", HttpStatus.CONFLICT)
         }
@@ -332,19 +382,14 @@ class ChargebackService(
         )
     }
 
-    private fun postMerchantChargebackDebit(dispute: ChargebackDisputeRecord): UUID {
+    private fun postMerchantChargebackDebit(
+        dispute: ChargebackDisputeRecord,
+        missingAccount: (code: String, message: String) -> RuntimeException,
+    ): UUID {
         val merchantSettlementAccountId = repository.accountByCode("MERCHANT_SETTLEMENT:${dispute.merchantId}")
-            ?: throw BackofficeException(
-                code = "merchant_settlement_account_missing",
-                message = "Merchant settlement ledger account is missing.",
-                status = HttpStatus.INTERNAL_SERVER_ERROR,
-            )
+            ?: throw missingAccount("merchant_settlement_account_missing", "Merchant settlement ledger account is missing.")
         val reserveAccountId = repository.accountByCode("ACQUIRER_DISPUTE_RESERVE")
-            ?: throw BackofficeException(
-                code = "dispute_reserve_account_missing",
-                message = "Acquirer dispute reserve ledger account is missing.",
-                status = HttpStatus.INTERNAL_SERVER_ERROR,
-            )
+            ?: throw missingAccount("dispute_reserve_account_missing", "Acquirer dispute reserve ledger account is missing.")
         val amountText = dispute.amount.setScale(4, RoundingMode.UNNECESSARY).toPlainString()
         return ledgerRepository.postJournal(
             journalId = UUID.randomUUID(),
@@ -352,7 +397,7 @@ class ChargebackService(
             referenceType = "CHARGEBACK",
             referenceId = dispute.id,
             currency = dispute.currency,
-            description = "Chargeback merchant debit after lost arbitration",
+            description = "Chargeback merchant debit",
             postingsJson = """
                 [
                   {"accountId":"$merchantSettlementAccountId","side":"DEBIT","amount":"$amountText"},

@@ -63,3 +63,10 @@ data class ArbitrationDecisionDto(
     val outcome: String,
     val arbitrationJournalId: String,
 )
+
+data class MerchantAcceptChargebackDto(
+    val disputeId: String,
+    val state: String,
+    val externalState: String,
+    val merchantDebitJournalId: String,
+)

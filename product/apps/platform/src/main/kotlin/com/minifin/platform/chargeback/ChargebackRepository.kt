@@ -285,6 +285,24 @@ class ChargebackRepository(
         disputeId,
     )
 
+    fun markMerchantAccepted(disputeId: UUID, employeeId: UUID, journalId: UUID): Int = jdbcTemplate.update(
+        """
+        update chargeback.disputes
+           set state = 'MERCHANT_ACCEPTED',
+               merchant_acceptance_journal_id = ?,
+               merchant_accepted_by_employee_id = ?,
+               merchant_accepted_at = now(),
+               updated_at = now(),
+               version = version + 1
+         where id = ?
+           and state = 'MERCHANT_NOTIFIED'
+           and merchant_acceptance_journal_id is null
+        """.trimIndent(),
+        journalId,
+        employeeId,
+        disputeId,
+    )
+
     fun findEvidenceSubmission(disputeId: UUID): EvidenceSubmissionRecord? =
         jdbcTemplate.query(
             """

@@ -1485,3 +1485,36 @@ Explicitly not implemented/claimed:
 - actual evidence object storage upload/download;
 - frontend UI;
 - chargeback rate metrics.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 06 Merchant Accepts Chargeback (`CHB-06`)
+
+Planning note:
+- `planning/implementation-slices/phase_09_slice_06_merchant_accept_planning.md` — backend/runtime sub-scope executed v0.1.
+
+Implemented:
+- Added merchant dashboard endpoint `POST /api/v1/merchant/disputes/{disputeId}/accept`.
+- Endpoint requires an active merchant employee session, `merchant_admin` role, owning merchant scope, `MERCHANT_NOTIFIED` dispute state and an existing provisional credit journal.
+- Successful merchant acceptance posts one `CHARGEBACK_MERCHANT_DEBIT` ledger journal with reference type `CHARGEBACK`, debiting `MERCHANT_SETTLEMENT:<merchantId>` and crediting `ACQUIRER_DISPUTE_RESERVE` for the dispute amount.
+- The cardholder provisional credit remains unreversed, making it permanent for the cardholder.
+- Successful merchant acceptance transitions the dispute to terminal internal state `MERCHANT_ACCEPTED`, persists merchant acceptance metadata/journal id, writes `chargeback.merchant_accepted` audit, and persists `dispute.lost` webhook outbox event.
+- Added retained runtime script `product/scripts/runtime/reg_phase09_merchant_accept.sh`.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 09 Slice 06 Merchant Accepts Chargeback Runtime Verification`.
+- `CHB-06` — pass.
+- `CHB-05` — pass targeted regression.
+- `CHB-04` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Verification notes:
+- Docker Compose bridge network creation remained blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs to avoid the Gradle-in-Docker hang seen in this environment.
+- Temporary `mfp-chb06` compose stack was stopped with volumes removed after runtime checks.
+
+Explicitly not implemented/claimed:
+- merchant deadline expiry;
+- actual evidence object storage upload/download;
+- frontend UI;
+- chargeback rate metrics.
