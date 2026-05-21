@@ -1379,3 +1379,40 @@ Explicitly not implemented/claimed:
 - attachment storage;
 - frontend UI;
 - chargeback rate dashboard/metric.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 03 Merchant Evidence Submission (`CHB-03`)
+
+Planning note:
+- `planning/implementation-slices/phase_09_slice_03_merchant_evidence_planning.md` — backend/runtime sub-scope executed v0.1.
+
+Implemented:
+- Added `chargeback.evidence_submissions` and `chargeback.evidence_attachments` metadata persistence.
+- Added merchant dashboard endpoint `POST /api/v1/merchant/disputes/{disputeId}/evidence`.
+- Merchant evidence submission enforces:
+  - active merchant employee session;
+  - dispute belongs to the employee's merchant;
+  - dispute is in `MERCHANT_NOTIFIED`;
+  - merchant response deadline has not expired;
+  - required narrative and bounded attachment metadata.
+- Successful submission transitions dispute state to `EVIDENCE_SUBMITTED`, persists evidence/attachment metadata, writes `chargeback.evidence_submitted` audit, and persists `dispute.evidence_received` webhook outbox event.
+- Added retained runtime script `product/scripts/runtime/reg_phase09_merchant_evidence.sh`.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 09 Slice 03 Merchant Evidence Submission Runtime Verification`.
+- `CHB-03` — pass.
+- `CHB-01`/`CHB-02` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Verification notes:
+- Docker Compose bridge network creation/host port publishing remained blocked by a local Docker iptables chain issue, so runtime verification reused an existing Docker bridge network with service host ports reset via `!reset []` and compose-network URLs.
+- Platform runtime image was built from the locally verified `bootJar` output.
+
+Explicitly not implemented/claimed:
+- actual S3/MinIO multipart upload/download;
+- merchant accept / terminal `LOST`;
+- arbitration (`CHB-04`, `CHB-05`);
+- provisional credit reversal or merchant debit;
+- frontend UI;
+- chargeback rate metrics.

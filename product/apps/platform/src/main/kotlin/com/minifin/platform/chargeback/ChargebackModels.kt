@@ -22,3 +22,32 @@ data class ChargebackDisputeDto(
     val provisionalCreditJournalId: String? = null,
     val createdAt: String,
 )
+
+data class SubmitEvidenceRequest(
+    val narrative: String? = null,
+    val attachments: List<EvidenceAttachmentRequest> = emptyList(),
+)
+
+data class EvidenceAttachmentRequest(
+    val fileName: String? = null,
+    val contentType: String? = null,
+    val storageKey: String? = null,
+    val sizeBytes: Long? = null,
+)
+
+data class EvidenceSubmissionDto(
+    val id: String,
+    val disputeId: String,
+    val state: String,
+    val narrative: String,
+    val attachments: List<EvidenceAttachmentDto>,
+    val createdAt: String,
+)
+
+data class EvidenceAttachmentDto(
+    val id: String,
+    val fileName: String,
+    val contentType: String,
+    val storageKey: String,
+    val sizeBytes: Long,
+)

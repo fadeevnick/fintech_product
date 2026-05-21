@@ -34,6 +34,24 @@ data class ChargebackDisputeRecord(
     val createdAt: OffsetDateTime,
 )
 
+data class EvidenceSubmissionRecord(
+    val id: UUID,
+    val disputeId: UUID,
+    val merchantId: UUID,
+    val submittedByEmployeeId: UUID,
+    val narrative: String,
+    val createdAt: OffsetDateTime,
+)
+
+data class EvidenceAttachmentRecord(
+    val id: UUID,
+    val evidenceSubmissionId: UUID,
+    val fileName: String,
+    val contentType: String,
+    val storageKey: String,
+    val sizeBytes: Long,
+)
+
 @Repository
 class ChargebackRepository(
     private val jdbcTemplate: JdbcTemplate,
@@ -64,6 +82,18 @@ class ChargebackRepository(
             """.trimIndent(),
             { rs, _ -> rs.toDisputeRecord() },
             paymentIntentId,
+        ).firstOrNull()
+
+    fun findDisputeById(id: UUID): ChargebackDisputeRecord? =
+        jdbcTemplate.query(
+            """
+            select id, payment_intent_id, merchant_id, cardholder_user_id, amount, currency, reason_code,
+                   narrative, state, merchant_response_deadline, provisional_credit_journal_id, created_at
+              from chargeback.disputes
+             where id = ?
+            """.trimIndent(),
+            { rs, _ -> rs.toDisputeRecord() },
+            id,
         ).firstOrNull()
 
     fun insertDispute(
@@ -130,6 +160,81 @@ class ChargebackRepository(
             code,
         ).firstOrNull()
 
+    fun insertEvidenceSubmission(id: UUID, disputeId: UUID, merchantId: UUID, employeeId: UUID, narrative: String): Int =
+        jdbcTemplate.update(
+            """
+            insert into chargeback.evidence_submissions (
+                id, dispute_id, merchant_id, submitted_by_employee_id, narrative
+            )
+            values (?, ?, ?, ?, ?)
+            on conflict (dispute_id) do nothing
+            """.trimIndent(),
+            id,
+            disputeId,
+            merchantId,
+            employeeId,
+            narrative,
+        )
+
+    fun insertEvidenceAttachment(
+        id: UUID,
+        evidenceSubmissionId: UUID,
+        fileName: String,
+        contentType: String,
+        storageKey: String,
+        sizeBytes: Long,
+    ) {
+        jdbcTemplate.update(
+            """
+            insert into chargeback.evidence_attachments (
+                id, evidence_submission_id, file_name, content_type, storage_key, size_bytes
+            )
+            values (?, ?, ?, ?, ?, ?)
+            """.trimIndent(),
+            id,
+            evidenceSubmissionId,
+            fileName,
+            contentType,
+            storageKey,
+            sizeBytes,
+        )
+    }
+
+    fun markEvidenceSubmitted(disputeId: UUID): Int = jdbcTemplate.update(
+        """
+        update chargeback.disputes
+           set state = 'EVIDENCE_SUBMITTED',
+               updated_at = now(),
+               version = version + 1
+         where id = ?
+           and state = 'MERCHANT_NOTIFIED'
+        """.trimIndent(),
+        disputeId,
+    )
+
+    fun findEvidenceSubmission(disputeId: UUID): EvidenceSubmissionRecord? =
+        jdbcTemplate.query(
+            """
+            select id, dispute_id, merchant_id, submitted_by_employee_id, narrative, created_at
+              from chargeback.evidence_submissions
+             where dispute_id = ?
+            """.trimIndent(),
+            { rs, _ -> rs.toEvidenceSubmissionRecord() },
+            disputeId,
+        ).firstOrNull()
+
+    fun listEvidenceAttachments(evidenceSubmissionId: UUID): List<EvidenceAttachmentRecord> =
+        jdbcTemplate.query(
+            """
+            select id, evidence_submission_id, file_name, content_type, storage_key, size_bytes
+              from chargeback.evidence_attachments
+             where evidence_submission_id = ?
+             order by created_at asc, id asc
+            """.trimIndent(),
+            { rs, _ -> rs.toEvidenceAttachmentRecord() },
+            evidenceSubmissionId,
+        )
+
     private fun ResultSet.toPaymentRecord(): DisputablePaymentRecord =
         DisputablePaymentRecord(
             id = getObject("id", UUID::class.java),
@@ -157,5 +262,25 @@ class ChargebackRepository(
             merchantResponseDeadline = getObject("merchant_response_deadline", OffsetDateTime::class.java),
             provisionalCreditJournalId = getObject("provisional_credit_journal_id", UUID::class.java),
             createdAt = getObject("created_at", OffsetDateTime::class.java),
+        )
+
+    private fun ResultSet.toEvidenceSubmissionRecord(): EvidenceSubmissionRecord =
+        EvidenceSubmissionRecord(
+            id = getObject("id", UUID::class.java),
+            disputeId = getObject("dispute_id", UUID::class.java),
+            merchantId = getObject("merchant_id", UUID::class.java),
+            submittedByEmployeeId = getObject("submitted_by_employee_id", UUID::class.java),
+            narrative = getString("narrative"),
+            createdAt = getObject("created_at", OffsetDateTime::class.java),
+        )
+
+    private fun ResultSet.toEvidenceAttachmentRecord(): EvidenceAttachmentRecord =
+        EvidenceAttachmentRecord(
+            id = getObject("id", UUID::class.java),
+            evidenceSubmissionId = getObject("evidence_submission_id", UUID::class.java),
+            fileName = getString("file_name"),
+            contentType = getString("content_type"),
+            storageKey = getString("storage_key"),
+            sizeBytes = getLong("size_bytes"),
         )
 }

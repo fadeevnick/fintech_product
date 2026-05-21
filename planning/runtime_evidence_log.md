@@ -2849,3 +2849,80 @@ Not claimed:
 - provisional credit reversal on `WON`;
 - permanent merchant debit / reserve release on `LOST`;
 - frontend `UI-*`.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 03 Merchant Evidence Submission Runtime Verification
+
+Scope:
+- `CHB-03` backend/runtime implementation for merchant evidence submission.
+- Retained runtime script `product/scripts/runtime/reg_phase09_merchant_evidence.sh` was added.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase09_merchant_evidence.sh
+git diff --check
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+product/gradlew --no-daemon -p product :apps:platform:bootJar
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime command:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-chb03
+PLATFORM_BASE_URL=http://platform:8080
+ISSUER_BASE_URL=http://issuer:8080
+VAULT_BASE_URL=http://vault:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+bash product/scripts/runtime/reg_phase09_merchant_evidence.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+state=EVIDENCE_SUBMITTED
+evidence=1
+attachments=1
+audit=1
+webhook=1
+CHB-03 merchant evidence submission pass dispute_id=645be81c-0e37-4b3c-8cd3-fdad2b4fb736 evidence_id=62d271e5-c773-48b3-a9c4-ffc1992727f7
+```
+
+The runtime verification proved:
+- merchant evidence submission moves a merchant-owned `MERCHANT_NOTIFIED` dispute to `EVIDENCE_SUBMITTED`;
+- evidence narrative and attachment metadata are persisted;
+- `chargeback.evidence_submitted` audit row is written;
+- `dispute.evidence_received` webhook outbox event is persisted;
+- repeated submission is rejected;
+- a different merchant cannot submit evidence for the dispute;
+- expired merchant response deadline is rejected without an evidence row.
+
+Targeted regression outputs:
+
+```text
+LDG-05 ledger reconciliation pass
+CHB-01/CHB-02 chargeback initiation provisional credit pass dispute_id=4c785902-e175-4cc0-8f3b-e745846618e5 provisional_journal_id=6d01a701-f7af-45ea-8af3-4a34055f5ff8
+```
+
+Result tags:
+- `CHB-03` — pass.
+- `CHB-01`/`CHB-02` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Runtime environment notes:
+- Docker Compose bridge network creation/host port publishing was blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Platform image was built from the locally verified `bootJar` output.
+
+Not claimed:
+- actual S3/MinIO evidence object upload/download;
+- merchant accept / terminal `LOST`;
+- arbitration (`CHB-04`, `CHB-05`);
+- provisional credit reversal or merchant debit;
+- frontend `UI-*`.

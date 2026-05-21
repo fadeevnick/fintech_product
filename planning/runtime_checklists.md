@@ -166,7 +166,7 @@ Result tags:
 |---|---|---|---|
 | `CHB-01` | Cardholder dispute initiation. | Eligible payment can be disputed within window. | `product/scripts/runtime/reg_phase09_chargeback_initiation.sh` |
 | `CHB-02` | Provisional credit. | Initiation posts provisional cardholder credit. | `product/scripts/runtime/reg_phase09_chargeback_initiation.sh` |
-| `CHB-03` | Merchant evidence. | Merchant can submit evidence with attachment. | pending |
+| `CHB-03` | Merchant evidence. | Merchant can submit evidence with attachment. | `product/scripts/runtime/reg_phase09_merchant_evidence.sh` |
 | `CHB-04` | Arbitration WON. | WON reverses provisional credit and releases merchant funds correctly. | pending |
 | `CHB-05` | Arbitration LOST. | LOST makes cardholder credit permanent and debits merchant correctly. | pending |
 
