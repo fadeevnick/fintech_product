@@ -47,6 +47,7 @@ Implemented runtime behavior so far:
 - Phase 09 Slice 04 arbitration WON in `platform`: backoffice arbitration `WON` reverses the provisional credit through `CARDHOLDER_PROVISIONAL_CREDIT_REVERSAL`, persists arbitration metadata and writes audit/webhook records. `CHB-04` has runtime evidence.
 - Phase 09 Slice 05 arbitration LOST in `platform`: backoffice arbitration `LOST` keeps the cardholder provisional credit in place and posts `CHARGEBACK_MERCHANT_DEBIT` from merchant settlement to `ACQUIRER_DISPUTE_RESERVE`. `CHB-05` has runtime evidence.
 - Phase 09 Slice 06 merchant accept in `platform`: merchant admin can accept a merchant-notified dispute, terminal state becomes `MERCHANT_ACCEPTED`, external outcome is `LOST`, cardholder provisional credit remains in place, and merchant settlement is debited to `ACQUIRER_DISPUTE_RESERVE`. `CHB-06` has runtime evidence.
+- Phase 09 Slice 07 merchant deadline expiry in `platform`: internal `POST /internal/chargebacks/process-deadlines` expires due merchant-notified disputes into `MERCHANT_DEADLINE_EXPIRED`, keeps cardholder provisional credit in place, and debits merchant settlement to `ACQUIRER_DISPUTE_RESERVE`. `CHB-07` has runtime evidence.
 
 ## Local Commands
 
@@ -165,6 +166,7 @@ scripts/runtime/reg_phase09_merchant_evidence.sh
 scripts/runtime/reg_phase09_arbitration_won.sh
 scripts/runtime/reg_phase09_arbitration_lost.sh
 scripts/runtime/reg_phase09_merchant_accept.sh
+scripts/runtime/reg_phase09_merchant_deadline_expiry.sh
 ```
 
 ## Stripe Webhook Local Runtime

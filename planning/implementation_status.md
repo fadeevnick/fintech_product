@@ -1518,3 +1518,36 @@ Explicitly not implemented/claimed:
 - actual evidence object storage upload/download;
 - frontend UI;
 - chargeback rate metrics.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 07 Merchant Deadline Expiry (`CHB-07`)
+
+Planning note:
+- `planning/implementation-slices/phase_09_slice_07_merchant_deadline_expiry_planning.md` — backend/runtime sub-scope executed v0.1.
+
+Implemented:
+- Added internal endpoint `POST /internal/chargebacks/process-deadlines?limit=...`.
+- The processor selects due `MERCHANT_NOTIFIED` disputes with `merchant_response_deadline <= now()`, existing provisional credit and no prior deadline-expiry journal.
+- Successful expiry posts one `CHARGEBACK_MERCHANT_DEBIT` ledger journal with reference type `CHARGEBACK`, debiting `MERCHANT_SETTLEMENT:<merchantId>` and crediting `ACQUIRER_DISPUTE_RESERVE` for the dispute amount.
+- The cardholder provisional credit remains unreversed, making it permanent for the cardholder.
+- Successful expiry transitions the dispute to terminal internal state `MERCHANT_DEADLINE_EXPIRED`, persists deadline-expiry metadata/journal id, writes `chargeback.deadline_expired` audit, and persists `dispute.lost` webhook outbox event.
+- Added retained runtime script `product/scripts/runtime/reg_phase09_merchant_deadline_expiry.sh`.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 09 Slice 07 Merchant Deadline Expiry Runtime Verification`.
+- `CHB-07` — pass.
+- `CHB-06` — pass targeted regression.
+- `CHB-05` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Verification notes:
+- Docker Compose bridge network creation remained blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs to avoid the Gradle-in-Docker hang seen in this environment.
+- Temporary `mfp-chb07` compose stack was stopped with volumes removed after runtime checks.
+
+Explicitly not implemented/claimed:
+- scheduler/cron wiring;
+- actual evidence object storage upload/download;
+- frontend UI;
+- chargeback rate metrics.

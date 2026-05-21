@@ -3169,3 +3169,80 @@ Not claimed:
 - actual evidence object upload/download;
 - frontend `UI-*`;
 - chargeback rate metrics.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 07 Merchant Deadline Expiry Runtime Verification
+
+Scope:
+- `CHB-07` backend/runtime implementation for merchant response deadline expiry.
+- Retained runtime script `product/scripts/runtime/reg_phase09_merchant_deadline_expiry.sh` was added.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase09_merchant_deadline_expiry.sh
+git diff --check
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+product/gradlew --no-daemon -p product :apps:platform:bootJar :apps:acquirer:bootJar :apps:network:bootJar :apps:issuer:bootJar :apps:vault:bootJar
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime command:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-chb07
+COMPOSE_FILE=deploy/docker-compose.yml
+PLATFORM_BASE_URL=http://platform:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+bash scripts/runtime/reg_phase09_merchant_deadline_expiry.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+CHB-07 merchant deadline expiry pass dispute_id=d862e703-5a9f-4429-a342-4766beb39c31 provisional_journal_id=0e9ed923-e72d-4452-a366-6eb08dc2b8ac merchant_debit_journal_id=cf97a9ff-bb8b-464b-8c75-fab146decbdb user_id=27802361-1a18-44e2-8629-321c6769ab14
+```
+
+The runtime verification proved:
+- the internal processor moves due disputes `MERCHANT_NOTIFIED -> MERCHANT_DEADLINE_EXPIRED`;
+- not-yet-due disputes remain `MERCHANT_NOTIFIED`;
+- one `CHARGEBACK_MERCHANT_DEBIT` journal is posted for the expired dispute;
+- the merchant debit journal debits `MERCHANT_SETTLEMENT:<merchantId>` and credits `ACQUIRER_DISPUTE_RESERVE` for EUR 18.2500;
+- no `CARDHOLDER_PROVISIONAL_CREDIT_REVERSAL` journal is posted for deadline expiry;
+- the original cardholder provisional credit remains in place;
+- deadline-expiry metadata and merchant debit journal id are persisted on `chargeback.disputes`;
+- `chargeback.deadline_expired` audit row is written;
+- `dispute.lost` webhook outbox event is persisted;
+- rerunning the processor does not create duplicate journal/webhook rows;
+- evidence submission and merchant accept after deadline expiry are rejected.
+
+Targeted regression outputs:
+
+```text
+CHB-06 merchant accept pass dispute_id=9e2b4199-77bc-4ea1-9de4-57612cd3c886 provisional_journal_id=819a709c-2c58-4697-a285-f82f7c5e995c merchant_debit_journal_id=ca4a692e-fc13-4d9c-8228-894b73786f2c user_id=4677fbb6-ead5-490c-859a-cfb88569f677
+CHB-05 arbitration LOST pass dispute_id=d7e3ec3f-461e-4acb-9899-7cd4aea87918 provisional_journal_id=c39bae3e-0873-4d2f-9ea2-a13ef18ccbfc merchant_debit_journal_id=741d5fbe-01f4-4ec2-8763-2c5e37fbab6f user_id=2fea5aa3-e9cf-4e02-9d0c-ea2e1bd0291e
+LDG-05 ledger reconciliation pass
+```
+
+Result tags:
+- `CHB-07` — pass.
+- `CHB-06` — pass targeted regression.
+- `CHB-05` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Runtime environment notes:
+- Docker Compose bridge network creation/host port publishing was blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs because Gradle-in-Docker hung in this environment.
+- Temporary compose stack `mfp-chb07` was stopped with `down -v --remove-orphans` after runtime checks.
+
+Not claimed:
+- scheduler/cron wiring;
+- actual evidence object upload/download;
+- frontend `UI-*`;
+- chargeback rate metrics.

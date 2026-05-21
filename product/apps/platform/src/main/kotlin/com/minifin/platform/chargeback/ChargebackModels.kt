@@ -70,3 +70,15 @@ data class MerchantAcceptChargebackDto(
     val externalState: String,
     val merchantDebitJournalId: String,
 )
+
+data class DeadlineExpiryProcessDto(
+    val processedCount: Int,
+    val processed: List<DeadlineExpiryItemDto>,
+)
+
+data class DeadlineExpiryItemDto(
+    val disputeId: String,
+    val state: String,
+    val externalState: String,
+    val merchantDebitJournalId: String,
+)

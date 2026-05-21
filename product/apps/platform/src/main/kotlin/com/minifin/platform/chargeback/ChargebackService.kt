@@ -237,6 +237,45 @@ class ChargebackService(
     }
 
     @Transactional
+    fun processMerchantDeadlines(limit: Int): DeadlineExpiryProcessDto {
+        if (limit !in 1..500) {
+            throw ChargebackException("invalid_limit", "Limit must be between 1 and 500.", HttpStatus.BAD_REQUEST, "limit")
+        }
+        val processed = repository.listDeadlineExpiredCandidates(limit).mapNotNull { dispute ->
+            val merchantDebitJournalId = postMerchantChargebackDebit(
+                dispute = dispute,
+                missingAccount = { code, message -> ChargebackException(code, message, HttpStatus.INTERNAL_SERVER_ERROR) },
+            )
+            if (repository.markMerchantDeadlineExpired(dispute.id, merchantDebitJournalId) == 0) {
+                null
+            } else {
+                auditRepository.write(
+                    eventType = "chargeback.deadline_expired",
+                    actorType = "SYSTEM",
+                    actorId = null,
+                    subjectType = "CHARGEBACK",
+                    subjectId = dispute.id,
+                    outcome = "SUCCESS",
+                    metadataJson = """{"merchantDebitJournalId":"$merchantDebitJournalId"}""",
+                )
+                outboundWebhookService.publishDisputeLost(
+                    disputeId = dispute.id,
+                    merchantId = dispute.merchantId,
+                    paymentIntentId = dispute.paymentIntentId,
+                    arbitrationJournalId = merchantDebitJournalId,
+                )
+                DeadlineExpiryItemDto(
+                    disputeId = dispute.id.toString(),
+                    state = "MERCHANT_DEADLINE_EXPIRED",
+                    externalState = "LOST",
+                    merchantDebitJournalId = merchantDebitJournalId.toString(),
+                )
+            }
+        }
+        return DeadlineExpiryProcessDto(processedCount = processed.size, processed = processed)
+    }
+
+    @Transactional
     fun decideArbitration(disputeId: UUID, request: ArbitrationDecisionRequest, principal: BackofficePrincipal): ArbitrationDecisionDto {
         val outcome = request.outcome?.trim()?.uppercase()
             ?: throw BackofficeException("invalid_outcome", "Arbitration outcome is required.", HttpStatus.BAD_REQUEST)

@@ -303,6 +303,41 @@ class ChargebackRepository(
         disputeId,
     )
 
+    fun listDeadlineExpiredCandidates(limit: Int): List<ChargebackDisputeRecord> =
+        jdbcTemplate.query(
+            """
+            select id, payment_intent_id, merchant_id, cardholder_user_id, amount, currency, reason_code,
+                   narrative, state, merchant_response_deadline, provisional_credit_journal_id, arbitration_journal_id, created_at
+              from chargeback.disputes
+             where state = 'MERCHANT_NOTIFIED'
+               and merchant_response_deadline <= now()
+               and provisional_credit_journal_id is not null
+               and deadline_expiry_journal_id is null
+             order by merchant_response_deadline asc, id asc
+             limit ?
+            """.trimIndent(),
+            { rs, _ -> rs.toDisputeRecord() },
+            limit,
+        )
+
+    fun markMerchantDeadlineExpired(disputeId: UUID, journalId: UUID): Int = jdbcTemplate.update(
+        """
+        update chargeback.disputes
+           set state = 'MERCHANT_DEADLINE_EXPIRED',
+               deadline_expiry_journal_id = ?,
+               deadline_expired_at = now(),
+               updated_at = now(),
+               version = version + 1
+         where id = ?
+           and state = 'MERCHANT_NOTIFIED'
+           and merchant_response_deadline <= now()
+           and provisional_credit_journal_id is not null
+           and deadline_expiry_journal_id is null
+        """.trimIndent(),
+        journalId,
+        disputeId,
+    )
+
     fun findEvidenceSubmission(disputeId: UUID): EvidenceSubmissionRecord? =
         jdbcTemplate.query(
             """
