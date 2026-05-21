@@ -42,7 +42,8 @@ create_dispute() {
 
 submit_evidence() {
   local dispute_id="$1" out_body="$2"
-  local evidence_json='{"narrative":"Representment package for arbitration WON runtime path.","attachments":[{"fileName":"receipt.pdf","contentType":"application/pdf","storageKey":"chargeback-evidence/runtime/receipt.pdf","sizeBytes":12345}]}'
+  local evidence_payload_base64="Y2hhcmdlYmFjayBldmlkZW5jZSBydW50aW1lIHBheWxvYWQ="
+  local evidence_json="{\"narrative\":\"Representment package for arbitration WON runtime path.\",\"attachments\":[{\"fileName\":\"receipt.pdf\",\"contentType\":\"application/pdf\",\"storageKey\":\"chargeback-evidence/runtime/receipt.pdf\",\"sizeBytes\":35,\"contentBase64\":\"${evidence_payload_base64}\"}]}"
   test "$(pa_curl -sS -b "${merchant_cookie}" -o "${out_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/merchant/disputes/${dispute_id}/evidence" -H "Content-Type: application/json" -d "${evidence_json}")" = "200"
 }
 

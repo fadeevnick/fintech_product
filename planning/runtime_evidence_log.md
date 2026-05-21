@@ -3246,3 +3246,78 @@ Not claimed:
 - actual evidence object upload/download;
 - frontend `UI-*`;
 - chargeback rate metrics.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 08 Evidence Object Storage Runtime Verification
+
+Scope:
+- `CHB-08` backend/runtime implementation for writing chargeback evidence attachment bytes to local SeaweedFS S3-compatible object storage before accepting evidence metadata.
+- Retained runtime script `product/scripts/runtime/reg_phase09_evidence_object_storage.sh` was added.
+
+Static commands run:
+
+```text
+bash -n product/scripts/runtime/reg_phase09_evidence_object_storage.sh product/scripts/runtime/reg_phase09_merchant_evidence.sh product/scripts/runtime/reg_phase09_arbitration_won.sh product/scripts/runtime/reg_phase09_arbitration_lost.sh
+product/gradlew --no-daemon -p product :apps:platform:compileKotlin
+product/gradlew --no-daemon -p product :apps:platform:bootJar :apps:acquirer:bootJar :apps:network:bootJar :apps:issuer:bootJar :apps:vault:bootJar
+```
+
+Observed result:
+
+```text
+BUILD SUCCESSFUL
+```
+
+Runtime command:
+
+```text
+COMPOSE_PROJECT_NAME=mfp-chb08
+PLATFORM_BASE_URL=http://platform:8080
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default
+scripts/runtime/reg_phase09_evidence_object_storage.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+CHB-08 evidence object storage pass dispute_id=fba170d4-bb0c-412a-aed0-cce6d7c3dac9 evidence_id=49a624b0-8c62-43f0-818a-0b11f5c6e22a storage_key=chargeback-evidence/runtime/chb08-1779391002680325002-delivery-proof.txt user_id=181d6b69-45b6-4144-a790-aaaf3502e7aa
+```
+
+The runtime verification proved:
+- merchant evidence submission accepts one inline base64 attachment;
+- invalid base64 and decoded-size mismatch are rejected before evidence metadata is persisted;
+- object bytes are written to local SeaweedFS bucket `chargeback-evidence` before evidence metadata is accepted;
+- the script reads the stored object back and verifies the payload bytes;
+- evidence submission metadata and attachment metadata are persisted.
+
+Targeted regression outputs:
+
+```text
+CHB-03 merchant evidence submission pass dispute_id=d7de47e9-661b-4e0d-8f46-37653eae4b11 evidence_id=a52229de-8d9d-4913-aa69-b55310d5ccc5 user_id=2ee4a2ec-246f-4700-84a6-28baae081b70
+CHB-04 arbitration WON pass dispute_id=873a6375-90d0-4101-96ec-83c29150180b provisional_journal_id=a90f8687-22cc-44c5-a9b9-58f50bcd4073 reversal_journal_id=2e0b874a-cf01-4ee4-a633-409cb5488078 user_id=1012e6b4-b7bc-463e-8a65-08ea68506102
+CHB-05 arbitration LOST pass dispute_id=cfb2b693-2ee3-488d-86db-47a4270d36ba provisional_journal_id=e9ab76ae-3f87-4259-8beb-a3c59ed7b2f1 merchant_debit_journal_id=dbbd2b9f-0f89-4af9-8989-732841de173c user_id=b45e4bab-207d-4e44-acb4-83ec3ecb675b
+CHB-07 merchant deadline expiry pass dispute_id=0e290d4d-57ef-46ea-8a2b-e5fa7250d465 provisional_journal_id=847efe64-d752-46e2-bb5e-498f0f363a8a merchant_debit_journal_id=91cdc8e2-65fc-40c7-aa66-83b07c5dc55e user_id=557a55df-b0c3-417f-a8cc-441f09c6f953
+LDG-05 ledger reconciliation pass
+```
+
+Result tags:
+- `CHB-08` — pass.
+- `CHB-03` — pass targeted regression.
+- `CHB-04` — pass targeted regression.
+- `CHB-05` — pass targeted regression.
+- `CHB-07` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Runtime environment notes:
+- Docker Compose bridge network creation/host port publishing was blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs.
+- Temporary compose stack `mfp-chb08` was stopped with `down -v --remove-orphans` after runtime checks.
+
+Not claimed:
+- browser multipart upload flow;
+- presigned URL generation;
+- backoffice evidence preview/download UI;
+- KYC/SoF document storage;
+- frontend `UI-*`;
+- chargeback rate metrics.

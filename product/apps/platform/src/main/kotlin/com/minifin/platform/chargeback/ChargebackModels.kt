@@ -33,6 +33,7 @@ data class EvidenceAttachmentRequest(
     val contentType: String? = null,
     val storageKey: String? = null,
     val sizeBytes: Long? = null,
+    val contentBase64: String? = null,
 )
 
 data class EvidenceSubmissionDto(

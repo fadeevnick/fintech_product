@@ -171,6 +171,7 @@ Result tags:
 | `CHB-05` | Arbitration LOST. | LOST makes cardholder credit permanent and debits merchant correctly. | `product/scripts/runtime/reg_phase09_arbitration_lost.sh` |
 | `CHB-06` | Merchant accepted chargeback. | Merchant accept makes cardholder credit permanent and debits merchant correctly. | `product/scripts/runtime/reg_phase09_merchant_accept.sh` |
 | `CHB-07` | Merchant deadline expiry. | Expiry makes cardholder credit permanent and debits merchant correctly. | `product/scripts/runtime/reg_phase09_merchant_deadline_expiry.sh` |
+| `CHB-08` | Evidence object storage. | Evidence attachment bytes are written to local S3-compatible storage before metadata is accepted. | `product/scripts/runtime/reg_phase09_evidence_object_storage.sh` |
 
 ## 13. Phase 10 — Three SPAs Completion Pass
 

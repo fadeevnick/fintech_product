@@ -1551,3 +1551,41 @@ Explicitly not implemented/claimed:
 - actual evidence object storage upload/download;
 - frontend UI;
 - chargeback rate metrics.
+
+---
+
+## 2026-05-21 — Phase 09 Slice 08 Evidence Object Storage (`CHB-08`)
+
+Planning note:
+- `planning/implementation-slices/phase_09_slice_08_evidence_object_storage_planning.md` — backend/runtime sub-scope executed v0.1.
+
+Implemented:
+- Added `ChargebackEvidenceObjectStorage` adapter in `platform` using JDK `HttpClient` against local SeaweedFS S3-compatible HTTP endpoint.
+- Platform compose config now provides `MINIFIN_OBJECT_STORAGE_ENDPOINT` and `MINIFIN_CHARGEBACK_EVIDENCE_BUCKET`, and `platform` depends on `seaweedfs`.
+- Merchant evidence attachments now require inline `contentBase64`; invalid/missing base64 and decoded-size mismatch are rejected before metadata persistence.
+- Evidence submission writes each attachment object to the configured bucket before inserting evidence submission/attachment metadata.
+- Existing evidence submission state transition, audit and `dispute.evidence_received` webhook behavior remain intact.
+- Added retained runtime script `product/scripts/runtime/reg_phase09_evidence_object_storage.sh`.
+- Updated existing chargeback runtime scripts that submit attachments to include valid inline content.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 09 Slice 08 Evidence Object Storage Runtime Verification`.
+- `CHB-08` — pass.
+- `CHB-03` — pass targeted regression.
+- `CHB-04` — pass targeted regression.
+- `CHB-05` — pass targeted regression.
+- `CHB-07` — pass targeted regression.
+- `LDG-05` — pass targeted regression.
+
+Verification notes:
+- Docker Compose bridge network creation/host port publishing remained blocked by the local Docker iptables chain issue, so runtime verification reused existing Docker bridge network `mini-fintech-platform-a2_default`, reset service host ports with compose `!reset []`, and used compose-network URLs.
+- Backend service images were built from locally verified `bootJar` outputs.
+- Temporary `mfp-chb08` compose stack was stopped with volumes removed after runtime checks.
+
+Explicitly not implemented/claimed:
+- browser multipart upload flow;
+- presigned URL generation;
+- backoffice evidence preview/download UI;
+- KYC/SoF document storage;
+- chargeback rate metrics;
+- frontend UI.

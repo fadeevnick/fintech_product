@@ -115,6 +115,8 @@ services:
       OPENSANCTIONS_TIMEOUT_MS: ${OPENSANCTIONS_TIMEOUT_MS:-3000}
       OPENSANCTIONS_LOCAL_MODE: ${OPENSANCTIONS_LOCAL_MODE:-disabled}
       OPENSANCTIONS_MATCH_THRESHOLD: ${OPENSANCTIONS_MATCH_THRESHOLD:-0.85}
+      MINIFIN_OBJECT_STORAGE_ENDPOINT: ${MINIFIN_OBJECT_STORAGE_ENDPOINT:-http://seaweedfs:8333}
+      MINIFIN_CHARGEBACK_EVIDENCE_BUCKET: ${MINIFIN_CHARGEBACK_EVIDENCE_BUCKET:-chargeback-evidence}
     depends_on:
       platform-db:
         condition: service_healthy
@@ -123,6 +125,8 @@ services:
       kafka:
         condition: service_started
       keycloak:
+        condition: service_started
+      seaweedfs:
         condition: service_started
     ports:
       - "${PLATFORM_HTTP_HOST_PORT:-8081}:8080"

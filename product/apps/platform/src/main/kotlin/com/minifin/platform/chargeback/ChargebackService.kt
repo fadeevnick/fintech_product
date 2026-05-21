@@ -12,6 +12,7 @@ import java.math.RoundingMode
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Base64
 import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.jdbc.core.JdbcTemplate
@@ -33,6 +34,7 @@ class ChargebackService(
     private val ledgerRepository: LedgerRepository,
     private val jdbcTemplate: JdbcTemplate,
     private val properties: ChargebackProperties,
+    private val evidenceObjectStorage: ChargebackEvidenceObjectStorage,
 ) {
     private val reasonCodes = setOf(
         "fraud_no_authorization",
@@ -147,6 +149,13 @@ class ChargebackService(
             throw MerchantDashboardException("too_many_attachments", "At most 5 evidence attachments are supported.", HttpStatus.BAD_REQUEST, "attachments")
         }
         val attachments = request.attachments.mapIndexed { index, attachment -> validateAttachment(index, attachment) }
+        attachments.forEach {
+            evidenceObjectStorage.putEvidenceObject(
+                storageKey = it.storageKey,
+                contentType = it.contentType,
+                bytes = it.bytes,
+            )
+        }
         val submissionId = UUID.randomUUID()
         if (repository.insertEvidenceSubmission(submissionId, dispute.id, employee.merchantId, employee.id, narrative) == 0) {
             throw MerchantDashboardException("evidence_already_submitted", "Evidence has already been submitted for this dispute.", HttpStatus.CONFLICT)
@@ -370,7 +379,17 @@ class ChargebackService(
         if (fileName.length > 255 || contentType.length > 120 || storageKey.length > 500 || sizeBytes <= 0L) {
             throw MerchantDashboardException("invalid_attachment", "Attachment metadata is invalid.", HttpStatus.BAD_REQUEST, "attachments[$index]")
         }
-        return ValidatedEvidenceAttachment(fileName, contentType, storageKey, sizeBytes)
+        val contentBase64 = attachment.contentBase64?.trim()?.takeIf { it.isNotEmpty() }
+            ?: throw MerchantDashboardException("invalid_attachment", "Attachment content is required.", HttpStatus.BAD_REQUEST, "attachments[$index].contentBase64")
+        val bytes = try {
+            Base64.getDecoder().decode(contentBase64)
+        } catch (_: IllegalArgumentException) {
+            throw MerchantDashboardException("invalid_attachment", "Attachment content is not valid base64.", HttpStatus.BAD_REQUEST, "attachments[$index].contentBase64")
+        }
+        if (bytes.size.toLong() != sizeBytes) {
+            throw MerchantDashboardException("invalid_attachment", "Attachment size does not match content.", HttpStatus.BAD_REQUEST, "attachments[$index].sizeBytes")
+        }
+        return ValidatedEvidenceAttachment(fileName, contentType, storageKey, sizeBytes, bytes)
     }
 
     private fun postProvisionalCredit(dispute: ChargebackDisputeRecord, walletLedgerAccountId: UUID): UUID {
@@ -452,6 +471,7 @@ private data class ValidatedEvidenceAttachment(
     val contentType: String,
     val storageKey: String,
     val sizeBytes: Long,
+    val bytes: ByteArray,
 )
 
 fun ChargebackDisputeRecord.toDto(): ChargebackDisputeDto =

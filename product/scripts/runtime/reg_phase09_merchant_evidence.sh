@@ -56,12 +56,13 @@ user_id="$(p05_register_enduser "${tag}" "${enduser_cookie}")"
 approve_kyc "${user_id}"
 
 dispute_id="$(create_dispute "${tag}" "${dispute_body}")"
-evidence_json='{"narrative":"Delivery proof, customer correspondence and signed receipt attached.","attachments":[{"fileName":"delivery-proof.pdf","contentType":"application/pdf","storageKey":"chargeback-evidence/runtime/delivery-proof.pdf","sizeBytes":12345}]}'
+evidence_payload_base64="Y2hhcmdlYmFjayBldmlkZW5jZSBydW50aW1lIHBheWxvYWQ="
+evidence_json="{\"narrative\":\"Delivery proof, customer correspondence and signed receipt attached.\",\"attachments\":[{\"fileName\":\"delivery-proof.pdf\",\"contentType\":\"application/pdf\",\"storageKey\":\"chargeback-evidence/runtime/delivery-proof.pdf\",\"sizeBytes\":35,\"contentBase64\":\"${evidence_payload_base64}\"}]}"
 test "$(pa_curl -sS -b "${merchant_cookie}" -o "${evidence_body}" -w "%{http_code}" -X POST "${base_url}/api/v1/merchant/disputes/${dispute_id}/evidence" -H "Content-Type: application/json" -d "${evidence_json}")" = "200"
 evidence_id="$(node -e "const j=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8')); if(j.data?.state!=='EVIDENCE_SUBMITTED'||j.data?.attachments?.length!==1) process.exit(1); console.log(j.data.id);" "${evidence_body}")"
 test "$(p05_platform_psql "select state from chargeback.disputes where id='${dispute_id}'::uuid;")" = "EVIDENCE_SUBMITTED"
 test "$(p05_platform_psql "select count(*) from chargeback.evidence_submissions where id='${evidence_id}'::uuid and dispute_id='${dispute_id}'::uuid and merchant_id='${merchant_id}'::uuid and narrative like 'Delivery proof%';")" = "1"
-test "$(p05_platform_psql "select count(*) from chargeback.evidence_attachments where evidence_submission_id='${evidence_id}'::uuid and file_name='delivery-proof.pdf' and content_type='application/pdf' and storage_key='chargeback-evidence/runtime/delivery-proof.pdf' and size_bytes=12345;")" = "1"
+test "$(p05_platform_psql "select count(*) from chargeback.evidence_attachments where evidence_submission_id='${evidence_id}'::uuid and file_name='delivery-proof.pdf' and content_type='application/pdf' and storage_key='chargeback-evidence/runtime/delivery-proof.pdf' and size_bytes=35;")" = "1"
 test "$(p05_platform_psql "select count(*) from audit.audit_log where event_type='chargeback.evidence_submitted' and subject_id='${dispute_id}'::uuid;")" = "1"
 test "$(p05_platform_psql "select count(*) from merchant.webhook_events where event_type='dispute.evidence_received' and aggregate_id='${dispute_id}'::uuid;")" = "1"
 
