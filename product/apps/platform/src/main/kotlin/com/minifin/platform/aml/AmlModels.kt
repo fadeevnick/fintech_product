@@ -70,9 +70,20 @@ data class AmlDormancyBreakEvaluationResponse(
     val duplicateSuppressed: Boolean,
 )
 
+data class AmlCriticalAutoFreezeResponse(
+    val processedAlertCount: Int,
+    val frozenActorCount: Int,
+)
+
 data class AmlAlert(
     val id: UUID,
     val status: String,
+)
+
+data class AmlCriticalAlert(
+    val id: UUID,
+    val endUserId: UUID,
+    val ruleCode: String,
 )
 
 data class AmlDormancyBreakActivitySummary(

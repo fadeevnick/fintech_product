@@ -296,4 +296,38 @@ open class AmlRepository(
             metadataJson,
         )
     }
+
+    open fun listOpenCriticalAlerts(limit: Int): List<AmlCriticalAlert> =
+        jdbcTemplate.query(
+            """
+            select id, end_user_id, rule_code
+              from aml.aml_alerts
+             where status = 'OPEN'
+               and severity = 'CRITICAL'
+             order by created_at asc
+             limit ?
+            """.trimIndent(),
+            { rs, _ ->
+                AmlCriticalAlert(
+                    id = rs.getObject("id", UUID::class.java),
+                    endUserId = rs.getObject("end_user_id", UUID::class.java),
+                    ruleCode = rs.getString("rule_code"),
+                )
+            },
+            limit,
+        )
+
+    open fun markAlertFrozen(alertId: UUID): Boolean =
+        jdbcTemplate.update(
+            """
+            update aml.aml_alerts
+               set status = 'ACCOUNT_FROZEN_PERMANENT',
+                   updated_at = now(),
+                   metadata = metadata || '{"autoFreezeProcessed":true}'::jsonb
+             where id = ?
+               and status = 'OPEN'
+               and severity = 'CRITICAL'
+            """.trimIndent(),
+            alertId,
+        ) == 1
 }

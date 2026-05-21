@@ -30,6 +30,10 @@ open class AmlController(
     ): ApiResponse<AmlDormancyBreakEvaluationResponse> =
         ApiResponse(data = amlService.evaluateDormancyBreak(request))
 
+    @PostMapping("/internal/aml/process-critical-auto-freezes")
+    open fun processCriticalAutoFreezes(): ApiResponse<AmlCriticalAutoFreezeResponse> =
+        ApiResponse(data = amlService.processCriticalAutoFreezes())
+
     @ExceptionHandler(AmlException::class)
     open fun handleAmlException(exception: AmlException): ResponseEntity<ApiResponse<Nothing>> =
         ResponseEntity.status(exception.status)

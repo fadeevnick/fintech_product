@@ -1189,3 +1189,29 @@ Runtime evidence:
 
 Explicitly not implemented/claimed:
 - critical auto-freeze (`AML-04`), AML review decisions, account freeze/unfreeze, SoF (`WLT-03`), two-eyes (`WLT-04`), frontend `UI-*`, SAR.
+
+---
+
+## Phase 08 Slice 04 — AML Critical Auto-Freeze
+
+Status: **BACKEND/RUNTIME SUB-SCOPE IMPLEMENTED — runtime verified**.
+
+Planning contract:
+- `planning/implementation-slices/phase_08_slice_04_aml_critical_auto_freeze_planning.md` — APPROVED v0.1.
+
+Implemented backend/runtime scope:
+- Added internal `POST /internal/aml/process-critical-auto-freezes`.
+- Processor finds `OPEN` AML alerts with `severity = 'CRITICAL'`.
+- For each critical alert, sets the end user `identity.actor_controls` state to `FROZEN` with reason code `aml_critical_alert`.
+- Marks processed critical alerts as `ACCOUNT_FROZEN_PERMANENT`.
+- Writes `identity.actor_control_changed` and `aml.critical_alert_auto_frozen` audit rows.
+- Added retained runtime script `product/scripts/runtime/reg_phase08_aml_critical_auto_freeze.sh`.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-21 — Phase 08 Slice 04 AML Critical Auto-Freeze Runtime Verification`.
+- `AML-04` — pass.
+- Targeted regressions passed: `AML-03`, `AML-02`, `AML-01`, `RUN-01`.
+- `LDG-05` not run because AML auto-freeze updates actor-control state and alert status but does not write ledger tables directly.
+
+Explicitly not implemented/claimed:
+- AML alert review decisions, account unfreeze workflow, SoF (`WLT-03`), two-eyes (`WLT-04`), frontend `UI-*`, SAR.

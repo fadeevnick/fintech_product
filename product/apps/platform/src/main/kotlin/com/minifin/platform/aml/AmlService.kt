@@ -1,5 +1,6 @@
 package com.minifin.platform.aml
 
+import com.minifin.platform.controls.ActorControlRepository
 import com.minifin.platform.identity.AuditRepository
 import java.time.Clock
 import java.time.Instant
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 open class AmlService(
     private val amlRepository: AmlRepository,
     private val auditRepository: AuditRepository,
+    private val actorControlRepository: ActorControlRepository,
 ) {
     private val clock: Clock = Clock.systemUTC()
     private val ruleCode = "VELOCITY"
@@ -308,6 +310,49 @@ open class AmlService(
             windowStartedAt = windowStartedAt.toString(),
             windowEndedAt = windowEndedAt.toString(),
             duplicateSuppressed = duplicateSuppressed,
+        )
+    }
+
+    @Transactional
+    open fun processCriticalAutoFreezes(): AmlCriticalAutoFreezeResponse {
+        val alerts = amlRepository.listOpenCriticalAlerts(limit = 100)
+        var frozenActorCount = 0
+        for (alert in alerts) {
+            actorControlRepository.upsert(
+                actorType = "END_USER",
+                actorId = alert.endUserId,
+                state = "FROZEN",
+                reasonCode = "aml_critical_alert",
+                updatedByActorType = "SYSTEM",
+                updatedByActorId = null,
+                updatedByReference = "aml:${alert.id}",
+            )
+            val marked = amlRepository.markAlertFrozen(alert.id)
+            if (marked) {
+                frozenActorCount += 1
+                auditRepository.write(
+                    eventType = "identity.actor_control_changed",
+                    actorType = "SYSTEM",
+                    actorId = null,
+                    subjectType = "END_USER",
+                    subjectId = alert.endUserId,
+                    outcome = "SUCCESS",
+                    metadataJson = """{"state":"FROZEN","reasonCode":"aml_critical_alert","alertId":"${alert.id}","ruleCode":"${alert.ruleCode}"}""",
+                )
+                auditRepository.write(
+                    eventType = "aml.critical_alert_auto_frozen",
+                    actorType = "SYSTEM",
+                    actorId = null,
+                    subjectType = "AML_ALERT",
+                    subjectId = alert.id,
+                    outcome = "SUCCESS",
+                    metadataJson = """{"endUserId":"${alert.endUserId}","ruleCode":"${alert.ruleCode}","actorControlState":"FROZEN"}""",
+                )
+            }
+        }
+        return AmlCriticalAutoFreezeResponse(
+            processedAlertCount = alerts.size,
+            frozenActorCount = frozenActorCount,
         )
     }
 }

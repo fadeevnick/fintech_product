@@ -2464,3 +2464,86 @@ Not claimed:
 - two-eyes (`WLT-04`);
 - frontend `UI-*`;
 - SAR.
+
+---
+
+## 2026-05-21 — Phase 08 Slice 04 AML Critical Auto-Freeze Runtime Verification
+
+Scope:
+- Phase 08 Slice 04 AML critical auto-freeze backend/runtime implementation.
+- Target `AML-04` plus targeted `AML-03`, `AML-02`, `AML-01` and `RUN-01` regressions.
+
+Build/static evidence:
+- `bash -n product/scripts/runtime/reg_phase08_aml_critical_auto_freeze.sh product/scripts/runtime/reg_phase08_aml_dormancy_break_alert.sh product/scripts/runtime/reg_phase08_aml_structuring_alert.sh product/scripts/runtime/reg_phase08_aml_velocity_alert.sh` — passed.
+- `git diff --check` — passed before documentation updates.
+- `docker compose -f product/deploy/docker-compose.yml build platform` — passed.
+
+Runtime environment:
+- Isolated Compose project: `mfp-aml04`.
+- Compose file: `product/deploy/docker-compose.yml`.
+- Scripts used compose-network URLs:
+  - `PLATFORM_BASE_URL=http://platform:8080`
+  - `PLATFORM_CURL_CONTAINER_NETWORK=mfp-aml04_default`
+
+Primary command:
+
+```bash
+COMPOSE_PROJECT_NAME=mfp-aml04 \
+COMPOSE_FILE=product/deploy/docker-compose.yml \
+PLATFORM_BASE_URL=http://platform:8080 \
+PLATFORM_CURL_CONTAINER_NETWORK=mfp-aml04_default \
+product/scripts/runtime/reg_phase08_aml_critical_auto_freeze.sh
+```
+
+Observed primary output:
+
+```text
+AML-04 critical auto-freeze pass alert_id=d35424e5-c2b6-4200-ae28-5e0607304ae7 end_user_id=aadf0412-7793-4fed-a019-47f1d4c62601
+```
+
+Runtime assertions passed:
+- active end user was registered, verified and logged in;
+- one `OPEN` `CRITICAL` AML alert was seeded for that end user;
+- `POST /internal/aml/process-critical-auto-freezes` processed exactly one alert and froze exactly one actor;
+- `identity.actor_controls` contains `END_USER` / `FROZEN` / `aml_critical_alert`;
+- AML alert status moved to `ACCOUNT_FROZEN_PERMANENT`;
+- `identity.actor_control_changed` and `aml.critical_alert_auto_frozen` audit rows were persisted;
+- end-user `POST /api/v1/deposits` returned `403 actor_control_blocked`;
+- no deposit request was created after the freeze;
+- processor rerun returned zero processed/frozen rows and did not duplicate the AML auto-freeze audit row.
+
+Targeted regression outputs:
+
+```text
+AML-03 dormancy-break alert pass alert_id=0c2a2190-2466-4e7c-970c-5840254c55ca end_user_id=88e17d1b-bd0e-4878-9d44-23e8cc83bc74
+AML-02 structuring alert pass alert_id=dd50e24f-5578-4021-91f4-3415189cc633 end_user_id=a873fb70-b02d-44df-9272-31706516a7e9
+AML-01 velocity alert pass alert_id=9d4a4f5c-d6f2-475a-9efb-feef6cfa1c93 end_user_id=797d1e40-14ca-4138-a911-7f1a16b5edf3
+```
+
+RUN-01 health output:
+
+```text
+platform: {"service":"platform","status":"UP"}
+acquirer: {"service":"acquirer","status":"UP"}
+network: {"service":"network","status":"UP"}
+issuer: {"service":"issuer","status":"UP"}
+vault: {"service":"vault","status":"UP"}
+```
+
+Result tags:
+- `AML-04` — pass.
+- `AML-03` — pass targeted regression.
+- `AML-02` — pass targeted regression.
+- `AML-01` — pass targeted regression.
+- `RUN-01` — pass targeted regression.
+
+Not run:
+- `LDG-05`, because AML auto-freeze updates actor-control state and alert status but does not write ledger tables directly.
+
+Not claimed:
+- AML alert review decisions;
+- account unfreeze workflow;
+- SoF (`WLT-03`);
+- two-eyes (`WLT-04`);
+- frontend `UI-*`;
+- SAR.
