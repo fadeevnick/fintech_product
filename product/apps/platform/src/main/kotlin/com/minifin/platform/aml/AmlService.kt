@@ -2,6 +2,7 @@ package com.minifin.platform.aml
 
 import com.minifin.platform.backoffice.BackofficePrincipal
 import com.minifin.platform.controls.ActorControlRepository
+import com.minifin.platform.controls.ReadAuditRepository
 import com.minifin.platform.identity.AuditRepository
 import java.time.Clock
 import java.time.Instant
@@ -19,6 +20,7 @@ open class AmlService(
     private val amlRepository: AmlRepository,
     private val auditRepository: AuditRepository,
     private val actorControlRepository: ActorControlRepository,
+    private val readAuditRepository: ReadAuditRepository,
 ) {
     private val clock: Clock = Clock.systemUTC()
     private val ruleCode = "VELOCITY"
@@ -318,9 +320,22 @@ open class AmlService(
     open fun listAlerts(): List<AmlAlertResponse> =
         amlRepository.listReviewableAlerts().map { it.toResponse() }
 
-    open fun getAlert(id: UUID): AmlAlertResponse {
+    @Transactional
+    open fun getAlert(id: UUID, principal: BackofficePrincipal): AmlAlertResponse {
         val record = amlRepository.findAlertById(id)
             ?: throw AmlException("not_found", "AML alert was not found.", HttpStatus.NOT_FOUND)
+        readAuditRepository.write(
+            actorType = "BACKOFFICE",
+            actorId = principal.subjectUuid,
+            actorReference = principal.subject,
+            subjectType = "AML_ALERT",
+            subjectId = record.id,
+            resourceType = "AML_ALERT",
+            resourceId = record.id,
+            purpose = "compliance_aml_alert_detail",
+            decision = "ALLOW",
+            metadataJson = """{"roles":${principal.roles.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }},"endUserId":"${record.endUserId}","ruleCode":"${record.ruleCode}"}""",
+        )
         return record.toResponse()
     }
 

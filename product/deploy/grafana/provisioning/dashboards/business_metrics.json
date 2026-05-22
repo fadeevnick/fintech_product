@@ -1,0 +1,203 @@
+{
+  "uid": "mfp-business-metrics",
+  "title": "MFP — Business Metrics",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Payment Flow",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Payment Intents Created",
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/v1/payment_intents\", method=\"POST\"}[$__range])", "legendFormat": "created" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Authorizations",
+      "gridPos": { "h": 3, "w": 4, "x": 4, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/v1/payment_intents/{id}/authorize\", method=\"POST\"}[$__range])", "legendFormat": "authorized" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Captures",
+      "gridPos": { "h": 3, "w": 4, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/v1/payment_intents/{id}/capture\", method=\"POST\"}[$__range])", "legendFormat": "captured" }]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Settlement Runs",
+      "gridPos": { "h": 3, "w": 4, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/internal/settlement/process-captured\", method=\"POST\"}[$__range])", "legendFormat": "settled" }]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Refunds",
+      "gridPos": { "h": 3, "w": 4, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/v1/payment_intents/{id}/refund\", method=\"POST\"}[$__range])", "legendFormat": "refunded" }]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Payment Flow Rate (req/min)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/v1/payment_intents\", method=\"POST\"}[5m]) * 60", "legendFormat": "intent created" },
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/v1/payment_intents/{id}/authorize\", method=\"POST\"}[5m]) * 60", "legendFormat": "authorized" },
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/v1/payment_intents/{id}/capture\", method=\"POST\"}[5m]) * 60", "legendFormat": "captured" },
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/v1/payment_intents/{id}/refund\", method=\"POST\"}[5m]) * 60", "legendFormat": "refunded" }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Wallet Operations",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "collapsed": false
+    },
+    {
+      "id": 21,
+      "type": "stat",
+      "title": "Deposit Requests",
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/deposits\", method=\"POST\"}[$__range])", "legendFormat": "deposit requests" }]
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "Withdrawal Requests",
+      "gridPos": { "h": 3, "w": 4, "x": 4, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/withdrawals\", method=\"POST\"}[$__range])", "legendFormat": "withdrawal requests" }]
+    },
+    {
+      "id": 23,
+      "type": "stat",
+      "title": "Internal Transfers",
+      "gridPos": { "h": 3, "w": 4, "x": 8, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/transfers\", method=\"POST\"}[$__range])", "legendFormat": "transfers" }]
+    },
+    {
+      "id": 24,
+      "type": "stat",
+      "title": "Cards Issued",
+      "gridPos": { "h": 3, "w": 4, "x": 12, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/cards\", method=\"POST\"}[$__range])", "legendFormat": "cards issued" }]
+    },
+    {
+      "id": 25,
+      "type": "timeseries",
+      "title": "Wallet Operation Rate (req/min)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 17 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/deposits\", method=\"POST\"}[5m]) * 60", "legendFormat": "deposits" },
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/withdrawals\", method=\"POST\"}[5m]) * 60", "legendFormat": "withdrawals" },
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/transfers\", method=\"POST\"}[5m]) * 60", "legendFormat": "transfers" }
+      ]
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "Compliance & AML",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 },
+      "collapsed": false
+    },
+    {
+      "id": 31,
+      "type": "stat",
+      "title": "KYC Starts",
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 27 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/kyc/start\", method=\"POST\"}[$__range])", "legendFormat": "kyc starts" }]
+    },
+    {
+      "id": 32,
+      "type": "stat",
+      "title": "KYC Manual Decisions",
+      "gridPos": { "h": 3, "w": 4, "x": 4, "y": 27 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/backoffice/kyc-cases/{id}/decision\", method=\"POST\"}[$__range])", "legendFormat": "kyc decisions" }]
+    },
+    {
+      "id": 33,
+      "type": "stat",
+      "title": "AML Alert Decisions",
+      "gridPos": { "h": 3, "w": 4, "x": 8, "y": 27 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/backoffice/aml-alerts/{id}/decision\", method=\"POST\"}[$__range])", "legendFormat": "aml decisions" }]
+    },
+    {
+      "id": 34,
+      "type": "stat",
+      "title": "Chargebacks Initiated",
+      "gridPos": { "h": 3, "w": 4, "x": 12, "y": 27 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["sum"] }, "colorMode": "background", "graphMode": "area", "textMode": "auto" },
+      "fieldConfig": { "defaults": { "unit": "short", "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] }, "color": { "mode": "thresholds" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "increase(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/card-payments/{paymentIntentId}/disputes\", method=\"POST\"}[$__range])", "legendFormat": "chargebacks" }]
+    },
+    {
+      "id": 35,
+      "type": "timeseries",
+      "title": "Compliance Event Rate (req/min)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 30 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/kyc/start\", method=\"POST\"}[5m]) * 60", "legendFormat": "kyc starts" },
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/backoffice/kyc-cases/{id}/decision\", method=\"POST\"}[5m]) * 60", "legendFormat": "kyc decisions" },
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/backoffice/aml-alerts/{id}/decision\", method=\"POST\"}[5m]) * 60", "legendFormat": "aml decisions" },
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(http_server_requests_seconds_count{instance=\"platform:8080\", uri=\"/api/v1/card-payments/{paymentIntentId}/disputes\", method=\"POST\"}[5m]) * 60", "legendFormat": "chargebacks" }
+      ]
+    }
+  ]
+}

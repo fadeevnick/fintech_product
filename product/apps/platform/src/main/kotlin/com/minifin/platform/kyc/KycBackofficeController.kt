@@ -29,8 +29,8 @@ class KycBackofficeController(
 
     @GetMapping("/api/v1/backoffice/kyc-cases/{id}")
     fun detail(authentication: JwtAuthenticationToken, @PathVariable id: String): ApiResponse<KycCaseResponse> {
-        roleMapper.requireBackofficePrincipal(authentication.token)
-        return ApiResponse(data = service.getCase(requireUuid(id)))
+        val principal = roleMapper.requireBackofficePrincipal(authentication.token)
+        return ApiResponse(data = service.getCase(requireUuid(id), principal))
     }
 
     @PostMapping("/api/v1/backoffice/kyc-cases/{id}/decision")

@@ -28,8 +28,8 @@ open class AmlBackofficeController(
 
     @GetMapping("/api/v1/backoffice/aml-alerts/{id}")
     open fun detail(authentication: JwtAuthenticationToken, @PathVariable id: String): ApiResponse<AmlAlertResponse> {
-        roleMapper.requireBackofficePrincipal(authentication.token)
-        return ApiResponse(data = service.getAlert(requireUuid(id)))
+        val principal = roleMapper.requireBackofficePrincipal(authentication.token)
+        return ApiResponse(data = service.getAlert(requireUuid(id), principal))
     }
 
     @PostMapping("/api/v1/backoffice/aml-alerts/{id}/decision")

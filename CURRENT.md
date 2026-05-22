@@ -4,7 +4,7 @@ Last updated: 2026-05-22.
 
 ## Current State
 
-`REC-05` is complete: cut register final audit passed. Static script confirms zero undocumented fakes in production Kotlin; all known honest placeholders are accounted for in the register.
+`REC-04`, `AUD-99` (code + script), and `LDG-99` (script) are implemented and committed.
 
 Read first:
 - `README.md`
@@ -12,24 +12,19 @@ Read first:
 - `planning/runtime_evidence_log.md`
 - `planning/runtime_checklists.md`
 
-## Latest Verified Evidence
+## What Was Done This Session
 
-Static audit script `product/scripts/runtime/reg_phase11_cut_register_audit.sh` passed:
-- Zero TODO/FIXME/HACK/XXX in production Kotlin.
-- Zero fake/stub/mock in production Kotlin.
-- Sumsub credential guard confirmed.
-- OpenSanctions local mode default `disabled` confirmed.
-- No Stripe account-creation SDK code in production Kotlin.
-- All four retained Phase 11 scripts executable and syntax-valid.
-- Final output: `REC-05 cut register audit pass`
+- **REC-05** — cut register final audit pass (committed dc85254 → 4bfd167).
+- **REC-04** — Grafana dashboards provisioned (`service_health.json`, `business_metrics.json`).
+- **AUD-99** — read-audit added to KYC case detail and AML alert detail; sweep script written.
+- **LDG-99** — ledger invariant sweep script written.
 
 ## Remaining Open Checks
 
-Backend/runtime (no vendor credentials needed):
-- `REC-03` — vendor reconciliation scripts (Sumsub/Stripe honest gaps); moot until credentials arrive.
-- `REC-04` — Grafana dashboards with expected service/business metrics.
-- `LDG-99` — ledger invariants cross-phase sweep.
-- `AUD-99` — sensitive read-audit enforced across all features sweep.
+Needs a live stack for runtime verification:
+- `LDG-99` — run `reg_phase11_ledger_invariant_sweep.sh` against a seeded stack.
+- `AUD-99` — run `reg_phase11_audit_coverage_sweep.sh` against a seeded stack; also needs new Platform image (AmlService + KycBackofficeService changed).
+- `REC-04` — start the stack, open Grafana at port 3003, confirm both dashboards load.
 
 Blocked on external credentials:
 - `MRC-01` — Stripe Connect sandbox credentials.
@@ -40,4 +35,5 @@ Explicitly deferred (separate track):
 
 ## Next Planned Step
 
-Choose the next backend/runtime slice: `REC-04` Grafana dashboards, `LDG-99` ledger cross-phase sweep, or `AUD-99` read-audit sweep. Frontend/UI work is handled separately and should not be touched unless explicitly requested.
+Runtime verification of LDG-99 and AUD-99 on a live stack, or move to Phase 10 frontend.
+Frontend/UI work is handled separately and should not be touched unless explicitly requested.

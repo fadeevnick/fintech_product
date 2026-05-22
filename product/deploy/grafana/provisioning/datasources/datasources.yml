@@ -3,13 +3,16 @@ apiVersion: 1
 datasources:
   - name: Prometheus
     type: prometheus
+    uid: mfp-prometheus
     access: proxy
     url: http://prometheus:9090
   - name: Loki
     type: loki
+    uid: mfp-loki
     access: proxy
     url: http://loki:3100
   - name: Tempo
     type: tempo
+    uid: mfp-tempo
     access: proxy
     url: http://tempo:3200

@@ -1,6 +1,7 @@
 package com.minifin.platform.kyc
 
 import com.minifin.platform.backoffice.BackofficePrincipal
+import com.minifin.platform.controls.ReadAuditRepository
 import com.minifin.platform.identity.AuditRepository
 import com.minifin.platform.sanctions.SanctionsException
 import com.minifin.platform.sanctions.SanctionsService
@@ -15,12 +16,29 @@ class KycBackofficeService(
     private val repository: KycRepository,
     private val auditRepository: AuditRepository,
     private val sanctionsService: SanctionsService,
+    private val readAuditRepository: ReadAuditRepository,
 ) {
     fun listCases(): List<KycCaseResponse> =
         repository.listReviewCases().map { it.toResponse() }
 
-    fun getCase(id: UUID): KycCaseResponse =
-        (repository.findCase(id) ?: throw KycException("not_found", "KYC case was not found.", HttpStatus.NOT_FOUND)).toResponse()
+    @Transactional
+    fun getCase(id: UUID, principal: BackofficePrincipal): KycCaseResponse {
+        val case = repository.findCase(id)
+            ?: throw KycException("not_found", "KYC case was not found.", HttpStatus.NOT_FOUND)
+        readAuditRepository.write(
+            actorType = "BACKOFFICE",
+            actorId = principal.subjectUuid,
+            actorReference = principal.subject,
+            subjectType = "KYC_CASE",
+            subjectId = case.id,
+            resourceType = "KYC_CASE",
+            resourceId = case.id,
+            purpose = "compliance_kyc_case_detail",
+            decision = "ALLOW",
+            metadataJson = """{"roles":${principal.roles.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }},"endUserId":"${case.endUserId}"}""",
+        )
+        return case.toResponse()
+    }
 
     @Transactional(noRollbackFor = [SanctionsException::class])
     fun decide(id: UUID, request: KycManualDecisionRequest, principal: BackofficePrincipal): KycManualDecisionResponse {

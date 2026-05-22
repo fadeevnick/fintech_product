@@ -1,0 +1,200 @@
+{
+  "uid": "mfp-service-health",
+  "title": "MFP — Service Health",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Service Status",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "platform",
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "1": { "text": "UP", "color": "green" }, "0": { "text": "DOWN", "color": "red" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "up{instance=\"platform:8080\"}", "legendFormat": "platform" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "acquirer",
+      "gridPos": { "h": 3, "w": 4, "x": 4, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "1": { "text": "UP", "color": "green" }, "0": { "text": "DOWN", "color": "red" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "up{instance=\"acquirer:8080\"}", "legendFormat": "acquirer" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "network",
+      "gridPos": { "h": 3, "w": 4, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "1": { "text": "UP", "color": "green" }, "0": { "text": "DOWN", "color": "red" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "up{instance=\"network:8080\"}", "legendFormat": "network" }]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "issuer",
+      "gridPos": { "h": 3, "w": 4, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "1": { "text": "UP", "color": "green" }, "0": { "text": "DOWN", "color": "red" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "up{instance=\"issuer:8080\"}", "legendFormat": "issuer" }]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "vault",
+      "gridPos": { "h": 3, "w": 4, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background", "graphMode": "none", "textMode": "auto" },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [{ "type": "value", "options": { "1": { "text": "UP", "color": "green" }, "0": { "text": "DOWN", "color": "red" } } }],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "up{instance=\"vault:8080\"}", "legendFormat": "vault" }]
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "HTTP Traffic",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
+      "collapsed": false
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Request Rate (req/s)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "sum by (instance) (rate(http_server_requests_seconds_count{job=\"backend-services\"}[2m]))", "legendFormat": "{{instance}}" }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Error Rate — 5xx (req/s)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps", "color": { "mode": "fixed", "fixedColor": "red" }, "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "sum by (instance) (rate(http_server_requests_seconds_count{job=\"backend-services\", status=~\"5..\"}[2m]))", "legendFormat": "{{instance}}" }
+      ]
+    },
+    {
+      "id": 13,
+      "type": "timeseries",
+      "title": "HTTP P99 Latency",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "histogram_quantile(0.99, sum by (instance, le) (rate(http_server_requests_seconds_bucket{job=\"backend-services\"}[2m])))", "legendFormat": "p99 {{instance}}" }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "HTTP P50 Latency",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "histogram_quantile(0.50, sum by (instance, le) (rate(http_server_requests_seconds_bucket{job=\"backend-services\"}[2m])))", "legendFormat": "p50 {{instance}}" }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "JVM & Database",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "collapsed": false
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "JVM Heap Used",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "jvm_memory_used_bytes{job=\"backend-services\", area=\"heap\"}", "legendFormat": "{{instance}}" }
+      ]
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Active DB Connections (HikariCP)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "hikaricp_connections_active{job=\"backend-services\"}", "legendFormat": "{{instance}}" }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Process Uptime",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 30 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "process_uptime_seconds{job=\"backend-services\"}", "legendFormat": "{{instance}}" }
+      ]
+    },
+    {
+      "id": 24,
+      "type": "timeseries",
+      "title": "JVM GC Pause Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 30 },
+      "datasource": { "type": "prometheus", "uid": "mfp-prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "mfp-prometheus" }, "expr": "rate(jvm_gc_pause_seconds_sum{job=\"backend-services\"}[2m])", "legendFormat": "{{instance}} {{action}}" }
+      ]
+    }
+  ]
+}

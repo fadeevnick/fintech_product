@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last updated: 2026-05-22.
+Last updated: 2026-05-22 (REC-04 / LDG-99 / AUD-99).
 
 ---
 
@@ -1772,3 +1772,64 @@ Cut register of known honest placeholders:
 Runtime evidence:
 - `planning/runtime_evidence_log.md` — `2026-05-22 — Phase 11 REC-05 Cut Register Final Audit`.
 - `REC-05` — pass.
+
+---
+
+## Phase 11 REC-04 — Grafana Dashboards
+
+Status: **COMPLETE — provisioned**.
+
+Implemented:
+- Added explicit `uid` fields to `product/deploy/grafana/provisioning/datasources/datasources.yml` (`mfp-prometheus`, `mfp-loki`, `mfp-tempo`).
+- Created `product/deploy/grafana/provisioning/dashboards/dashboards.yml` — Grafana file provider pointing at the provisioning dashboards directory.
+- Created `product/deploy/grafana/provisioning/dashboards/service_health.json` — "MFP — Service Health" dashboard with: per-service up/down stat panels, HTTP request rate, HTTP 5xx error rate, HTTP P99/P50 latency, JVM heap used, HikariCP active connections, process uptime, GC pause rate.
+- Created `product/deploy/grafana/provisioning/dashboards/business_metrics.json` — "MFP — Business Metrics" dashboard with: stat panels for payment intents/authorizations/captures/settlement runs/refunds/deposit-withdraw-transfer/KYC/AML/chargeback counters, payment flow rate time-series, wallet operation rate time-series, compliance event rate time-series.
+- All panels backed by Prometheus HTTP request count metrics (`http_server_requests_seconds_count`) using real Spring Boot Actuator metric labels.
+- Compose volume `./grafana/provisioning:/etc/grafana/provisioning:ro` already covers the new `dashboards/` subdirectory; no compose change required.
+
+Not claimed:
+- `REC-04` runtime verification requires a running stack and is not claimed as a static pass; dashboards are provisioning-verified.
+
+---
+
+## Phase 11 AUD-99 — Sensitive Read-Audit Coverage Sweep
+
+Status: **CODE CHANGE + SCRIPT COMPLETE — runtime verification required on live stack**.
+
+Implemented:
+- Added `ReadAuditRepository` dependency to `KycBackofficeService`; changed `getCase(id)` to `getCase(id, principal: BackofficePrincipal)` with `@Transactional` and a `readAuditRepository.write(purpose="compliance_kyc_case_detail")` call before returning data.
+- Updated `KycBackofficeController.detail()` to extract principal via `roleMapper.requireBackofficePrincipal()` and pass to `service.getCase()`.
+- Added `ReadAuditRepository` dependency to `AmlService`; changed `getAlert(id)` to `getAlert(id, principal: BackofficePrincipal)` with `@Transactional` and a `readAuditRepository.write(purpose="compliance_aml_alert_detail")` call before returning data.
+- Updated `AmlBackofficeController.detail()` to extract principal and pass to `service.getAlert()`.
+- `platform compileKotlin` passes after changes.
+- Created retained script `product/scripts/runtime/reg_phase11_audit_coverage_sweep.sh`:
+  - Phase 1 (static): greps each of the five sensitive read handlers for `readAuditRepository.write`.
+  - Phase 2 (runtime): seeds a KYC case, AML alert and sanctions hit; calls each detail endpoint with a backoffice/compliance token; asserts one `audit.read_audit_log` row per resource type per resource id.
+
+Sensitive read paths covered:
+- `GET /api/v1/backoffice/manual-ops/deposits` — per-row read-audit (existing, `ManualOpsService`).
+- `GET /api/v1/backoffice/manual-ops/withdrawals` — per-row read-audit (existing, `ManualOpsService`).
+- `GET /api/v1/backoffice/sanctions-hits/{id}` — detail read-audit (AUD-03, existing, `SanctionsService`).
+- `GET /api/v1/backoffice/kyc-cases/{id}` — detail read-audit **(new)**.
+- `GET /api/v1/backoffice/aml-alerts/{id}` — detail read-audit **(new)**.
+
+Not claimed until runtime verification on a live stack:
+- `AUD-99` full pass.
+
+---
+
+## Phase 11 LDG-99 — Ledger Cross-Phase Invariant Sweep
+
+Status: **SCRIPT COMPLETE — runtime verification required on live stack with full demo data**.
+
+Implemented:
+- Created retained script `product/scripts/runtime/reg_phase11_ledger_invariant_sweep.sh`:
+  1. Calls `/internal/ledger/runtime/reconciliation` API and asserts `balancedJournals=true`.
+  2. DB cross-check: every journal has `debit_total == credit_total` and `posting_count >= 2`; fails on any imbalance.
+  3. Global net: `sum(debit) - sum(credit)` across all postings must be 0.000 within tolerance.
+  4. No `WALLET_USER:*` or `WALLET_WITHDRAW_HOLD:*` account has a negative balance.
+  5. Emits journal type distribution table (type, count, total debit EUR).
+  6. Asserts at least 1 journal and 2 postings exist.
+
+Not claimed until runtime verification on a live stack:
+- `LDG-99` full pass.
