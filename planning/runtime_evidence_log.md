@@ -3719,3 +3719,73 @@ Not claimed:
 - `REC-04` dashboards;
 - `REC-05` final cut-register audit;
 - frontend `UI-*`.
+
+---
+
+## 2026-05-22 — Phase 11 REC-05 Cut Register Final Audit
+
+Scope:
+- Static audit of production Kotlin source for undocumented fake implementations.
+- Verification of each documented honest placeholder against actual code.
+- No running stack required; no Docker, no Flyway migrations.
+
+Static commands run:
+
+```text
+bash product/scripts/runtime/reg_phase11_cut_register_audit.sh
+```
+
+Runtime output / confirmed evidence:
+
+```text
+=== REC-05 cut register audit ===
+product root: .../mini-fintech-platform/product
+
+-- 1. Scanning production Kotlin for undocumented fake indicators
+  [ok] no TODO/FIXME/HACK/XXX in production Kotlin
+  [ok] no fake/stub/mock in production Kotlin
+
+-- 2. Sumsub credential guard (KYC-01 honest gap)
+  [ok] SumsubProperties and SumsubSupport credential guard present — KYC-01 honest gap confirmed
+
+-- 3. OpenSanctions local mode default
+  [ok] OpenSanctions local mode defaults to 'disabled' — real HTTP path is the default
+
+-- 4. No Stripe account-creation client (MRC-01 honest gap)
+  [ok] no Stripe account-creation SDK code in production Kotlin — MRC-01 honest gap confirmed
+
+-- 5. Retained phase 11 scripts
+  [ok] reg_phase11_reset_dev.sh — exists, executable, syntax ok
+  [ok] reg_phase11_seed_dev.sh — exists, executable, syntax ok
+  [ok] reg_phase11_demo_path.sh — exists, executable, syntax ok
+  [ok] reg_phase11_cut_register_audit.sh — exists, executable, syntax ok
+
+REC-05 cut register audit pass
+```
+
+The audit confirmed:
+- Zero `TODO`/`FIXME`/`HACK`/`XXX` markers in production Kotlin source.
+- Zero `fake`/`stub`/`mock` identifiers in production Kotlin source.
+- `SumsubSupport.kt` contains `configured()` guard; returns `sumsub_not_configured` when credentials absent — no fake vendor success path.
+- `OpenSanctionsProperties.kt` `localMode` default is `"disabled"`; `docker-compose.yml` `OPENSANCTIONS_LOCAL_MODE` default is `disabled` — real HTTP is the default path.
+- No Stripe SDK `Account.create`/`AccountLink.create` code exists in production Kotlin — `MRC-01` gap is honest.
+- All four retained Phase 11 scripts exist, are executable and pass `bash -n` syntax check.
+- `reg_phase11_demo_path.sh` required `chmod +x` before the audit pass; applied during this session.
+
+Cut register of known honest placeholders (full table in script output):
+- `MRC-01` — no Stripe Connect onboarding; no fake account creation.
+- `KYC-01` — Sumsub returns `sumsub_not_configured` without credentials; no fake vendor success.
+- OpenSanctions local mode — `disabled` default; local modes only active when env var explicitly set.
+- Five runtime proof/smoke endpoints on `platform` `/internal/runtime/kafka` and `/internal/ledger/runtime/*` — service-auth protected.
+- Five local default secrets — all `change-me`/`local-*`, externalized via env vars.
+- `VAULT_TEST_BIN=400000` — real Visa range, environment-configurable.
+- Three SPA shells — build-verified only; Phase 10 (`UI-02`..`UI-05`, `UI-99`) not claimed.
+
+Result tags:
+- `REC-05` — pass.
+
+Not claimed:
+- `REC-03` vendor reconciliation;
+- `REC-04` dashboards;
+- `LDG-99`, `AUD-99` cross-phase sweeps;
+- frontend `UI-*`.

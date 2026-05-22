@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last updated: 2026-05-21.
+Last updated: 2026-05-22.
 
 ---
 
@@ -1739,3 +1739,36 @@ Explicitly not implemented/claimed:
 - bank files;
 - scheduled jobs;
 - frontend UI.
+
+---
+
+## Phase 11 REC-05 — Cut Register Final Audit
+
+Status: **COMPLETE — static audit pass**.
+
+Planning contract:
+- `planning/implementation-slices/phase_11_rec05_cut_register_audit_planning.md` — EXECUTED v0.1.
+
+Implemented backend/runtime scope:
+- Retained static audit script `product/scripts/runtime/reg_phase11_cut_register_audit.sh`.
+- Script greps production Kotlin (`src/main/`) for undocumented fake indicators (`TODO`/`FIXME`/`HACK`/`XXX`, `fake`/`stub`/`mock`); fails immediately on any match.
+- Script verifies each known honest placeholder against actual code:
+  - `SumsubSupport.kt` credential guard (KYC-01 honest gap);
+  - `OpenSanctionsProperties.kt` + `docker-compose.yml` local mode default `disabled` (real HTTP is the default);
+  - absence of Stripe SDK account-creation code (MRC-01 honest gap).
+- Script verifies all four retained Phase 11 scripts exist, are executable and pass `bash -n`.
+- Script emits full cut register table and `REC-05 cut register audit pass` line on success.
+- Also applied missing `chmod +x` to `reg_phase11_demo_path.sh` found during the audit pass.
+
+Cut register of known honest placeholders:
+- `MRC-01` — no Stripe Connect onboarding; no fake account creation in production code.
+- `KYC-01` — Sumsub returns `sumsub_not_configured` without credentials; no fake vendor success.
+- OpenSanctions local mode — `disabled` default; local test modes only active when env var explicitly set.
+- Five runtime proof/smoke endpoints (`/internal/runtime/kafka`, `/internal/ledger/runtime/*`) — service-auth protected, not on public routes.
+- Five local default secrets — all `change-me`/`local-*`, externalized via env vars.
+- `VAULT_TEST_BIN=400000` — real Visa BIN range, environment-configurable.
+- Three SPA shells — build-verified scaffolds only; Phase 10 not claimed.
+
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-22 — Phase 11 REC-05 Cut Register Final Audit`.
+- `REC-05` — pass.

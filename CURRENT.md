@@ -4,7 +4,7 @@ Last updated: 2026-05-22.
 
 ## Current State
 
-`REC-02` is complete: Phase 11 Slice 02 full demo path is implemented, runtime-verified and documented.
+`REC-05` is complete: cut register final audit passed. Static script confirms zero undocumented fakes in production Kotlin; all known honest placeholders are accounted for in the register.
 
 Read first:
 - `README.md`
@@ -14,15 +14,30 @@ Read first:
 
 ## Latest Verified Evidence
 
-Runtime checks completed on temporary compose project `mfp-rec02`:
-- `REC-02` — pass: full demo path ran through merchant registration, payment intent, authorization, capture, settlement, acquirer projection, partial refund, wallet balance delta (−20.00) and `LDG-05` reconciliation.
-- Final output: `REC-02 full demo path pass run_tag=1779398176588864745-3372160 intent_id=cf71d6cb-ed11-49e1-ab4e-486d16a3aa4c initial_balance=75.0000 final_balance=55.0000`
+Static audit script `product/scripts/runtime/reg_phase11_cut_register_audit.sh` passed:
+- Zero TODO/FIXME/HACK/XXX in production Kotlin.
+- Zero fake/stub/mock in production Kotlin.
+- Sumsub credential guard confirmed.
+- OpenSanctions local mode default `disabled` confirmed.
+- No Stripe account-creation SDK code in production Kotlin.
+- All four retained Phase 11 scripts executable and syntax-valid.
+- Final output: `REC-05 cut register audit pass`
 
-Retained script:
-- `product/scripts/runtime/reg_phase11_demo_path.sh`
+## Remaining Open Checks
 
-Temporary Docker stack `mfp-rec02` was stopped with volumes removed.
+Backend/runtime (no vendor credentials needed):
+- `REC-03` — vendor reconciliation scripts (Sumsub/Stripe honest gaps); moot until credentials arrive.
+- `REC-04` — Grafana dashboards with expected service/business metrics.
+- `LDG-99` — ledger invariants cross-phase sweep.
+- `AUD-99` — sensitive read-audit enforced across all features sweep.
+
+Blocked on external credentials:
+- `MRC-01` — Stripe Connect sandbox credentials.
+- `KYC-01` — Sumsub sandbox credentials.
+
+Explicitly deferred (separate track):
+- Phase 10 frontend: `UI-02`..`UI-05`, `UI-99`.
 
 ## Next Planned Step
 
-Choose and draft the next narrow backend/runtime planning note before implementation. Frontend/UI work is handled separately and should not be touched unless explicitly requested.
+Choose the next backend/runtime slice: `REC-04` Grafana dashboards, `LDG-99` ledger cross-phase sweep, or `AUD-99` read-audit sweep. Frontend/UI work is handled separately and should not be touched unless explicitly requested.
