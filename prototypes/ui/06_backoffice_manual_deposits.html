@@ -40,7 +40,7 @@
     }
     html, body { height: 100%; background: var(--bg); color: var(--t1);
       font-family: var(--f-ui); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
-    #root { height: 100vh; display: flex; overflow: hidden; }
+    #root { width: 100%; height: 100vh; display: flex; overflow: hidden; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--bdr-mid); border-radius: 2px; }
@@ -114,8 +114,8 @@
     .action-bar { display: flex; align-items: center; gap: 6px; padding: 7px 14px; flex-shrink: 0; }
 
     /* MAIN BODY */
-    .main-body { flex: 1; overflow-y: auto; padding: 14px 16px; background: var(--bg);
-      display: flex; flex-direction: column; gap: 12px; }
+    .main-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 14px 16px; background: var(--bg);
+      display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 
     /* BADGES */
     .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 2px;
@@ -202,22 +202,33 @@
 
     /* TABLE */
     .table-wrap { background: var(--surface); border: 1px solid var(--bdr);
-      border-radius: var(--r-lg); overflow: hidden; }
+      border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
     .table-top { display: flex; align-items: center; justify-content: space-between;
       padding: 7px 12px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
     .table-ttl { font-size: 11px; font-weight: 600; color: var(--t1);
       text-transform: uppercase; letter-spacing: 0.04em; }
-    .dt { width: 100%; border-collapse: collapse; }
+    .dt { width: 100%; border-collapse: collapse; table-layout: fixed; }
     .dt th { font-size: 9.5px; font-weight: 600; color: var(--t3); text-transform: uppercase;
       letter-spacing: 0.07em; padding: 5px 9px; border-bottom: 1px solid var(--bdr);
       text-align: left; white-space: nowrap; background: var(--surf2); }
     .dt td { padding: 6px 9px; border-bottom: 1px solid var(--hover); font-size: 11.5px;
-      color: var(--t1); vertical-align: middle; }
+      color: var(--t1); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; }
     .dt tr:last-child td { border-bottom: none; }
     .dt tr.sel td  { background: #f5f4ff; }
     .dt tr:hover td { background: var(--hover); }
     .dt tr.sel:hover td { background: #f0eeff; }
     .dt tr { cursor: pointer; }
+    .dt th:nth-child(1) { width: 6% !important; }
+    .dt th:nth-child(2) { width: 8% !important; }
+    .dt th:nth-child(3) { width: 17% !important; }
+    .dt th:nth-child(4) { width: 10% !important; }
+    .dt th:nth-child(5) { width: 5% !important; }
+    .dt th:nth-child(6) { width: 14% !important; }
+    .dt th:nth-child(7) { width: 10% !important; }
+    .dt th:nth-child(8) { width: 9% !important; }
+    .dt th:nth-child(9) { width: 8% !important; }
+    .dt th:nth-child(10) { width: 7% !important; }
+    .dt th:nth-child(11) { width: 6% !important; }
     .dt-mono { font-family: var(--f-mono); font-size: 10.5px; color: var(--t2); }
     .dt-sub  { font-size: 10px; color: var(--t3); margin-top: 1px; }
     .dt-muted { color: var(--t4); }
@@ -260,13 +271,13 @@
     .kv-v.mono { font-family: var(--f-mono); font-size: 11px; }
 
     /* DETAIL PANE */
-    .detail-pane { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg); overflow: hidden; }
+    .detail-pane { background: var(--surface); border: 1px solid var(--bdr); border-radius: var(--r-lg); overflow: hidden; flex-shrink: 0; }
     .detail-hdr  { display: flex; align-items: center; justify-content: space-between;
       padding: 8px 13px; border-bottom: 1px solid var(--bdr); background: var(--surf2); }
     .detail-title { font-size: 12px; font-weight: 600; color: var(--t1); display: flex; align-items: center; gap: 8px; }
     .detail-body  { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
-    .detail-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .detail-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .detail-grid  { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+    .detail-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 
     /* TWO-EYES BOX */
     .two-eyes-box { border: 1px solid var(--bdr); border-radius: var(--r); overflow: hidden; }
@@ -331,7 +342,7 @@
     .audit-hdr  { padding: 9px 12px; border-bottom: 1px solid var(--bdr);
       font-size: 9.5px; font-weight: 600; color: var(--t3);
       text-transform: uppercase; letter-spacing: 0.1em; }
-    .audit-body { flex: 1; overflow-y: auto; padding: 11px 12px; display: flex; flex-direction: column; gap: 0; }
+    .audit-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 11px 12px; display: flex; flex-direction: column; gap: 0; }
     .audit-sec  { font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em;
       color: var(--t3); margin-bottom: 6px; margin-top: 2px; }
     .audit-evt  { display: flex; gap: 8px; padding: 4.5px 0; border-bottom: 1px solid var(--hover); }
@@ -343,7 +354,7 @@
     .audit-dot.bl  { background: var(--bl); }
     .audit-dot.pu  { background: var(--pu); }
     .audit-dot.dim { background: var(--t4); }
-    .audit-name { font-size: 10.5px; font-family: var(--f-mono); color: var(--t1); }
+    .audit-name { font-size: 10.5px; font-family: var(--f-mono); color: var(--t1); overflow-wrap: anywhere; }
     .audit-meta { font-size: 9.5px; color: var(--t3); margin-top: 1px; }
     .sec-fact { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--hover); }
     .sec-fact:last-child { border-bottom: none; }
@@ -1032,7 +1043,7 @@ const AuditRail = ({ selectedId }) => {
 
 /* ── APP ── */
 function App() {
-  const [selectedId,     setSelectedId]     = useState('DEP-5192');
+  const [selectedId,     setSelectedId]     = useState(null);
   const [filterState,    setFilterState]    = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterSla,      setFilterSla]      = useState('all');
