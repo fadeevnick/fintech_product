@@ -10,7 +10,11 @@
 .eu-auth-wrap {
   max-width: 440px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 48px 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .eu-form {

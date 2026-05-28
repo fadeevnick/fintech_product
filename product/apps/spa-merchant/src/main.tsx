@@ -327,7 +327,7 @@ function LoginPage() {
 
   return (
     <div className="mch-auth-wrap">
-      <PageHeader breadcrumbs={<span>Merchant / Sign in</span>} screenId="MDB-UI-01" subtitle="Sign in to your merchant account." title={surfaceLabels.merchant} />
+      <PageHeader subtitle="Sign in to your merchant account." title={surfaceLabels.merchant} />
       <Panel title="Sign in">
         <form className="mch-auth-form" onSubmit={submit}>
           <Field label="Email"><Input autoComplete="email" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
@@ -368,7 +368,7 @@ function RegisterPage() {
 
   if (done) return (
     <div className="mch-auth-wrap">
-      <PageHeader breadcrumbs={<span>Merchant / Register</span>} title="Account created" />
+      <PageHeader title="Account created" />
       <Panel title="Check your email">
         <div className="mch-auth-form">
           <p className="mch-muted">We sent a verification link to <strong>{form.email}</strong>.</p>
@@ -387,7 +387,7 @@ function RegisterPage() {
 
   return (
     <div className="mch-auth-wrap">
-      <PageHeader breadcrumbs={<span>Merchant / Register</span>} subtitle="Create a new merchant account." title="Create account" />
+      <PageHeader subtitle="Create a new merchant account." title="Create account" />
       <Panel title="Business details">
         <form className="mch-auth-form" onSubmit={submit}>
           <Field label="Company name"><Input required value={form.companyName} onChange={(e) => set("companyName", e.target.value)} /></Field>
@@ -403,6 +403,7 @@ function RegisterPage() {
               <option value="SAAS">SaaS</option><option value="OTHER">Other</option>
             </Select>
           </Field>
+          <div className="mch-form-section-label">Account credentials</div>
           <Field label="Email"><Input autoComplete="email" required type="email" value={form.email} onChange={(e) => set("email", e.target.value)} /></Field>
           <Field label="Password"><Input autoComplete="new-password" required type="password" value={form.password} onChange={(e) => set("password", e.target.value)} /></Field>
           {error && <div className="mch-error">{error}</div>}
@@ -446,7 +447,7 @@ function VerifyEmailPage() {
 
   return (
     <div className="mch-auth-wrap">
-      <PageHeader breadcrumbs={<span>Merchant / Verify email</span>} title="Verify your email" />
+      <PageHeader title="Verify your email" />
       <Panel title="Email verification">
         {result ? (
           <div className="mch-auth-form">

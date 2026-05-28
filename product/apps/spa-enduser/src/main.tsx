@@ -335,7 +335,7 @@ function LoginPage() {
 
   return (
     <div className="eu-auth-wrap">
-      <PageHeader breadcrumbs={<span>Account / Sign in</span>} screenId="UEW-UI-01" subtitle="Sign in to your wallet." title={surfaceLabels.enduser} />
+      <PageHeader subtitle="Sign in to your wallet." title={surfaceLabels.enduser} />
       <Panel title="Sign in">
         <form className="eu-form" onSubmit={submit}>
           <Field label="Email"><Input autoComplete="email" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
@@ -375,7 +375,7 @@ function RegisterPage() {
 
   if (done) return (
     <div className="eu-auth-wrap">
-      <PageHeader breadcrumbs={<span>Account / Register</span>} title="Account created" />
+      <PageHeader title="Account created" />
       <Panel title="Check your email">
         <div className="eu-form">
           <p className="eu-muted">We sent a verification link to <strong>{email}</strong>.</p>
@@ -394,7 +394,7 @@ function RegisterPage() {
 
   return (
     <div className="eu-auth-wrap">
-      <PageHeader breadcrumbs={<span>Account / Register</span>} subtitle="Create a free wallet account." title="Create account" />
+      <PageHeader subtitle="Create a free wallet account." title="Create account" />
       <Panel title="Sign up">
         <form className="eu-form" onSubmit={submit}>
           <Field label="Email"><Input autoComplete="email" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
@@ -440,7 +440,7 @@ function VerifyEmailPage() {
 
   return (
     <div className="eu-auth-wrap">
-      <PageHeader breadcrumbs={<span>Account / Verify email</span>} title="Verify your email" />
+      <PageHeader title="Verify your email" />
       <Panel title="Email verification">
         {result ? (
           <div className="eu-form">

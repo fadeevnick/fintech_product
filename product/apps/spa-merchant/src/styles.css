@@ -10,7 +10,11 @@
 .mch-auth-wrap {
   max-width: 480px;
   margin: 0 auto;
-  padding: 0 16px;
+  padding: 48px 16px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .mch-auth-form {
@@ -25,6 +29,17 @@
   border-radius: var(--mfp-radius-md, 6px);
   color: var(--mfp-danger);
   font-size: 13px;
+}
+
+.mch-form-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mfp-text-muted);
+  padding-top: 4px;
+  border-top: 1px solid var(--mfp-border);
+  margin-top: 2px;
 }
 
 .mch-row {
