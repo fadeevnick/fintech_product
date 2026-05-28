@@ -1,7 +1,36 @@
-export type SurfaceKind = "enduser" | "merchant" | "backoffice";
+export {
+  AppSidebar,
+  AppSidebarItem,
+  AppShell,
+  Badge,
+  Button,
+  DataTable,
+  EmptyState,
+  Field,
+  Input,
+  ModeTabs,
+  PageHeader,
+  Panel,
+  Select,
+  StatCard,
+  StatGrid,
+  TextArea,
+  Toolbar,
+  ToolbarSpacer,
+  cx,
+} from "./ui";
 
-export const surfaceLabels: Record<SurfaceKind, string> = {
-  enduser: "End-user wallet",
-  merchant: "Merchant dashboard",
-  backoffice: "Backoffice operations",
-};
+export type {
+  AppShellProps,
+  BadgeTone,
+  ButtonProps,
+  DataTableColumn,
+  DataTableProps,
+  ModeTab,
+  NavItemTone,
+  SelectProps,
+  SurfaceKind,
+  SurfaceTheme,
+} from "./ui";
+
+export { surfaceLabels, surfaceThemes } from "./ui";
