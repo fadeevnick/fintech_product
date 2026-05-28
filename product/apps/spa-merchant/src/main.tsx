@@ -227,7 +227,8 @@ function App() {
 
 function GuardedLayout() {
   const { user } = useAuth();
-  if (!user) return <Navigate replace to="/login" />;
+  const location = useLocation();
+  if (!user) return <Navigate replace state={{ from: location.pathname }} to="/login" />;
   return <MerchantLayout />;
 }
 
@@ -300,12 +301,14 @@ function MerchantLayout() {
 function LoginPage() {
   const { user, refresh } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTarget = (location.state as { from?: string } | null)?.from ?? "/onboarding";
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
-  React.useEffect(() => { if (user) navigate("/onboarding", { replace: true }); }, [user, navigate]);
+  React.useEffect(() => { if (user) navigate(redirectTarget, { replace: true }); }, [user, navigate]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -314,7 +317,7 @@ function LoginPage() {
     try {
       await api.merchantAuth.login({ email, password });
       await refresh();
-      navigate("/onboarding", { replace: true });
+      navigate(redirectTarget, { replace: true });
     } catch (err) {
       setError(err instanceof PlatformApiError ? err.message : "Sign in failed.");
     } finally {
@@ -421,18 +424,24 @@ function VerifyEmailPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function verify(t: string) {
     setError(null);
     setBusy(true);
     try {
-      await api.merchantAuth.verifyEmail({ token });
+      await api.merchantAuth.verifyEmail({ token: t });
       setResult("Email verified. You can now sign in.");
     } catch (err) {
       setError(err instanceof PlatformApiError ? err.message : "Verification failed.");
     } finally {
       setBusy(false);
     }
+  }
+
+  React.useEffect(() => { if (tokenFromUrl) verify(tokenFromUrl); }, []);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    verify(token);
   }
 
   return (
@@ -485,8 +494,8 @@ function OnboardingPage() {
           </Panel>
           <Panel title="Account">
             <div className="mch-kv">
-              <div><span>Merchant ID</span><strong className="mono">{user?.merchantId}</strong></div>
-              <div><span>Employee ID</span><strong className="mono">{user?.employeeId}</strong></div>
+              <div><span>Merchant ID</span><strong className="mono" title={user?.merchantId}>{user?.merchantId?.slice(0, 8)}…</strong></div>
+              <div><span>Employee ID</span><strong className="mono" title={user?.employeeId}>{user?.employeeId?.slice(0, 8)}…</strong></div>
               <div><span>Email</span><strong>{user?.email}</strong></div>
               <div><span>Role</span><strong>{user?.role}</strong></div>
               <div><span>Employee status</span><strong>{user?.employeeStatus}</strong></div>

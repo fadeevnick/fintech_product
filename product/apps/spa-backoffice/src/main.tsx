@@ -595,10 +595,10 @@ function LoginPage() {
         <Panel title="Operator login">
           <form className="backoffice-form" onSubmit={handleSubmit}>
             <Field hint="Local seeded users: operator, compliance." label="Username">
-              <Input onChange={(event) => setUsername(event.target.value)} value={username} />
+              <Input autoComplete="username" onChange={(event) => setUsername(event.target.value)} value={username} />
             </Field>
             <Field label="Password">
-              <Input onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
+              <Input autoComplete="current-password" onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
             </Field>
             {error ? <PageError message={error} /> : null}
             <Toolbar>

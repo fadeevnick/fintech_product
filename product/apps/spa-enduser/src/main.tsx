@@ -236,7 +236,8 @@ function App() {
 
 function GuardedLayout() {
   const { user } = useAuth();
-  if (!user) return <Navigate replace to="/login" />;
+  const location = useLocation();
+  if (!user) return <Navigate replace state={{ from: location.pathname }} to="/login" />;
   return <EnduserLayout />;
 }
 
@@ -308,12 +309,14 @@ function EnduserLayout() {
 function LoginPage() {
   const { user, refresh } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTarget = (location.state as { from?: string } | null)?.from ?? "/wallet";
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
-  React.useEffect(() => { if (user) navigate("/wallet", { replace: true }); }, [user, navigate]);
+  React.useEffect(() => { if (user) navigate(redirectTarget, { replace: true }); }, [user, navigate]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -322,7 +325,7 @@ function LoginPage() {
     try {
       await api.endUserAuth.login({ email, password });
       await refresh();
-      navigate("/wallet", { replace: true });
+      navigate(redirectTarget, { replace: true });
     } catch (err) {
       setError(err instanceof PlatformApiError ? err.message : "Sign in failed.");
     } finally {
@@ -415,18 +418,24 @@ function VerifyEmailPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
+  async function verify(t: string) {
     setError(null);
     setBusy(true);
     try {
-      await api.endUserAuth.verifyEmail({ token });
+      await api.endUserAuth.verifyEmail({ token: t });
       setResult("Email verified. You can now sign in.");
     } catch (err) {
       setError(err instanceof PlatformApiError ? err.message : "Verification failed.");
     } finally {
       setBusy(false);
     }
+  }
+
+  React.useEffect(() => { if (tokenFromUrl) verify(tokenFromUrl); }, []);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    verify(token);
   }
 
   return (
