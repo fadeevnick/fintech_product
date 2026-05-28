@@ -681,7 +681,7 @@ function DepositPage() {
       <Panel title="Declare source of funds">
         <form className="eu-form" onSubmit={submitSof}>
           <div className="eu-kv">
-            <div><span>Deposit amount</span><strong>EUR {pending.amount}</strong></div>
+            <div><span>Deposit amount</span><strong>{fmtAmount(pending.amount, pending.currency)}</strong></div>
             <div><span>Deposit ID</span><strong className="mono">{pending.depositId}</strong></div>
           </div>
           <Field label="Source category">
@@ -753,7 +753,7 @@ function TransferPage() {
         <div className="eu-form">
           <div className="eu-kv">
             <div><span>Transfer ID</span><strong className="mono">{done.transferId}</strong></div>
-            <div><span>Amount</span><strong>EUR {done.amount}</strong></div>
+            <div><span>Amount</span><strong>{fmtAmount(done.amount, done.currency)}</strong></div>
             <div><span>State</span><strong><Badge tone={transferTone(done.state)}>{done.state}</Badge></strong></div>
           </div>
           {done.state.startsWith("HELD") && (

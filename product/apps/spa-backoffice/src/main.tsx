@@ -1101,7 +1101,7 @@ function KycQueuePage() {
                 </Field>
                 {actionError ? <PageError message={actionError} /> : null}
                 <Toolbar>
-                  <Button disabled={submitting} onClick={handleSubmit} variant="primary">
+                  <Button disabled={submitting || rationale.trim().length < 20} onClick={handleSubmit} variant="primary">
                     {submitting ? "Submitting..." : "Record decision"}
                   </Button>
                 </Toolbar>
@@ -1239,7 +1239,7 @@ function AmlAlertsPage() {
                 ) : null}
                 {actionError ? <PageError message={actionError} /> : null}
                 <Toolbar>
-                  <Button disabled={submitting} onClick={handleSubmit} variant="primary">
+                  <Button disabled={submitting || rationale.trim().length < 20} onClick={handleSubmit} variant="primary">
                     {submitting ? "Submitting..." : "Record decision"}
                   </Button>
                 </Toolbar>
@@ -1372,12 +1372,12 @@ function SanctionsHitsPage() {
                     ["Updated", formatDateTime(detail.data.updatedAt)],
                   ]}
                 />
-                <Field label="Clearing rationale">
+                <Field hint="Minimum 20 characters required." label="Clearing rationale">
                   <TextArea onChange={(event) => setRationale(event.target.value)} rows={5} value={rationale} />
                 </Field>
                 {actionError ? <PageError message={actionError} /> : null}
                 <Toolbar>
-                  <Button disabled={submitting} onClick={handleSubmit} variant="primary">
+                  <Button disabled={submitting || rationale.trim().length < 20} onClick={handleSubmit} variant="primary">
                     {submitting ? "Submitting..." : "Clear false positive"}
                   </Button>
                 </Toolbar>
@@ -1637,7 +1637,7 @@ function AuditLogPage() {
                     ["Request ID", selectedEntry.requestId ?? "—"],
                     ["Correlation ID", selectedEntry.correlationId ?? "—"],
                     ["Created", formatDateTime(selectedEntry.createdAt)],
-                    ["Metadata", <code className="mono">{selectedEntry.metadataJson}</code>],
+                    ["Metadata", <pre className="mono" style={{ margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{(() => { try { return JSON.stringify(JSON.parse(selectedEntry.metadataJson), null, 2); } catch { return selectedEntry.metadataJson; } })()}</pre>],
                   ]}
                 />
               </div>

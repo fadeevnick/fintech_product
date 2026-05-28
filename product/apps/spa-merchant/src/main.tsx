@@ -580,6 +580,7 @@ function ApiKeysPage() {
                 { key: "fp", header: "Fingerprint", className: "mono", render: (r) => r.fingerprint.slice(0, 12) + "…" },
                 { key: "status", header: "Status", render: (r) => <Badge tone={r.status === "ACTIVE" ? "success" : "neutral"}>{r.status}</Badge> },
                 { key: "created", header: "Created", render: (r) => r.createdAt.slice(0, 10) },
+                { key: "lastUsed", header: "Last used", render: (r) => r.lastUsedAt ? r.lastUsedAt.slice(0, 10) : "Never" },
                 {
                   key: "act", header: "", render: (r) =>
                     r.status === "ACTIVE" ? (
