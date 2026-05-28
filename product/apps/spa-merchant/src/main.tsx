@@ -769,6 +769,9 @@ function WebhooksPage() {
             }
             title="Event log"
           >
+            {evStatus === "ready" && events.length >= 25 && (
+              <p className="mch-muted">Showing first 25 events. Change the status filter to narrow results.</p>
+            )}
             {evStatus === "loading" && <EmptyState body="Fetching events." title="Loading…" />}
             {evStatus === "error" && <EmptyState body="Could not fetch webhook events." title="Failed to load" />}
             {evStatus === "ready" && (
@@ -842,6 +845,9 @@ function PaymentsPage() {
           </Panel>
         )}
         <Panel title="Payment intents">
+          {loadStatus === "ready" && payments.length >= 50 && (
+            <p className="mch-muted">Showing first 50 payments. Older entries are accessible via the API.</p>
+          )}
           {loadStatus === "loading" && <EmptyState body="Fetching payment intents." title="Loading…" />}
           {loadStatus === "error" && <EmptyState body="Could not fetch payment intents." title="Failed to load" />}
           {loadStatus === "ready" && (
@@ -894,6 +900,9 @@ function SettlementsPage() {
       </PageHeader>
       <div className="mch-stack">
         <Panel title="Settlement batches">
+          {loadStatus === "ready" && batches.length >= 25 && (
+            <p className="mch-muted">Showing first 25 batches.</p>
+          )}
           {loadStatus === "loading" && <EmptyState body="Fetching settlement batches." title="Loading…" />}
           {loadStatus === "error" && <EmptyState body="Could not fetch settlements." title="Failed to load" />}
           {loadStatus === "ready" && (
@@ -1058,6 +1067,9 @@ function DisputesPage() {
           }
           title="Disputes"
         >
+          {loadStatus === "ready" && disputes.length >= 25 && (
+            <p className="mch-muted">Showing first 25 disputes. Use the state filter to narrow results.</p>
+          )}
           {loadStatus === "loading" && <EmptyState body="Fetching disputes." title="Loading…" />}
           {loadStatus === "error" && <EmptyState body="Could not fetch disputes." title="Failed to load" />}
           {loadStatus === "ready" && (
