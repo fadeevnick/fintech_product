@@ -1,10 +1,12 @@
 # CURRENT
 
-Last updated: 2026-05-22.
+Last updated: 2026-05-29.
 
 ## Current State
 
-Backend/runtime and frontend tracks are effectively closed. Remaining open work is vendor-blocked only:
+Branch `ux-audit` — UX audit fixes complete. All three SPAs build clean (tsc + vite build, 0 errors).
+
+Prior state (main): Backend/runtime and frontend tracks are effectively closed. Remaining open work is vendor-blocked only:
 - All 3 SPAs build clean with no TypeScript errors.
 - All 6 merchant/end-user screens that were previously blocked on missing backend read endpoints are now implemented and runtime-verified.
 - All blocking backend contract gaps (M-01, M-02, M-03) have been resolved by Agent A (backend) and wired by Agent B (frontend).
@@ -24,7 +26,38 @@ Read first:
 - `planning/runtime_evidence_log.md`
 - `planning/runtime_checklists.md`
 
-## What Was Done This Session (final closure pass)
+## What Was Done This Session (ux-audit branch)
+
+Comprehensive UX audit of all 3 SPAs followed by full implementation of fixes. 3 commits on `ux-audit`:
+
+**commit 1 — core UX fixes:**
+- Unified chronological activity feed in enduser (transfers + deposits + withdrawals)
+- Sign-out moved to sidebar "Session" section in all 3 SPAs; removed page-level session panels
+- Merchant disputes form and accept button gated on actionable states (OPEN, EVIDENCE_DUE only)
+- Webhook events default filter changed FAILED → DELIVERED; added error message column
+- Backoffice actor controls extracted to /actor-controls (separate from read-only audit log)
+- Login removed from backoffice nav; replaced with sidebar sign-out
+- Priority lane removed from work queue page
+- All UUID columns truncated to 8 chars + ellipsis
+- Status field removed from KV detail panels (badge in panel header is authoritative)
+- Developer documentation removed: role model panel, backend surface rail, impl noise in subtitles
+- KYC page: status-aware messaging instead of raw SDK token display
+- Transfer page: user's own ID shown as hint for recipients
+
+**commit 2 — pagination signals + TxDetailPage navigation state:**
+- WorkQueuePage: "Showing 20 of X" badge when queue truncated at 20 rows
+- Chargebacks: inline note when at 25-item API limit
+- Audit log: inline note when at 50-entry API limit
+- TxDetailPage: uses navigation state from WalletPage (no re-fetch for common path)
+
+**commit 3 — merchant pagination signals:**
+- Payments (50), settlements (25), disputes (25), webhook events (25): inline notes when at limit
+
+Not addressable without backend changes:
+- Disputes backend filter param (client-side only)
+- Webhook endpoint-specific event filter
+
+## What Was Done Previously (final closure pass)
 
 - **Backoffice runtime closure completed** on a fresh temporary stack (`mfp-bofrt`) with a current `platform` image built from the local `bootJar`:
   - `GET /api/v1/backoffice/disputes?limit=25` returned live dispute rows;
@@ -75,7 +108,9 @@ Remaining contract limitations (not bugs, no backend fix needed):
 
 ## Next Planned Step
 
-No internal implementation work remains on the local stack. The next step is external: obtain vendor credentials and close the blocked integrations.
+Merge `ux-audit` into `main` when ready. After merge, no internal implementation work remains.
 
 Open items (all external or separate track):
 1. Vendor credentials (`REC-03`, `MRC-01`, `KYC-01`) — cannot be resolved without external accounts.
+2. Backend filter param for merchant disputes — requires API change.
+3. Webhook endpoint-specific event filter — requires API change.
