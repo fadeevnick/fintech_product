@@ -28,9 +28,10 @@ class MerchantDisputeController(
     fun listDisputes(
         @CookieValue(name = MERCHANT_SESSION_COOKIE, required = false) sessionToken: String?,
         @RequestParam(name = "limit", required = false) limit: Int?,
+        @RequestParam(name = "state", required = false) state: String?,
     ): ApiResponse<ChargebackDisputeListResponse> {
         val employee = identityService.currentMerchant(sessionToken)
-        return ApiResponse(data = chargebackService.listMerchantDisputes(employee, limit ?: 25))
+        return ApiResponse(data = chargebackService.listMerchantDisputes(employee, limit ?: 25, state))
     }
 
     @GetMapping("/api/v1/merchant/disputes/{disputeId}")

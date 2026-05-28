@@ -138,8 +138,9 @@ function settlementTone(status: string): BadgeTone {
 
 function disputeTone(state: string): BadgeTone {
   if (state === "WON") return "success";
-  if (state === "LOST" || state === "ACCEPTED") return "danger";
-  if (state === "OPEN" || state === "EVIDENCE_DUE") return "warning";
+  if (state === "LOST" || state === "MERCHANT_ACCEPTED" || state === "MERCHANT_DEADLINE_EXPIRED") return "danger";
+  if (state === "MERCHANT_NOTIFIED") return "warning";
+  if (state === "EVIDENCE_SUBMITTED") return "info";
   return "neutral";
 }
 
@@ -176,7 +177,7 @@ function fmtAmount(amount: string, currency: string): string {
   return `${currency} ${isNaN(n) ? amount : n.toFixed(2)}`;
 }
 
-const DISPUTE_ACTIONABLE_STATES = ["OPEN", "EVIDENCE_DUE"];
+const DISPUTE_ACTIONABLE_STATES = ["MERCHANT_NOTIFIED"];
 
 // ─── auth context ──────────────────────────────────────────────────────────
 
@@ -627,6 +628,7 @@ function WebhooksPage() {
   const [epStatus, setEpStatus] = React.useState<"loading" | "ready" | "error">("loading");
   const [evStatus, setEvStatus] = React.useState<"loading" | "ready" | "error">("loading");
   const [evStatusFilter, setEvStatusFilter] = React.useState<EventStatus>("DELIVERED");
+  const [evEndpointFilter, setEvEndpointFilter] = React.useState<string>("");
   const [showCreate, setShowCreate] = React.useState(false);
   const [createUrl, setCreateUrl] = React.useState("");
   const [createDesc, setCreateDesc] = React.useState("");
@@ -645,17 +647,18 @@ function WebhooksPage() {
     } catch { setEpStatus("error"); }
   }
 
-  async function loadEvents(statusFilter: EventStatus) {
+  async function loadEvents(statusFilter: EventStatus, endpointId: string) {
     setEvStatus("loading");
     try {
-      const res = await api.request<{ items: WebhookEventDto[] }>(`/api/v1/merchant/webhook-events?status=${statusFilter}&limit=25`);
+      const epParam = endpointId ? `&endpointId=${endpointId}` : "";
+      const res = await api.request<{ items: WebhookEventDto[] }>(`/api/v1/merchant/webhook-events?status=${statusFilter}&limit=25${epParam}`);
       setEvents(res.items);
       setEvStatus("ready");
     } catch { setEvStatus("error"); }
   }
 
   React.useEffect(() => { loadEndpoints(); }, []);
-  React.useEffect(() => { loadEvents(evStatusFilter); }, [evStatusFilter]);
+  React.useEffect(() => { loadEvents(evStatusFilter, evEndpointFilter); }, [evStatusFilter, evEndpointFilter]);
 
   const loadStatus = epStatus;
 
@@ -693,7 +696,7 @@ function WebhooksPage() {
 
   async function handleReplay(id: string) {
     setReplaying(id);
-    try { await api.request(`/api/v1/merchant/webhook-events/${id}/replay`, { method: "POST" }); loadEvents(evStatusFilter); }
+    try { await api.request(`/api/v1/merchant/webhook-events/${id}/replay`, { method: "POST" }); loadEvents(evStatusFilter, evEndpointFilter); }
     catch { /* ignore */ } finally { setReplaying(null); }
   }
 
@@ -764,9 +767,17 @@ function WebhooksPage() {
         {tab === "events" && (
           <Panel
             actions={
-              <Select value={evStatusFilter} onChange={(e) => setEvStatusFilter(e.target.value as EventStatus)}>
-                {EVENT_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-              </Select>
+              <Toolbar>
+                <Select value={evEndpointFilter} onChange={(e) => setEvEndpointFilter(e.target.value)}>
+                  <option value="">All endpoints</option>
+                  {endpoints.filter((ep) => !ep.deletedAt).map((ep) => (
+                    <option key={ep.id} value={ep.id}>{ep.url}</option>
+                  ))}
+                </Select>
+                <Select value={evStatusFilter} onChange={(e) => setEvStatusFilter(e.target.value as EventStatus)}>
+                  {EVENT_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </Select>
+              </Toolbar>
             }
             title="Event log"
           >
@@ -936,7 +947,7 @@ function filterDisputes(disputes: DisputeDto[], filter: DisputeStateFilter): Dis
   switch (filter) {
     case "active": return disputes.filter((d) => DISPUTE_ACTIONABLE_STATES.includes(d.state));
     case "won": return disputes.filter((d) => d.state === "WON");
-    case "closed": return disputes.filter((d) => d.state === "LOST" || d.state === "ACCEPTED");
+    case "closed": return disputes.filter((d) => ["LOST", "MERCHANT_ACCEPTED", "MERCHANT_DEADLINE_EXPIRED"].includes(d.state));
     default: return disputes;
   }
 }
@@ -955,13 +966,15 @@ function DisputesPage() {
   async function load() {
     setLoadStatus("loading");
     try {
-      const res = await api.request<{ items: DisputeDto[] }>("/api/v1/merchant/disputes?limit=25");
+      const stateParam = stateFilter === "active" ? "&state=MERCHANT_NOTIFIED"
+        : stateFilter === "won" ? "&state=WON" : "";
+      const res = await api.request<{ items: DisputeDto[] }>(`/api/v1/merchant/disputes?limit=25${stateParam}`);
       setDisputes(res.items);
       setLoadStatus("ready");
     } catch { setLoadStatus("error"); }
   }
 
-  React.useEffect(() => { load(); }, []);
+  React.useEffect(() => { load(); }, [stateFilter]);
 
   React.useEffect(() => {
     if (selected && !filterDisputes(disputes, stateFilter).find((d) => d.id === selected.id)) {

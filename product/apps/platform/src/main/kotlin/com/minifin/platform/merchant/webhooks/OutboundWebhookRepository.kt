@@ -34,12 +34,16 @@ class OutboundWebhookRepository(
             id,
         ).firstOrNull()
 
-    fun listEventsForMerchant(merchantId: UUID, status: String?, limit: Int): List<OutboundWebhookEventRecord> =
+    fun listEventsForMerchant(merchantId: UUID, status: String?, limit: Int, endpointId: UUID? = null): List<OutboundWebhookEventRecord> =
         jdbcTemplate.query(
             eventSelectSql(
                 """
                 where merchant_id = ?
                   and (? is null or status = ?)
+                  and (? is null or exists (
+                    select 1 from merchant.webhook_delivery_attempts da
+                    where da.event_id = id and da.endpoint_id = ?
+                  ))
                 order by created_at desc
                 limit ?
                 """.trimIndent(),
@@ -48,6 +52,8 @@ class OutboundWebhookRepository(
             merchantId,
             status,
             status,
+            endpointId,
+            endpointId,
             limit,
         )
 

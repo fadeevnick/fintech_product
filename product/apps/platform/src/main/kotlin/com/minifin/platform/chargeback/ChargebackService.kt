@@ -200,11 +200,16 @@ class ChargebackService(
         return dto
     }
 
-    fun listMerchantDisputes(employee: MerchantEmployeeRecord, limit: Int): ChargebackDisputeListResponse {
+    fun listMerchantDisputes(employee: MerchantEmployeeRecord, limit: Int, state: String? = null): ChargebackDisputeListResponse {
         requireActiveMerchant(employee)
         val normalizedLimit = limit.coerceIn(1, 100)
+        val validStates = setOf("MERCHANT_NOTIFIED", "EVIDENCE_SUBMITTED", "MERCHANT_ACCEPTED", "MERCHANT_DEADLINE_EXPIRED", "WON", "LOST")
+        val normalizedState = state?.trim()?.uppercase()?.takeIf { it.isNotBlank() }
+        if (normalizedState != null && normalizedState !in validStates) {
+            throw MerchantDashboardException("invalid_state", "Dispute state filter is invalid.", HttpStatus.BAD_REQUEST, "state")
+        }
         return ChargebackDisputeListResponse(
-            items = repository.listDisputesForMerchant(employee.merchantId, normalizedLimit).map { it.toDto() },
+            items = repository.listDisputesForMerchant(employee.merchantId, normalizedLimit, normalizedState).map { it.toDto() },
         )
     }
 

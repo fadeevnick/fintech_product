@@ -111,18 +111,21 @@ class ChargebackRepository(
             merchantId,
         ).firstOrNull()
 
-    fun listDisputesForMerchant(merchantId: UUID, limit: Int): List<ChargebackDisputeRecord> =
+    fun listDisputesForMerchant(merchantId: UUID, limit: Int, state: String? = null): List<ChargebackDisputeRecord> =
         jdbcTemplate.query(
             """
             select id, payment_intent_id, merchant_id, cardholder_user_id, amount, currency, reason_code,
                    narrative, state, merchant_response_deadline, provisional_credit_journal_id, arbitration_journal_id, created_at
               from chargeback.disputes
              where merchant_id = ?
+               and (? is null or state = ?)
              order by created_at desc, id desc
              limit ?
             """.trimIndent(),
             { rs, _ -> rs.toDisputeRecord() },
             merchantId,
+            state,
+            state,
             limit,
         )
 

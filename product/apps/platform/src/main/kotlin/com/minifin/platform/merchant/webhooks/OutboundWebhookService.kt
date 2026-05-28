@@ -289,13 +289,13 @@ class OutboundWebhookService(
         return events.size
     }
 
-    fun listEvents(employee: MerchantEmployeeRecord, status: String?, limit: Int): WebhookEventListResponse {
+    fun listEvents(employee: MerchantEmployeeRecord, status: String?, limit: Int, endpointId: UUID? = null): WebhookEventListResponse {
         requireActive(employee)
         val normalizedStatus = status?.trim()?.uppercase()?.takeIf { it.isNotBlank() }
         if (normalizedStatus != null && normalizedStatus !in setOf("PENDING", "DELIVERED", "FAILED", "DLQ")) {
             throw MerchantDashboardException("invalid_status", "Webhook event status filter is invalid.", HttpStatus.BAD_REQUEST, "status")
         }
-        return WebhookEventListResponse(repository.listEventsForMerchant(employee.merchantId, normalizedStatus, limit.coerceIn(1, 100)).map { it.toDto() })
+        return WebhookEventListResponse(repository.listEventsForMerchant(employee.merchantId, normalizedStatus, limit.coerceIn(1, 100), endpointId).map { it.toDto() })
     }
 
     fun detail(employee: MerchantEmployeeRecord, id: UUID): WebhookEventDto {

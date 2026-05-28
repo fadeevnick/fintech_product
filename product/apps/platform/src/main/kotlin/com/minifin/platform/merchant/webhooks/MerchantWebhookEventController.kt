@@ -27,8 +27,15 @@ class MerchantWebhookEventController(
         @CookieValue(name = SESSION_COOKIE, required = false) sessionToken: String?,
         @RequestParam(name = "status", required = false) status: String?,
         @RequestParam(name = "limit", required = false) limit: Int?,
-    ): ApiResponse<WebhookEventListResponse> =
-        ApiResponse(data = service.listEvents(identityService.currentMerchant(sessionToken), status, limit ?: 25))
+        @RequestParam(name = "endpointId", required = false) endpointId: String?,
+    ): ApiResponse<WebhookEventListResponse> {
+        val endpointUuid = endpointId?.let {
+            runCatching { UUID.fromString(it) }.getOrElse {
+                throw MerchantDashboardException("invalid_uuid", "Invalid endpoint ID.", org.springframework.http.HttpStatus.BAD_REQUEST, "endpointId")
+            }
+        }
+        return ApiResponse(data = service.listEvents(identityService.currentMerchant(sessionToken), status, limit ?: 25, endpointUuid))
+    }
 
     @GetMapping("/api/v1/merchant/webhook-events/{id}")
     fun detail(
