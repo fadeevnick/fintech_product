@@ -510,7 +510,10 @@ function WalletPage() {
                     key: "act",
                     header: "",
                     render: (r) => r.transferId
-                      ? <button className="eu-link" onClick={() => navigate(`/tx/${r.transferId}`)}>View</button>
+                      ? <button className="eu-link" onClick={() => {
+                          const tr = wallet!.transfers.find((t) => t.transferId === r.transferId);
+                          navigate(`/tx/${r.transferId}`, { state: { transfer: tr } });
+                        }}>View</button>
                       : null,
                   },
                 ]}
@@ -536,12 +539,17 @@ function WalletPage() {
 
 function TxDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [transfer, setTransfer] = React.useState<TransferResponse | null>(null);
-  const [loadStatus, setLoadStatus] = React.useState<"loading" | "ready" | "error" | "not-found">("loading");
+  const stateTransfer = (location.state as { transfer?: TransferResponse } | null)?.transfer;
+  const [transfer, setTransfer] = React.useState<TransferResponse | null>(stateTransfer ?? null);
+  const [loadStatus, setLoadStatus] = React.useState<"loading" | "ready" | "error" | "not-found">(
+    stateTransfer ? "ready" : "loading",
+  );
 
   React.useEffect(() => {
+    if (stateTransfer) return;
     api.request<WalletSummaryResponse>("/api/v1/wallet")
       .then((w) => {
         const found = w.transfers.find((t) => t.transferId === id);
@@ -549,7 +557,7 @@ function TxDetailPage() {
         else setLoadStatus("not-found");
       })
       .catch(() => setLoadStatus("error"));
-  }, [id]);
+  }, [id, stateTransfer]);
 
   return (
     <>

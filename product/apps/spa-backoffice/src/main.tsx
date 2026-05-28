@@ -645,8 +645,8 @@ function WorkQueuePage() {
     sanctions: [] as SanctionsHit[],
   });
 
-  const queueRows = React.useMemo<QueueRow[]>(() => {
-    const rows: QueueRow[] = [
+  const allQueueRows = React.useMemo<QueueRow[]>(() => {
+    return [
       ...data.kyc.map((item) => ({
         id: item.id,
         route: "kyc-queue" as const,
@@ -693,9 +693,9 @@ function WorkQueuePage() {
         state: item.state,
       })),
     ];
-
-    return rows.slice(0, 20);
   }, [data]);
+
+  const queueRows = allQueueRows.slice(0, 20);
 
   return (
     <>
@@ -726,6 +726,9 @@ function WorkQueuePage() {
         <Panel
           actions={
             <Toolbar>
+              {allQueueRows.length > 20 && (
+                <Badge tone="warning">Showing 20 of {allQueueRows.length}</Badge>
+              )}
               <ToolbarSpacer />
               <Button size="sm" variant="secondary" onClick={reload}>
                 Refresh
@@ -1547,6 +1550,9 @@ function ChargebackArbitrationPage() {
             }
             title="Chargeback disputes"
           >
+            {data.length >= 25 ? (
+              <div className="backoffice-inline-note">Showing first 25 disputes. Use the backoffice API to page further.</div>
+            ) : null}
             {loading ? <div className="backoffice-loading-copy">Loading chargeback disputes...</div> : null}
             {loadError ? <PageError message={loadError} /> : null}
             {!loading ? (
@@ -1656,6 +1662,9 @@ function AuditLogPage() {
             }
             title="Audit feed"
           >
+            {data.length >= 50 ? (
+              <div className="backoffice-inline-note">Showing first 50 entries. Change the stream filter to narrow the view.</div>
+            ) : null}
             {loading ? <div className="backoffice-loading-copy">Loading audit feed...</div> : null}
             {feedError ? <PageError message={feedError} /> : null}
             {!loading ? (
