@@ -1099,6 +1099,7 @@ function KycQueuePage() {
                 <Field hint="Minimum 20 characters required." label="Rationale">
                   <TextArea onChange={(event) => setRationale(event.target.value)} rows={5} value={rationale} />
                 </Field>
+                <p style={{ margin: "-4px 0 4px", fontSize: "0.8em", color: "#6b7280" }}>{rationale.trim().length} / 20 min</p>
                 {actionError ? <PageError message={actionError} /> : null}
                 <Toolbar>
                   <Button disabled={submitting || rationale.trim().length < 20} onClick={handleSubmit} variant="primary">
@@ -1234,6 +1235,7 @@ function AmlAlertsPage() {
                 <Field hint="Minimum 20 characters required." label="Rationale">
                   <TextArea onChange={(event) => setRationale(event.target.value)} rows={5} value={rationale} />
                 </Field>
+                <p style={{ margin: "-4px 0 4px", fontSize: "0.8em", color: "#6b7280" }}>{rationale.trim().length} / 20 min</p>
                 {!canMarkSar ? (
                   <div className="backoffice-inline-note">Marking for SAR requires a compliance officer role.</div>
                 ) : null}
@@ -1375,6 +1377,7 @@ function SanctionsHitsPage() {
                 <Field hint="Minimum 20 characters required." label="Clearing rationale">
                   <TextArea onChange={(event) => setRationale(event.target.value)} rows={5} value={rationale} />
                 </Field>
+                <p style={{ margin: "-4px 0 4px", fontSize: "0.8em", color: "#6b7280" }}>{rationale.trim().length} / 20 min</p>
                 {actionError ? <PageError message={actionError} /> : null}
                 <Toolbar>
                   <Button disabled={submitting || rationale.trim().length < 20} onClick={handleSubmit} variant="primary">
@@ -1524,6 +1527,7 @@ function ChargebackArbitrationPage() {
                 <Field hint="20–4000 characters required." label="Rationale">
                   <TextArea onChange={(event) => setRationale(event.target.value)} rows={5} value={rationale} />
                 </Field>
+                <p style={{ margin: "-4px 0 4px", fontSize: "0.8em", color: "#6b7280" }}>{rationale.trim().length} / 4000 max</p>
                 {detail.data.dispute.state !== "EVIDENCE_SUBMITTED" ? (
                   <div className="backoffice-inline-note">Arbitration is available only when the dispute is in EVIDENCE_SUBMITTED state.</div>
                 ) : null}
@@ -1732,6 +1736,7 @@ function ActorControlsPage() {
 
   async function applyControl(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (controlInput.state === "FROZEN" && !window.confirm(`Freeze ${controlInput.actorType} ${controlInput.actorId.trim()}? This will block all their transactions.`)) return;
     setControlLoading(true);
     setControlError(null);
     try {

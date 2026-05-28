@@ -458,11 +458,14 @@ function WalletPage() {
   const [wallet, setWallet] = React.useState<WalletSummaryResponse | null>(null);
   const [loadStatus, setLoadStatus] = React.useState<"loading" | "ready" | "error">("loading");
 
-  React.useEffect(() => {
+  function loadWallet() {
+    setLoadStatus("loading");
     api.request<WalletSummaryResponse>("/api/v1/wallet")
       .then((w) => { setWallet(w); setLoadStatus("ready"); })
       .catch(() => setLoadStatus("error"));
-  }, []);
+  }
+
+  React.useEffect(() => { loadWallet(); }, []);
 
   const activity = React.useMemo(() => wallet ? buildActivity(wallet) : [], [wallet]);
   const pendingDeposits = React.useMemo(
@@ -487,7 +490,7 @@ function WalletPage() {
       </PageHeader>
       <div className="eu-stack">
         {loadStatus === "loading" && <Panel title="Activity"><EmptyState body="Fetching wallet data." title="Loading…" /></Panel>}
-        {loadStatus === "error" && <Panel title="Activity"><EmptyState body="Could not load wallet." title="Failed to load" /></Panel>}
+        {loadStatus === "error" && <Panel title="Activity"><EmptyState body="Could not load wallet." title="Failed to load" /><div style={{ textAlign: "center", marginTop: 8 }}><Button size="sm" variant="secondary" onClick={loadWallet}>Retry</Button></div></Panel>}
         {loadStatus === "ready" && wallet && (
           <>
             <Panel title="Recent activity">

@@ -578,7 +578,7 @@ function ApiKeysPage() {
               columns={[
                 { key: "label", header: "Label", render: (r) => r.label },
                 { key: "prefix", header: "Prefix", className: "mono", render: (r) => r.keyPrefix },
-                { key: "fp", header: "Fingerprint", className: "mono", render: (r) => r.fingerprint.slice(0, 12) + "…" },
+                { key: "fp", header: "Fingerprint", className: "mono", render: (r) => <span title={r.fingerprint}>{r.fingerprint.slice(0, 12)}…</span> },
                 { key: "status", header: "Status", render: (r) => <Badge tone={r.status === "ACTIVE" ? "success" : "neutral"}>{r.status}</Badge> },
                 { key: "created", header: "Created", render: (r) => r.createdAt.slice(0, 10) },
                 { key: "lastUsed", header: "Last used", render: (r) => r.lastUsedAt ? r.lastUsedAt.slice(0, 10) : "Never" },
@@ -682,6 +682,7 @@ function WebhooksPage() {
   }
 
   async function toggleStatus(ep: WebhookEndpointDto) {
+    if (ep.status === "active" && !window.confirm("Disable this endpoint? It will stop receiving webhook events.")) return;
     try {
       await api.request(`/api/v1/merchant/webhook-endpoints/${ep.id}`, { method: "PUT", body: { status: ep.status === "active" ? "disabled" : "active" } });
       loadEndpoints();
@@ -961,6 +962,7 @@ function DisputesPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [accepting, setAccepting] = React.useState(false);
+  const [confirmAccept, setConfirmAccept] = React.useState(false);
   const [actionDone, setActionDone] = React.useState<string | null>(null);
 
   async function load() {
@@ -1011,6 +1013,7 @@ function DisputesPage() {
       await api.request(`/api/v1/merchant/disputes/${selected.id}/accept`, { method: "POST" });
       setActionDone("Dispute accepted.");
       setSelected(null);
+      setConfirmAccept(false);
       load();
     } catch (err) {
       setSubmitError(err instanceof PlatformApiError ? err.message : "Failed to accept dispute.");
@@ -1039,11 +1042,17 @@ function DisputesPage() {
             actions={
               isActionable ? (
                 <Toolbar>
-                  <Button disabled={accepting} size="sm" variant="danger" onClick={acceptDispute}>{accepting ? "…" : "Accept dispute"}</Button>
-                  <Button size="sm" variant="ghost" onClick={() => { setSelected(null); setSubmitError(null); }}>Close</Button>
+                  {!confirmAccept
+                    ? <Button size="sm" variant="danger" onClick={() => setConfirmAccept(true)}>Accept dispute</Button>
+                    : <>
+                        <Button disabled={accepting} size="sm" variant="danger" onClick={acceptDispute}>{accepting ? "…" : "Confirm — accept dispute"}</Button>
+                        <Button size="sm" variant="ghost" onClick={() => setConfirmAccept(false)}>Cancel</Button>
+                      </>
+                  }
+                  <Button size="sm" variant="ghost" onClick={() => { setSelected(null); setSubmitError(null); setConfirmAccept(false); }}>Close</Button>
                 </Toolbar>
               ) : (
-                <Button size="sm" variant="ghost" onClick={() => { setSelected(null); setSubmitError(null); }}>Close</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setSelected(null); setSubmitError(null); setConfirmAccept(false); }}>Close</Button>
               )
             }
             title={`Dispute ${selected.id.slice(0, 8)}…`}
@@ -1059,11 +1068,11 @@ function DisputesPage() {
             </div>
             {isActionable ? (
               <form className="mch-create-form" onSubmit={submitEvidence} style={{ marginTop: 16 }}>
-                <Field label="Evidence narrative" hint="Describe why this charge is valid.">
+                <Field label="Evidence narrative" hint="Minimum 20 characters. Describe why this charge is valid.">
                   <TextArea required rows={4} value={evidenceNarrative} onChange={(e) => setEvidenceNarrative(e.target.value)} />
                 </Field>
                 {submitError && <div className="mch-error">{submitError}</div>}
-                <Button disabled={submitting || !evidenceNarrative} type="submit" variant="primary">{submitting ? "Submitting…" : "Submit evidence"}</Button>
+                <Button disabled={submitting || evidenceNarrative.trim().length < 20} type="submit" variant="primary">{submitting ? "Submitting…" : "Submit evidence"}</Button>
               </form>
             ) : (
               <p className="mch-muted" style={{ marginTop: 12 }}>This dispute is in a terminal state. No further action is required.</p>
