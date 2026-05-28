@@ -129,6 +129,20 @@ function evTone(status: string): BadgeTone {
   return "neutral";
 }
 
+function settlementTone(status: string): BadgeTone {
+  if (status === "SETTLED") return "success";
+  if (status === "FAILED") return "danger";
+  if (status === "PROCESSING") return "warning";
+  return "neutral";
+}
+
+function disputeTone(state: string): BadgeTone {
+  if (state === "WON") return "success";
+  if (state === "LOST" || state === "ACCEPTED") return "danger";
+  if (state === "OPEN" || state === "EVIDENCE_DUE") return "warning";
+  return "neutral";
+}
+
 const WEBHOOK_EVENT_TYPES = [
   "payment_intent.created",
   "payment_intent.succeeded",
@@ -161,6 +175,8 @@ function fmtAmount(amount: string, currency: string): string {
   const n = parseFloat(amount);
   return `${currency} ${isNaN(n) ? amount : n.toFixed(2)}`;
 }
+
+const DISPUTE_ACTIONABLE_STATES = ["OPEN", "EVIDENCE_DUE"];
 
 // ─── auth context ──────────────────────────────────────────────────────────
 
@@ -231,16 +247,28 @@ function activeKey(pathname: string): RouteKey {
 }
 
 function MerchantLayout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const current = activeKey(location.pathname);
-  const sections = Array.from(new Set(NAV.map((n) => n.section))).map((section) => ({
-    title: section,
-    items: NAV.filter((n) => n.section === section).map((n) => (
-      <AppSidebarItem key={n.key} active={n.key === current} label={n.label} onClick={() => navigate(`/${n.key}`)} />
-    )),
-  }));
+  const sections = [
+    ...Array.from(new Set(NAV.map((n) => n.section))).map((section) => ({
+      title: section,
+      items: NAV.filter((n) => n.section === section).map((n) => (
+        <AppSidebarItem key={n.key} active={n.key === current} label={n.label} onClick={() => navigate(`/${n.key}`)} />
+      )),
+    })),
+    {
+      title: "Session",
+      items: [
+        <AppSidebarItem
+          key="signout"
+          label="Sign out"
+          onClick={async () => { await logout(); navigate("/login", { replace: true }); }}
+        />,
+      ],
+    },
+  ];
   return (
     <AppShell
       surface="merchant"
@@ -430,8 +458,7 @@ function VerifyEmailPage() {
 // ─── onboarding ────────────────────────────────────────────────────────────
 
 function OnboardingPage() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const merchantStatus = user?.merchantStatus ?? "UNKNOWN";
 
   return (
@@ -462,13 +489,9 @@ function OnboardingPage() {
               <div><span>Email</span><strong>{user?.email}</strong></div>
               <div><span>Role</span><strong>{user?.role}</strong></div>
               <div><span>Employee status</span><strong>{user?.employeeStatus}</strong></div>
-              <div><span>Merchant status</span><strong>{merchantStatus}</strong></div>
             </div>
           </Panel>
         </div>
-        <Panel actions={<Button size="sm" variant="danger" onClick={async () => { await logout(); navigate("/login", { replace: true }); }}>Sign out</Button>} title="Session">
-          <p className="mch-muted">Signed in as <strong>{user?.email}</strong></p>
-        </Panel>
       </div>
     </>
   );
@@ -602,7 +625,7 @@ function WebhooksPage() {
   const [events, setEvents] = React.useState<WebhookEventDto[]>([]);
   const [epStatus, setEpStatus] = React.useState<"loading" | "ready" | "error">("loading");
   const [evStatus, setEvStatus] = React.useState<"loading" | "ready" | "error">("loading");
-  const [evStatusFilter, setEvStatusFilter] = React.useState<EventStatus>("FAILED");
+  const [evStatusFilter, setEvStatusFilter] = React.useState<EventStatus>("DELIVERED");
   const [showCreate, setShowCreate] = React.useState(false);
   const [createUrl, setCreateUrl] = React.useState("");
   const [createDesc, setCreateDesc] = React.useState("");
@@ -755,6 +778,7 @@ function WebhooksPage() {
                   { key: "status", header: "Status", render: (r) => <Badge tone={evTone(r.status)}>{r.status}</Badge> },
                   { key: "tries", header: "Attempts", render: (r) => `${r.retryCount} / ${r.maxAttempts}` },
                   { key: "last", header: "Last attempt", render: (r) => r.lastAttemptAt?.slice(0, 19).replace("T", " ") ?? "—" },
+                  { key: "err", header: "Error", render: (r) => r.lastErrorMessage ? <span className="mch-muted">{r.lastErrorMessage.slice(0, 60)}{r.lastErrorMessage.length > 60 ? "…" : ""}</span> : "—" },
                   {
                     key: "act", header: "", render: (r) => (
                       <Button disabled={replaying === r.id} size="sm" variant="ghost" onClick={() => handleReplay(r.id)}>{replaying === r.id ? "…" : "Replay"}</Button>
@@ -795,12 +819,14 @@ function PaymentsPage() {
   return (
     <>
       <PageHeader breadcrumbs={<span>Merchant / Business / Payments</span>} screenId="MDB-UI-05" subtitle="Payment intents processed through your account." title="Payments">
-        <StatGrid columns={4}>
-          <StatCard label="Total" value={payments.length} />
-          <StatCard label="Settled" tone="success" value={counts["SETTLED"] ?? 0} />
-          <StatCard label="Captured" tone="info" value={counts["CAPTURED"] ?? 0} />
-          <StatCard label="Disputed" tone="warning" value={counts["DISPUTED"] ?? 0} />
-        </StatGrid>
+        {loadStatus === "ready" && (
+          <StatGrid columns={4}>
+            <StatCard label="Total" value={payments.length} />
+            <StatCard label="Settled" tone="success" value={counts["SETTLED"] ?? 0} />
+            <StatCard label="Captured" tone="info" value={counts["CAPTURED"] ?? 0} />
+            <StatCard label="Disputed" tone="warning" value={counts["DISPUTED"] ?? 0} />
+          </StatGrid>
+        )}
       </PageHeader>
       <div className="mch-stack">
         {selected && (
@@ -813,7 +839,6 @@ function PaymentsPage() {
               {selected.capturedAt && <div><span>Captured</span><strong>{selected.capturedAt.slice(0, 19).replace("T", " ")}</strong></div>}
               {selected.description && <div><span>Description</span><strong>{selected.description}</strong></div>}
             </div>
-            <p className="mch-muted mch-note">Capture, refund, and authorize are available via the Public API using your API key.</p>
           </Panel>
         )}
         <Panel title="Payment intents">
@@ -841,13 +866,6 @@ function PaymentsPage() {
 }
 
 // ─── settlements ───────────────────────────────────────────────────────────
-
-function settlementTone(status: string): BadgeTone {
-  if (status === "SETTLED") return "success";
-  if (status === "FAILED") return "danger";
-  if (status === "PROCESSING") return "warning";
-  return "neutral";
-}
 
 function SettlementsPage() {
   const [batches, setBatches] = React.useState<SettlementBatchDto[]>([]);
@@ -902,16 +920,21 @@ function SettlementsPage() {
 
 // ─── disputes ──────────────────────────────────────────────────────────────
 
-function disputeTone(state: string): BadgeTone {
-  if (state === "WON") return "success";
-  if (state === "LOST" || state === "ACCEPTED") return "danger";
-  if (state === "OPEN" || state === "EVIDENCE_DUE") return "warning";
-  return "neutral";
+type DisputeStateFilter = "active" | "all" | "won" | "closed";
+
+function filterDisputes(disputes: DisputeDto[], filter: DisputeStateFilter): DisputeDto[] {
+  switch (filter) {
+    case "active": return disputes.filter((d) => DISPUTE_ACTIONABLE_STATES.includes(d.state));
+    case "won": return disputes.filter((d) => d.state === "WON");
+    case "closed": return disputes.filter((d) => d.state === "LOST" || d.state === "ACCEPTED");
+    default: return disputes;
+  }
 }
 
 function DisputesPage() {
   const [disputes, setDisputes] = React.useState<DisputeDto[]>([]);
   const [loadStatus, setLoadStatus] = React.useState<"loading" | "ready" | "error">("loading");
+  const [stateFilter, setStateFilter] = React.useState<DisputeStateFilter>("active");
   const [selected, setSelected] = React.useState<DisputeDto | null>(null);
   const [evidenceNarrative, setEvidenceNarrative] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
@@ -929,6 +952,15 @@ function DisputesPage() {
   }
 
   React.useEffect(() => { load(); }, []);
+
+  React.useEffect(() => {
+    if (selected && !filterDisputes(disputes, stateFilter).find((d) => d.id === selected.id)) {
+      setSelected(null);
+    }
+  }, [stateFilter, disputes]);
+
+  const visible = React.useMemo(() => filterDisputes(disputes, stateFilter), [disputes, stateFilter]);
+  const isActionable = selected ? DISPUTE_ACTIONABLE_STATES.includes(selected.state) : false;
 
   async function submitEvidence(e: React.FormEvent) {
     e.preventDefault();
@@ -968,7 +1000,7 @@ function DisputesPage() {
         {loadStatus === "ready" && (
           <StatGrid columns={3}>
             <StatCard label="Total" value={disputes.length} />
-            <StatCard label="Open" tone="warning" value={disputes.filter((d) => d.state === "OPEN" || d.state === "EVIDENCE_DUE").length} />
+            <StatCard label="Needs action" tone="warning" value={disputes.filter((d) => DISPUTE_ACTIONABLE_STATES.includes(d.state)).length} />
             <StatCard label="Won" tone="success" value={disputes.filter((d) => d.state === "WON").length} />
           </StatGrid>
         )}
@@ -982,10 +1014,14 @@ function DisputesPage() {
         {selected && (
           <Panel
             actions={
-              <Toolbar>
-                <Button disabled={accepting} size="sm" variant="danger" onClick={acceptDispute}>{accepting ? "…" : "Accept dispute"}</Button>
+              isActionable ? (
+                <Toolbar>
+                  <Button disabled={accepting} size="sm" variant="danger" onClick={acceptDispute}>{accepting ? "…" : "Accept dispute"}</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setSelected(null); setSubmitError(null); }}>Close</Button>
+                </Toolbar>
+              ) : (
                 <Button size="sm" variant="ghost" onClick={() => { setSelected(null); setSubmitError(null); }}>Close</Button>
-              </Toolbar>
+              )
             }
             title={`Dispute ${selected.id.slice(0, 8)}…`}
           >
@@ -998,16 +1034,30 @@ function DisputesPage() {
               {selected.narrative && <div><span>Narrative</span><strong>{selected.narrative}</strong></div>}
               <div><span>Deadline</span><strong>{selected.merchantResponseDeadline.slice(0, 10)}</strong></div>
             </div>
-            <form className="mch-create-form" onSubmit={submitEvidence} style={{ marginTop: 16 }}>
-              <Field label="Evidence narrative" hint="Describe why this charge is valid.">
-                <TextArea required rows={4} value={evidenceNarrative} onChange={(e) => setEvidenceNarrative(e.target.value)} />
-              </Field>
-              {submitError && <div className="mch-error">{submitError}</div>}
-              <Button disabled={submitting || !evidenceNarrative} type="submit" variant="primary">{submitting ? "Submitting…" : "Submit evidence"}</Button>
-            </form>
+            {isActionable ? (
+              <form className="mch-create-form" onSubmit={submitEvidence} style={{ marginTop: 16 }}>
+                <Field label="Evidence narrative" hint="Describe why this charge is valid.">
+                  <TextArea required rows={4} value={evidenceNarrative} onChange={(e) => setEvidenceNarrative(e.target.value)} />
+                </Field>
+                {submitError && <div className="mch-error">{submitError}</div>}
+                <Button disabled={submitting || !evidenceNarrative} type="submit" variant="primary">{submitting ? "Submitting…" : "Submit evidence"}</Button>
+              </form>
+            ) : (
+              <p className="mch-muted" style={{ marginTop: 12 }}>This dispute is in a terminal state. No further action is required.</p>
+            )}
           </Panel>
         )}
-        <Panel title="Disputes">
+        <Panel
+          actions={
+            <Select value={stateFilter} onChange={(e) => setStateFilter(e.target.value as DisputeStateFilter)}>
+              <option value="active">Needs action</option>
+              <option value="all">All</option>
+              <option value="won">Won</option>
+              <option value="closed">Lost / Accepted</option>
+            </Select>
+          }
+          title="Disputes"
+        >
           {loadStatus === "loading" && <EmptyState body="Fetching disputes." title="Loading…" />}
           {loadStatus === "error" && <EmptyState body="Could not fetch disputes." title="Failed to load" />}
           {loadStatus === "ready" && (
@@ -1019,11 +1069,11 @@ function DisputesPage() {
                 { key: "state", header: "State", render: (r) => <Badge tone={disputeTone(r.state)}>{r.state}</Badge> },
                 { key: "reason", header: "Reason", render: (r) => r.reasonCode },
                 { key: "deadline", header: "Deadline", render: (r) => r.merchantResponseDeadline.slice(0, 10) },
-                { key: "act", header: "", render: (r) => <Button size="sm" variant="ghost" onClick={() => { setSelected(r); setSubmitError(null); setEvidenceNarrative(""); }}>Respond</Button> },
+                { key: "act", header: "", render: (r) => <Button size="sm" variant="ghost" onClick={() => { setSelected(r); setSubmitError(null); setEvidenceNarrative(""); }}>View</Button> },
               ]}
-              emptyState={<EmptyState body="No disputes raised against your account." title="No disputes" />}
+              emptyState={<EmptyState body={stateFilter === "active" ? "No disputes require action." : "No disputes in this view."} title="No disputes" />}
               rowKey={(r) => r.id}
-              rows={disputes}
+              rows={visible}
             />
           )}
         </Panel>

@@ -28,7 +28,6 @@ import {
   type ActorControlRequest,
   type ActorControlResponse,
   type AmlAlert,
-  type ArbitrationDecisionResponse,
   type BackofficeAuditFeedItem,
   type BackofficeChargebackDetail,
   type BackofficeMeResponse,
@@ -57,7 +56,8 @@ type BackofficeRouteKey =
   | "aml-alerts"
   | "sanctions-hits"
   | "chargebacks"
-  | "audit-log";
+  | "audit-log"
+  | "actor-controls";
 
 type SessionStatus = "bootstrapping" | "ready";
 
@@ -91,7 +91,6 @@ const navItems: Array<{
   section: string;
   requiresCompliance?: boolean;
 }> = [
-  { key: "login", label: "OIDC login", section: "Access" },
   { key: "work-queue", label: "Work queue", section: "Operations" },
   { key: "manual-deposits", label: "Manual deposits", section: "Operations" },
   { key: "manual-withdrawals", label: "Manual withdrawals", section: "Operations" },
@@ -99,7 +98,8 @@ const navItems: Array<{
   { key: "aml-alerts", label: "AML alerts", section: "Compliance" },
   { key: "sanctions-hits", label: "Sanctions hits", section: "Compliance", requiresCompliance: true },
   { key: "chargebacks", label: "Chargeback arbitration", section: "Chargebacks" },
-  { key: "audit-log", label: "Audit controls", section: "Audit" },
+  { key: "audit-log", label: "Audit log", section: "Audit" },
+  { key: "actor-controls", label: "Actor controls", section: "Audit" },
 ];
 
 function useBackofficeApp() {
@@ -119,6 +119,7 @@ function backofficeRouteKey(pathname: string): BackofficeRouteKey {
   if (pathname === "/sanctions-hits") return "sanctions-hits";
   if (pathname === "/chargebacks") return "chargebacks";
   if (pathname === "/audit-log") return "audit-log";
+  if (pathname === "/actor-controls") return "actor-controls";
   return "work-queue";
 }
 
@@ -383,21 +384,33 @@ function BackofficeLayout() {
   const activeKey = backofficeRouteKey(location.pathname);
   const compliance = isComplianceProfile(session?.profile);
 
-  const sections = Array.from(new Set(navItems.map((item) => item.section))).map((section) => ({
-    title: section,
-    items: navItems
-      .filter((item) => item.section === section)
-      .map((item) => (
-        <AppSidebarItem
-          key={item.key}
-          active={item.key === activeKey}
-          disabled={Boolean(item.requiresCompliance && !compliance)}
-          label={item.label}
-          meta={item.requiresCompliance ? <Badge tone={compliance ? "success" : "warning"}>CO</Badge> : undefined}
-          onClick={() => navigate(routePath(item.key))}
-        />
-      )),
-  }));
+  const sections = [
+    ...Array.from(new Set(navItems.map((item) => item.section))).map((section) => ({
+      title: section,
+      items: navItems
+        .filter((item) => item.section === section)
+        .map((item) => (
+          <AppSidebarItem
+            key={item.key}
+            active={item.key === activeKey}
+            disabled={Boolean(item.requiresCompliance && !compliance)}
+            label={item.label}
+            meta={item.requiresCompliance ? <Badge tone={compliance ? "success" : "warning"}>CO</Badge> : undefined}
+            onClick={() => navigate(routePath(item.key))}
+          />
+        )),
+    })),
+    {
+      title: "Session",
+      items: [
+        session ? (
+          <AppSidebarItem key="signout" label="Sign out" onClick={logout} />
+        ) : (
+          <AppSidebarItem key="signin" active={activeKey === "login"} label="Sign in" onClick={() => navigate("/login")} />
+        ),
+      ],
+    },
+  ];
 
   return (
     <AppShell
@@ -474,20 +487,21 @@ function BackofficeLayout() {
         <Route
           element={
             <ProtectedRoute>
-              <AuditControlsPage />
+              <AuditLogPage />
             </ProtectedRoute>
           }
           path="/audit-log"
         />
+        <Route
+          element={
+            <ProtectedRoute>
+              <ActorControlsPage />
+            </ProtectedRoute>
+          }
+          path="/actor-controls"
+        />
         <Route element={<Navigate replace to={session ? "/work-queue" : "/login"} />} path="*" />
       </Routes>
-      {session && location.pathname !== "/login" ? (
-        <div className="backoffice-logout-row">
-          <Button size="sm" variant="ghost" onClick={logout}>
-            Clear local session
-          </Button>
-        </div>
-      ) : null}
     </AppShell>
   );
 }
@@ -574,16 +588,16 @@ function LoginPage() {
         breadcrumbs={<span>Backoffice / Access / Sign in</span>}
         rightSlot={<Badge tone="info">Keycloak</Badge>}
         screenId="BOF-UI-01"
-        subtitle="This route now performs direct password grant against the local backoffice realm and validates the bearer token through /api/v1/backoffice/me."
-        title="OIDC login"
+        subtitle="Sign in with your backoffice operator credentials."
+        title="Sign in"
       />
       <div className="backoffice-page-grid">
-        <Panel title="Local operator login">
+        <Panel title="Operator login">
           <form className="backoffice-form" onSubmit={handleSubmit}>
-            <Field hint="Local seeded users: operator, compliance, viewer." label="Username">
+            <Field hint="Local seeded users: operator, compliance." label="Username">
               <Input onChange={(event) => setUsername(event.target.value)} value={username} />
             </Field>
-            <Field hint="Default local password is password123." label="Password">
+            <Field label="Password">
               <Input onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
             </Field>
             {error ? <PageError message={error} /> : null}
@@ -599,16 +613,6 @@ function LoginPage() {
               </Button>
             </Toolbar>
           </form>
-        </Panel>
-        <Panel title="Role model">
-          <div className="backoffice-copy">
-            <p>Backoffice session is bearer-token based. The SPA stores only the current access token and the profile returned by `/api/v1/backoffice/me`.</p>
-            <ul>
-              <li>`backoffice_operator` can work manual ops, KYC, AML, chargebacks, and audit controls</li>
-              <li>`compliance_officer` unlocks sanctions list/detail and SAR marking</li>
-              <li>`senior_compliance` also satisfies sanctions access</li>
-            </ul>
-          </div>
         </Panel>
       </div>
     </>
@@ -697,9 +701,8 @@ function WorkQueuePage() {
     <>
       <PageHeader
         breadcrumbs={<span>Backoffice / Operations / Work queue</span>}
-        rightSlot={<Badge tone="success">LIVE</Badge>}
         screenId="BOF-UI-02"
-        subtitle="Queue home is now derived from live manual-ops, KYC, AML, and sanctions endpoints instead of fixture rows."
+        subtitle="Live summary of open operational items. Click a queue to begin review."
         title={surfaceLabels.backoffice}
       >
         <StatGrid columns={4}>
@@ -707,7 +710,7 @@ function WorkQueuePage() {
           <StatCard label="AML alerts" meta="reviewable alerts" tone="warning" value={data.aml.length} />
           <StatCard
             label="Sanctions hits"
-            meta={canViewSanctions ? "compliance queue" : "hidden for operator"}
+            meta={canViewSanctions ? "compliance queue" : "requires compliance role"}
             tone="info"
             value={canViewSanctions ? data.sanctions.length : "—"}
           />
@@ -723,63 +726,46 @@ function WorkQueuePage() {
         <Panel
           actions={
             <Toolbar>
-              <Badge tone="warning">{session!.profile.roles[0] ?? "role"}</Badge>
               <ToolbarSpacer />
               <Button size="sm" variant="secondary" onClick={reload}>
-                Refresh queues
+                Refresh
               </Button>
             </Toolbar>
           }
-          title="Priority lane"
+          title="Open items"
         >
           {loading ? <div className="backoffice-loading-copy">Loading queue snapshot...</div> : null}
           {error ? <PageError message={error} /> : null}
           {!loading && !error ? (
-            <div className="backoffice-priority-list">
-              {queueRows.slice(0, 3).map((row) => (
-                <button
-                  key={row.id}
-                  className={`backoffice-priority-card ${row.priority}`}
-                  onClick={() => navigate(routePath(row.route))}
-                  type="button"
-                >
-                  <strong>{row.type}</strong>
-                  <span>{row.subject}</span>
-                  <Badge tone={row.priority === "critical" ? "danger" : row.priority}>{row.age}</Badge>
-                </button>
-              ))}
-            </div>
+            <DataTable
+              columns={[
+                { key: "id", header: "ID", className: "mono", render: (row) => row.id.slice(0, 8) + "…" },
+                { key: "type", header: "Type", render: (row) => row.type },
+                { key: "subject", header: "Subject", className: "mono", render: (row) => row.subject.slice(0, 8) + "…" },
+                { key: "state", header: "State", render: (row) => <Badge tone={statusTone(row.state)}>{row.state}</Badge> },
+                {
+                  key: "priority",
+                  header: "Priority",
+                  render: (row) => (
+                    <Badge tone={row.priority === "critical" ? "danger" : row.priority}>{row.priority.toUpperCase()}</Badge>
+                  ),
+                },
+                { key: "age", header: "Age", className: "mono", render: (row) => row.age },
+                {
+                  key: "action",
+                  header: "Action",
+                  render: (row) => (
+                    <Button size="sm" variant="ghost" onClick={() => navigate(routePath(row.route))}>
+                      Open queue
+                    </Button>
+                  ),
+                },
+              ]}
+              emptyState={<EmptyState body="No reviewable items are currently open." title="Queue is empty" />}
+              rowKey={(row) => `${row.route}:${row.id}`}
+              rows={queueRows}
+            />
           ) : null}
-        </Panel>
-        <Panel title="Live queue sample">
-          <DataTable
-            columns={[
-              { key: "id", header: "ID", className: "mono", render: (row) => row.id },
-              { key: "type", header: "Type", render: (row) => row.type },
-              { key: "subject", header: "Subject", render: (row) => row.subject },
-              { key: "state", header: "State", render: (row) => <Badge tone={statusTone(row.state)}>{row.state}</Badge> },
-              {
-                key: "priority",
-                header: "Priority",
-                render: (row) => (
-                  <Badge tone={row.priority === "critical" ? "danger" : row.priority}>{row.priority.toUpperCase()}</Badge>
-                ),
-              },
-              { key: "age", header: "Age", className: "mono", render: (row) => row.age },
-              {
-                key: "action",
-                header: "Action",
-                render: (row) => (
-                  <Button size="sm" variant="ghost" onClick={() => navigate(routePath(row.route))}>
-                    Open queue
-                  </Button>
-                ),
-              },
-            ]}
-            emptyState={<EmptyState body="No reviewable items are currently open." title="Queue is empty" />}
-            rowKey={(row) => `${row.route}:${row.id}`}
-            rows={queueRows}
-          />
         </Panel>
       </div>
     </>
@@ -820,9 +806,8 @@ function ManualDepositsPage() {
 
   return (
     <PageSection
-      rightSlot={<Badge tone="warning">manual_ops_review</Badge>}
       screenId="BOF-UI-03"
-      subtitle="Reads from /api/v1/backoffice/manual-ops/deposits and records APPROVE or REJECT decisions on the selected deposit request."
+      subtitle="Review and approve or reject pending deposit requests."
       title="Manual deposits"
     >
       <TwoColumnPage
@@ -845,7 +830,7 @@ function ManualDepositsPage() {
                     ["Last reason", selected.reason ?? "—"],
                   ]}
                 />
-                <Field hint="Backend requires a non-empty reason." label="Decision reason">
+                <Field hint="Required by the backend." label="Decision reason">
                   <TextArea onChange={(event) => setReason(event.target.value)} rows={5} value={reason} />
                 </Field>
                 {actionError ? <PageError message={actionError} /> : null}
@@ -879,8 +864,8 @@ function ManualDepositsPage() {
             {!loading ? (
               <DataTable
                 columns={[
-                  { key: "id", header: "Deposit", className: "mono", render: (row) => row.depositId },
-                  { key: "user", header: "End-user", className: "mono", render: (row) => row.userId },
+                  { key: "id", header: "Deposit", className: "mono", render: (row) => row.depositId.slice(0, 8) + "…" },
+                  { key: "user", header: "End-user", className: "mono", render: (row) => row.userId.slice(0, 8) + "…" },
                   { key: "amount", header: "Amount", render: (row) => formatAmount(row.amount, row.currency) },
                   { key: "state", header: "State", render: (row) => <Badge tone={statusTone(row.state)}>{row.state}</Badge> },
                   {
@@ -949,9 +934,8 @@ function ManualWithdrawalsPage() {
 
   return (
     <PageSection
-      rightSlot={<Badge tone="warning">two-eyes aware</Badge>}
       screenId="BOF-UI-04"
-      subtitle="Uses the held withdrawal queue and records COMPLETE or REJECT decisions, including second-review transitions for high-value payouts."
+      subtitle="Review held withdrawals and record COMPLETE or REJECT decisions."
       title="Manual withdrawals"
     >
       <TwoColumnPage
@@ -1008,8 +992,8 @@ function ManualWithdrawalsPage() {
             {!loading ? (
               <DataTable
                 columns={[
-                  { key: "id", header: "Withdrawal", className: "mono", render: (row) => row.withdrawalId },
-                  { key: "user", header: "End-user", className: "mono", render: (row) => row.userId },
+                  { key: "id", header: "Withdrawal", className: "mono", render: (row) => row.withdrawalId.slice(0, 8) + "…" },
+                  { key: "user", header: "End-user", className: "mono", render: (row) => row.userId.slice(0, 8) + "…" },
                   { key: "amount", header: "Amount", render: (row) => formatAmount(row.amount, row.currency) },
                   { key: "state", header: "State", render: (row) => <Badge tone={statusTone(row.state)}>{row.state}</Badge> },
                   { key: "heldAt", header: "Held at", render: (row) => formatDateTime(row.heldAt) },
@@ -1071,9 +1055,8 @@ function KycQueuePage() {
 
   return (
     <PageSection
-      rightSlot={<Badge tone="success">read-audit on detail</Badge>}
       screenId="BOF-UI-05"
-      subtitle="List and detail are live against the KYC backoffice controller. Opening a case triggers the backend read-audit write path before decisions are posted."
+      subtitle="Review KYC cases awaiting manual decision."
       title="KYC queue"
     >
       <TwoColumnPage
@@ -1093,7 +1076,6 @@ function KycQueuePage() {
                   items={[
                     ["Case ID", detail.data.id],
                     ["End-user", detail.data.endUserId],
-                    ["Status", detail.data.status],
                     ["Vendor", detail.data.vendor],
                     ["External user", detail.data.externalUserId],
                     ["Applicant ID", detail.data.vendorApplicantId ?? "—"],
@@ -1111,7 +1093,7 @@ function KycQueuePage() {
                     <option value="REQUEST_RESUBMIT">REQUEST_RESUBMIT</option>
                   </Select>
                 </Field>
-                <Field hint="Backend requires at least 20 characters." label="Rationale">
+                <Field hint="Minimum 20 characters required." label="Rationale">
                   <TextArea onChange={(event) => setRationale(event.target.value)} rows={5} value={rationale} />
                 </Field>
                 {actionError ? <PageError message={actionError} /> : null}
@@ -1142,8 +1124,8 @@ function KycQueuePage() {
             {!loading ? (
               <DataTable
                 columns={[
-                  { key: "id", header: "Case", className: "mono", render: (row) => row.id },
-                  { key: "user", header: "End-user", className: "mono", render: (row) => row.endUserId },
+                  { key: "id", header: "Case", className: "mono", render: (row) => row.id.slice(0, 8) + "…" },
+                  { key: "user", header: "End-user", className: "mono", render: (row) => row.endUserId.slice(0, 8) + "…" },
                   { key: "status", header: "Status", render: (row) => <Badge tone={statusTone(row.status)}>{row.status}</Badge> },
                   { key: "vendor", header: "Vendor", render: (row) => row.vendor },
                   { key: "updated", header: "Updated", render: (row) => formatDateTime(row.updatedAt) },
@@ -1206,9 +1188,8 @@ function AmlAlertsPage() {
 
   return (
     <PageSection
-      rightSlot={<Badge tone="warning">review + freeze unroll</Badge>}
       screenId="BOF-UI-06"
-      subtitle="AML detail is read-audited server-side. Decisions can close false positives, escalate, or mark for SAR when a compliance role is present."
+      subtitle="Review AML alerts and record decisions. SAR marking requires a compliance officer role."
       title="AML alerts"
     >
       <TwoColumnPage
@@ -1247,11 +1228,11 @@ function AmlAlertsPage() {
                     </option>
                   </Select>
                 </Field>
-                <Field hint="Backend requires at least 20 characters." label="Rationale">
+                <Field hint="Minimum 20 characters required." label="Rationale">
                   <TextArea onChange={(event) => setRationale(event.target.value)} rows={5} value={rationale} />
                 </Field>
                 {!canMarkSar ? (
-                  <div className="backoffice-inline-note">`MARKED_FOR_SAR` requires `compliance_officer` or `senior_compliance`.</div>
+                  <div className="backoffice-inline-note">Marking for SAR requires a compliance officer role.</div>
                 ) : null}
                 {actionError ? <PageError message={actionError} /> : null}
                 <Toolbar>
@@ -1281,11 +1262,11 @@ function AmlAlertsPage() {
             {!loading ? (
               <DataTable
                 columns={[
-                  { key: "id", header: "Alert", className: "mono", render: (row) => row.id },
+                  { key: "id", header: "Alert", className: "mono", render: (row) => row.id.slice(0, 8) + "…" },
                   { key: "rule", header: "Rule", render: (row) => row.ruleCode },
                   { key: "severity", header: "Severity", render: (row) => <Badge tone={severityTone(row.severity)}>{row.severity}</Badge> },
                   { key: "status", header: "Status", render: (row) => <Badge tone={statusTone(row.status)}>{row.status}</Badge> },
-                  { key: "user", header: "End-user", className: "mono", render: (row) => row.endUserId },
+                  { key: "user", header: "End-user", className: "mono", render: (row) => row.endUserId.slice(0, 8) + "…" },
                   {
                     key: "action",
                     header: "Action",
@@ -1345,13 +1326,12 @@ function SanctionsHitsPage() {
   if (!canViewSanctions) {
     return (
       <PageSection
-        rightSlot={<Badge tone="warning">compliance required</Badge>}
         screenId="BOF-UI-07"
-        subtitle="The backend enforces compliance-only access to sanctions list and detail. Operators can see the route, but cannot load queue contents."
+        subtitle="Sanctions list and detail access requires a compliance officer role."
         title="Sanctions hits"
       >
         <Panel title="Role gate">
-          <EmptyState body="Use the `compliance` demo user or a token carrying `compliance_officer` / `senior_compliance` to access sanctions hits." title="Compliance role required" />
+          <EmptyState body="Sign in with a compliance officer account to access sanctions hits." title="Compliance role required" />
         </Panel>
       </PageSection>
     );
@@ -1359,9 +1339,8 @@ function SanctionsHitsPage() {
 
   return (
     <PageSection
-      rightSlot={<Badge tone="danger">read-audit enforced</Badge>}
       screenId="BOF-UI-07"
-      subtitle="Sanctions detail now uses the live list/detail endpoints. Opening detail writes a synchronous read-audit record on the backend before the response returns."
+      subtitle="Review open sanctions hits and record false-positive clearing decisions."
       title="Sanctions hits"
     >
       <TwoColumnPage
@@ -1381,7 +1360,6 @@ function SanctionsHitsPage() {
                   items={[
                     ["Hit ID", detail.data.id],
                     ["End-user", detail.data.endUserId],
-                    ["Status", detail.data.status],
                     ["Reason", detail.data.reason],
                     ["Vendor", detail.data.vendor],
                     ["Matched entity", detail.data.matchedEntityId ?? "—"],
@@ -1391,7 +1369,7 @@ function SanctionsHitsPage() {
                     ["Updated", formatDateTime(detail.data.updatedAt)],
                   ]}
                 />
-                <Field hint="The current backend supports only CLEAR_FALSE_POSITIVE." label="Rationale">
+                <Field label="Clearing rationale">
                   <TextArea onChange={(event) => setRationale(event.target.value)} rows={5} value={rationale} />
                 </Field>
                 {actionError ? <PageError message={actionError} /> : null}
@@ -1422,7 +1400,7 @@ function SanctionsHitsPage() {
             {!loading ? (
               <DataTable
                 columns={[
-                  { key: "id", header: "Hit", className: "mono", render: (row) => row.id },
+                  { key: "id", header: "Hit", className: "mono", render: (row) => row.id.slice(0, 8) + "…" },
                   { key: "name", header: "Matched name", render: (row) => row.matchedName ?? "—" },
                   { key: "status", header: "Status", render: (row) => <Badge tone={statusTone(row.status)}>{row.status}</Badge> },
                   { key: "reason", header: "Reason", render: (row) => row.reason },
@@ -1459,7 +1437,6 @@ function ChargebackArbitrationPage() {
   const [rationale, setRationale] = React.useState("Evidence package reviewed; final arbitration outcome is recorded by backoffice.");
   const [submitting, setSubmitting] = React.useState(false);
   const [actionError, setActionError] = React.useState<string | null>(null);
-  const [result, setResult] = React.useState<ArbitrationDecisionResponse | null>(null);
 
   React.useEffect(() => {
     if (data.length === 0) {
@@ -1480,7 +1457,6 @@ function ChargebackArbitrationPage() {
     setActionError(null);
     try {
       const response = await backofficeApi.decideChargeback(token, selectedId, outcome, rationale);
-      setResult(response);
       detail.setData((current) =>
         current
           ? {
@@ -1492,9 +1468,8 @@ function ChargebackArbitrationPage() {
             }
           : current,
       );
-      reload()
+      reload();
     } catch (submitError) {
-      setResult(null);
       setActionError(formatError(submitError));
     } finally {
       setSubmitting(false);
@@ -1503,9 +1478,8 @@ function ChargebackArbitrationPage() {
 
   return (
     <PageSection
-      rightSlot={<Badge tone="success">read-audit on detail</Badge>}
       screenId="BOF-UI-08"
-      subtitle="Chargeback disputes now expose live backoffice list/detail endpoints. Opening dispute detail writes a synchronous read-audit row before the response returns."
+      subtitle="Review chargeback evidence and record final arbitration decisions."
       title="Chargeback arbitration"
     >
       <TwoColumnPage
@@ -1528,7 +1502,6 @@ function ChargebackArbitrationPage() {
                     ["Merchant", detail.data.dispute.merchantId],
                     ["Cardholder", detail.data.dispute.cardholderUserId],
                     ["Amount", formatAmount(detail.data.dispute.amount, detail.data.dispute.currency)],
-                    ["State", detail.data.dispute.state],
                     ["Reason", detail.data.dispute.reasonCode],
                     ["Narrative", detail.data.dispute.narrative ?? "—"],
                     ["Merchant deadline", formatDateTime(detail.data.dispute.merchantResponseDeadline)],
@@ -1536,8 +1509,7 @@ function ChargebackArbitrationPage() {
                     ["Created", formatDateTime(detail.data.dispute.createdAt)],
                     ["Evidence submission", detail.data.evidenceSubmission?.id ?? "—"],
                     ["Evidence state", detail.data.evidenceSubmission?.state ?? "—"],
-                    ["Evidence attachments", detail.data.evidenceSubmission ? String(detail.data.evidenceSubmission.attachments.length) : "0"],
-                    ["Attachment names", detail.data.evidenceSubmission?.attachments.map((item) => item.fileName).join(", ") || "—"],
+                    ["Attachments", detail.data.evidenceSubmission ? String(detail.data.evidenceSubmission.attachments.length) : "0"],
                   ]}
                 />
                 <Field label="Outcome">
@@ -1546,11 +1518,11 @@ function ChargebackArbitrationPage() {
                     <option value="LOST">LOST</option>
                   </Select>
                 </Field>
-                <Field hint="Backend requires 20-4000 characters." label="Rationale">
+                <Field hint="20–4000 characters required." label="Rationale">
                   <TextArea onChange={(event) => setRationale(event.target.value)} rows={5} value={rationale} />
                 </Field>
                 {detail.data.dispute.state !== "EVIDENCE_SUBMITTED" ? (
-                  <div className="backoffice-inline-note">Arbitration is available only when the dispute is in `EVIDENCE_SUBMITTED` state.</div>
+                  <div className="backoffice-inline-note">Arbitration is available only when the dispute is in EVIDENCE_SUBMITTED state.</div>
                 ) : null}
                 {actionError ? <PageError message={actionError} /> : null}
                 <Toolbar>
@@ -1558,16 +1530,6 @@ function ChargebackArbitrationPage() {
                     {submitting ? "Submitting..." : "Record arbitration"}
                   </Button>
                 </Toolbar>
-                {result ? (
-                  <KeyValueList
-                    items={[
-                      ["Last decision dispute", result.disputeId],
-                      ["Last decision state", result.state],
-                      ["Last outcome", result.outcome],
-                      ["Last journal", result.arbitrationJournalId],
-                    ]}
-                  />
-                ) : null}
               </div>
             ) : null}
           </Panel>
@@ -1590,7 +1552,7 @@ function ChargebackArbitrationPage() {
             {!loading ? (
               <DataTable
                 columns={[
-                  { key: "id", header: "Dispute", className: "mono", render: (row) => row.id },
+                  { key: "id", header: "Dispute", className: "mono", render: (row) => row.id.slice(0, 8) + "…" },
                   { key: "state", header: "State", render: (row) => <Badge tone={statusTone(row.state)}>{row.state}</Badge> },
                   { key: "amount", header: "Amount", render: (row) => formatAmount(row.amount, row.currency) },
                   { key: "reason", header: "Reason", render: (row) => row.reasonCode },
@@ -1617,26 +1579,13 @@ function ChargebackArbitrationPage() {
   );
 }
 
-function AuditControlsPage() {
+function AuditLogPage() {
   const { session } = useBackofficeApp();
   const token = session!.accessToken;
   const [stream, setStream] = React.useState("ALL");
   const loadAuditFeed = React.useCallback(() => backofficeApi.listAuditFeed(token, stream), [token, stream]);
   const { data, loading, error: feedError, reload } = useRemoteData(async () => (await loadAuditFeed()).items, [] as BackofficeAuditFeedItem[]);
   const [selectedEntryId, setSelectedEntryId] = React.useState<string | null>(null);
-  const [resourceId, setResourceId] = React.useState("");
-  const [probeLoading, setProbeLoading] = React.useState(false);
-  const [probeError, setProbeError] = React.useState<string | null>(null);
-  const [probeResult, setProbeResult] = React.useState<ReadAuditProbeResponse | null>(null);
-  const [controlInput, setControlInput] = React.useState<ActorControlRequest>({
-    actorType: "END_USER",
-    actorId: "",
-    state: "FROZEN",
-    reasonCode: "manual_backoffice_action",
-  });
-  const [controlLoading, setControlLoading] = React.useState(false);
-  const [controlError, setControlError] = React.useState<string | null>(null);
-  const [controlResult, setControlResult] = React.useState<ActorControlResponse | null>(null);
 
   React.useEffect(() => {
     if (data.length === 0) {
@@ -1650,6 +1599,112 @@ function AuditControlsPage() {
     () => data.find((item) => item.entryId === selectedEntryId) ?? null,
     [data, selectedEntryId],
   );
+
+  return (
+    <PageSection
+      screenId="BOF-UI-09"
+      subtitle="Browse the operational and read-audit log streams."
+      title="Audit log"
+    >
+      <TwoColumnPage
+        detailPanel={
+          <Panel
+            actions={<Badge tone={selectedEntry ? statusTone(selectedEntry.result) : "neutral"}>{selectedEntry?.result ?? "NO_SELECTION"}</Badge>}
+            title="Entry detail"
+          >
+            {!selectedEntry ? <EmptyState body="Select an audit entry to inspect actor, subject, metadata, and correlation fields." title="No entry selected" /> : null}
+            {selectedEntry ? (
+              <div className="backoffice-detail-stack">
+                <KeyValueList
+                  items={[
+                    ["Entry ID", selectedEntry.entryId],
+                    ["Stream", selectedEntry.stream],
+                    ["Code", selectedEntry.code],
+                    ["Result", selectedEntry.result],
+                    ["Actor type", selectedEntry.actorType],
+                    ["Actor ID", selectedEntry.actorId ?? "—"],
+                    ["Actor ref", selectedEntry.actorReference ?? "—"],
+                    ["Subject type", selectedEntry.subjectType],
+                    ["Subject ID", selectedEntry.subjectId ?? "—"],
+                    ["Resource type", selectedEntry.resourceType ?? "—"],
+                    ["Resource ID", selectedEntry.resourceId ?? "—"],
+                    ["Request ID", selectedEntry.requestId ?? "—"],
+                    ["Correlation ID", selectedEntry.correlationId ?? "—"],
+                    ["Created", formatDateTime(selectedEntry.createdAt)],
+                    ["Metadata", <code className="mono">{selectedEntry.metadataJson}</code>],
+                  ]}
+                />
+              </div>
+            ) : null}
+          </Panel>
+        }
+        listPanel={
+          <Panel
+            actions={
+              <Toolbar>
+                <Badge tone="info">{data.length} rows</Badge>
+                <Select onChange={(event) => setStream(event.target.value)} value={stream}>
+                  <option value="ALL">ALL</option>
+                  <option value="AUDIT_LOG">AUDIT_LOG</option>
+                  <option value="READ_AUDIT_LOG">READ_AUDIT_LOG</option>
+                </Select>
+                <ToolbarSpacer />
+                <Button size="sm" variant="secondary" onClick={reload}>
+                  Refresh
+                </Button>
+              </Toolbar>
+            }
+            title="Audit feed"
+          >
+            {loading ? <div className="backoffice-loading-copy">Loading audit feed...</div> : null}
+            {feedError ? <PageError message={feedError} /> : null}
+            {!loading ? (
+              <DataTable
+                columns={[
+                  { key: "id", header: "Entry", className: "mono", render: (row) => row.entryId.slice(0, 8) + "…" },
+                  { key: "stream", header: "Stream", render: (row) => row.stream },
+                  { key: "code", header: "Code", className: "mono", render: (row) => row.code },
+                  { key: "actor", header: "Actor", render: (row) => row.actorType },
+                  { key: "result", header: "Result", render: (row) => <Badge tone={statusTone(row.result)}>{row.result}</Badge> },
+                  { key: "created", header: "Created", render: (row) => formatDateTime(row.createdAt) },
+                  {
+                    key: "action",
+                    header: "Action",
+                    render: (row) => (
+                      <Button size="sm" variant={row.entryId === selectedEntryId ? "primary" : "ghost"} onClick={() => setSelectedEntryId(row.entryId)}>
+                        View
+                      </Button>
+                    ),
+                  },
+                ]}
+                emptyState={<EmptyState body="No audit rows matched the current filter." title="Audit feed empty" />}
+                rowKey={(row) => row.entryId}
+                rows={data}
+              />
+            ) : null}
+          </Panel>
+        }
+      />
+    </PageSection>
+  );
+}
+
+function ActorControlsPage() {
+  const { session } = useBackofficeApp();
+  const token = session!.accessToken;
+  const [resourceId, setResourceId] = React.useState("");
+  const [probeLoading, setProbeLoading] = React.useState(false);
+  const [probeError, setProbeError] = React.useState<string | null>(null);
+  const [probeResult, setProbeResult] = React.useState<ReadAuditProbeResponse | null>(null);
+  const [controlInput, setControlInput] = React.useState<ActorControlRequest>({
+    actorType: "END_USER",
+    actorId: "",
+    state: "FROZEN",
+    reasonCode: "manual_backoffice_action",
+  });
+  const [controlLoading, setControlLoading] = React.useState(false);
+  const [controlError, setControlError] = React.useState<string | null>(null);
+  const [controlResult, setControlResult] = React.useState<ActorControlResponse | null>(null);
 
   async function runProbe(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1687,185 +1742,103 @@ function AuditControlsPage() {
 
   return (
     <PageSection
-      rightSlot={<Badge tone="accent">feed + controls</Badge>}
-      screenId="BOF-UI-09"
-      subtitle="The audit feed is now live. Accessing it writes a synchronous read-audit row before data returns; operational probes and actor controls remain available below."
-      title="Audit controls"
+      screenId="BOF-UI-10"
+      subtitle="Freeze or unfreeze end-user and merchant accounts. Use the read-audit probe to verify that a resource access has been logged."
+      title="Actor controls"
     >
-      <div className="backoffice-stack">
-        <TwoColumnPage
-          detailPanel={
-            <Panel
-              actions={<Badge tone={selectedEntry ? statusTone(selectedEntry.result) : "neutral"}>{selectedEntry?.result ?? "NO_SELECTION"}</Badge>}
-              title="Audit entry detail"
-            >
-              {!selectedEntry ? <EmptyState body="Select an audit entry to inspect actor, subject, metadata, and correlation fields." title="No audit entry selected" /> : null}
-              {selectedEntry ? (
-                <div className="backoffice-detail-stack">
-                  <KeyValueList
-                    items={[
-                      ["Entry ID", selectedEntry.entryId],
-                      ["Stream", selectedEntry.stream],
-                      ["Code", selectedEntry.code],
-                      ["Result", selectedEntry.result],
-                      ["Actor type", selectedEntry.actorType],
-                      ["Actor ID", selectedEntry.actorId ?? "—"],
-                      ["Actor ref", selectedEntry.actorReference ?? "—"],
-                      ["Subject type", selectedEntry.subjectType],
-                      ["Subject ID", selectedEntry.subjectId ?? "—"],
-                      ["Resource type", selectedEntry.resourceType ?? "—"],
-                      ["Resource ID", selectedEntry.resourceId ?? "—"],
-                      ["Request ID", selectedEntry.requestId ?? "—"],
-                      ["Correlation ID", selectedEntry.correlationId ?? "—"],
-                      ["Created", formatDateTime(selectedEntry.createdAt)],
-                      ["Metadata", <code className="mono">{selectedEntry.metadataJson}</code>],
-                    ]}
-                  />
-                </div>
-              ) : null}
-            </Panel>
-          }
-          listPanel={
-            <Panel
-              actions={
-                <Toolbar>
-                  <Badge tone="info">{data.length} rows</Badge>
-                  <Select onChange={(event) => setStream(event.target.value)} value={stream}>
-                    <option value="ALL">ALL</option>
-                    <option value="AUDIT_LOG">AUDIT_LOG</option>
-                    <option value="READ_AUDIT_LOG">READ_AUDIT_LOG</option>
-                  </Select>
-                  <ToolbarSpacer />
-                  <Button size="sm" variant="secondary" onClick={reload}>
-                    Refresh
-                  </Button>
-                </Toolbar>
-              }
-              title="Audit feed"
-            >
-              {loading ? <div className="backoffice-loading-copy">Loading audit feed...</div> : null}
-              {feedError ? <PageError message={feedError} /> : null}
-              {!loading ? (
-                <DataTable
-                  columns={[
-                    { key: "id", header: "Entry", className: "mono", render: (row) => row.entryId },
-                    { key: "stream", header: "Stream", render: (row) => row.stream },
-                    { key: "code", header: "Code", className: "mono", render: (row) => row.code },
-                    { key: "actor", header: "Actor", render: (row) => row.actorType },
-                    { key: "result", header: "Result", render: (row) => <Badge tone={statusTone(row.result)}>{row.result}</Badge> },
-                    { key: "created", header: "Created", render: (row) => formatDateTime(row.createdAt) },
-                    {
-                      key: "action",
-                      header: "Action",
-                      render: (row) => (
-                        <Button size="sm" variant={row.entryId === selectedEntryId ? "primary" : "ghost"} onClick={() => setSelectedEntryId(row.entryId)}>
-                          View
-                        </Button>
-                      ),
-                    },
-                  ]}
-                  emptyState={<EmptyState body="No audit rows matched the current filter." title="Audit feed empty" />}
-                  rowKey={(row) => row.entryId}
-                  rows={data}
-                />
-              ) : null}
-            </Panel>
-          }
-        />
-        <div className="backoffice-page-grid">
-          <Panel title="Read-audit probe">
-            <form className="backoffice-form" onSubmit={runProbe}>
-              <Field hint="Must be a valid UUID." label="Resource ID">
-                <Input onChange={(event) => setResourceId(event.target.value)} value={resourceId} />
-              </Field>
-              {probeError ? <PageError message={probeError} /> : null}
-              <Button disabled={probeLoading} type="submit" variant="primary">
-                {probeLoading ? "Running..." : "Run probe"}
-              </Button>
-            </form>
-            {probeResult ? (
-              <div className="backoffice-result-card">
-                <KeyValueList
-                  items={[
-                    ["Resource ID", probeResult.resourceId],
-                    ["Resource type", probeResult.resourceType],
-                    ["Read-audited", probeResult.readAudited ? "true" : "false"],
-                  ]}
-                />
-              </div>
-            ) : null}
-          </Panel>
-          <Panel title="Actor control mutation">
-            <form className="backoffice-form" onSubmit={applyControl}>
-              <Field label="Actor type">
-                <Select
-                  onChange={(event) =>
-                    setControlInput((current) => ({
-                      ...current,
-                      actorType: event.target.value,
-                    }))
-                  }
-                  value={controlInput.actorType}
-                >
-                  <option value="END_USER">END_USER</option>
-                  <option value="MERCHANT">MERCHANT</option>
-                </Select>
-              </Field>
-              <Field hint="Actor UUID expected by the backend." label="Actor ID">
-                <Input
-                  onChange={(event) =>
-                    setControlInput((current) => ({
-                      ...current,
-                      actorId: event.target.value,
-                    }))
-                  }
-                  value={controlInput.actorId}
-                />
-              </Field>
-              <Field label="State">
-                <Select
-                  onChange={(event) =>
-                    setControlInput((current) => ({
-                      ...current,
-                      state: event.target.value,
-                    }))
-                  }
-                  value={controlInput.state}
-                >
-                  <option value="FROZEN">FROZEN</option>
-                  <option value="ACTIVE">ACTIVE</option>
-                </Select>
-              </Field>
-              <Field label="Reason code">
-                <Input
-                  onChange={(event) =>
-                    setControlInput((current) => ({
-                      ...current,
-                      reasonCode: event.target.value,
-                    }))
-                  }
-                  value={controlInput.reasonCode}
-                />
-              </Field>
-              {controlError ? <PageError message={controlError} /> : null}
-              <Button disabled={controlLoading} type="submit" variant="primary">
-                {controlLoading ? "Applying..." : "Apply control"}
-              </Button>
-            </form>
-            {controlResult ? (
-              <div className="backoffice-result-card">
-                <KeyValueList
-                  items={[
-                    ["Actor type", controlResult.actorType],
-                    ["Actor ID", controlResult.actorId],
-                    ["State", controlResult.state],
-                    ["Reason code", controlResult.reasonCode],
-                  ]}
-                />
-              </div>
-            ) : null}
-          </Panel>
-        </div>
+      <div className="backoffice-page-grid">
+        <Panel title="Read-audit probe">
+          <form className="backoffice-form" onSubmit={runProbe}>
+            <Field hint="Must be a valid UUID." label="Resource ID">
+              <Input onChange={(event) => setResourceId(event.target.value)} value={resourceId} />
+            </Field>
+            {probeError ? <PageError message={probeError} /> : null}
+            <Button disabled={probeLoading} type="submit" variant="primary">
+              {probeLoading ? "Running..." : "Run probe"}
+            </Button>
+          </form>
+          {probeResult ? (
+            <div className="backoffice-result-card">
+              <KeyValueList
+                items={[
+                  ["Resource ID", probeResult.resourceId],
+                  ["Resource type", probeResult.resourceType],
+                  ["Read-audited", probeResult.readAudited ? "true" : "false"],
+                ]}
+              />
+            </div>
+          ) : null}
+        </Panel>
+        <Panel title="Account freeze / unfreeze">
+          <form className="backoffice-form" onSubmit={applyControl}>
+            <Field label="Actor type">
+              <Select
+                onChange={(event) =>
+                  setControlInput((current) => ({
+                    ...current,
+                    actorType: event.target.value,
+                  }))
+                }
+                value={controlInput.actorType}
+              >
+                <option value="END_USER">END_USER</option>
+                <option value="MERCHANT">MERCHANT</option>
+              </Select>
+            </Field>
+            <Field hint="Actor UUID from the backoffice record." label="Actor ID">
+              <Input
+                onChange={(event) =>
+                  setControlInput((current) => ({
+                    ...current,
+                    actorId: event.target.value,
+                  }))
+                }
+                value={controlInput.actorId}
+              />
+            </Field>
+            <Field label="New state">
+              <Select
+                onChange={(event) =>
+                  setControlInput((current) => ({
+                    ...current,
+                    state: event.target.value,
+                  }))
+                }
+                value={controlInput.state}
+              >
+                <option value="FROZEN">FROZEN</option>
+                <option value="ACTIVE">ACTIVE</option>
+              </Select>
+            </Field>
+            <Field label="Reason code">
+              <Input
+                onChange={(event) =>
+                  setControlInput((current) => ({
+                    ...current,
+                    reasonCode: event.target.value,
+                  }))
+                }
+                value={controlInput.reasonCode}
+              />
+            </Field>
+            {controlError ? <PageError message={controlError} /> : null}
+            <Button disabled={controlLoading} type="submit" variant="primary">
+              {controlLoading ? "Applying..." : "Apply control"}
+            </Button>
+          </form>
+          {controlResult ? (
+            <div className="backoffice-result-card">
+              <KeyValueList
+                items={[
+                  ["Actor type", controlResult.actorType],
+                  ["Actor ID", controlResult.actorId],
+                  ["State", controlResult.state],
+                  ["Reason code", controlResult.reasonCode],
+                ]}
+              />
+            </div>
+          ) : null}
+        </Panel>
       </div>
     </PageSection>
   );
@@ -1903,32 +1876,12 @@ function AuditRail() {
       <Panel title="Session">
         <div className="backoffice-rail-list">
           <div>
-            <strong>Subject</strong>
-            <span>{profile?.subject ?? "No active subject"}</span>
-          </div>
-          <div>
-            <strong>Email</strong>
-            <span>{profile?.email ?? "Not signed in"}</span>
-          </div>
-          <div>
             <strong>Roles</strong>
             <span>{profile ? profile.roles.join(", ") : "—"}</span>
           </div>
-        </div>
-      </Panel>
-      <Panel title="Backend surface">
-        <div className="backoffice-rail-kv">
           <div>
-            <span>Auth mode</span>
-            <strong>Keycloak password grant</strong>
-          </div>
-          <div>
-            <span>API path</span>
-            <strong>/api/v1/backoffice/*</strong>
-          </div>
-          <div>
-            <span>Dev proxy</span>
-            <strong>/api -&gt; 8081, /realms -&gt; 18080</strong>
+            <strong>Subject</strong>
+            <span>{profile?.subject ?? "No active subject"}</span>
           </div>
         </div>
       </Panel>

@@ -107,6 +107,57 @@ interface CardResponse {
   bin: string;
 }
 
+// ─── activity feed ─────────────────────────────────────────────────────────
+
+interface ActivityRow {
+  id: string;
+  kind: "Transfer" | "Deposit" | "Withdrawal";
+  amount: string;
+  currency: string;
+  state: string;
+  tone: BadgeTone;
+  date: string;
+  transferId?: string;
+  sofRequired?: boolean;
+  sofSubmitted?: boolean;
+}
+
+function buildActivity(wallet: WalletSummaryResponse): ActivityRow[] {
+  const rows: ActivityRow[] = [
+    ...wallet.transfers.map((t): ActivityRow => ({
+      id: t.transferId,
+      kind: "Transfer",
+      amount: t.amount,
+      currency: t.currency,
+      state: t.state,
+      tone: transferTone(t.state),
+      date: t.createdAt,
+      transferId: t.transferId,
+    })),
+    ...wallet.deposits.map((d): ActivityRow => ({
+      id: d.depositId,
+      kind: "Deposit",
+      amount: d.amount,
+      currency: d.currency,
+      state: d.state,
+      tone: depositTone(d.state),
+      date: d.createdAt,
+      sofRequired: d.sourceOfFundsRequired,
+      sofSubmitted: d.sourceOfFundsSubmitted,
+    })),
+    ...wallet.withdrawals.map((w): ActivityRow => ({
+      id: w.withdrawalId,
+      kind: "Withdrawal",
+      amount: w.amount,
+      currency: w.currency,
+      state: w.state,
+      tone: depositTone(w.state),
+      date: w.createdAt,
+    })),
+  ];
+  return rows.sort((a, b) => b.date.localeCompare(a.date));
+}
+
 // ─── helpers ───────────────────────────────────────────────────────────────
 
 function depositTone(state: string): BadgeTone {
@@ -199,22 +250,34 @@ const NAV: Array<{ key: RouteKey; label: string; section: string }> = [
   { key: "kyc", label: "Identity verification", section: "Account" },
 ];
 
-function activeKey(pathname: string): RouteKey {
+function activeRouteKey(pathname: string): RouteKey {
   const seg = pathname.split("/")[1];
   return (NAV.find((n) => n.key === seg)?.key ?? "wallet") as RouteKey;
 }
 
 function EnduserLayout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const current = activeKey(location.pathname);
-  const sections = Array.from(new Set(NAV.map((n) => n.section))).map((section) => ({
-    title: section,
-    items: NAV.filter((n) => n.section === section).map((n) => (
-      <AppSidebarItem key={n.key} active={n.key === current} label={n.label} onClick={() => navigate(`/${n.key}`)} />
-    )),
-  }));
+  const current = activeRouteKey(location.pathname);
+  const sections = [
+    ...Array.from(new Set(NAV.map((n) => n.section))).map((section) => ({
+      title: section,
+      items: NAV.filter((n) => n.section === section).map((n) => (
+        <AppSidebarItem key={n.key} active={n.key === current} label={n.label} onClick={() => navigate(`/${n.key}`)} />
+      )),
+    })),
+    {
+      title: "Session",
+      items: [
+        <AppSidebarItem
+          key="signout"
+          label="Sign out"
+          onClick={async () => { await logout(); navigate("/login", { replace: true }); }}
+        />,
+      ],
+    },
+  ];
   return (
     <AppShell
       surface="enduser"
@@ -401,62 +464,66 @@ function WalletPage() {
       .catch(() => setLoadStatus("error"));
   }, []);
 
+  const activity = React.useMemo(() => wallet ? buildActivity(wallet) : [], [wallet]);
+  const pendingDeposits = React.useMemo(
+    () => wallet ? wallet.deposits.filter((d) => d.state === "REQUESTED" || d.state === "PENDING_OPERATOR_REVIEW").length : 0,
+    [wallet],
+  );
+  const heldTransfers = React.useMemo(
+    () => wallet ? wallet.transfers.filter((t) => t.state.startsWith("HELD")).length : 0,
+    [wallet],
+  );
+
   return (
     <>
-      <PageHeader breadcrumbs={<span>Wallet / Home</span>} screenId="UEW-UI-03" subtitle="Your wallet balance and recent transactions." title="Wallet">
-        {wallet && (
+      <PageHeader breadcrumbs={<span>Wallet / Home</span>} screenId="UEW-UI-03" subtitle="Your balance and recent activity." title="Wallet">
+        {loadStatus === "ready" && wallet && (
           <StatGrid columns={3}>
-            <StatCard label="Balance" tone="success" value={`${wallet.currency} ${wallet.balance}`} />
-            <StatCard label="Deposits" value={wallet.deposits.length} />
-            <StatCard label="Transfers" value={wallet.transfers.length} />
+            <StatCard label="Balance" tone="success" value={fmtAmount(wallet.balance, wallet.currency)} />
+            <StatCard label="Pending deposits" tone={pendingDeposits > 0 ? "warning" : "neutral"} value={pendingDeposits} />
+            <StatCard label="Held transfers" tone={heldTransfers > 0 ? "warning" : "neutral"} value={heldTransfers} />
           </StatGrid>
         )}
       </PageHeader>
       <div className="eu-stack">
-        {loadStatus === "loading" && <Panel title="Wallet"><EmptyState body="Fetching wallet data." title="Loading…" /></Panel>}
-        {loadStatus === "error" && <Panel title="Wallet"><EmptyState body="Could not load wallet." title="Failed to load" /></Panel>}
+        {loadStatus === "loading" && <Panel title="Activity"><EmptyState body="Fetching wallet data." title="Loading…" /></Panel>}
+        {loadStatus === "error" && <Panel title="Activity"><EmptyState body="Could not load wallet." title="Failed to load" /></Panel>}
         {loadStatus === "ready" && wallet && (
           <>
-            <Panel title="Transfers">
-              <DataTable<TransferResponse>
+            <Panel title="Recent activity">
+              <DataTable<ActivityRow>
                 columns={[
-                  { key: "id", header: "ID", className: "mono", render: (r) => <button className="eu-link" onClick={() => navigate(`/tx/${r.transferId}`)}>{r.transferId.slice(0, 8)}…</button> },
-                  { key: "dir", header: "Direction", render: (r) => r.senderUserId === user?.userId ? "Sent" : "Received" },
+                  { key: "kind", header: "Type", render: (r) => r.kind },
                   { key: "amount", header: "Amount", render: (r) => fmtAmount(r.amount, r.currency) },
-                  { key: "state", header: "State", render: (r) => <Badge tone={transferTone(r.state)}>{r.state}</Badge> },
-                  { key: "date", header: "Date", render: (r) => r.createdAt.slice(0, 10) },
+                  {
+                    key: "state",
+                    header: "State",
+                    render: (r) => (
+                      <>
+                        <Badge tone={r.tone}>{r.state}</Badge>
+                        {r.sofRequired && !r.sofSubmitted && <> <Badge tone="warning">SoF required</Badge></>}
+                      </>
+                    ),
+                  },
+                  { key: "date", header: "Date", render: (r) => r.date.slice(0, 10) },
+                  {
+                    key: "act",
+                    header: "",
+                    render: (r) => r.transferId
+                      ? <button className="eu-link" onClick={() => navigate(`/tx/${r.transferId}`)}>View</button>
+                      : null,
+                  },
                 ]}
-                emptyState={<EmptyState body="No transfers yet." title="No transfers" />}
-                rowKey={(r) => r.transferId}
-                rows={wallet.transfers}
+                emptyState={<EmptyState body="No activity yet. Make a deposit to get started." title="No activity" />}
+                rowKey={(r) => r.id}
+                rows={activity}
               />
             </Panel>
-            <Panel title="Deposits">
-              <DataTable<DepositResponse>
-                columns={[
-                  { key: "id", header: "ID", className: "mono", render: (r) => r.depositId.slice(0, 8) + "…" },
-                  { key: "amount", header: "Amount", render: (r) => fmtAmount(r.amount, r.currency) },
-                  { key: "state", header: "State", render: (r) => <Badge tone={depositTone(r.state)}>{r.state}</Badge> },
-                  { key: "sof", header: "SoF", render: (r) => r.sourceOfFundsRequired ? (r.sourceOfFundsSubmitted ? <Badge tone="success">SUBMITTED</Badge> : <Badge tone="warning">REQUIRED</Badge>) : "—" },
-                  { key: "date", header: "Date", render: (r) => r.createdAt.slice(0, 10) },
-                ]}
-                emptyState={<EmptyState body="No deposits yet." title="No deposits" />}
-                rowKey={(r) => r.depositId}
-                rows={wallet.deposits}
-              />
-            </Panel>
-            <Panel title="Withdrawals">
-              <DataTable<WithdrawalResponse>
-                columns={[
-                  { key: "id", header: "ID", className: "mono", render: (r) => r.withdrawalId.slice(0, 8) + "…" },
-                  { key: "amount", header: "Amount", render: (r) => fmtAmount(r.amount, r.currency) },
-                  { key: "state", header: "State", render: (r) => <Badge tone={depositTone(r.state)}>{r.state}</Badge> },
-                  { key: "date", header: "Date", render: (r) => r.createdAt.slice(0, 10) },
-                ]}
-                emptyState={<EmptyState body="No withdrawals yet." title="No withdrawals" />}
-                rowKey={(r) => r.withdrawalId}
-                rows={wallet.withdrawals}
-              />
+            <Panel title="Your wallet address">
+              <div className="eu-kv">
+                <div><span>User ID</span><strong className="mono">{user?.userId}</strong></div>
+              </div>
+              <p className="eu-muted">Share this ID with another user so they can send you a transfer.</p>
             </Panel>
           </>
         )}
@@ -504,7 +571,7 @@ function TxDetailPage() {
             <div className="eu-kv">
               <div><span>Transfer ID</span><strong className="mono">{transfer.transferId}</strong></div>
               <div><span>Direction</span><strong>{transfer.senderUserId === user?.userId ? "Sent" : "Received"}</strong></div>
-              <div><span>Amount</span><strong>{transfer.currency} {transfer.amount}</strong></div>
+              <div><span>Amount</span><strong>{fmtAmount(transfer.amount, transfer.currency)}</strong></div>
               <div><span>State</span><strong><Badge tone={transferTone(transfer.state)}>{transfer.state}</Badge></strong></div>
               <div><span>From user</span><strong className="mono">{transfer.senderUserId}</strong></div>
               <div><span>To user</span><strong className="mono">{transfer.receiverUserId}</strong></div>
@@ -518,7 +585,6 @@ function TxDetailPage() {
                 <p className="eu-muted">This transfer is held pending recipient verification. It will be released automatically after 30 days if not completed sooner.</p>
               </div>
             )}
-            <p className="eu-note eu-muted">Detailed party information (KYC status, ledger entries, audit trail) is available in backoffice.</p>
           </Panel>
         )}
       </div>
@@ -646,6 +712,7 @@ function DepositPage() {
 // ─── transfer ──────────────────────────────────────────────────────────────
 
 function TransferPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [receiverUserId, setReceiverUserId] = React.useState("");
   const [amount, setAmount] = React.useState("");
@@ -702,9 +769,12 @@ function TransferPage() {
       <div className="eu-stack">
         <Panel title="New transfer">
           <form className="eu-form" onSubmit={submit}>
-            <Field label="Recipient user ID" hint="The user ID of the person you want to send to.">
+            <Field label="Recipient user ID" hint="Ask the recipient to share their user ID — it is shown on their Wallet page.">
               <Input required value={receiverUserId} onChange={(e) => setReceiverUserId(e.target.value)} />
             </Field>
+            {user?.userId && (
+              <p className="eu-muted">Your user ID: <span className="mono">{user.userId}</span></p>
+            )}
             <Field label="Amount (EUR)">
               <Input min="0.01" required step="0.01" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </Field>
@@ -822,36 +892,51 @@ function KycPage() {
     }
   }
 
+  const isConfigured = kycResult?.configurationStatus === "CONFIGURED";
+
   return (
     <>
-      <PageHeader breadcrumbs={<span>Account / Identity verification</span>} screenId="UEW-UI-02" subtitle="Verify your identity to unlock all wallet features." title="Identity verification" />
+      <PageHeader breadcrumbs={<span>Account / Identity verification</span>} screenId="UEW-UI-02" subtitle="Verify your identity to unlock all wallet features including card issuance." title="Identity verification" />
       <div className="eu-stack">
         {kycResult && (
-          <Panel title="KYC session">
+          <Panel title="KYC status">
             <div className="eu-kv">
-              <div><span>Profile ID</span><strong className="mono">{kycResult.profileId}</strong></div>
               <div><span>Status</span><strong><Badge tone={kycTone(kycResult.status)}>{kycResult.status}</Badge></strong></div>
-              <div><span>Vendor</span><strong>{kycResult.vendor}</strong></div>
-              {kycResult.vendorApplicantId && <div><span>Applicant ID</span><strong className="mono">{kycResult.vendorApplicantId}</strong></div>}
               {kycResult.levelName && <div><span>Level</span><strong>{kycResult.levelName}</strong></div>}
-              <div><span>Configuration</span><strong>{kycResult.configurationStatus}</strong></div>
+              {kycResult.vendorApplicantId && <div><span>Applicant ID</span><strong className="mono">{kycResult.vendorApplicantId}</strong></div>}
             </div>
-            {kycResult.accessToken && (
+            {!isConfigured && (
               <div className="eu-hold-notice">
-                <strong>Sumsub WebSDK integration point</strong>
-                <p className="eu-muted">Use the <code>accessToken</code> below to initialise the Sumsub WebSDK for document capture. The SDK package is not bundled in this build.</p>
-                <code className="eu-code">{kycResult.accessToken.slice(0, 40)}…</code>
+                <strong>Verification pending vendor setup</strong>
+                <p className="eu-muted">Identity verification is not yet fully activated for this account. No further action is required from you at this time — you will be notified when it becomes available.</p>
+              </div>
+            )}
+            {isConfigured && kycResult.status !== "APPROVED" && (
+              <div className="eu-hold-notice">
+                <strong>Continue your verification</strong>
+                <p className="eu-muted">Your verification session is active. Complete document upload in the verification flow to proceed.</p>
+              </div>
+            )}
+            {kycResult.status === "APPROVED" && (
+              <div className="eu-hold-notice">
+                <strong>Identity verified</strong>
+                <p className="eu-muted">Your identity has been verified. You can now issue virtual cards.</p>
               </div>
             )}
           </Panel>
         )}
-        <Panel title="Start / Resume KYC">
+        <Panel title="Identity verification">
           <div className="eu-form">
-            <p className="eu-muted">Clicking the button starts a new KYC session or resumes an existing one. You will be guided through document upload via the Sumsub verification flow.</p>
+            <p className="eu-muted">
+              {kycResult
+                ? "Check your current verification status or resume your session."
+                : "Start the identity verification process. KYC approval is required to issue virtual cards and access higher deposit limits."}
+            </p>
             {error && <div className="eu-error">{error}</div>}
             <Toolbar>
-              <Button disabled={busy} variant="primary" onClick={startKyc}>{busy ? "Starting…" : "Start KYC"}</Button>
-              {kycResult && <Badge tone={kycTone(kycResult.status)}>{kycResult.status}</Badge>}
+              <Button disabled={busy} variant="primary" onClick={startKyc}>
+                {busy ? "Checking…" : kycResult ? "Refresh status" : "Start verification"}
+              </Button>
             </Toolbar>
           </div>
         </Panel>
