@@ -10,9 +10,11 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 private const val MERCHANT_SESSION_COOKIE = "MFP_SESSION"
@@ -22,6 +24,24 @@ class MerchantDisputeController(
     private val identityService: IdentityService,
     private val chargebackService: ChargebackService,
 ) {
+    @GetMapping("/api/v1/merchant/disputes")
+    fun listDisputes(
+        @CookieValue(name = MERCHANT_SESSION_COOKIE, required = false) sessionToken: String?,
+        @RequestParam(name = "limit", required = false) limit: Int?,
+    ): ApiResponse<ChargebackDisputeListResponse> {
+        val employee = identityService.currentMerchant(sessionToken)
+        return ApiResponse(data = chargebackService.listMerchantDisputes(employee, limit ?: 25))
+    }
+
+    @GetMapping("/api/v1/merchant/disputes/{disputeId}")
+    fun disputeDetail(
+        @CookieValue(name = MERCHANT_SESSION_COOKIE, required = false) sessionToken: String?,
+        @PathVariable disputeId: String,
+    ): ApiResponse<MerchantDisputeDetailDto> {
+        val employee = identityService.currentMerchant(sessionToken)
+        return ApiResponse(data = chargebackService.getMerchantDispute(employee, parseUuid(disputeId)))
+    }
+
     @PostMapping("/api/v1/merchant/disputes/{disputeId}/evidence")
     fun submitEvidence(
         @CookieValue(name = MERCHANT_SESSION_COOKIE, required = false) sessionToken: String?,

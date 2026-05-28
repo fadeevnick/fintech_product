@@ -17,6 +17,43 @@ data class SettlementProjectionPublishResponse(
     val acquirerInsertedCount: Int,
 )
 
+data class MerchantSettlementBatchListResponse(
+    val items: List<MerchantSettlementBatchSummaryDto>,
+)
+
+data class MerchantSettlementBatchSummaryDto(
+    val batchId: String,
+    val status: String,
+    val currency: String,
+    val itemCount: Int,
+    val grossAmount: String,
+    val merchantNetAmount: String,
+    val interchangeAmount: String,
+    val networkAssessmentAmount: String,
+    val acquirerMarginAmount: String,
+    val settledAt: String,
+    val createdAt: String,
+)
+
+data class MerchantSettlementBatchDetailDto(
+    val batch: MerchantSettlementBatchSummaryDto,
+    val items: List<MerchantSettlementItemDto>,
+)
+
+data class MerchantSettlementItemDto(
+    val settlementItemId: String,
+    val paymentIntentId: String,
+    val grossAmount: String,
+    val merchantNetAmount: String,
+    val interchangeAmount: String,
+    val networkAssessmentAmount: String,
+    val acquirerMarginAmount: String,
+    val currency: String,
+    val status: String,
+    val ledgerJournalId: String,
+    val createdAt: String,
+)
+
 data class SettlementCandidate(
     val paymentIntentId: UUID,
     val merchantId: UUID,

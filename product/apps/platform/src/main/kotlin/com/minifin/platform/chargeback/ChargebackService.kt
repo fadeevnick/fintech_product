@@ -6,6 +6,7 @@ import com.minifin.platform.identity.MerchantEmployeeRecord
 import com.minifin.platform.ledger.LedgerRepository
 import com.minifin.platform.backoffice.BackofficePrincipal
 import com.minifin.platform.backoffice.BackofficeException
+import com.minifin.platform.controls.ReadAuditRepository
 import com.minifin.platform.merchant.dashboard.MerchantDashboardException
 import com.minifin.platform.merchant.webhooks.OutboundWebhookService
 import java.math.RoundingMode
@@ -35,6 +36,7 @@ class ChargebackService(
     private val jdbcTemplate: JdbcTemplate,
     private val properties: ChargebackProperties,
     private val evidenceObjectStorage: ChargebackEvidenceObjectStorage,
+    private val readAuditRepository: ReadAuditRepository,
 ) {
     private val reasonCodes = setOf(
         "fraud_no_authorization",
@@ -196,6 +198,59 @@ class ChargebackService(
             createdAt = dto.createdAt,
         )
         return dto
+    }
+
+    fun listMerchantDisputes(employee: MerchantEmployeeRecord, limit: Int): ChargebackDisputeListResponse {
+        requireActiveMerchant(employee)
+        val normalizedLimit = limit.coerceIn(1, 100)
+        return ChargebackDisputeListResponse(
+            items = repository.listDisputesForMerchant(employee.merchantId, normalizedLimit).map { it.toDto() },
+        )
+    }
+
+    fun getMerchantDispute(employee: MerchantEmployeeRecord, disputeId: UUID): MerchantDisputeDetailDto {
+        requireActiveMerchant(employee)
+        val dispute = repository.findDisputeByIdForMerchant(disputeId, employee.merchantId)
+            ?: throw MerchantDashboardException("dispute_not_found", "Dispute was not found.", HttpStatus.NOT_FOUND)
+        val evidenceSubmission = repository.findEvidenceSubmission(dispute.id)?.let { submission ->
+            submission.toDto(
+                state = dispute.state,
+                attachments = repository.listEvidenceAttachments(submission.id),
+            )
+        }
+        return MerchantDisputeDetailDto(dispute = dispute.toDto(), evidenceSubmission = evidenceSubmission)
+    }
+
+    fun listBackofficeDisputes(limit: Int): ChargebackDisputeListResponse {
+        val normalizedLimit = limit.coerceIn(1, 100)
+        return ChargebackDisputeListResponse(
+            items = repository.listDisputes(normalizedLimit).map { it.toDto() },
+        )
+    }
+
+    @Transactional
+    fun getBackofficeDispute(disputeId: UUID, principal: BackofficePrincipal): BackofficeDisputeDetailDto {
+        val dispute = repository.findDisputeById(disputeId)
+            ?: throw BackofficeException("dispute_not_found", "Dispute was not found.", HttpStatus.NOT_FOUND)
+        readAuditRepository.write(
+            actorType = "BACKOFFICE",
+            actorId = principal.subjectUuid,
+            actorReference = principal.subject,
+            subjectType = "CHARGEBACK_DISPUTE",
+            subjectId = dispute.id,
+            resourceType = "CHARGEBACK_DISPUTE",
+            resourceId = dispute.id,
+            purpose = "backoffice_chargeback_dispute_detail",
+            decision = "ALLOW",
+            metadataJson = """{"roles":${principal.roles.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }},"paymentIntentId":"${dispute.paymentIntentId}","merchantId":"${dispute.merchantId}"}""",
+        )
+        val evidenceSubmission = repository.findEvidenceSubmission(dispute.id)?.let { submission ->
+            submission.toDto(
+                state = dispute.state,
+                attachments = repository.listEvidenceAttachments(submission.id),
+            )
+        }
+        return BackofficeDisputeDetailDto(dispute = dispute.toDto(), evidenceSubmission = evidenceSubmission)
     }
 
     @Transactional

@@ -2,9 +2,12 @@ package com.minifin.platform.settlement
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.minifin.platform.cards.CardProperties
+import com.minifin.platform.identity.MerchantEmployeeRecord
 import com.minifin.platform.ledger.LedgerRepository
+import com.minifin.platform.merchant.dashboard.MerchantDashboardException
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpEntity
@@ -26,6 +29,22 @@ class SettlementService(
     private val networkAssessmentRate = BigDecimal("0.15")
     private val acquirerMarginRate = BigDecimal("0.65")
     private val restTemplate = RestTemplate()
+
+    fun listMerchantSettlements(employee: MerchantEmployeeRecord, limit: Int): MerchantSettlementBatchListResponse {
+        requireActiveMerchant(employee)
+        val normalizedLimit = limit.coerceIn(1, 100)
+        return MerchantSettlementBatchListResponse(
+            items = settlementRepository.listMerchantBatches(employee.merchantId, normalizedLimit).map { it.toSummaryDto() },
+        )
+    }
+
+    fun getMerchantSettlement(employee: MerchantEmployeeRecord, batchId: UUID): MerchantSettlementBatchDetailDto {
+        requireActiveMerchant(employee)
+        val batch = settlementRepository.findMerchantBatch(batchId, employee.merchantId)
+            ?: throw MerchantDashboardException("settlement_batch_not_found", "Settlement batch was not found.", HttpStatus.NOT_FOUND)
+        val items = settlementRepository.listMerchantBatchItems(batchId, employee.merchantId).map { it.toItemDto() }
+        return MerchantSettlementBatchDetailDto(batch = batch.toSummaryDto(), items = items)
+    }
 
     @Transactional
     fun processCaptured(limit: Int): SettlementProcessResponse {
@@ -176,4 +195,40 @@ class SettlementService(
     private fun fee(grossAmount: BigDecimal, rate: BigDecimal): BigDecimal =
         grossAmount.multiply(rate)
             .divide(oneHundred, 2, RoundingMode.HALF_UP)
+
+    private fun requireActiveMerchant(employee: MerchantEmployeeRecord) {
+        if (employee.status != "ACTIVE") {
+            throw MerchantDashboardException("merchant_employee_not_active", "Merchant employee is not active.", HttpStatus.FORBIDDEN)
+        }
+    }
+
+    private fun MerchantSettlementBatchSummaryRecord.toSummaryDto(): MerchantSettlementBatchSummaryDto =
+        MerchantSettlementBatchSummaryDto(
+            batchId = batchId.toString(),
+            status = status,
+            currency = currency,
+            itemCount = itemCount,
+            grossAmount = grossAmount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            merchantNetAmount = merchantNetAmount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            interchangeAmount = interchangeAmount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            networkAssessmentAmount = networkAssessmentAmount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            acquirerMarginAmount = acquirerMarginAmount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            settledAt = settledAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+            createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        )
+
+    private fun MerchantSettlementItemRecord.toItemDto(): MerchantSettlementItemDto =
+        MerchantSettlementItemDto(
+            settlementItemId = settlementItemId.toString(),
+            paymentIntentId = paymentIntentId.toString(),
+            grossAmount = grossAmount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            merchantNetAmount = merchantNetAmount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            interchangeAmount = interchangeAmount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            networkAssessmentAmount = networkAssessmentAmount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            acquirerMarginAmount = acquirerMarginAmount.setScale(4, RoundingMode.HALF_UP).toPlainString(),
+            currency = currency,
+            status = status,
+            ledgerJournalId = ledgerJournalId.toString(),
+            createdAt = createdAt.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+        )
 }

@@ -26,6 +26,13 @@ class CardService(
 ) {
     private val restTemplate = RestTemplate()
 
+    fun listCards(user: EndUserRecord): CardListResponse =
+        CardListResponse(items = cardRepository.listIssuedCards(user.id).map { it.toResponse() })
+
+    fun getCard(user: EndUserRecord, cardId: UUID): CardMetadataResponse =
+        cardRepository.findIssuedCard(cardId, user.id)?.toResponse()
+            ?: throw CardException("card_not_found", "Card was not found.", HttpStatus.NOT_FOUND)
+
     @Transactional(noRollbackFor = [ActorControlException::class])
     fun issueCard(user: EndUserRecord): CardIssueResponse {
         actorControlService.requireWriteAllowed("END_USER", user.id)
@@ -74,4 +81,14 @@ class CardService(
         }.getOrElse { throw CardException("issuer_unavailable", "Issuer card issuance failed.", HttpStatus.BAD_GATEWAY) }
         return response.body?.data ?: throw CardException("issuer_unavailable", "Issuer card issuance failed.", HttpStatus.BAD_GATEWAY)
     }
+
+    private fun IssuedCardRecord.toResponse(): CardMetadataResponse =
+        CardMetadataResponse(
+            id = id.toString(),
+            state = state,
+            last4 = last4,
+            expirationMonth = expirationMonth,
+            expirationYear = expirationYear,
+            bin = bin,
+        )
 }

@@ -97,6 +97,48 @@ class ChargebackRepository(
             id,
         ).firstOrNull()
 
+    fun findDisputeByIdForMerchant(id: UUID, merchantId: UUID): ChargebackDisputeRecord? =
+        jdbcTemplate.query(
+            """
+            select id, payment_intent_id, merchant_id, cardholder_user_id, amount, currency, reason_code,
+                   narrative, state, merchant_response_deadline, provisional_credit_journal_id, arbitration_journal_id, created_at
+              from chargeback.disputes
+             where id = ?
+               and merchant_id = ?
+            """.trimIndent(),
+            { rs, _ -> rs.toDisputeRecord() },
+            id,
+            merchantId,
+        ).firstOrNull()
+
+    fun listDisputesForMerchant(merchantId: UUID, limit: Int): List<ChargebackDisputeRecord> =
+        jdbcTemplate.query(
+            """
+            select id, payment_intent_id, merchant_id, cardholder_user_id, amount, currency, reason_code,
+                   narrative, state, merchant_response_deadline, provisional_credit_journal_id, arbitration_journal_id, created_at
+              from chargeback.disputes
+             where merchant_id = ?
+             order by created_at desc, id desc
+             limit ?
+            """.trimIndent(),
+            { rs, _ -> rs.toDisputeRecord() },
+            merchantId,
+            limit,
+        )
+
+    fun listDisputes(limit: Int): List<ChargebackDisputeRecord> =
+        jdbcTemplate.query(
+            """
+            select id, payment_intent_id, merchant_id, cardholder_user_id, amount, currency, reason_code,
+                   narrative, state, merchant_response_deadline, provisional_credit_journal_id, arbitration_journal_id, created_at
+              from chargeback.disputes
+             order by created_at desc, id desc
+             limit ?
+            """.trimIndent(),
+            { rs, _ -> rs.toDisputeRecord() },
+            limit,
+        )
+
     fun insertDispute(
         id: UUID,
         paymentIntentId: UUID,

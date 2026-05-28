@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonInclude
 
 data class CardIssueResponse(val card: CardMetadataResponse)
 
+data class CardListResponse(val items: List<CardMetadataResponse>)
+
 data class CardMetadataResponse(
     val id: String,
     val state: String,

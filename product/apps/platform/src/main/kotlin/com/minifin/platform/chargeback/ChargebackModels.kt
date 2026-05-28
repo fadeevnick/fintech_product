@@ -7,6 +7,10 @@ data class CreateDisputeRequest(
     val narrative: String? = null,
 )
 
+data class ChargebackDisputeListResponse(
+    val items: List<ChargebackDisputeDto>,
+)
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class ChargebackDisputeDto(
     val id: String,
@@ -21,6 +25,16 @@ data class ChargebackDisputeDto(
     val merchantResponseDeadline: String,
     val provisionalCreditJournalId: String? = null,
     val createdAt: String,
+)
+
+data class MerchantDisputeDetailDto(
+    val dispute: ChargebackDisputeDto,
+    val evidenceSubmission: EvidenceSubmissionDto? = null,
+)
+
+data class BackofficeDisputeDetailDto(
+    val dispute: ChargebackDisputeDto,
+    val evidenceSubmission: EvidenceSubmissionDto? = null,
 )
 
 data class SubmitEvidenceRequest(

@@ -2,9 +2,38 @@ package com.minifin.platform.settlement
 
 import java.math.BigDecimal
 import java.sql.ResultSet
+import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository
+
+data class MerchantSettlementBatchSummaryRecord(
+    val batchId: UUID,
+    val status: String,
+    val currency: String,
+    val itemCount: Int,
+    val grossAmount: BigDecimal,
+    val merchantNetAmount: BigDecimal,
+    val interchangeAmount: BigDecimal,
+    val networkAssessmentAmount: BigDecimal,
+    val acquirerMarginAmount: BigDecimal,
+    val settledAt: OffsetDateTime,
+    val createdAt: OffsetDateTime,
+)
+
+data class MerchantSettlementItemRecord(
+    val settlementItemId: UUID,
+    val paymentIntentId: UUID,
+    val grossAmount: BigDecimal,
+    val merchantNetAmount: BigDecimal,
+    val interchangeAmount: BigDecimal,
+    val networkAssessmentAmount: BigDecimal,
+    val acquirerMarginAmount: BigDecimal,
+    val currency: String,
+    val status: String,
+    val ledgerJournalId: UUID,
+    val createdAt: OffsetDateTime,
+)
 
 @Repository
 class SettlementRepository(
@@ -212,9 +241,114 @@ class SettlementRepository(
             limit,
         )
 
+    fun listMerchantBatches(merchantId: UUID, limit: Int): List<MerchantSettlementBatchSummaryRecord> =
+        jdbcTemplate.query(
+            """
+            select sb.id as batch_id,
+                   sb.status,
+                   si.currency,
+                   count(*) as item_count,
+                   sum(si.gross_amount) as gross_amount,
+                   sum(si.merchant_net_amount) as merchant_net_amount,
+                   sum(si.interchange_amount) as interchange_amount,
+                   sum(si.network_assessment_amount) as network_assessment_amount,
+                   sum(si.acquirer_margin_amount) as acquirer_margin_amount,
+                   sb.settled_at,
+                   sb.created_at
+              from settlement.settlement_batches sb
+              join settlement.settlement_items si on si.batch_id = sb.id
+             where si.merchant_id = ?
+             group by sb.id, sb.status, si.currency, sb.settled_at, sb.created_at
+             order by sb.settled_at desc, sb.id desc
+             limit ?
+            """.trimIndent(),
+            { rs, _ -> rs.toMerchantSettlementBatchSummaryRecord() },
+            merchantId,
+            limit,
+        )
+
+    fun findMerchantBatch(batchId: UUID, merchantId: UUID): MerchantSettlementBatchSummaryRecord? =
+        jdbcTemplate.query(
+            """
+            select sb.id as batch_id,
+                   sb.status,
+                   si.currency,
+                   count(*) as item_count,
+                   sum(si.gross_amount) as gross_amount,
+                   sum(si.merchant_net_amount) as merchant_net_amount,
+                   sum(si.interchange_amount) as interchange_amount,
+                   sum(si.network_assessment_amount) as network_assessment_amount,
+                   sum(si.acquirer_margin_amount) as acquirer_margin_amount,
+                   sb.settled_at,
+                   sb.created_at
+              from settlement.settlement_batches sb
+              join settlement.settlement_items si on si.batch_id = sb.id
+             where sb.id = ?
+               and si.merchant_id = ?
+             group by sb.id, sb.status, si.currency, sb.settled_at, sb.created_at
+            """.trimIndent(),
+            { rs, _ -> rs.toMerchantSettlementBatchSummaryRecord() },
+            batchId,
+            merchantId,
+        ).firstOrNull()
+
+    fun listMerchantBatchItems(batchId: UUID, merchantId: UUID): List<MerchantSettlementItemRecord> =
+        jdbcTemplate.query(
+            """
+            select id,
+                   payment_intent_id,
+                   gross_amount,
+                   merchant_net_amount,
+                   interchange_amount,
+                   network_assessment_amount,
+                   acquirer_margin_amount,
+                   currency,
+                   status,
+                   ledger_journal_id,
+                   created_at
+              from settlement.settlement_items
+             where batch_id = ?
+               and merchant_id = ?
+             order by created_at asc, id asc
+            """.trimIndent(),
+            { rs, _ -> rs.toMerchantSettlementItemRecord() },
+            batchId,
+            merchantId,
+        )
+
     private fun ResultSet.toCandidate(): SettlementCandidate =
         SettlementCandidate(
             paymentIntentId = getObject("id", UUID::class.java),
             merchantId = getObject("merchant_id", UUID::class.java),
+        )
+
+    private fun ResultSet.toMerchantSettlementBatchSummaryRecord(): MerchantSettlementBatchSummaryRecord =
+        MerchantSettlementBatchSummaryRecord(
+            batchId = getObject("batch_id", UUID::class.java),
+            status = getString("status"),
+            currency = getString("currency"),
+            itemCount = getInt("item_count"),
+            grossAmount = getBigDecimal("gross_amount"),
+            merchantNetAmount = getBigDecimal("merchant_net_amount"),
+            interchangeAmount = getBigDecimal("interchange_amount"),
+            networkAssessmentAmount = getBigDecimal("network_assessment_amount"),
+            acquirerMarginAmount = getBigDecimal("acquirer_margin_amount"),
+            settledAt = getObject("settled_at", OffsetDateTime::class.java),
+            createdAt = getObject("created_at", OffsetDateTime::class.java),
+        )
+
+    private fun ResultSet.toMerchantSettlementItemRecord(): MerchantSettlementItemRecord =
+        MerchantSettlementItemRecord(
+            settlementItemId = getObject("id", UUID::class.java),
+            paymentIntentId = getObject("payment_intent_id", UUID::class.java),
+            grossAmount = getBigDecimal("gross_amount"),
+            merchantNetAmount = getBigDecimal("merchant_net_amount"),
+            interchangeAmount = getBigDecimal("interchange_amount"),
+            networkAssessmentAmount = getBigDecimal("network_assessment_amount"),
+            acquirerMarginAmount = getBigDecimal("acquirer_margin_amount"),
+            currency = getString("currency"),
+            status = getString("status"),
+            ledgerJournalId = getObject("ledger_journal_id", UUID::class.java),
+            createdAt = getObject("created_at", OffsetDateTime::class.java),
         )
 }
