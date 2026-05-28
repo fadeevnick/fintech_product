@@ -525,13 +525,11 @@ function PageError({ message }: { message: string }) {
 
 function PageSection({
   title,
-  screenId,
   subtitle,
   rightSlot,
   children,
 }: {
   title: string;
-  screenId: string;
   subtitle: string;
   rightSlot?: React.ReactNode;
   children: React.ReactNode;
@@ -541,7 +539,6 @@ function PageSection({
       <PageHeader
         breadcrumbs={<span>Backoffice / {title}</span>}
         rightSlot={rightSlot}
-        screenId={screenId}
         subtitle={subtitle}
         title={title}
       />
@@ -587,7 +584,6 @@ function LoginPage() {
       <PageHeader
         breadcrumbs={<span>Backoffice / Access / Sign in</span>}
         rightSlot={<Badge tone="info">Keycloak</Badge>}
-        screenId="BOF-UI-01"
         subtitle="Sign in with your backoffice operator credentials."
         title="Sign in"
       />
@@ -701,7 +697,6 @@ function WorkQueuePage() {
     <>
       <PageHeader
         breadcrumbs={<span>Backoffice / Operations / Work queue</span>}
-        screenId="BOF-UI-02"
         subtitle="Live summary of open operational items. Click a queue to begin review."
         title={surfaceLabels.backoffice}
       >
@@ -809,7 +804,6 @@ function ManualDepositsPage() {
 
   return (
     <PageSection
-      screenId="BOF-UI-03"
       subtitle="Review and approve or reject pending deposit requests."
       title="Manual deposits"
     >
@@ -937,7 +931,6 @@ function ManualWithdrawalsPage() {
 
   return (
     <PageSection
-      screenId="BOF-UI-04"
       subtitle="Review held withdrawals and record COMPLETE or REJECT decisions."
       title="Manual withdrawals"
     >
@@ -1058,7 +1051,6 @@ function KycQueuePage() {
 
   return (
     <PageSection
-      screenId="BOF-UI-05"
       subtitle="Review KYC cases awaiting manual decision."
       title="KYC queue"
     >
@@ -1192,7 +1184,6 @@ function AmlAlertsPage() {
 
   return (
     <PageSection
-      screenId="BOF-UI-06"
       subtitle="Review AML alerts and record decisions. SAR marking requires a compliance officer role."
       title="AML alerts"
     >
@@ -1331,7 +1322,6 @@ function SanctionsHitsPage() {
   if (!canViewSanctions) {
     return (
       <PageSection
-        screenId="BOF-UI-07"
         subtitle="Sanctions list and detail access requires a compliance officer role."
         title="Sanctions hits"
       >
@@ -1344,7 +1334,6 @@ function SanctionsHitsPage() {
 
   return (
     <PageSection
-      screenId="BOF-UI-07"
       subtitle="Review open sanctions hits and record false-positive clearing decisions."
       title="Sanctions hits"
     >
@@ -1484,7 +1473,6 @@ function ChargebackArbitrationPage() {
 
   return (
     <PageSection
-      screenId="BOF-UI-08"
       subtitle="Review chargeback evidence and record final arbitration decisions."
       title="Chargeback arbitration"
     >
@@ -1612,7 +1600,6 @@ function AuditLogPage() {
 
   return (
     <PageSection
-      screenId="BOF-UI-09"
       subtitle="Browse the operational and read-audit log streams."
       title="Audit log"
     >
@@ -1756,7 +1743,6 @@ function ActorControlsPage() {
 
   return (
     <PageSection
-      screenId="BOF-UI-10"
       subtitle="Freeze or unfreeze end-user and merchant accounts. Use the read-audit probe to verify that a resource access has been logged."
       title="Actor controls"
     >

@@ -474,7 +474,7 @@ function OnboardingPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Merchant / Account / Onboarding</span>} rightSlot={<Badge tone="info">{merchantStatus}</Badge>} screenId="MDB-UI-02" subtitle="Track your progress to start accepting payments." title="Onboarding status" />
+      <PageHeader breadcrumbs={<span>Merchant / Account / Onboarding</span>} rightSlot={<Badge tone="info">{merchantStatus}</Badge>} subtitle="Track your progress to start accepting payments." title="Onboarding status" />
       <div className="mch-stack">
         <div className="mch-two-col">
           <Panel title="Onboarding progress">
@@ -557,7 +557,7 @@ function ApiKeysPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Merchant / Integrations / API keys</span>} rightSlot={<Badge tone="info">{active.length} active</Badge>} screenId="MDB-UI-03" subtitle="Manage API keys for server-to-server integration." title="API keys" />
+      <PageHeader breadcrumbs={<span>Merchant / Integrations / API keys</span>} rightSlot={<Badge tone="info">{active.length} active</Badge>} subtitle="Manage API keys for server-to-server integration." title="API keys" />
       <div className="mch-stack">
         {revealKey && (
           <Panel actions={<Button size="sm" variant="ghost" onClick={() => setRevealKey(null)}>Dismiss</Button>} title="New API key — copy this now">
@@ -717,7 +717,7 @@ function WebhooksPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Merchant / Integrations / Webhooks</span>} screenId="MDB-UI-04" subtitle="Manage webhook endpoints and monitor delivery." title="Webhooks">
+      <PageHeader breadcrumbs={<span>Merchant / Integrations / Webhooks</span>} subtitle="Manage webhook endpoints and monitor delivery." title="Webhooks">
         <ModeTabs activeKey={tab} tabs={[{ key: "endpoints", label: "Endpoints" }, { key: "events", label: "Event log" }]} onChange={(k) => setTab(k as "endpoints" | "events")} />
       </PageHeader>
       <div className="mch-stack">
@@ -844,7 +844,7 @@ function PaymentsPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Merchant / Business / Payments</span>} screenId="MDB-UI-05" subtitle="Payment intents processed through your account." title="Payments">
+      <PageHeader breadcrumbs={<span>Merchant / Business / Payments</span>} subtitle="Payment intents processed through your account." title="Payments">
         {loadStatus === "ready" && (
           <StatGrid columns={4}>
             <StatCard label="Total" value={payments.length} />
@@ -912,7 +912,7 @@ function SettlementsPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Merchant / Business / Settlements</span>} screenId="MDB-UI-06" subtitle="T+2 settlement batches and payout status." title="Settlements">
+      <PageHeader breadcrumbs={<span>Merchant / Business / Settlements</span>} subtitle="T+2 settlement batches and payout status." title="Settlements">
         {loadStatus === "ready" && (
           <StatGrid columns={3}>
             <StatCard label="Batches" value={batches.length} />
@@ -1032,7 +1032,7 @@ function DisputesPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Merchant / Business / Disputes</span>} screenId="MDB-UI-07" subtitle="Chargeback disputes and evidence submission." title="Disputes">
+      <PageHeader breadcrumbs={<span>Merchant / Business / Disputes</span>} subtitle="Chargeback disputes and evidence submission." title="Disputes">
         {loadStatus === "ready" && (
           <StatGrid columns={3}>
             <StatCard label="Total" value={disputes.length} />

@@ -488,7 +488,7 @@ function WalletPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Wallet / Home</span>} screenId="UEW-UI-03" subtitle="Your balance and recent activity." title="Wallet">
+      <PageHeader breadcrumbs={<span>Wallet / Home</span>} subtitle="Your balance and recent activity." title="Wallet">
         {loadStatus === "ready" && wallet && (
           <StatGrid columns={3}>
             <StatCard label="Balance" tone="success" value={fmtAmount(wallet.balance, wallet.currency)} />
@@ -575,7 +575,6 @@ function TxDetailPage() {
     <>
       <PageHeader
         breadcrumbs={<span><button className="eu-link" onClick={() => navigate("/wallet")}>Wallet</button> / Transfer detail</span>}
-        screenId="UEW-UI-07"
         subtitle="Transfer transaction details."
         title="Transaction detail"
       />
@@ -660,7 +659,7 @@ function DepositPage() {
 
   if (sofDone) return (
     <>
-      <PageHeader breadcrumbs={<span>Wallet / Deposit</span>} screenId="UEW-UI-04" title="Deposit" />
+      <PageHeader breadcrumbs={<span>Wallet / Deposit</span>} title="Deposit" />
       <Panel title="Source of funds submitted">
         <div className="eu-form">
           <p className="eu-muted">Your deposit is under review. Funds will be credited once approved.</p>
@@ -672,7 +671,7 @@ function DepositPage() {
 
   if (pending && !pending.sourceOfFundsRequired) return (
     <>
-      <PageHeader breadcrumbs={<span>Wallet / Deposit</span>} screenId="UEW-UI-04" title="Deposit" />
+      <PageHeader breadcrumbs={<span>Wallet / Deposit</span>} title="Deposit" />
       <Panel title="Deposit submitted">
         <div className="eu-form">
           <div className="eu-kv">
@@ -689,7 +688,7 @@ function DepositPage() {
 
   if (pending?.sourceOfFundsRequired && !pending.sourceOfFundsSubmitted) return (
     <>
-      <PageHeader breadcrumbs={<span>Wallet / Deposit / Source of funds</span>} rightSlot={<Badge tone="warning">SoF required</Badge>} screenId="UEW-UI-04" subtitle="Deposits over EUR 15,000 require a source of funds declaration." title="Source of funds" />
+      <PageHeader breadcrumbs={<span>Wallet / Deposit / Source of funds</span>} rightSlot={<Badge tone="warning">SoF required</Badge>} subtitle="Deposits over EUR 15,000 require a source of funds declaration." title="Source of funds" />
       <Panel title="Declare source of funds">
         <form className="eu-form" onSubmit={submitSof}>
           <div className="eu-kv">
@@ -713,7 +712,7 @@ function DepositPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Wallet / Deposit</span>} screenId="UEW-UI-04" subtitle="Request a deposit to your wallet. Amounts over EUR 15,000 require a source of funds declaration." title="Deposit" />
+      <PageHeader breadcrumbs={<span>Wallet / Deposit</span>} subtitle="Request a deposit to your wallet. Amounts over EUR 15,000 require a source of funds declaration." title="Deposit" />
       <div className="eu-stack">
         <Panel title="Deposit request">
           <form className="eu-form" onSubmit={submitDeposit}>
@@ -760,7 +759,7 @@ function TransferPage() {
 
   if (done) return (
     <>
-      <PageHeader breadcrumbs={<span>Wallet / Transfer</span>} screenId="UEW-UI-05" title="Transfer" />
+      <PageHeader breadcrumbs={<span>Wallet / Transfer</span>} title="Transfer" />
       <Panel title="Transfer submitted">
         <div className="eu-form">
           <div className="eu-kv">
@@ -785,7 +784,7 @@ function TransferPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Wallet / Transfer</span>} screenId="UEW-UI-05" subtitle="Send money to another wallet user." title="Transfer" />
+      <PageHeader breadcrumbs={<span>Wallet / Transfer</span>} subtitle="Send money to another wallet user." title="Transfer" />
       <div className="eu-stack">
         <Panel title="New transfer">
           <form className="eu-form" onSubmit={submit}>
@@ -843,7 +842,7 @@ function CardsPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Wallet / Cards</span>} screenId="UEW-UI-06" subtitle="Issue and manage virtual cards linked to your wallet." title="Cards" />
+      <PageHeader breadcrumbs={<span>Wallet / Cards</span>} subtitle="Issue and manage virtual cards linked to your wallet." title="Cards" />
       <div className="eu-stack">
         {issuedCard && (
           <Panel actions={<Button size="sm" variant="ghost" onClick={() => setIssuedCard(null)}>Dismiss</Button>} title="Card issued">
@@ -916,7 +915,7 @@ function KycPage() {
 
   return (
     <>
-      <PageHeader breadcrumbs={<span>Account / Identity verification</span>} screenId="UEW-UI-02" subtitle="Verify your identity to unlock all wallet features including card issuance." title="Identity verification" />
+      <PageHeader breadcrumbs={<span>Account / Identity verification</span>} subtitle="Verify your identity to unlock all wallet features including card issuance." title="Identity verification" />
       <div className="eu-stack">
         {kycResult && (
           <Panel title="KYC status">
