@@ -22,7 +22,7 @@ platform_curl() {
 
 platform_psql() {
   docker compose -f "${compose_file}" exec -T platform-db \
-    psql -U platform -d platform -Atc "$1"
+    psql -U platform -d platform -qAt -c "$1"
 }
 
 run_tag="$(date +%s%N)-$$"
@@ -55,8 +55,9 @@ echo ""
 
 echo "-- Phase 2: Runtime read-audit row creation"
 
-bo_token="$(keycloak_operator_token)"
-compliance_token="$(keycloak_compliance_token)"
+kc_seed_backoffice_realm
+bo_token="$(kc_backoffice_token operator)"
+compliance_token="$(kc_backoffice_token compliance)"
 
 # --- seed minimal data ---
 
@@ -64,11 +65,10 @@ compliance_token="$(keycloak_compliance_token)"
 eu_body="/tmp/minifin-aud99-eu-${run_tag}.json"
 platform_curl -fsS -X POST "${base_url}/api/v1/enduser/register" \
   -H "Content-Type: application/json" \
-  -d "{\"email\":\"aud99-eu-${run_tag}@test.local\",\"password\":\"Pass1234!\",\"fullName\":\"AUD99 User\"}" \
+  -d "{\"email\":\"aud99-eu-${run_tag}@test.local\",\"password\":\"Pass12345!\"}" \
   -c "/tmp/minifin-aud99-eu-${run_tag}.jar" >"${eu_body}"
 eu_id="$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('${eu_body}','utf8')).data.userId)")"
-
-verify_token="$(platform_psql "select token from identity.email_verifications where end_user_id='${eu_id}'::uuid order by created_at desc limit 1;")"
+verify_token="$(node -e "process.stdout.write(JSON.parse(require('fs').readFileSync('${eu_body}','utf8')).data.verificationToken)")"
 platform_curl -fsS -X POST "${base_url}/api/v1/enduser/email/verify" \
   -H "Content-Type: application/json" \
   -d "{\"token\":\"${verify_token}\"}" >/dev/null
@@ -80,8 +80,8 @@ kyc_profile_id="$(platform_psql "
   returning id;
 ")"
 kyc_session_id="$(platform_psql "
-  insert into kyc.kyc_sessions (id, end_user_id, kyc_profile_id, status, created_at, updated_at)
-  values (gen_random_uuid(), '${eu_id}'::uuid, '${kyc_profile_id}'::uuid, 'PENDING', now(), now())
+  insert into kyc.kyc_sessions (id, profile_id, vendor, vendor_applicant_id, external_user_id, status, created_at, updated_at)
+  values (gen_random_uuid(), '${kyc_profile_id}'::uuid, 'SUMSUB', 'aud99-applicant-${run_tag}', 'aud99-ext-${run_tag}', 'ACTIVE', now(), now())
   returning id;
 ")"
 

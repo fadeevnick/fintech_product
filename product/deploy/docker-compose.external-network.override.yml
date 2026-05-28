@@ -1,0 +1,48 @@
+services:
+  platform-db:
+    ports: !reset []
+  acquirer-db:
+    ports: !reset []
+  network-db:
+    ports: !reset []
+  issuer-db:
+    ports: !reset []
+  vault-db:
+    ports: !reset []
+  keycloak-db:
+    ports: !reset []
+  acquirer:
+    image: mini-fintech-platform-acquirer:latest
+    ports: !reset []
+  network:
+    image: mini-fintech-platform-a1-network:latest
+    ports: !reset []
+  issuer:
+    image: mini-fintech-platform-a1-issuer:latest
+    ports: !reset []
+  vault:
+    image: mini-fintech-platform-a1-vault:latest
+    ports: !reset []
+  keycloak:
+    ports: !reset []
+  seaweedfs:
+    ports: !reset []
+  kafka:
+    ports: !reset []
+  traefik:
+    ports: !reset []
+  prometheus:
+    ports: !reset []
+  grafana:
+    ports: !reset []
+  tempo:
+    ports: !reset []
+  loki:
+    ports: !reset []
+  otel-collector:
+    ports: !reset []
+
+networks:
+  default:
+    external: true
+    name: mini-fintech-platform-a2_default

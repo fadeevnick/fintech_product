@@ -3789,3 +3789,173 @@ Not claimed:
 - `REC-04` dashboards;
 - `LDG-99`, `AUD-99` cross-phase sweeps;
 - frontend `UI-*`.
+
+---
+
+## 2026-05-22 — Phase 11 Runtime Closure (LDG-99 / AUD-99 / REC-04)
+
+Scope:
+- Close the remaining backend/runtime track items on a live stack.
+- Re-use the external-network runtime workaround because this environment could not rely on normal Docker host-port publishing.
+- Verify `LDG-99`, `AUD-99`, and `REC-04` against the running stack.
+
+Runtime environment:
+- Compose project / network: `mini-fintech-platform` on external Docker network `mini-fintech-platform-a2_default`.
+- Platform base URL inside Docker network: `http://platform:8080`.
+- Keycloak base URL inside Docker network: `http://keycloak:8080`.
+- Grafana verified through the live Grafana API on the Docker network (`http://grafana:3000`) with admin credentials from compose.
+- Compose override in use: `product/deploy/docker-compose.external-network.override.yml`.
+
+Commands run:
+
+```text
+COMPOSE_PROJECT_NAME=mini-fintech-platform \
+COMPOSE_FILE=deploy/docker-compose.yml \
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default \
+PLATFORM_BASE_URL=http://platform:8080 \
+scripts/runtime/reg_phase11_ledger_invariant_sweep.sh
+
+COMPOSE_PROJECT_NAME=mini-fintech-platform \
+COMPOSE_FILE=deploy/docker-compose.yml \
+PLATFORM_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default \
+PLATFORM_BASE_URL=http://platform:8080 \
+KEYCLOAK_CURL_CONTAINER_NETWORK=mini-fintech-platform-a2_default \
+KEYCLOAK_BASE_URL=http://keycloak:8080 \
+scripts/runtime/reg_phase11_audit_coverage_sweep.sh
+
+docker run --rm --network mini-fintech-platform-a2_default curlimages/curl:8.10.1 -sS -u admin:admin http://grafana:3000/api/health
+docker run --rm --network mini-fintech-platform-a2_default curlimages/curl:8.10.1 -sS -u admin:admin http://grafana:3000/api/dashboards/uid/mfp-service-health
+docker run --rm --network mini-fintech-platform-a2_default curlimages/curl:8.10.1 -sS -u admin:admin http://grafana:3000/api/dashboards/uid/mfp-business-metrics
+docker run --rm --network mini-fintech-platform-a2_default curlimages/curl:8.10.1 -sS -u admin:admin http://grafana:3000/api/datasources/uid/mfp-prometheus
+```
+
+Runtime output / confirmed evidence:
+
+```text
+LDG-99 ledger invariant sweep pass journals=9 postings=27
+AUD-99 sensitive read-audit coverage sweep pass run_tag=1779446846125829437-3524696
+grafana /api/health => database=ok version=11.4.0
+dashboard uid=mfp-service-health title="MFP — Service Health" panels=16
+dashboard uid=mfp-business-metrics title="MFP — Business Metrics" panels=19
+datasource uid=mfp-prometheus name=Prometheus type=prometheus url=http://prometheus:9090
+```
+
+The runtime verification proved:
+- `LDG-99`:
+  - reconciliation API still reports `balancedJournals=true`;
+  - every journal is individually balanced and has at least two postings;
+  - global debit-credit net is `0`;
+  - no `WALLET_USER:*` or `WALLET_WITHDRAW_HOLD:*` balance is negative;
+  - current journal distribution is:
+    - `CARD_AUTHORIZATION_HOLD` × 3, total debit `90.0000`;
+    - `CARD_PAYMENT_SETTLEMENT` × 3, total debit `90.0000`;
+    - `CARD_PAYMENT_REFUND` × 1, total debit `10.0000`;
+    - `DEMO_SEED_FUNDING` × 1, total debit `75.0000`;
+    - `REC02_TOPUP` × 1, total debit `60.0000`.
+- `AUD-99`:
+  - runtime seed and read-detail flows pass against the current identity and KYC schemas;
+  - read-audit rows are written for `KYC_CASE`, `AML_ALERT`, and `SANCTIONS_HIT`;
+  - total `audit.read_audit_log` rows added by the sweep run: `3`.
+- `REC-04`:
+  - Grafana health endpoint returns `database=ok`;
+  - live dashboard API returns both provisioned dashboards by UID:
+    - `mfp-service-health` / `MFP — Service Health`;
+    - `mfp-business-metrics` / `MFP — Business Metrics`;
+  - both dashboards include full panel payloads (16 and 19 panels);
+  - datasource `mfp-prometheus` is provisioned and points to `http://prometheus:9090`.
+
+Runtime-discovered script fixes applied before final `AUD-99` pass:
+- replace stale Keycloak helper calls with `kc_seed_backoffice_realm`, `kc_backoffice_token operator`, `kc_backoffice_token compliance`;
+- remove obsolete `fullName` field from end-user register payload;
+- raise retained password to satisfy current minimum-length validation;
+- read `verificationToken` from the registration response instead of querying a removed plaintext DB column;
+- align `kyc.kyc_sessions` seed insert with the current schema (`profile_id`, `vendor`, `external_user_id`, `status`);
+- switch retained `psql` invocation to quiet tuple-only mode (`-qAt`) so captured IDs do not include command tags.
+
+Result tags:
+- `LDG-99` — pass.
+- `AUD-99` — pass.
+- `REC-04` — pass.
+
+Still not claimed:
+- `REC-03` vendor reconciliation;
+- `MRC-01` Stripe Connect sandbox credentials;
+- `KYC-01` Sumsub sandbox credentials;
+- frontend `UI-*`.
+
+---
+
+## 2026-05-22 — Backoffice Dispute/Audit Runtime Closure
+
+Scope:
+- Fresh-runtime verify the new backoffice dispute list/detail and audit-log feed on the current `platform` code.
+- Prove the retained audit-controls path still works on the same runtime.
+
+Runtime environment:
+- Temporary compose project: `mfp-bofrt`.
+- Compose file: `product/deploy/docker-compose.yml:/tmp/mfp-bofrt-compose.override.yml`.
+- External Docker network reused: `mini-fintech-platform-a2_default`.
+- Fresh `platform` image built from the current local `bootJar`: `mfp-bofrt-platform:latest`.
+- Old live container `mini-fintech-platform-platform-1` was stopped before the smoke to avoid network alias collision on the shared external network.
+
+Commands run:
+
+```text
+product/gradlew --no-daemon -p product :apps:platform:bootJar
+docker build -t mfp-bofrt-platform:latest /tmp/mfp-bofrt-build
+docker stop mini-fintech-platform-platform-1
+
+COMPOSE_PROJECT_NAME=mfp-bofrt \
+COMPOSE_FILE=product/deploy/docker-compose.yml:/tmp/mfp-bofrt-compose.override.yml \
+docker compose up -d --no-build \
+  platform-db acquirer-db network-db issuer-db vault-db keycloak-db kafka seaweedfs \
+  keycloak vault network issuer acquirer platform
+
+COMPOSE_PROJECT_NAME=mfp-bofrt \
+COMPOSE_FILE=product/deploy/docker-compose.yml:/tmp/mfp-bofrt-compose.override.yml \
+PLATFORM_BASE_URL=http://172.22.0.15:8080 \
+bash product/scripts/runtime/reg_phase09_merchant_evidence.sh
+
+/tmp/mfp_backoffice_auth_check.sh
+/tmp/mfp_backoffice_runtime_smoke.sh 7226ab94-5db2-490d-aed0-520a437ebaa4 7b2db3df-4473-4d89-bb3f-6d312024034e
+```
+
+Runtime output / confirmed evidence:
+
+```text
+CHB-03 merchant evidence submission pass dispute_id=7226ab94-5db2-490d-aed0-520a437ebaa4 evidence_id=4fb097f1-52d1-42e6-a368-4d2bd9875d12 user_id=7b2db3df-4473-4d89-bb3f-6d312024034e
+{"subject":"018c83e9-0ace-4e55-8348-394421f17548","email":"operator@minifin.local","roles":["backoffice_operator"],"issuer":"http://localhost:8080/realms/minifin-backoffice"}
+list_ok items=4
+detail_ok evidence=4fb097f1-52d1-42e6-a368-4d2bd9875d12
+detail_read_audit_ok count=1
+arbitration_ok journal=4d422e95-95fb-4514-a851-7b93d72da38d
+probe_ok resource=dda3867e-2f5e-4f72-b2c4-8aa09b5776b1
+control_ok actor=7b2db3df-4473-4d89-bb3f-6d312024034e
+audit_feed_ok all=41 audit=37 read=6
+audit_view_read_audit_ok count=3
+```
+
+The runtime verification proved:
+- backoffice Keycloak realm seeding and `operator` auth still work on the fresh stack;
+- `GET /api/v1/backoffice/disputes?limit=25` returns live disputes on the updated runtime;
+- `GET /api/v1/backoffice/disputes/{id}` returns live detail plus evidence submission for a real `EVIDENCE_SUBMITTED` dispute;
+- dispute detail read writes a synchronous `audit.read_audit_log` row with purpose `backoffice_chargeback_dispute_detail`;
+- `POST /api/v1/backoffice/disputes/{id}/arbitration` succeeds and moves the dispute to `WON`;
+- retained `GET /api/v1/backoffice/read-audit/probe/{uuid}` still succeeds;
+- retained `POST /api/v1/backoffice/actor-controls` still succeeds for a live end-user actor;
+- `GET /api/v1/backoffice/audit-log` returns non-empty data for all three stream modes:
+  - `ALL`
+  - `AUDIT_LOG`
+  - `READ_AUDIT_LOG`
+- audit-log view writes synchronous `audit.read_audit_log` rows with purpose `backoffice_audit_log_view`.
+
+Result tags:
+- backoffice dispute list/detail runtime smoke — pass.
+- backoffice arbitration route runtime smoke — pass.
+- backoffice audit-log feed runtime smoke — pass.
+- retained audit-controls runtime smoke — pass.
+
+Still not claimed:
+- `REC-03` vendor reconciliation;
+- `MRC-01` Stripe Connect sandbox credentials;
+- `KYC-01` Sumsub sandbox credentials.

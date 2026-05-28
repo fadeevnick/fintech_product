@@ -1777,7 +1777,7 @@ Runtime evidence:
 
 ## Phase 11 REC-04 — Grafana Dashboards
 
-Status: **COMPLETE — provisioned**.
+Status: **COMPLETE — runtime verified**.
 
 Implemented:
 - Added explicit `uid` fields to `product/deploy/grafana/provisioning/datasources/datasources.yml` (`mfp-prometheus`, `mfp-loki`, `mfp-tempo`).
@@ -1787,14 +1787,15 @@ Implemented:
 - All panels backed by Prometheus HTTP request count metrics (`http_server_requests_seconds_count`) using real Spring Boot Actuator metric labels.
 - Compose volume `./grafana/provisioning:/etc/grafana/provisioning:ro` already covers the new `dashboards/` subdirectory; no compose change required.
 
-Not claimed:
-- `REC-04` runtime verification requires a running stack and is not claimed as a static pass; dashboards are provisioning-verified.
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-22 — Phase 11 Runtime Closure (LDG-99 / AUD-99 / REC-04)`.
+- `REC-04` — pass (`grafana /api/health` database ok; dashboards `mfp-service-health` and `mfp-business-metrics` loaded from the live Grafana API with provisioned Prometheus datasource `mfp-prometheus`).
 
 ---
 
 ## Phase 11 AUD-99 — Sensitive Read-Audit Coverage Sweep
 
-Status: **CODE CHANGE + SCRIPT COMPLETE — runtime verification required on live stack**.
+Status: **COMPLETE — full runtime pass**.
 
 Implemented:
 - Added `ReadAuditRepository` dependency to `KycBackofficeService`; changed `getCase(id)` to `getCase(id, principal: BackofficePrincipal)` with `@Transactional` and a `readAuditRepository.write(purpose="compliance_kyc_case_detail")` call before returning data.
@@ -1813,14 +1814,15 @@ Sensitive read paths covered:
 - `GET /api/v1/backoffice/kyc-cases/{id}` — detail read-audit **(new)**.
 - `GET /api/v1/backoffice/aml-alerts/{id}` — detail read-audit **(new)**.
 
-Not claimed until runtime verification on a live stack:
-- `AUD-99` full pass.
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-22 — Phase 11 Runtime Closure (LDG-99 / AUD-99 / REC-04)`.
+- `AUD-99` — pass (`read_audit_log` rows written for `KYC_CASE`, `AML_ALERT`, `SANCTIONS_HIT`; total rows added this run = 3).
 
 ---
 
 ## Phase 11 LDG-99 — Ledger Cross-Phase Invariant Sweep
 
-Status: **SCRIPT COMPLETE — runtime verification required on live stack with full demo data**.
+Status: **COMPLETE — full runtime pass**.
 
 Implemented:
 - Created retained script `product/scripts/runtime/reg_phase11_ledger_invariant_sweep.sh`:
@@ -1831,5 +1833,83 @@ Implemented:
   5. Emits journal type distribution table (type, count, total debit EUR).
   6. Asserts at least 1 journal and 2 postings exist.
 
-Not claimed until runtime verification on a live stack:
-- `LDG-99` full pass.
+Runtime evidence:
+- `planning/runtime_evidence_log.md` — `2026-05-22 — Phase 11 Runtime Closure (LDG-99 / AUD-99 / REC-04)`.
+- `LDG-99` — pass (`balancedJournals=true`, `journals=9`, `postings=27`, global net balance `0`, no negative wallet balances).
+
+---
+
+## Phase 10 Frontend — Three SPA Delivery
+
+Status: **COMPLETE EXCEPT VENDOR-BLOCKED FLOWS — local smoke verified**.
+
+Implemented:
+- shared frontend foundation under `product/frontend/packages/ui` and `product/frontend/packages/api-client`;
+- `react-router-dom` route/layout pattern across all three SPAs;
+- env-driven Vite proxy targets for local runtime (`VITE_PLATFORM_PROXY_TARGET`, `VITE_KEYCLOAK_PROXY_TARGET`) with localhost defaults;
+- `spa-enduser`:
+  - register / verify / login;
+  - wallet home with live wallet summary;
+  - deposit request flow with source-of-funds follow-up when required;
+  - transfer flow with idempotency key support;
+  - transaction detail lookup;
+  - KYC start/resume on explicit user action;
+  - card issue flow plus live card list wired to backend;
+- `spa-merchant`:
+  - register / verify / login;
+  - onboarding status from `merchantStatus`;
+  - API key list/create/revoke with one-time reveal;
+  - webhook endpoints CRUD plus event log/replay;
+  - payment intents list and detail;
+  - settlements list wired to live backend endpoint;
+  - disputes list/detail actions wired to live backend endpoints;
+- `spa-backoffice`:
+  - local Keycloak password-grant login against `minifin-backoffice`;
+  - live work queue summary;
+  - manual deposits and manual withdrawals review flows;
+  - KYC queue detail and decisions;
+  - AML alerts detail and decisions;
+  - sanctions hits detail and compliance role gating;
+  - chargeback disputes list/detail wired to live backoffice endpoints plus arbitration action;
+  - audit controls route now includes a live audit-log feed while retaining read-audit probe and actor-controls.
+
+Runtime evidence:
+- all three SPA builds pass (`spa-enduser`, `spa-merchant`, `spa-backoffice`);
+- platform backend contract closure build passes:
+  - `./gradlew :apps:platform:compileKotlin`;
+  - `./gradlew :apps:platform:bootJar`;
+- final frontend package builds pass:
+  - `product/apps/spa-enduser`: `npm run build`;
+  - `product/apps/spa-merchant`: `npm run build`;
+  - `product/apps/spa-backoffice`: `npm run build`;
+- headless Chrome UI smoke:
+  - end-user register/verify/login reached `/wallet`; wallet screen loaded with live data and no load failure;
+  - merchant register/verify/login reached `/onboarding`; onboarding/account screen loaded and no load failure;
+- additional runtime walkthroughs on live backend:
+  - end-user: deposit small, deposit with source-of-funds, card issue + card list, KYC 503 vendor-blocked surface, transfer insufficient-funds path;
+  - merchant: API key create, webhook endpoints/events, payments, settlements empty-state, disputes empty-state;
+- backoffice runtime path verified through local Vite proxy:
+  - `operator` token acquires successfully through Keycloak proxy;
+  - `GET /api/v1/backoffice/me` returns 200 for `operator` and `compliance`;
+  - `operator` gets 200 on manual-ops queue and 403 `forbidden_role` on sanctions list;
+  - `compliance` gets 200 on sanctions list.
+- fresh temporary-stack smoke for the new backoffice dispute/audit paths:
+  - `GET /api/v1/backoffice/disputes?limit=25` returned live disputes;
+  - `GET /api/v1/backoffice/disputes/{id}` returned live evidence-backed detail and wrote `backoffice_chargeback_dispute_detail` read-audit;
+  - `POST /api/v1/backoffice/disputes/{id}/arbitration` succeeded from `EVIDENCE_SUBMITTED` to `WON`;
+  - `GET /api/v1/backoffice/read-audit/probe/{uuid}` succeeded;
+  - `POST /api/v1/backoffice/actor-controls` succeeded;
+  - `GET /api/v1/backoffice/audit-log` returned non-empty feeds for `ALL`, `AUDIT_LOG`, and `READ_AUDIT_LOG`, and wrote `backoffice_audit_log_view` read-audit rows.
+
+Backend contract closure completed for:
+- `GET /api/v1/merchant/settlements` and `GET /api/v1/merchant/settlements/{batchId}`;
+- `GET /api/v1/merchant/disputes` and `GET /api/v1/merchant/disputes/{disputeId}`;
+- `GET /api/v1/cards` and `GET /api/v1/cards/{cardId}`.
+- `GET /api/v1/backoffice/disputes` and `GET /api/v1/backoffice/disputes/{disputeId}`;
+- `GET /api/v1/backoffice/audit-log`.
+
+Honest remaining gaps:
+- merchant onboarding remains coarse-status only (`merchantStatus`, no sub-step breakdown);
+- API key scopes are not exposed in backend contract;
+- merchant webhook events API currently requires explicit `?status=` filter;
+- vendor-blocked frontend-adjacent flows remain blocked by real credentials (`MRC-01`, `KYC-01`, `REC-03`).
